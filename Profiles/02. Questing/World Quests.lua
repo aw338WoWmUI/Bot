@@ -1,0 +1,1 @@
+GMR.LoadQuester('World Quests')
