@@ -134,6 +134,45 @@ function Quester.defineQuestRetainingTheCourt()
     )
 end
 
+function Quester.defineQuestRetainingTheCourt()
+    local questID = 60601
+    GMR.DefineQuest(
+        { 'Alliance', 'Horde' },
+        nil,
+        questID,
+        'Darkwing Drills',
+        'Custom',
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        {
+            function()
+                if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+                    GMR.SetQuestingState(nil)
+                    GMR.Questing.GossipWith(-1956.5399169922, 6118.0478515625, 4172.4853515625, 174380)
+                elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+                    -- FIXME: Make grinding with the Darkwing Aggressor work
+                    GMR.SetQuestingState('Idle')
+                end
+            end
+        },
+        function()
+            GMR.SkipTurnIn(true)
+            GMR.DefineQuestEnemyId(169362) -- Stone Fiend
+            GMR.DefineQuestEnemyId(169365) -- Venerable Denizen
+            GMR.DefineQuestEnemyId(169370) -- Merciless Tormentor
+            GMR.DefineQuestEnemyId(169364) -- Ardent Loyalist
+            -- TODO: There are a few more mob types
+            GMR.DefineSetting('Enable', 'Grinding')
+        end
+    )
+end
+
 GMR.DefineQuester('World Quests', function()
     Quester.defineQuestMuckItUp()
     Quester.defineQuestAStolenStoneFiend()
