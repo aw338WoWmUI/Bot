@@ -81,9 +81,63 @@ function Quester.defineQuestAStolenStoneFiend()
     )
 end
 
+function Quester.defineQuestRetainingTheCourt()
+    local questID = 59599
+    GMR.DefineQuest(
+        { 'Alliance', 'Horde' },
+        nil,
+        questID,
+        'Retaining the Court',
+        'Custom',
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        nil,
+        {
+            function()
+                if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+                    if UnitPower('player', ALTERNATE_POWER_INDEX) < 8 then
+                        local object = GMR.FindObject({ 348740, 348741 })
+                        if object then
+                            local objectID = GMR.ObjectId(object)
+                            local x, y, z = GMR.ObjectPosition(object)
+                            GMR.Questing.InteractWith(x, y, z, objectID, nil, 8)
+                        else
+                            GMR.SetQuestingState('Idle')
+                        end
+                    else
+                        local object = GMR.FindObject({ 165286, 165301 })
+                        if object then
+                            local objectID = GMR.ObjectId(object)
+                            local x, y, z = GMR.ObjectPosition(object)
+                            GMR.Questing.InteractWith(x, y, z, objectID, nil, 8)
+                        else
+                            GMR.SetQuestingState('Idle')
+                        end
+                    end
+                elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+                    GMR.SetQuestingState('Idle')
+                end
+            end
+        },
+        function()
+            GMR.SkipTurnIn(true)
+            GMR.DefineProfileCenter(-1844.7054443359, 7053.349609375, 4272.7475585938)
+            GMR.DefineQuestEnemyId(165266)
+            GMR.DefineQuestEnemyId(165270)
+            GMR.DefineSetting('Enable', 'Grinding')
+        end
+    )
+end
+
 GMR.DefineQuester('World Quests', function()
     Quester.defineQuestMuckItUp()
     Quester.defineQuestAStolenStoneFiend()
+    Quester.defineQuestRetainingTheCourt()
 end)
 
 function findObjectsByName(name)

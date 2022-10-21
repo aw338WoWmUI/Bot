@@ -1,3 +1,5 @@
 /dump C_SuperTrack.GetSuperTrackedQuestID()
 /script local playerPosition = GMR.GetPlayerPosition(); GMR.WriteFile('C:/position.txt', '{ x = ' .. playerPosition.x .. ', y = ' .. playerPosition.y .. ', z = ' .. playerPosition.z .. ' }')
 /dump GetContainerItemID(0, 1)
+/dump findObjectsByName('')
+/dump UnitPower('player', ALTERNATE_POWER_INDEX)
