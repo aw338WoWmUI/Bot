@@ -493,8 +493,9 @@ function defineQuest(questID)
           end
 
           local function retrieveExtraActionButton1ActionDescriptionText()
+            -- FIXME: This seemed to return nil one time. Maybe the action info is first retrieved from the server before it is shown.
             tooltip:SetAction(ExtraActionButton1.action)
-              local descriptionText = QuesterTooltipTextLeft4:GetText()
+            local descriptionText = QuesterTooltipTextLeft4:GetText()
             return descriptionText
           end
 
@@ -504,7 +505,7 @@ function defineQuest(questID)
 
           local function doesExtraActionButtonActionContainAnIndicatorThatItActivatesSomething()
             local descriptionText = retrieveExtraActionButton1ActionDescriptionText()
-            return string.match(descriptionText, '^Activate the targeted .+ unit.$')
+            return descriptionText and string.match(descriptionText, '^Activate the targeted .+ unit.$')
           end
 
           local function seemsToRequireToBeCloseToQuestMarker()
@@ -519,6 +520,49 @@ function defineQuest(questID)
             end
             return false
           end
+
+          local function convertObjectLookupToList(objects)
+            return includeGUIDInObject(objects)
+          end
+
+          local function findExtraActionTarget()
+            local descriptionText = retrieveExtraActionButton1ActionDescriptionText()
+            local targetNamePart = string.match(descriptionText, '^Activate the targeted (.+) unit.$')
+            if targetNamePart then
+              local objects = convertObjectLookupToList(GMR.GetNearbyObjects(5))
+              local target = Array.find(objects, function(object)
+                return string.match(object.Name, targetNamePart)
+              end)
+              if target then
+                return target.GUID
+              end
+            end
+            return nil
+          end
+
+          local function retrieveObjectPositionAsObject(object)
+            local x, y, z = GMR.ObjectPosition(object)
+            return {
+              x = x,
+              y = y,
+              z = z
+            }
+          end
+
+          local function isCloseToRequiredExtraActionTarget()
+            local requiredTarget = findExtraActionTarget()
+            print('requiredTarget', requiredTarget)
+            if requiredTarget then
+              local requiredTargetPosition = retrieveObjectPositionAsObject(requiredTarget)
+              local playerPosition = GMR.GetPlayerPosition()
+              return calculateDistance(requiredTargetPosition, playerPosition) <= 5
+            else
+              return false
+            end
+          end
+
+          print('seemsToRequireToBeCloseToQuestMarker()', seemsToRequireToBeCloseToQuestMarker())
+          print('isCloseToRequiredExtraActionTarget()', isCloseToRequiredExtraActionTarget())
 
           local objectsThatPotentiallyCanBeChargedWith = findObjectsThatCanBeChargedWith()
           local questPosition = determineQuestPosition(questID)
@@ -547,7 +591,7 @@ function defineQuest(questID)
               ExtraActionButton1:IsShown() and
               IsUsableAction(ExtraActionButton1.action) and
               GetActionCooldown(ExtraActionButton1.action) == 0 and
-              not seemsToRequireToBeCloseToQuestMarker()
+              (not seemsToRequireToBeCloseToQuestMarker() or isCloseToRequiredExtraActionTarget())
           ) then
             print('GMR.Questing.ExtraActionButton1')
             local playerPosition = GMR.GetPlayerPosition()
@@ -561,6 +605,17 @@ function defineQuest(questID)
               if GMR.IsPlayerPosition(destination.x, destination.y, destination.z, 3) then
                 GMR.Dismount()
               end
+
+              if seemsToRequireToBeCloseToQuestMarker() then
+                local target = findExtraActionTarget()
+                if target then
+                  GMR.TargetObject(target)
+                else
+                  error('Could not find target object.')
+                  return
+                end
+              end
+
               GMR.Questing.ExtraActionButton1(destination.x, destination.y, destination.z)
             else
               GMR.Questing.ExtraActionButton1(playerPosition.x, playerPosition.y, playerPosition.z)
@@ -629,7 +684,11 @@ function determineQuestPosition(questID)
       z = nil
     }
     local playerPosition = GMR.GetPlayerPosition()
-    if C_Navigation.GetTargetState() ~= Enum.NavigationState.Invalid and distance2d(playerPosition, position) <= 3 and C_Navigation.GetDistance() > 3 then
+    if (
+      C_Navigation.GetTargetState() ~= Enum.NavigationState.Invalid and
+        distance2d(playerPosition, position) <= 3 and
+        C_Navigation.GetDistance() > 3
+    ) then
       -- 1.63     -1.65
       --      -3.11
       position.z = playerPosition.z - C_Navigation.GetDistance()
