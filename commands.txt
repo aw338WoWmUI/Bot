@@ -29,3 +29,4 @@ ObjectDynamicFlags
 /dump GMR.IsObjectInteractable(GMR.FindObject(158765))
 /dump GetActionCooldown(ExtraActionButton1.action)
 /dump GMR.TargetObject(({next(GMR.GetNearbyObjects(5))})[1])
+/dump GMR.FindObject(172914)

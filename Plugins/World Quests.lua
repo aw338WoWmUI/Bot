@@ -425,6 +425,11 @@ function defineQuest(questID)
           for objectGUID, object in pairs(objects) do
             local objectName = object.Name
             findObjectiveWhichMatchesAndAddItToTheLookup(questInfo, objectGUID, function(questObjective)
+              local name = string.match(questObjective.text, '%d+/%d+ (.+) slain')
+              if name and name == objectName then
+                return true
+              end
+
               local name = string.match(questObjective.text, '%d+/%d+ (.+)')
               if name and name == objectName then
                 return true
@@ -445,18 +450,18 @@ function defineQuest(questID)
             return not questObjective.finished
           end)
 
-          local openQuestObjectiveObjectIDs = Set.union(
-            unpack(
-              Array.filter(
-                Array.map(openQuestObjectives, function(questObjective)
-                  return questObjectiveToObjectIDs[questObjective.index]
-                end),
-                Function.isTrue
+          local objectIDs = Set.toList(
+            Set.union(
+              unpack(
+                Array.map(
+                  openQuestObjectives,
+                  function(questObjective)
+                    return questObjectiveToObjectIDs[questObjective.index] or {}
+                  end
+                )
               )
             )
           )
-
-          local objectIDs = Set.toList(openQuestObjectiveObjectIDs)
           local object = GMR.FindObject(objectIDs)
 
           local function findObjectsThatCanBeChargedWith()
@@ -551,7 +556,6 @@ function defineQuest(questID)
 
           local function isCloseToRequiredExtraActionTarget()
             local requiredTarget = findExtraActionTarget()
-            print('requiredTarget', requiredTarget)
             if requiredTarget then
               local requiredTargetPosition = retrieveObjectPositionAsObject(requiredTarget)
               local playerPosition = GMR.GetPlayerPosition()
@@ -560,9 +564,6 @@ function defineQuest(questID)
               return false
             end
           end
-
-          print('seemsToRequireToBeCloseToQuestMarker()', seemsToRequireToBeCloseToQuestMarker())
-          print('isCloseToRequiredExtraActionTarget()', isCloseToRequiredExtraActionTarget())
 
           local objectsThatPotentiallyCanBeChargedWith = findObjectsThatCanBeChargedWith()
           local questPosition = determineQuestPosition(questID)
