@@ -330,8 +330,6 @@ end
 local tooltip = CreateFrame('GameTooltip', 'QuesterTooltip', UIParent, 'GameTooltipTemplate')
 tooltip:SetOwner(UIParent, 'ANCHOR_NONE')
 
-_G.ab = tooltip
-
 local function addIndexToQuestObjectives(questObjectives)
   for index, questObjective in ipairs(questObjectives) do
     questObjective.index = index
@@ -494,12 +492,31 @@ function defineQuest(questID)
             end
           end
 
+          local function retrieveExtraActionButton1ActionDescriptionText()
+            tooltip:SetAction(ExtraActionButton1.action)
+              local descriptionText = QuesterTooltipTextLeft4:GetText()
+            return descriptionText
+          end
+
+          local function doesQuestObjectiveTextContainAnIndicatorThatSomethingIsRequiredToBeActivated(questObjective)
+            return string.match(questObjective.text, ' activated$')
+          end
+
+          local function doesExtraActionButtonActionContainAnIndicatorThatItActivatesSomething()
+            local descriptionText = retrieveExtraActionButton1ActionDescriptionText()
+            return string.match(descriptionText, '^Activate the targeted .+ unit.$')
+          end
+
           local function seemsToRequireToBeCloseToQuestMarker()
-            --if #openQuestObjectives >= 1 then
-            --  local firstOpenQuestObjective = openQuestObjectives[1]
-            --  string.match(firstOpenQuestObjective.text, ' activated$')
-            --  string.match()
-            --end
+            if #openQuestObjectives >= 1 then
+              local firstOpenQuestObjective = openQuestObjectives[1]
+              if (
+                doesQuestObjectiveTextContainAnIndicatorThatSomethingIsRequiredToBeActivated(firstOpenQuestObjective) and
+                  doesExtraActionButtonActionContainAnIndicatorThatItActivatesSomething()
+              ) then
+                return true
+              end
+            end
             return false
           end
 
