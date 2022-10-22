@@ -3,3 +3,23 @@
 /dump GetContainerItemID(0, 1)
 /dump findObjectsByName('')
 /dump UnitPower('player', ALTERNATE_POWER_INDEX)
+/dump findObjectsByName("Korinna's Allaying Crook")
+ObjectFlags
+ObjectFlags2
+ObjectDynamicFlags
+/dump GMR.FindObject(357754)
+/dump GMR.ObjectFlags(GMR.FindObject(357754))     nil
+/dump GMR.ObjectFlags2(GMR.FindObject(357754))    0
+/dump GMR.ObjectDynamicFlags(GMR.FindObject(357754))   -64988
+/dump GMR.ObjectName(GMR.FindObject(357754))
+/dump GMR.IsObjectInteractable(GMR.FindObject(357754))
+/dump GMR.GetObjectWithInfo({ id = 357754})
+/dump GMR.InteractObject(GMR.FindObject(357754))
+/dump GMR.ObjectInteract(GMR.FindObject(357754))
+/dump C_QuestLog.GetLogIndexForQuestID(C_SuperTrack.GetSuperTrackedQuestID())
+/dump GetQuestLogSpecialItemInfo(C_QuestLog.GetLogIndexForQuestID(C_SuperTrack.GetSuperTrackedQuestID()))
+/dump GMR.GetNearbyObjects(5)
+/dump next(GMR.GetNearbyObjects(5))[1]
+/dump ({next(GMR.GetNearbyObjects(5))})[1]
+/dump GMR.IsDead(({next(GMR.GetNearbyObjects(5))})[1])
+/dump GMR.ObjectId(({next(GMR.GetNearbyObjects(5))})[1])
