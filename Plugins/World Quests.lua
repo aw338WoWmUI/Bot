@@ -1,5 +1,124 @@
 local Quester = {}
 
+local function goTo(position)
+  if not GMR.IsMeshLoaded() then
+    GMR.LoadMeshFiles()
+  end
+  GMR.MeshTo(position.x, position.y, position.z)
+end
+
+local ZERETH_MORTIS_UI_MAP_ID = 1970
+local BASTION_UI_MAP_ID = 1533
+local REVENDRETH_UI_MAP_ID = 1525
+
+local zoneMapIDs = Set.create({
+  ZERETH_MORTIS_UI_MAP_ID,
+  BASTION_UI_MAP_ID,
+  REVENDRETH_UI_MAP_ID
+})
+
+local function distance2d(a, b)
+  return math.sqrt(math.pow(b.x - a.x, 2) + math.pow(b.y - a.y, 2))
+end
+
+local function determineZoneMapID()
+  local mapID = MapUtil.GetDisplayableMapForPlayer()
+  if Set.contains(zoneMapIDs, mapID) then
+    return mapID
+  elseif mapID == 1700 then
+    return REVENDRETH_UI_MAP_ID
+  end
+end
+
+local function addPositionToQuest(quest)
+  local x, y, z = GMR.GetWorldPositionFromMap(quest.mapID, quest.x, quest.y)
+  quest.position = {
+    x = x,
+    y = y,
+    z = GMR.GetZCoordinate(x, y, 100000) or 5000
+  }
+  return quest
+end
+
+local function addPositionToQuests(quests)
+  return Array.map(quests, addPositionToQuest)
+end
+
+local function calculateDistance(a, b)
+  return math.sqrt(math.pow(b.x - a.x, 2) + math.pow(b.y - a.y, 2) + math.pow(b.z - a.z, 2))
+end
+
+local function findClosestQuest(quests)
+  local playerPosition = GMR.GetPlayerPosition()
+  return Array.min(quests, function(quest)
+    return calculateDistance(playerPosition, quest.position)
+  end)
+end
+
+local function sortQuestsByDistanceAscending(quests)
+  local playerPosition = GMR.GetPlayerPosition()
+  table.sort(quests, function(a, b)
+    local distanceA = calculateDistance(playerPosition, a.position)
+    local distanceB = calculateDistance(playerPosition, b.position)
+    return distanceA < distanceB
+  end)
+end
+
+local function hasTagInfo(quest)
+  local tagInfo = C_QuestLog.GetQuestTagInfo(quest.questId)
+  return tagInfo ~= nil
+end
+
+local function isPetBattleWorldQuest(quest)
+  local tagInfo = C_QuestLog.GetQuestTagInfo(quest.questId)
+  return tagInfo.worldQuestType == Enum.QuestTagType.PetBattle
+end
+
+local function filterQuests(quests)
+  return Array.filter(quests, function(quest)
+    return not quest.isDaily and hasTagInfo(quest) and not isPetBattleWorldQuest(quest)
+  end)
+end
+
+local function retrieveWorldQuestsInZone(mapID)
+  local quests = C_TaskQuest.GetQuestsForPlayerByMapID(mapID)
+  return quests
+end
+
+local destination = nil
+
+local function goToNextWorldQuestInZone(mapID)
+
+  local quests = addPositionToQuests(retrieveWorldQuestsInZone(mapID))
+  quests = filterQuests(quests)
+  local quest = findClosestQuest(quests)
+  print('goToNextWorldQuestInZone: ' .. QuestUtils_GetQuestName(quest.questId))
+  goTo(quest.position)
+  destination = quest.position
+end
+
+local function isMoving()
+  return destination ~= nil
+end
+
+C_Timer.NewTicker(1, function()
+  if GMR.IsExecuting() then
+    if isMoving() then
+      if GMR.IsPlayerPosition(destination.x, destination.y, destination.z, 5) then
+        print('has arrived')
+        destination = nil
+      end
+    else
+      if not GMR.IsQuesting() then
+        local mapID = determineZoneMapID()
+        goToNextWorldQuestInZone(mapID)
+      end
+    end
+  else
+    destination = nil
+  end
+end)
+
 function Quester.defineQuestMuckItUp()
   local questID = 59808
   GMR.DefineQuest(
@@ -211,6 +330,8 @@ end
 local tooltip = CreateFrame('GameTooltip', 'QuesterTooltip', UIParent, 'GameTooltipTemplate')
 tooltip:SetOwner(UIParent, 'ANCHOR_NONE')
 
+_G.ab = tooltip
+
 local function addIndexToQuestObjectives(questObjectives)
   for index, questObjective in ipairs(questObjectives) do
     questObjective.index = index
@@ -219,16 +340,15 @@ end
 
 function defineQuest(questID)
   local questName = QuestUtils_GetQuestName(questID)
-  print('questName', questName)
+
+  print('defineQuest', questName)
 
   local questPosition = determineQuestPosition(questID)
-  local lastQuestPosition = questPosition
 
   print('questPosition')
   printTable(questPosition)
 
   local questObjectiveToObjectIDs = {}
-  _G.abc = questObjectiveToObjectIDs
 
   local function addObjectIDToObjective(objectID, questObjectiveIndex)
     if not questObjectiveToObjectIDs[questObjectiveIndex] then
@@ -273,12 +393,7 @@ function defineQuest(questID)
         function()
           print('questInfo')
 
-          local questPosition = determineQuestPosition(questID)
-          if lastQuestPosition.x ~= questPosition.x or lastQuestPosition.y ~= questPosition.y or lastQuestPosition.z ~= questPosition.z then
-            lastQuestPosition = questPosition
-            GMR.Questing.MoveTo(questPosition.x, questPosition.y, questPosition.z)
-            return
-          end
+          _G.abc = questObjectiveToObjectIDs
 
           local questInfo = GMR.Questing.GetQuestInfo(questID)
 
@@ -313,7 +428,16 @@ function defineQuest(questID)
             local objectName = object.Name
             findObjectiveWhichMatchesAndAddItToTheLookup(questInfo, objectGUID, function(questObjective)
               local name = string.match(questObjective.text, '%d+/%d+ (.+)')
-              return name == text
+              if name and name == objectName then
+                return true
+              end
+
+              local objectiveObjectName = string.match(questObjective.text, '^%d+/%d+ Enter a (.+)$')
+              if objectiveObjectName and string.match(objectName, objectiveObjectName) then
+                return true
+              end
+
+              return false
             end)
           end
 
@@ -334,80 +458,110 @@ function defineQuest(questID)
             )
           )
 
-          if ExtraActionButton1:IsShown() then
+          local objectIDs = Set.toList(openQuestObjectiveObjectIDs)
+          local object = GMR.FindObject(objectIDs)
+
+          local function findObjectsThatCanBeChargedWith()
+            if questID == 62235 and not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+              -- Objective text: 0/1 Allaying Crook charged
+              -- Item name: Korinna's Allaying Crook
+              local range = 20
+              local objects = GMR.GetNearbyObjects(range)
+              local objectsThatPotentiallyCanBeChargedWith = Array.filter(
+                includeGUIDInObject(objects),
+                function(object)
+                  return (
+                    questObjectiveToObjectIDs[2][object.ID] and
+                      GMR.IsDead(object.GUID) and
+                      not objectsThatHasBeenChargedWith[object.GUID]
+                  )
+                end
+              )
+              return objectsThatPotentiallyCanBeChargedWith
+            end
+            return {}
+          end
+
+          local function chargeItem(objectsThatPotentiallyCanBeChargedWith)
+            local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
+            local cooldownStart = GetQuestLogSpecialItemCooldown(logIndex)
+            return cooldownStart == 0 and #objectsThatPotentiallyCanBeChargedWith >= 1
+          end
+
+          local function addObjectsThatHasBeenChargedWith(objectsThatPotentiallyCanBeChargedWith)
+            for _, object in ipairs(objectsThatPotentiallyCanBeChargedWith) do
+              objectsThatHasBeenChargedWith[object.GUID] = true
+            end
+          end
+
+          local function seemsToRequireToBeCloseToQuestMarker()
+            --if #openQuestObjectives >= 1 then
+            --  local firstOpenQuestObjective = openQuestObjectives[1]
+            --  string.match(firstOpenQuestObjective.text, ' activated$')
+            --  string.match()
+            --end
+            return false
+          end
+
+          local objectsThatPotentiallyCanBeChargedWith = findObjectsThatCanBeChargedWith()
+          local questPosition = determineQuestPosition(questID)
+          if chargeItem(objectsThatPotentiallyCanBeChargedWith) then
+            print('GMR.Questing.UseItemOnPosition')
+            local playerPosition = GMR.GetPlayerPosition()
+            local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
+            local itemLink = GetQuestLogSpecialItemInfo(logIndex)
+            local itemID = GetItemInfoInstant(itemLink)
+            GMR.Questing.UseItemOnPosition(playerPosition.x, playerPosition.y, playerPosition.z, itemID)
+            addObjectsThatHasBeenChargedWith(objectsThatPotentiallyCanBeChargedWith)
+            --elseif object and GMR.ObjectHasGossip(object) then
+            --  -- FIXME: GMR.ObjectHasGossip seems to also return true for normal mobs.
+            --  print('GMR.Questing.GossipWith')
+            --  local x, y, z = GMR.ObjectPosition(object)
+            --  local objectID = GMR.ObjectId(object)
+            --  GMR.Questing.GossipWith(x, y, z, objectID, nil, 5)
+          elseif object and GMR.UnitCanAttack('player', object) then
+            -- FIXME: Only kill mobs which contribute to quest progress (non-gray, not attacked by a character of the other faction)
+            print('GMR.Questing.KillEnemy')
+            local x, y, z = GMR.ObjectPosition(object)
+            local objectID = GMR.ObjectId(object)
+            GMR.Questing.KillEnemy(x, y, z, objectID)
+          elseif (
+            ExtraActionBarFrame:IsShown() and
+              ExtraActionButton1:IsShown() and
+              IsUsableAction(ExtraActionButton1.action) and
+              GetActionCooldown(ExtraActionButton1.action) == 0 and
+              not seemsToRequireToBeCloseToQuestMarker()
+          ) then
             print('GMR.Questing.ExtraActionButton1')
             local playerPosition = GMR.GetPlayerPosition()
-            GMR.Questing.ExtraActionButton1(playerPosition.x, playerPosition.y, playerPosition.z)
-          else
-            local objectIDs = Set.toList(openQuestObjectiveObjectIDs)
-            local object = GMR.FindObject(objectIDs)
-            if object then
-              local x, y, z = GMR.ObjectPosition(object)
-              local objectID = GMR.ObjectId(object)
-
-              local function findObjectsThatCanBeChargedWith()
-                if questID == 62235 and not GMR.Questing.IsObjectiveCompleted(questID, 2) then
-                  -- Objective text: 0/1 Allaying Crook charged
-                  -- Item name: Korinna's Allaying Crook
-                  local range = 20
-                  local objects = GMR.GetNearbyObjects(range)
-                  local objectsThatPotentiallyCanBeChargedWith = Array.filter(
-                    includeGUIDInObject(objects),
-                    function(object)
-                      return (
-                        questObjectiveToObjectIDs[2][object.ID] and
-                          GMR.IsDead(object.GUID) and
-                          not objectsThatHasBeenChargedWith[object.GUID]
-                      )
-                    end
-                  )
-                  return objectsThatPotentiallyCanBeChargedWith
-                end
-                return {}
+            if GMR.IsFlyingMount(GMR.GetMount()) then
+              local z = GMR.GetZCoordinate(playerPosition.x, playerPosition.y, playerPosition.z)
+              local destination = {
+                x = playerPosition.x,
+                y = playerPosition.y,
+                z = z
+              }
+              if GMR.IsPlayerPosition(destination.x, destination.y, destination.z, 3) then
+                GMR.Dismount()
               end
-
-              local function chargeItem(objectsThatPotentiallyCanBeChargedWith)
-                local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
-                local cooldownStart = GetQuestLogSpecialItemCooldown(logIndex)
-                return cooldownStart == 0 and #objectsThatPotentiallyCanBeChargedWith >= 1
-              end
-
-              local function addObjectsThatHasBeenChargedWith(objectsThatPotentiallyCanBeChargedWith)
-                for _, object in ipairs(objectsThatPotentiallyCanBeChargedWith) do
-                  objectsThatHasBeenChargedWith[object.GUID] = true
-                end
-              end
-
-              local objectsThatPotentiallyCanBeChargedWith = findObjectsThatCanBeChargedWith()
-              if chargeItem(objectsThatPotentiallyCanBeChargedWith) then
-                print('GMR.Questing.UseItemOnPosition')
-                local playerPosition = GMR.GetPlayerPosition()
-                local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
-                local itemLink = GetQuestLogSpecialItemInfo(logIndex)
-                local itemID = GetItemInfoInstant(itemLink)
-                GMR.Questing.UseItemOnPosition(playerPosition.x, playerPosition.y, playerPosition.z, itemID)
-                addObjectsThatHasBeenChargedWith(objectsThatPotentiallyCanBeChargedWith)
-              elseif GMR.ObjectHasGossip(object) then
-                print('GMR.Questing.GossipWith')
-                GMR.Questing.GossipWith(x, y, z, objectID)
-              elseif GMR.IsObjectInteractable(object) then
-                -- FIXME: GMR.IsObjectInteractable might be bugged.
-                print('GMR.Questing.InteractWith')
-                GMR.Questing.InteractWith(x, y, z, objectID)
-              else
-                print('GMR.Questing.KillEnemy')
-                GMR.Questing.KillEnemy(x, y, z, objectID)
-              end
+              GMR.Questing.ExtraActionButton1(destination.x, destination.y, destination.z)
             else
-              GMR.Questing.MoveTo(questPosition.x, questPosition.y, questPosition.z)
+              GMR.Questing.ExtraActionButton1(playerPosition.x, playerPosition.y, playerPosition.z)
             end
+          elseif object then
+            -- FIXME: GMR.IsObjectInteractable might be bugged.
+            print('GMR.Questing.InteractWith')
+            local x, y, z = GMR.ObjectPosition(object)
+            local objectID = GMR.ObjectId(object)
+            GMR.Questing.InteractWith(x, y, z, objectID, nil, 5)
+          elseif not GMR.IsPlayerPosition(questPosition.x, questPosition.y, questPosition.z, 5) then
+            GMR.Questing.MoveTo(questPosition.x, questPosition.y, questPosition.z)
           end
         end
       },
       function()
         print('profileData')
         GMR.SkipTurnIn(true)
-        GMR.DefineProfileCenter(questPosition.x, questPosition.y, questPosition.z)
         GMR.Questing.MoveTo(questPosition.x, questPosition.y, questPosition.z)
       end
     )
@@ -415,13 +569,18 @@ function defineQuest(questID)
 end
 
 GMR.DefineQuester('World Quests', function()
-  Quester.defineQuestMuckItUp()
-  Quester.defineQuestAStolenStoneFiend()
-  Quester.defineQuestRetainingTheCourt()
+  --Quester.defineQuestMuckItUp()
+  --Quester.defineQuestAStolenStoneFiend()
+  --Quester.defineQuestRetainingTheCourt()
   -- Quester.defineQuestACuriousCache()
-  defineQuest(59905)
-  defineQuest(59578)
-  defineQuest(62235)
+
+  local mapID = determineZoneMapID()
+  local quests = addPositionToQuests(retrieveWorldQuestsInZone(mapID))
+  quests = filterQuests(quests)
+  sortQuestsByDistanceAscending(quests)
+  for _, quest in ipairs(quests) do
+    defineQuest(quest.questId)
+  end
 end)
 
 function findObjectsByName(name)
@@ -433,30 +592,6 @@ function findObjectsByName(name)
     end
   end
   return objectsThatMatch
-end
-
-local function retrieveWorldQuestsInZone(uiMapID)
-  local quests = C_TaskQuest.GetQuestsForPlayerByMapID(uiMapID)
-  return quests
-end
-
-local ZERETH_MORTIS_UI_MAP_ID = 1970
-local BASTION_UI_MAP_ID = 1533
-local REVENDRETH_UI_MAP_ID = 1525
-
-local zoneMapIDs = Set.create({
-  ZERETH_MORTIS_UI_MAP_ID,
-  BASTION_UI_MAP_ID,
-  REVENDRETH_UI_MAP_ID
-})
-
-local function determineZoneMapID()
-  local mapID = MapUtil.GetDisplayableMapForPlayer()
-  if Set.contains(zoneMapIDs, mapID) then
-    return mapID
-  elseif mapID == 1700 then
-    return REVENDRETH_UI_MAP_ID
-  end
 end
 
 local function findQuestWithID(quests, questID)
@@ -474,8 +609,16 @@ function determineQuestPosition(questID)
     local position = {
       x = x,
       y = y,
-      z = GMR.GetZCoordinate(x, y, 100000) or 10000
+      z = nil
     }
+    local playerPosition = GMR.GetPlayerPosition()
+    if C_Navigation.GetTargetState() ~= Enum.NavigationState.Invalid and distance2d(playerPosition, position) <= 3 and C_Navigation.GetDistance() > 3 then
+      -- 1.63     -1.65
+      --      -3.11
+      position.z = playerPosition.z - C_Navigation.GetDistance()
+    else
+      position.z = GMR.GetZCoordinate(x, y, 100000) or 6000
+    end
     return position
   else
     return nil

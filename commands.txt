@@ -23,3 +23,8 @@ ObjectDynamicFlags
 /dump ({next(GMR.GetNearbyObjects(5))})[1]
 /dump GMR.IsDead(({next(GMR.GetNearbyObjects(5))})[1])
 /dump GMR.ObjectId(({next(GMR.GetNearbyObjects(5))})[1])
+/dump GMR.FindObject(158765)
+/dump GMR.ObjectName(GMR.FindObject(158765))
+/dump GMR.ObjectHasGossip(GMR.FindObject(158765))
+/dump GMR.IsObjectInteractable(GMR.FindObject(158765))
+/dump GetActionCooldown(ExtraActionButton1.action)
