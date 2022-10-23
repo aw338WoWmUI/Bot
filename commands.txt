@@ -30,3 +30,34 @@ ObjectDynamicFlags
 /dump GetActionCooldown(ExtraActionButton1.action)
 /dump GMR.TargetObject(({next(GMR.GetNearbyObjects(5))})[1])
 /dump GMR.FindObject(172914)
+/dump GMR.FindObject(349613)
+/dump GMR.ObjectFlags(GMR.FindObject(349613))
+/dump GMR.ObjectFlags(GMR.FindObject(349613))
+/dump GMR.ObjectFlags2(GMR.FindObject(349613))
+/dump GMR.ObjectDynamicFlags(GMR.FindObject(349613))
+/dump GMR.ObjectDynamicFlags('target')
+/dump bit.band(GMR.ObjectDynamicFlags(GMR.FindObject(349613)), 512) == 512
+/dump bit.band(GMR.ObjectDynamicFlags('target'), 512) == 512
+/dump bit.band(GMR.ObjectDynamicFlags('target'), 32) == 32
+/dump GMR.ObjectDynamicFlags(GMR.FindObject(165966))
+/dump GMR.FindObject(165966)
+/dump GMR.ObjectFlags2('target')
+/dump GMR.ObjectFlags('target')
+/dump bit.band(GMR.ObjectDynamicFlags('target'), 32) == 32
+/dump bit.band(GMR.ObjectFlags('target'), 32) == 32
+/dump bit.band(GMR.ObjectFlags2('target'), 32) == 32
+/dump GMR.ObjectRawType('target')
+/dump GMR.ObjectDynamicFlags(GMR.FindObject(356878))
+/dump bit.band(GMR.ObjectDynamicFlags(GMR.FindObject(356878)), 32) == 32
+with glimmer: -65500
+without glimmer -65536
+
+ GO_DYNFLAG_LO_SPARKLE da wenn quest objective glimmer
+ GO_DYNFLAG_LO_ACTIVATE da wenn quest objective glimmer
+
+/dump GMR.IsObjectInteractable(GMR.FindObject(356878))
+
+/dump bit.band(GMR.ObjectDynamicFlags(GMR.FindObject(357413)), 0x20) == 0x20
+/dump GMR.IsObjectInteractable(GMR.FindObject(357413))
+/script local playerPosition = GMR.GetPlayerPosition(); GMR.WriteFile('C:/position.txt', tostring(playerPosition.x) .. ', ' .. playerPosition.y .. ', ' .. playerPosition.z)
+/script local playerPosition = GMR.GetPlayerPosition(); GMR.WriteFile('C:/position.txt', '{ x = ' .. playerPosition.x .. ', y = ' .. playerPosition.y .. ', z = ' .. playerPosition.z .. ' },', true)
