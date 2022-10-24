@@ -99,6 +99,35 @@ local function makeString(text)
   end
 end
 
+local APIDocumentation = {
+  ['GMR.MeshTo'] = {
+    parameters = {
+      {
+        name = 'x',
+        type = 'number'
+      },
+      {
+        name = 'y',
+        type = 'number'
+      },
+      {
+        name = 'z',
+        type = 'number'
+      }
+    }
+  },
+  ['GMR.DefineQuest'] = {
+    parameters = {
+      {
+        name = 'factionFor',
+        type = 'string | table',
+        description = "'Alliance', 'Horde' or {'Alliance', 'Horde'}"
+      }
+      -- There are more parameters
+    }
+  }
+}
+
 local a
 a = function (variable, variableName)
   local output = ''
@@ -111,7 +140,38 @@ a = function (variable, variableName)
       b = b .. '[' ..  makeString(name) .. ']'
     end
     if type(value) == 'function' then
-      output = output .. 'function ' .. b .. '() end\n'
+      local documentation = APIDocumentation[b]
+      if documentation then
+        if documentation.description then
+          output = output .. '--- ' .. documentation.description
+        end
+        if documentation.parameters then
+          for _, parameter in ipairs(documentation.parameters) do
+            output = output .. '--- @param ' .. parameter.name
+            if parameter.type then
+              output = output .. ' ' .. parameter.type
+            end
+            if parameter.description then
+              output = output .. ' ' .. parameter.description
+            end
+            output = output .. '\n'
+          end
+        end
+      end
+      if string.match(b, '%[') then
+        output = output .. b .. ' = function('
+      else
+        output = output .. 'function ' .. b .. '('
+      end
+      if documentation and documentation.parameters then
+        for index, parameter in ipairs(documentation.parameters) do
+          if index > 1 then
+            output = output .. ', '
+          end
+          output = output .. parameter.name
+        end
+      end
+      output = output .. ') end\n'
     elseif type(value) == 'table' then
       output = output .. a(value, b)
     else
