@@ -1,3 +1,10 @@
+local function tablePack(...)
+  return {
+    n = select('#', ...),
+    ...
+  }
+end
+
 function findIn(table, searchTerm)
     searchTerm = string.lower(searchTerm)
     for name in pairs(table) do
@@ -205,7 +212,9 @@ function logAPICalls(apiName)
     local output = 'call to ' .. apiName
     if #{...} >= 1 then
       output = output .. ':\n'
-      for index, value in ipairs({...}) do
+      local args = tablePack(...)
+      for index = 1, args.n do
+        local value = args[index]
         output = output .. tostring(index) .. '.'
         if type(value) == 'table' then
           output = output .. '\n'
