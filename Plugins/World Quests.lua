@@ -127,7 +127,8 @@ C_Timer.NewTicker(10, function()
         destination = nil
       end
     else
-      if GMR.GetQuestId() then
+      local questID = GMR.GetQuestId()
+      if questID and GMR.IsQuestActive(questID) then
         destination = nil
       else
         if GMR.InCombat() then
