@@ -539,8 +539,11 @@ function defineQuest(questID)
       local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
       objects = Array.filter(objects, function(object)
         return (
-          Array.includes(objectIDs, object.ID) or
-            bit.band(GMR.ObjectDynamicFlags(object.GUID), 0x20) == 0x20
+          not GMR.IsBlacklistedGUID(object.GUID) and
+            not GMR.IsBlacklistedId(object.ID) and
+            (Array.includes(objectIDs, object.ID) or
+              bit.band(GMR.ObjectDynamicFlags(object.GUID), 0x20) == 0x20
+            )
         ) and not GMR.UnitIsDead(object.GUID)
       end)
       local playerPosition = GMR.GetPlayerPosition()
