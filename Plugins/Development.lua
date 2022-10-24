@@ -122,6 +122,24 @@ local APIDocumentation = {
         name = 'factionFor',
         type = 'string | table',
         description = "'Alliance', 'Horde' or {'Alliance', 'Horde'}"
+      },
+      {
+        name = 'classesFor',
+        type = 'table | nil',
+        description = 'A list of classes that the quest is for. When `nil` is passed, then the quest is considered to be for all classes. Valid values for the classes seem to be the keys of `GMR.Variables.Specializations`.'
+      },
+      {
+        name = 'questID',
+        type = 'number'
+      },
+      {
+        name = 'questName',
+        type = 'string'
+      },
+      {
+        name = 'gmrQuestType',
+        type = 'string',
+        description = 'Possible values include `Custom`, `MassPickUp` and `Grinding`.'
       }
       -- There are more parameters
     }
