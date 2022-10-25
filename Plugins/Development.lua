@@ -288,9 +288,9 @@ function logAPICalls(apiName)
   end
   hooksecurefunc(table, parts[#parts], function (...)
     local output = 'call to ' .. apiName
-    if #{...} >= 1 then
+    local args = tablePack(...)
+    if args.n >= 1 then
       output = output .. ':\n'
-      local args = tablePack(...)
       for index = 1, args.n do
         local value = args[index]
         output = output .. tostring(index) .. '.'
