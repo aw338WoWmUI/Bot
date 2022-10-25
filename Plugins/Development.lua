@@ -470,6 +470,7 @@ function logQuestSkeleton()
       '    nil,\n' ..
       '    nil,\n' ..
       '    nil,\n' ..
+      '    nil,\n' ..
       '    function()\n' ..
       '\n' ..
       '    end,\n' ..
