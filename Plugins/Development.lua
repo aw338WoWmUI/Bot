@@ -280,6 +280,21 @@ valueToString = function (value)
   end
 end
 
+local function outputList(list)
+  local output = ''
+  for index = 1, list.n do
+    local value = list[index]
+    output = output .. tostring(index) .. '.'
+    if type(value) == 'table' then
+      output = output .. '\n'
+    else
+      output = output .. ' '
+    end
+    output = output .. valueToString(value) .. '\n'
+  end
+  return output
+end
+
 function logAPICalls(apiName)
   local parts = splitString(apiName, '.')
   local table = _G
@@ -291,21 +306,44 @@ function logAPICalls(apiName)
     local args = tablePack(...)
     if args.n >= 1 then
       output = output .. ':\n'
-      for index = 1, args.n do
-        local value = args[index]
-        output = output .. tostring(index) .. '.'
-        if type(value) == 'table' then
-          output = output .. '\n'
-        else
-          output = output .. ' '
-        end
-        output = output .. valueToString(value) .. '\n'
-      end
+      output = output .. outputList(args)
     else
       output = output .. ' with 0 arguments.\n'
     end
     GMR.WriteFile('C:/log.txt', output, true)
   end)
+end
+
+function logAPICalls2(apiName)
+  local parts = splitString(apiName, '.')
+  local table = _G
+  for index = 1, #parts - 1 do
+    table = table[parts[index]]
+  end
+  local originalFunction = table[parts[#parts]]
+  table[parts[#parts]] = function (...)
+    local output = 'call to ' .. apiName
+    local args = tablePack(...)
+    if args.n >= 1 then
+      output = output .. ':\n'
+      output = output .. outputList(args)
+    else
+      output = output .. ' with 0 arguments.\n'
+    end
+
+    local result = {originalFunction(...)}
+
+    output = output .. 'Result:\n'
+    local packedResult = tablePack(unpack(result))
+    output = output .. outputList(packedResult)
+
+    output = output .. '\n'
+
+    -- output = output .. 'Stack trace:\n' .. debugstack() .. '\n'
+    GMR.WriteFile('C:/log.txt', output, true)
+
+    return unpack(result)
+  end
 end
 
 GMR.WriteFile('C:/log.txt', '')
