@@ -83,7 +83,8 @@ end
 local questIDs = {
   ['Robriar Trouble'] = 59600,
   ['Spriggan Size Me!'] = 60476,
-  ['Major Mirror Disruptions'] = 59855
+  ['Major Mirror Disruptions'] = 59855,
+  ['Soul Snares'] = 58084
 }
 
 local questsToDo = Set.create({
@@ -118,31 +119,6 @@ end
 local function isMoving()
   return destination ~= nil and GMR.IsMoving()
 end
-
-C_Timer.NewTicker(10, function()
-  if GMR.IsExecuting() then
-    if isMoving() then
-      if GMR.IsPlayerPosition(destination.x, destination.y, destination.z, 5) then
-        print('has arrived')
-        destination = nil
-      end
-    else
-      local questID = GMR.GetQuestId()
-      if questID and GMR.IsQuestActive(questID) then
-        destination = nil
-      else
-        if GMR.InCombat() then
-          destination = nil
-        else
-          local mapID = determineZoneMapID()
-          goToNextWorldQuestInZone(mapID)
-        end
-      end
-    end
-  else
-    destination = nil
-  end
-end)
 
 function Quester.defineQuestMuckItUp()
   local questID = 59808
@@ -863,7 +839,8 @@ function defineQuest(questID)
                   setToNextAction()
                 end
               elseif action.type == 'stepIntoPortal' then
-                if not GMR.IsPlayerPosition(positionBeforeStartedMovingForward.x, positionBeforeStartedMovingForward.y, positionBeforeStartedMovingForward.z, 5) then
+                if not GMR.IsPlayerPosition(positionBeforeStartedMovingForward.x, positionBeforeStartedMovingForward.y,
+                  positionBeforeStartedMovingForward.z, 5) then
                   setToNextAction()
                 end
               elseif action.type == 'fightMobs' then
@@ -943,6 +920,31 @@ function defineQuest(questID)
 end
 
 GMR.DefineQuester('World Quests', function()
+  C_Timer.NewTicker(10, function()
+    if GMR.IsExecuting() then
+      if isMoving() then
+        if GMR.IsPlayerPosition(destination.x, destination.y, destination.z, 5) then
+          print('has arrived')
+          destination = nil
+        end
+      else
+        local questID = GMR.GetQuestId()
+        if questID and GMR.IsQuestActive(questID) then
+          destination = nil
+        else
+          if GMR.InCombat() then
+            destination = nil
+          else
+            local mapID = determineZoneMapID()
+            goToNextWorldQuestInZone(mapID)
+          end
+        end
+      end
+    else
+      destination = nil
+    end
+  end)
+
   --Quester.defineQuestMuckItUp()
   --Quester.defineQuestAStolenStoneFiend()
   --Quester.defineQuestRetainingTheCourt()

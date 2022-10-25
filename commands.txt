@@ -61,3 +61,5 @@ without glimmer -65536
 /dump GMR.IsObjectInteractable(GMR.FindObject(357413))
 /script local playerPosition = GMR.GetPlayerPosition(); GMR.WriteFile('C:/position.txt', tostring(playerPosition.x) .. ', ' .. playerPosition.y .. ', ' .. playerPosition.z)
 /script local playerPosition = GMR.GetPlayerPosition(); GMR.WriteFile('C:/position.txt', '{ x = ' .. playerPosition.x .. ', y = ' .. playerPosition.y .. ', z = ' .. playerPosition.z .. ' },', true)
+/script logToFile(C_SuperTrack.GetSuperTrackedQuestID())
+/script local questID = C_SuperTrack.GetSuperTrackedQuestID(); logToFile(tostring(questID) .. '\n' .. QuestUtils_GetQuestName(questID))

@@ -6,16 +6,16 @@ local function tablePack(...)
 end
 
 function findIn(table, searchTerm)
-    searchTerm = string.lower(searchTerm)
-    for name in pairs(table) do
-        if string.match(string.lower(name), searchTerm) then
-            print(name)
-        end
+  searchTerm = string.lower(searchTerm)
+  for name in pairs(table) do
+    if string.match(string.lower(name), searchTerm) then
+      print(name)
     end
+  end
 end
 
 function findInGMR(searchTerm)
-    findIn(GMR, searchTerm)
+  findIn(GMR, searchTerm)
 end
 
 local reservedKeywords = {
@@ -147,7 +147,7 @@ local APIDocumentation = {
 }
 
 local a
-a = function (variable, variableName)
+a = function(variable, variableName)
   local output = ''
   output = output .. variableName .. ' = {}\n'
   for name, value in pairs(variable) do
@@ -155,7 +155,7 @@ a = function (variable, variableName)
     if isValidName(name) then
       b = b .. '.' .. name
     else
-      b = b .. '[' ..  makeString(name) .. ']'
+      b = b .. '[' .. makeString(name) .. ']'
     end
     if type(value) == 'function' then
       local documentation = APIDocumentation[b]
@@ -211,7 +211,7 @@ end
 
 function dumpAPI()
   local output = a(GMR, 'GMR')
-  GMR.WriteFile('C:/documentation.lua', output)
+  GMR.WriteFile('C:/documentation/documentation.lua', output)
 end
 
 function splitString(text, splitString)
@@ -269,7 +269,7 @@ function tableToStringWithIndention(table, indention)
   return result
 end
 
-valueToString = function (value)
+valueToString = function(value)
   local valueType = type(value)
   if valueType == 'table' then
     return tableToString(value)
@@ -301,7 +301,7 @@ function logAPICalls(apiName)
   for index = 1, #parts - 1 do
     table = table[parts[index]]
   end
-  hooksecurefunc(table, parts[#parts], function (...)
+  hooksecurefunc(table, parts[#parts], function(...)
     local output = 'call to ' .. apiName
     local args = tablePack(...)
     if args.n >= 1 then
@@ -321,7 +321,7 @@ function logAPICalls2(apiName)
     table = table[parts[index]]
   end
   local originalFunction = table[parts[#parts]]
-  table[parts[#parts]] = function (...)
+  table[parts[#parts]] = function(...)
     local output = 'call to ' .. apiName
     local args = tablePack(...)
     if args.n >= 1 then
@@ -331,7 +331,7 @@ function logAPICalls2(apiName)
       output = output .. ' with 0 arguments.\n'
     end
 
-    local result = {originalFunction(...)}
+    local result = { originalFunction(...) }
 
     output = output .. 'Result:\n'
     local packedResult = tablePack(unpack(result))
@@ -346,5 +346,140 @@ function logAPICalls2(apiName)
   end
 end
 
-GMR.WriteFile('C:/log.txt', '')
-logAPICalls('GMR.DefineQuest')
+-- logAPICalls2('GMR.StopMoving')
+-- logAPICalls2('GMR.DefineSetting')
+-- logAPICalls2('GMR.DefineSettings')
+-- GMR.WriteFile('C:/log.txt', '')
+-- logAPICalls('GMR.TraceLine')
+--logAPICalls2('GMR.MeshCallback')
+--logAPICalls2('GMR.MeshMovementHandler')
+--logAPICalls2('GMR.OffMeshHandler')
+--logAPICalls2('GMR.MeshHandler')
+--logAPICalls2('GMR.IsLoSMeshing')
+--logAPICalls2('GMR.Mesh')
+--logAPICalls2('GMR.IsInvalidMesh')
+--logAPICalls2('GMR.MeshTo')
+--logAPICalls2('GMR.Questing.MoveTo')
+--logAPICalls2('GMR.MoveTo')
+--logAPICalls2('GMR.IsExecuting')
+-- logAPICalls2('GMR.LibDraw.Line')
+--for name in pairs(GMR.LibDraw) do
+--  if type(GMR.LibDraw[name]) == 'function' then
+--    logAPICalls2('GMR.LibDraw.' .. name)
+--  end
+--end
+--local functionName = 'DefineQuester'
+--GMR[functionName] = function (...)
+--  print(functionName, ...)
+--  print(debugstack())
+--end
+
+--local TraceLineHitFlags = {
+--  COLLISION = 1048849
+--}
+--
+--hooksecurefunc(GMR, 'TraceLine', function(x1, y1, z1, x2, y2, z2, hitFlags)
+--  if hitFlags == TraceLineHitFlags.COLLISION then
+--    GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
+--  end
+--end)
+
+--hooksecurefunc(GMR.LibDraw, 'clearCanvas', function ()
+--  local playerPosition = GMR.GetPlayerPosition();
+--  local x1, y1, z1 = playerPosition.x, playerPosition.y, playerPosition.z;
+--  local x2, y2, z2 = GMR.ObjectPosition('target');
+--  if x2 then
+--    GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
+--  end
+--end)
+
+-- local playerPosition = GMR.GetPlayerPosition(); local x1, y1, z1 = playerPosition.x, playerPosition.y, playerPosition.z; local x2, y2, z2 = GMR.ObjectPosition('target'); GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
+
+function logToFile(content)
+  GMR.WriteFile('C:/log.txt', tostring(content) .. '\n', true)
+end
+
+function logTargetPosition()
+  local x, y, z = GMR.ObjectPosition('target')
+  if x then
+    logToFile(tostring(x) .. ', ' .. y .. ', ' .. z)
+  end
+end
+
+function logQuestInfo()
+  local questID = GetQuestID();
+  local questName = QuestUtils_GetQuestName(questID)
+  logToFile(tostring(questID) .. ",\n'" .. questName .. "'")
+end
+
+function logNPCPositionAndID()
+  local unit = 'target'
+  local objectID = GMR.ObjectId(unit)
+  if objectID then
+    local x, y, z = GMR.ObjectPosition(unit)
+    logToFile(tostring(x) .. ',\n' .. y .. ',\n' .. z .. ',\n' .. objectID)
+  end
+end
+
+function logNearbyObjects()
+  local objects = GMR.GetNearbyObjects(5)
+  logToFile(tableToString(objects))
+end
+
+function includeGUIDInObject(objects)
+  local result = {}
+  for GUID, object in pairs(objects) do
+    object.GUID = GUID
+    table.insert(result, object)
+  end
+  return result
+end
+
+function logObjectInfo(name)
+  local objects = includeGUIDInObject(GMR.GetNearbyObjects(5))
+  local object = Array.find(objects, function(object)
+    return object.Name == name
+  end)
+  if object then
+    logToFile(object.x .. ',\n' .. object.y .. ',\n' .. object.z .. ',\n' .. object.ID)
+  end
+end
+
+function logPlayerPosition()
+  local playerPosition = GMR.GetPlayerPosition()
+  logToFile(playerPosition.x .. ',\n' .. playerPosition.y .. ',\n' .. playerPosition.z)
+end
+
+function logQuestSkeleton()
+  local unit = 'target'
+  local objectID = GMR.ObjectId(unit)
+  if objectID then
+    local x, y, z = GMR.ObjectPosition(unit)
+    local questID = GetQuestID();
+    local questName = QuestUtils_GetQuestName(questID)
+    local output = '' ..
+      'do\n' ..
+      '  local questID = ' .. questID .. '\n' ..
+      '  defineQuest(\n' ..
+      '    questID,\n' ..
+      "    '" .. questName .. "',\n" ..
+      '    ' .. x .. ',\n' ..
+      '    ' .. y .. ',\n' ..
+      '    ' .. z .. ',\n' ..
+      '    ' .. objectID .. ',\n' ..
+      '    nil,\n' ..
+      '    nil,\n' ..
+      '    nil,\n' ..
+      '    function()\n' ..
+      '\n' ..
+      '    end,\n' ..
+      '    function()\n' ..
+      '\n' ..
+      '    end\n' ..
+      '  )\n' ..
+      'end\n'
+    logToFile(output)
+  end
+end
+
+
