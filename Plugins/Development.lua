@@ -231,18 +231,23 @@ function splitString(text, splitString)
   return parts
 end
 
-function tableToString(table)
-  return tableToStringWithIndention(table, 0)
+function tableToString(table, maxDepth)
+  local references = {}
+  local result = ''
+  result = result .. '{' .. '\n'
+  result = result .. tableToStringWithIndention(table, 0, 1, maxDepth, references)
+  result = result .. '}' .. '\n'
+  return result
 end
 
 local valueToString
 
-function tableToStringWithIndention(table, indention)
+function tableToStringWithIndention(table, indention, depth, maxDepth, references)
   local result = ''
   if table == nil then
     result = 'nil'
   else
-    result = '{\n'
+    local nextDepth = depth + 1
     for key, value in pairs(table) do
       local outputtedKey
       if type(key) == 'number' then
@@ -257,14 +262,18 @@ function tableToStringWithIndention(table, indention)
         outputtedKey = '[' .. tostring(key) .. ']'
       end
       if type(value) == 'table' then
-        result = result .. string.rep('  ', indention + 1) .. outputtedKey .. '={' .. '\n'
-        result = result .. tableToStringWithIndention(value, indention + 1)
-        result = result .. string.rep('  ', indention + 1) .. '}' .. '\n'
+        if (not maxDepth or depth <= maxDepth) and not references[value] then
+          result = result .. string.rep('  ', indention + 1) .. outputtedKey .. '={' .. '\n'
+          result = result .. tableToStringWithIndention(value, indention + 1, nextDepth, maxDepth, references)
+          result = result .. string.rep('  ', indention + 1) .. '}' .. '\n'
+        else
+          result = result .. string.rep('  ', indention + 1) .. outputtedKey .. '=' .. tostring(value) .. '\n'
+        end
+        references[value] = true
       else
         result = result .. string.rep('  ', indention + 1) .. outputtedKey .. '=' .. valueToString(value) .. '\n'
       end
     end
-    result = result .. '}'
   end
   return result
 end
@@ -346,6 +355,7 @@ function logAPICalls2(apiName)
   end
 end
 
+-- logAPICalls2('GMR.DefineQuest')
 -- logAPICalls2('GMR.StopMoving')
 -- logAPICalls2('GMR.DefineSetting')
 -- logAPICalls2('GMR.DefineSettings')
@@ -483,4 +493,118 @@ function logQuestSkeleton()
   end
 end
 
+function logQuestForMassPickUp()
+  local unit = 'target'
+  local objectID = GMR.ObjectId(unit)
+  if objectID then
+    local x, y, z = GMR.ObjectPosition(unit)
+    local questID = GetQuestID();
+    local output = '{ ' .. questID .. ', ' .. x .. ', ' .. y .. ', ' .. z .. ', ' .. objectID .. ' }'
+    logToFile(output)
+  end
+end
 
+function aaaaaa()
+  local mapID = MapUtil.GetDisplayableMapForPlayer()
+  local playerPosition = GMR.GetPlayerPosition()
+  print('player position')
+  printTable(playerPosition)
+
+  print('a')
+  local x3, y3, z3 = GMR.GetClosestPointOnMesh(mapID, playerPosition.x, playerPosition.y, playerPosition.z)
+  print('aa', x3, y3, z3)
+
+  local x, y, z
+  for z3 = 10000, 0, -1 do
+    -- print('z3', z3)
+    x, y, z = GMR.GetClosestPointOnMesh(mapID, playerPosition.x, playerPosition.y, z3)
+    if x then
+      break
+    end
+  end
+  print('closest point on mesh')
+  print(x, y, z)
+  if x ~= playerPosition.x or y ~= playerPosition.y then
+    local x2, y2, z2 = GMR.GetClosestPointOnMesh(mapID, playerPosition.x, playerPosition.y, z)
+    print('closest point on mesh 2')
+    print(x2, y2, z2)
+  end
+end
+
+function bbbb()
+  local playerPosition = GMR.GetPlayerPosition()
+  printTable(playerPosition)
+  return GMR.GetZCoordinate(playerPosition.x, playerPosition.y)
+end
+
+function bbbb2()
+  local position = {
+    x = -9462.2880859375,
+    y = 98.464942932129,
+    z = 58.34167098999
+  }
+  return GMR.GetZCoordinate(position.x, position.y)
+end
+
+function bbbb3()
+  if not GMR.IsMeshLoaded() then
+    GMR.LoadMeshFiles()
+  end
+  local mapID = 1429
+  local position = {
+    x = -9462.2880859375,
+    y = 98.464942932129,
+    z = 58.34167098999
+  }
+  return GMR.GetClosestMeshPolygon(mapID, position.x, position.y, position.z - 10, position.x, position.y, position.z + 10)
+end
+
+function bbbb4()
+  local position = {
+    x = -9462.2880859375,
+    y = 98.464942932129,
+    z = 58.34167098999
+  }
+  return GMR.MeshTo(position.x, position.y, position.z)
+end
+
+function bbbb5()
+  if not GMR.IsMeshLoaded() then
+    GMR.LoadMeshFiles()
+  end
+  local mapID = 1429
+  local position = {
+    x = -9475.013671875,
+    y = 116.13453674316,
+    z = 57.011684417725
+  }
+  print('GMR.IsOnMeshPoint', GMR.IsOnMeshPoint(position.x, position.y, position.z))
+  GMR.MeshTo(position.x, position.y, position.z)
+  return GMR.GetClosestPointOnMesh(mapID, position.x, position.y, position.z, true)
+end
+
+function bbbb6()
+  if not GMR.IsMeshLoaded() then
+    GMR.LoadMeshFiles()
+  end
+  local mapID = 1429
+  local position = {
+    x = -9475.013671875,
+    y = 116.13453674316,
+    z = 57.011684417725
+  }
+  return GMR.MeshTo(position.x, position.y)
+end
+
+function logPlayerMapPosition()
+  local mapID = C_Map.GetBestMapForUnit('player')
+  local position = C_Map.GetPlayerMapPosition(mapID, 'player')
+  logToFile('{ x = ' .. position.x .. ', y = ' .. position.y .. '}')
+end
+
+function enableLogging()
+  GMR.Log = logToFile
+end
+
+print('GMR.Log', GMR.Log)
+enableLogging()

@@ -1,4 +1,4 @@
--- Dependencies: Array
+-- Dependencies: Array, Set, Object
 
 local ALLIANCE = 'Alliance'
 local INTERACT_DISTANCE = 4
@@ -22,6 +22,25 @@ local function defineQuest(questID, questName, pickUpX, pickUpY, pickUpZ, pickUp
     { questInfo },
     profileInfo,
     ...
+  )
+end
+
+local function defineQuestsMassPickUp(quests)
+  GMR.DefineQuest(
+    ALLIANCE,
+    nil,
+    nil,
+    '',
+    'MassPickUp',
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    quests
   )
 end
 
@@ -144,7 +163,9 @@ local function createActionSequenceDoer(actions)
       while index <= #actions do
         local action = actions[index]
         if action.isDone() then
-          action.whenIsDone()
+          if action.whenIsDone then
+            action.whenIsDone()
+          end
           index = index + 1
         else
           break
@@ -595,6 +616,130 @@ GMR.DefineQuester(
           end
         end
       )
+
+      do
+        local questID = 47099
+
+        defineQuest(
+          questID,
+          'Get Your Bearings',
+          1051.3264160156,
+          -624.94616699219,
+          0.52023792266846,
+          121235,
+          nil,
+          nil,
+          nil,
+          124630,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              interactWithAt(
+                1036.8646240234,
+                -597.04864501953,
+                1.362363576889,
+                135064
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+              GMR.Questing.MoveTo(
+                1114.5687255859,
+                -620.80346679688,
+                17.533224105835
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
+              GMR.Questing.MoveTo(
+                1173.3037109375,
+                -586.23785400391,
+                31.502172470093
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 4) then
+              interactWithAt(
+                1153.8646240234,
+                -467.99478149414,
+                31.292324066162,
+                124725
+              )
+            end
+          end
+        )
+      end
+
+      do
+        local questID = 46729
+        defineQuest(
+          questID,
+          'The Old Knight',
+          1149.8199462891,
+          -471.0710144043,
+          30.41823387146,
+          124630,
+          1070.4080810547,
+          -489.30151367188,
+          9.7000856399536,
+          121235,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              GMR.Questing.MoveTo(
+                1059.0281982422,
+                -479.19418334961,
+                9.8979616165161
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+              gossipWithAt(
+                1071.4249267578,
+                -486.3076171875,
+                9.700216293335,
+                122370
+              )
+            end
+          end
+        )
+      end
+
+      do
+        local questID = 52128
+        defineQuest(
+          questID,
+          'Ferry Pass',
+          1071.4288330078,
+          -486.3125,
+          9.7001171112061,
+          122370,
+          1071.4288330078,
+          -486.3125,
+          9.7001171112061,
+          122370
+        )
+      end
+
+      --defineQuest2(
+      --  47186,
+      --  1070.4080810547,
+      --  -489.30151367188,
+      --  9.7000856399536,
+      --  121235
+      --)
+
+      do
+        local questID = 47186
+        defineQuest(
+          questID,
+          'Sanctum of the Sages',
+          1070.4080810547,
+          -489.30151367188,
+          9.7000856399536,
+          121235,
+          1070.4080810547,
+          -489.30151367188,
+          9.7000856399536,
+          121235,
+          function()
+
+          end,
+          function()
+
+          end
+        )
+      end
     end
   end
 )
