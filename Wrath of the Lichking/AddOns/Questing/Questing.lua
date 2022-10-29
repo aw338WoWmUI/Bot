@@ -253,6 +253,7 @@ function c()
     print('x', x)
     print('y', y)
     print('z', z)
+    print('GMR.Questing.InteractWith', x, y, z)
     GMR.Questing.InteractWith(x, y, z, questStarter.id, nil, 4)
   else
     local questIDs = {}
@@ -296,8 +297,10 @@ function c()
 
                 local object = GMR.FindObject(objectID)
                 print('object', object)
+                local mapID
                 local x, y, z
                 if object then
+                  mapID = GMR.GetMapId()
                   x, y, z = GMR.ObjectPosition(object)
                 else
                   local spawns = spawnListEntries.Spawns
@@ -311,6 +314,8 @@ function c()
                     x = spawnPoint[1],
                     y = spawnPoint[2]
                   }
+                  mapID = ZoneDB:GetUiMapIdByAreaId(zoneID)
+                  local continentID = C_Map.GetWorldPosFromMapPos(mapID, point)
                   local position = convertMapPositionToWorldPosition(point)
 
                   print('z', position.z)
@@ -324,11 +329,15 @@ function c()
 
                 local sourceItemId = objective.QuestData.sourceItemId
 
-                if sourceItemId then
-                  GMR.Questing.UseItemOnNpc(x, y, z, objectID, sourceItemId, 4)
-                else
-                  GMR.Questing.InteractWith(x, y, z, objectID, nil, 4)
-                end
+                --if sourceItemId then
+                --  print('GMR.Questing.UseItemOnNpc', x, y, z)
+                --  GMR.Questing.UseItemOnNpc(x, y, z, objectID, sourceItemId, 4)
+                --else
+                --  print('GMR.Questing.InteractWith', x, y, z)
+                --  GMR.Questing.InteractWith(x, y, z, objectID, nil, 4)
+                --end
+                print('GMR.MapMove', mapID, x, y, z)
+                GMR.MapMove(mapID, x, y, z)
               end
             end },
             function()
@@ -435,6 +444,7 @@ function c()
         print('x', x)
         print('y', y)
         print('z', z)
+        print('GMR.Questing.InteractWith', x, y, z)
         GMR.Questing.InteractWith(x, y, z, turnInObject.id, nil, 4)
       end
     end
@@ -550,4 +560,89 @@ function g()
     z = 8.6709308624268
   }
   print(playerPosition.x, playerPosition.y, playerPosition.z)
+end
+
+function waitFor(predicate)
+  local thread = coroutine.running()
+  local ticker
+  ticker = C_Timer.NewTicker(0, function()
+    if predicate() then
+      ticker:Cancel()
+      coroutine.resume(thread)
+    end
+  end)
+  coroutine.yield()
+end
+
+local dockPosition = {
+  x = -8641.3349609375,
+  y = 1331.2628173828,
+  z = 5.2331943511963
+}
+
+function moveToDockInStormwind()
+  GMR.MeshTo(
+    dockPosition.x,
+    dockPosition.y,
+    dockPosition.z
+  )
+end
+
+function waitForPlayerToHaveArrivedAtDockInStormwind()
+  waitForPlayerToBeOnPosition(dockPosition)
+end
+
+function waitForPlayerToBeOnPosition(position)
+  waitFor(function()
+    return GMR.IsPlayerPosition(position.x, position.y, position.z, 3)
+  end)
+end
+
+function waitForShipToHaveArrivedAtStormwind()
+  waitFor(function()
+    local objectGUID = GMR.FindObject(25013)
+    if objectGUID then
+      local x, y, z = GMR.ObjectPosition(objectGUID)
+      return GMR.GetDistanceBetweenPositions(
+        -8647.5673828125,
+        1336.5311279297,
+        6.0574994087219,
+        x,
+        y,
+        z
+      ) <= 1
+    end
+  end)
+end
+
+function moveOntoShip()
+  local x, y, z = GMR.ObjectPosition(25013)
+  GMR.MoveTo(x, y, z)
+end
+
+function isEasternKingdoms(continentID)
+  return continentID == 0
+end
+
+function isKalimdor(continentID)
+  return continentID == 1
+end
+
+function moveToContinent(continentID)
+  local currentContinentID = select(8, GetInstanceInfo())
+  if isEasternKingdoms(currentContinentID) and isKalimdor(continentID) then
+    moveToDockInStormwind()
+    waitForPlayerToHaveArrivedAtDockInStormwind()
+    waitForShipToHaveArrivedAtStormwind()
+    moveOntoShip()
+    waitForShipToHaveArrivedAtAuberdine()
+    moveOffShip()
+  elseif isKalimdor(currentContinentID) and isEasternKingdoms(continentID) then
+    moveToDockInAuberdine()
+    waitForPlayerToHaveArrivedAtDockInAuberdine()
+    waitForShipToHaveArrivedAtAuberdine()
+    moveOntoShip()
+    waitForShipToHaveArrivedAtStormwind()
+    moveOffShip()
+  end
 end

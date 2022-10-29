@@ -74,3 +74,5 @@ without glimmer -65536
 /dump logToFile(tableToString(QuestieDB:GetQuest(2118), 3))
 /dump Object.keys(QuestieDB:GetQuest(2118).Objectives[1].spawnList)
 /dump h()
+/dump C_Map.GetMapChildrenInfo(C_Map.GetBestMapForUnit("player"), Enum.UIMapType.Continent, true)
+/dump select(8, GetInstanceInfo())

@@ -355,6 +355,9 @@ function logAPICalls2(apiName)
   end
 end
 
+logAPICalls2('GMR.MoveTo')
+logAPICalls2('GMR.MeshTo')
+logAPICalls2('GMR.Questing.MoveTo')
 -- logAPICalls2('GMR.DefineQuest')
 -- logAPICalls2('GMR.StopMoving')
 -- logAPICalls2('GMR.DefineSetting')
@@ -452,6 +455,15 @@ function logObjectInfo(name)
   end)
   if object then
     logToFile(object.x .. ',\n' .. object.y .. ',\n' .. object.z .. ',\n' .. object.ID)
+  end
+end
+
+function logTargetInfo()
+  local unit = 'target'
+  local objectID = GMR.ObjectId(unit)
+  if objectID then
+    local x, y, z = GMR.ObjectPosition(unit)
+    logToFile(x .. ',\n' .. y .. ',\n' ..z .. ',\n' .. objectID)
   end
 end
 
