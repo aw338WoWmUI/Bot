@@ -355,13 +355,13 @@ function logAPICalls2(apiName)
   end
 end
 
-logAPICalls2('GMR.DefineQuest')
-logAPICalls2('GMR.GetMeshPoints')
-logAPICalls2('GMR.GetClosestMeshPolygon')
-logAPICalls2('GMR.GetClosestPointOnMesh')
-logAPICalls2('GMR.GetMeshToDestination')
+--logAPICalls2('GMR.DefineQuest')
+--logAPICalls2('GMR.GetMeshPoints')
+--logAPICalls2('GMR.GetClosestMeshPolygon')
+--logAPICalls2('GMR.GetClosestPointOnMesh')
+--logAPICalls2('GMR.GetMeshToDestination')
 logAPICalls2('GMR.OffMeshHandler')
-logAPICalls2('GMR.LibDraw.GroundCircle')
+--logAPICalls2('GMR.LibDraw.GroundCircle')
 -- logAPICalls2('GMR.MoveTo')
 -- logAPICalls2('GMR.MeshTo')
 -- logAPICalls2('GMR.Questing.MoveTo')
@@ -456,10 +456,19 @@ function includeGUIDInObject(objects)
 end
 
 function logObjectInfo(name)
-  local objects = includeGUIDInObject(GMR.GetNearbyObjects(5))
-  local object = Array.find(objects, function(object)
-    return object.Name == name
-  end)
+  name = name or GameTooltipTextLeft1:GetText()
+  local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
+  local object = Array.min(
+    Array.filter(
+      objects,
+      function(object)
+        return object.Name == name
+      end
+    ),
+    function(object)
+      return GMR.GetDistanceBetweenObjects('player', object.GUID)
+    end
+  )
   if object then
     logToFile(object.x .. ',\n' .. object.y .. ',\n' .. object.z .. ',\n' .. object.ID)
   end
@@ -623,6 +632,7 @@ function logPlayerMapPosition()
 end
 
 function logDistanceToObject(name)
+  name = name or GameTooltipTextLeft1:GetText()
   local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
   local object = Array.find(objects, function(object)
     return object.Name == name
@@ -682,6 +692,7 @@ function enableLogging()
 end
 
 function findTaxiNode(name)
+  name = name or GameTooltipTextLeft1:GetText()
   local mapID = FlightMapFrame:GetMapID()
   local taxiNodes = C_TaxiMap.GetAllTaxiNodes(mapID)
   return Array.find(taxiNodes, function(node)

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/GMRProfiles.iml" filepath="$PROJECT_DIR$/.idea/GMRProfiles.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/GMRAddOns.iml" filepath="$PROJECT_DIR$/.idea/GMRAddOns.iml" />
     </modules>
   </component>
 </project>

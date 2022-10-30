@@ -25,13 +25,40 @@ local function defineQuest(questID, questName, pickUpX, pickUpY, pickUpZ, pickUp
   )
 end
 
-local function defineQuestsMassPickUp(quests)
+local function generateQuestNameList(quests)
+  return strjoin(', ', unpack(Array.map(quests, function(quest)
+    local questID = quest[1]
+    return QuestUtils_GetQuestName(questID)
+  end)))
+end
+
+local function defineQuestsMassPickUp(quests, profileInfo)
   GMR.DefineQuest(
     ALLIANCE,
     nil,
     nil,
-    '',
+    'Pick up: ' .. generateQuestNameList(quests),
     'MassPickUp',
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    quests,
+    profileInfo or nil
+  )
+end
+
+local function defineQuestsMassTurnIn(quests)
+  GMR.DefineQuest(
+    ALLIANCE,
+    nil,
+    nil,
+    'Turn in: ' .. generateQuestNameList(quests),
+    'MassTurnIn',
     nil,
     nil,
     nil,
@@ -1105,6 +1132,231 @@ GMR.DefineQuester(
           end,
           function()
             GMR.SkipTurnIn(true)
+          end
+        )
+      end
+
+      do
+        local questID = 47487
+        defineQuest(
+          questID,
+          'Labor Dispute',
+          nil,
+          nil,
+          nil,
+          nil,
+          nil,
+          nil,
+          nil,
+          nil,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              local objectGUID = GMR.GetObjectWithInfo({
+                id = { 122454, 133399, 133327 }
+              })
+              local x, y, z = GMR.ObjectPosition(objectGUID)
+              local objectID = GMR.ObjectId(objectGUID)
+              GMR.Questing.KillEnemy(x, y, z, objectID)
+            end
+          end,
+          function()
+            GMR.SkipTurnIn(true)
+          end
+        )
+      end
+
+      defineQuestsMassTurnIn({
+        { 47486, -58.725696563721, -806.01214599609, 16.699214935303, 121239 },
+        { 47488, -58.725696563721, -806.01214599609, 16.699214935303, 121239 },
+        { 50573, -58.725696563721, -806.01214599609, 16.699214935303, 121239 },
+        { 47487, 164.22917175293, -711.69964599609, 42.609519958496, 122671 }
+      })
+
+      do
+        local questID = 50531
+        defineQuest(
+          questID,
+          'Under Their Noses',
+          -58.725696563721,
+          -806.01214599609,
+          16.699214935303,
+          121239,
+          -118.07118225098,
+          -637.80383300781,
+          6.3759903907776,
+          134166
+        )
+      end
+
+      defineQuestsMassPickUp({
+        { 53041, -118.07118225098, -637.80383300781, 6.3759903907776, 134166 },
+        { 50544, -157.24655151367, -616.75109863281, 1.5645854473114, 281551 },
+        { 51149, -146.36111450195, -580.59375, 4.0662741661072, 136576 },
+        { 50349, -191.46701049805, -627.11981201172, 1.6111487150192, 133550 }
+      }, function()
+        --GMR.DefineGryphonMaster(
+        --  -90.868057250976,
+        --  -633.96527099609,
+        --  6.0453381538391,
+        --  134226
+        --)
+      end)
+
+      do
+        local questID = 53041
+        defineQuest(
+          questID,
+          'Sampling the Goods',
+          nil,
+          nil,
+          nil,
+          nil,
+          -118.07118225098,
+          -637.80383300781,
+          6.3759903907776,
+          134166,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              if next(C_GossipInfo.GetOptions()) then
+                local options = C_GossipInfo:GetOptions()
+                local option = options[1]
+                C_GossipInfo.SelectOption(option.gossipOptionID)
+              else
+                interactWithAt(
+                  -197.78472900391,
+                  -588.24652099609,
+                  2.93039894104,
+                  142581
+                )
+              end
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+              interactWithAt(
+                -166.6875,
+                -557.37329101562,
+                3.8276138305664,
+                294542
+              )
+            end
+          end
+        )
+      end
+
+      do
+        local questID = 47489
+
+        local onBoatMover = createActionSequenceDoer(
+          {
+            createQuestingMoveToAction(
+              -95.288856506348,
+              -604.81573486328,
+              3.0722851753235
+            ),
+            createMoveToAction(
+              -82.664131164551,
+              -598.83465576172,
+              3.482914686203
+            )
+          }
+        )
+
+        local inBarrelHider = createActionSequenceDoer(
+          {
+            createMoveToAction(
+              -75.358352661133,
+              -607.17694091797,
+              8.9734001159668
+            ),
+            {
+              run = function()
+                interactWithAt(
+                  -67.149772644043,
+                  -610.82556152344,
+                  10.07427406311,
+                  272475
+                )
+              end,
+              isDone = function()
+                return GMR.Questing.IsObjectiveCompleted(questID, 3)
+              end
+            }
+          }
+        )
+
+        defineQuest(
+          questID,
+          'Stow and Go',
+          -118.07118225098,
+          -637.80383300781,
+          6.3759903907776,
+          134166,
+          -1819.8026123047,
+          -1363.9334716797,
+          -0.35926878452301,
+          128377,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              gossipWithAt(
+                -118.07118225098,
+                -637.80383300781,
+                6.3759903907776,
+                134166
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+              onBoatMover.run()
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
+              inBarrelHider.run()
+            end
+          end
+        )
+      end
+
+      defineQuestsMassPickUp({
+        { 49218, -1819.8026123047, -1363.9334716797, -0.35926878452301, 128377 },
+        { 48419, -1819.8026123047, -1363.9334716797, -0.35926878452301, 128377 }
+      })
+
+      do
+        local questID = 49218
+        defineQuest(
+          questID,
+          'The Castaways',
+          -1819.8026123047,
+          -1363.9334716797,
+          -0.35926878452301,
+          128377,
+          -1683.21875,
+          -1351.5798339844,
+          32.000205993652,
+          128229
+        )
+      end
+
+      do
+        local questID = 48419
+        defineQuest(
+          questID,
+          'Lured and Allured',
+          -1819.8026123047,
+          -1363.9334716797,
+          -0.35926878452301,
+          128377,
+          nil,
+          nil,
+          nil,
+          nil,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              print('a')
+              gossipWithAt(
+                -1683.21875,
+                -1351.5798339844,
+                32.000205993652,
+                128229
+              )
+            end
+          end,
+          function()
+
           end
         )
       end
