@@ -1,4 +1,4 @@
-# GMRPluginsAndProfiles
+# GMR AddOns
 
 AddOns that work with GMR, GMR plugins and GMR profiles
 
