@@ -1,4 +1,5 @@
 ## Title: Fixes
 ## Interface: 100000
+## Dependencies: Array
 
 Fixes.lua
