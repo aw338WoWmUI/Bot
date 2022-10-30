@@ -4,3 +4,9 @@
 [submodule "Dragonflight/AddOns/Array"]
 	path = Dragonflight/AddOns/Array
 	url = https://github.com/SanjoSolutions/LuaArray.git
+[submodule "Dragonflight/AddOns/Object"]
+	path = Dragonflight/AddOns/Object
+	url = https://github.com/SanjoSolutions/LuaObject.git
+[submodule "Dragonflight/AddOns/Set"]
+	path = Dragonflight/AddOns/Set
+	url = https://github.com/SanjoSolutions/LuaSet.git
