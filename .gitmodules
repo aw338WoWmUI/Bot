@@ -1,12 +1,12 @@
 [submodule "Wrath of the Lichking/AddOns/Questing/libs/a-star"]
 	path = Wrath of the Lichking/AddOns/Questing/libs/a-star
 	url = https://github.com/AkiKonani/a-star-lua.git
-[submodule "Dragonflight/AddOns/Array"]
-	path = Dragonflight/AddOns/Array
+[submodule "retail/AddOns/Array"]
+	path = retail/AddOns/Array
 	url = https://github.com/SanjoSolutions/LuaArray.git
-[submodule "Dragonflight/AddOns/Object"]
-	path = Dragonflight/AddOns/Object
+[submodule "retail/AddOns/Object"]
+	path = retail/AddOns/Object
 	url = https://github.com/SanjoSolutions/LuaObject.git
-[submodule "Dragonflight/AddOns/Set"]
-	path = Dragonflight/AddOns/Set
+[submodule "retail/AddOns/Set"]
+	path = retail/AddOns/Set
 	url = https://github.com/SanjoSolutions/LuaSet.git
