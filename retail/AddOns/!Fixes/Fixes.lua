@@ -15,17 +15,18 @@ end
 
 local function onGossipShow()
   local questID = GMR.GetQuestId()
-  local availableQuests = C_GossipInfo.GetAvailableQuests()
-  local availableQuest = Array.find(availableQuests, function(quest)
+
+  local function isOneOfTheQuests(quest)
     return (questID and quest.questID == questID) or GMR.IsMassQuestId(quest.questID)
-  end)
+  end
+
+  local availableQuests = C_GossipInfo.GetAvailableQuests()
+  local availableQuest = Array.find(availableQuests, isOneOfTheQuests)
   if availableQuest then
     C_GossipInfo.SelectAvailableQuest(availableQuest.questID)
-  elseif questID then
+  else
     local activeQuests = C_GossipInfo.GetActiveQuests()
-    local activeQuest = Array.find(activeQuests, function(quest)
-      return quest.questID == questID
-    end)
+    local activeQuest = Array.find(activeQuests, isOneOfTheQuests)
     if activeQuest then
       C_GossipInfo.SelectActiveQuest(activeQuest.questID)
     end
