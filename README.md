@@ -1,6 +1,6 @@
 # GMRPluginsAndProfiles
 
-GMR plugins and profiles
+AddOns that work with GMR, GMR plugins and GMR profiles
 
 ## How to clone
 
