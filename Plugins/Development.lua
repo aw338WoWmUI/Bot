@@ -240,7 +240,7 @@ function tableToString(table, maxDepth)
   return result
 end
 
-local valueToString
+valueToString = nil
 
 function tableToStringWithIndention(table, indention, depth, maxDepth, references)
   local result = ''
@@ -355,9 +355,16 @@ function logAPICalls2(apiName)
   end
 end
 
-logAPICalls2('GMR.MoveTo')
-logAPICalls2('GMR.MeshTo')
-logAPICalls2('GMR.Questing.MoveTo')
+logAPICalls2('GMR.DefineQuest')
+logAPICalls2('GMR.GetMeshPoints')
+logAPICalls2('GMR.GetClosestMeshPolygon')
+logAPICalls2('GMR.GetClosestPointOnMesh')
+logAPICalls2('GMR.GetMeshToDestination')
+logAPICalls2('GMR.OffMeshHandler')
+logAPICalls2('GMR.LibDraw.GroundCircle')
+-- logAPICalls2('GMR.MoveTo')
+-- logAPICalls2('GMR.MeshTo')
+-- logAPICalls2('GMR.Questing.MoveTo')
 -- logAPICalls2('GMR.DefineQuest')
 -- logAPICalls2('GMR.StopMoving')
 -- logAPICalls2('GMR.DefineSetting')
@@ -463,7 +470,7 @@ function logTargetInfo()
   local objectID = GMR.ObjectId(unit)
   if objectID then
     local x, y, z = GMR.ObjectPosition(unit)
-    logToFile(x .. ',\n' .. y .. ',\n' ..z .. ',\n' .. objectID)
+    logToFile(x .. ',\n' .. y .. ',\n' .. z .. ',\n' .. objectID)
   end
 end
 
@@ -510,7 +517,7 @@ function logQuestForMassPickUp()
   local objectID = GMR.ObjectId(unit)
   if objectID then
     local x, y, z = GMR.ObjectPosition(unit)
-    local questID = GetQuestID();
+    local questID = GetQuestID()
     local output = '{ ' .. questID .. ', ' .. x .. ', ' .. y .. ', ' .. z .. ', ' .. objectID .. ' }'
     logToFile(output)
   end
@@ -568,7 +575,8 @@ function bbbb3()
     y = 98.464942932129,
     z = 58.34167098999
   }
-  return GMR.GetClosestMeshPolygon(mapID, position.x, position.y, position.z - 10, position.x, position.y, position.z + 10)
+  return GMR.GetClosestMeshPolygon(mapID, position.x, position.y, position.z - 10, position.x, position.y,
+    position.z + 10)
 end
 
 function bbbb4()
@@ -614,9 +622,81 @@ function logPlayerMapPosition()
   logToFile('{ x = ' .. position.x .. ', y = ' .. position.y .. '}')
 end
 
+function logDistanceToObject(name)
+  local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
+  local object = Array.find(objects, function(object)
+    return object.Name == name
+  end)
+  if object then
+    local distance = GMR.GetDistanceBetweenObjects('player', object.GUID)
+    logToFile('distance = ' .. distance)
+  end
+end
+
+function moveToTarget()
+  local x, y, z = GMR.ObjectPosition('target')
+  if x then
+    GMR.Questing.MoveTo(x, y, z)
+  end
+end
+
+function storePosition()
+  GMR_SavedVariablesPerCharacter.storedPosition = GMR.GetPlayerPosition()
+end
+
+function moveToStoredPosition()
+  local storedPosition = GMR_SavedVariablesPerCharacter.storedPosition
+  if storedPosition then
+    GMR.Questing.MoveTo(storedPosition.x, storedPosition.y, storedPosition.z)
+  end
+end
+
+local ticker
+ticker = C_Timer.NewTicker(0, function()
+  if _G.GMR and _G.GMR.LibDraw and _G.GMR.clearCanvas then
+    ticker:Cancel()
+    local clearCanvas = GMR.LibDraw.clearCanvas()
+    GMR.LibDraw.clearCanvas = function(...)
+      local result = { clearCanvas(...) }
+
+      -- GMR.LibDraw.GroundCircle()
+
+      return unpack(result)
+    end
+  end
+end)
+
+function stopMoving()
+  local wasExecuting = GMR.IsExecuting()
+  if not wasExecuting then
+    GMR.Execute()
+  end
+  GMR.Stop()
+  if wasExecuting then
+    GMR.Execute()
+  end
+end
+
 function enableLogging()
   GMR.Log = logToFile
 end
+
+function findTaxiNode(name)
+  local mapID = FlightMapFrame:GetMapID()
+  local taxiNodes = C_TaxiMap.GetAllTaxiNodes(mapID)
+  return Array.find(taxiNodes, function(node)
+    return node.name == name
+  end)
+end
+
+function logQuestID()
+  local questID = GetQuestID()
+  logToFile(questID)
+end
+
+hooksecurefunc(C_GossipInfo, 'SelectActiveQuest', function(...)
+  print('C_GossipInfo.SelectActiveQuest', ...)
+end)
 
 print('GMR.Log', GMR.Log)
 enableLogging()

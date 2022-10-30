@@ -2,6 +2,12 @@
 
 GMR plugins and profiles
 
+## How to clone
+
+```sh
+
+```
+
 ## Dependencies
 
 Some of the code requires one or multiple of the following addons:

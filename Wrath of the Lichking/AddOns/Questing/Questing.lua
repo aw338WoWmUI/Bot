@@ -16,6 +16,8 @@ local QuestieCorrections = QuestieLoader:ImportModule('QuestieCorrections')
 local QuestieEvent = QuestieLoader:ImportModule('QuestieEvent')
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule('QuestiePlayer')
+---@type QuestieJourney
+local QuestieJourney = QuestieLoader:ImportModule('QuestieJourney')
 
 local function filterQuests(quests)
   local level = UnitLevel('player')
@@ -27,8 +29,8 @@ end
 function findQuests()
   local result = {}
 
-  local zoneId = 12
-  local quests = QuestieJourney.zoneMap[zoneId]--QuestieDB:GetQuestsByZoneId(zoneId)
+  local zoneId = QuestiePlayer:GetCurrentZoneId()
+  local quests = QuestieDB:GetQuestsByZoneId(zoneId)
 
   if (not quests) then
     return nil
@@ -76,7 +78,7 @@ function findQuests()
           -- Repeatable quests
         elseif QuestieDB.IsRepeatable(questID) then
           -- Available quests
-        else
+        elseif not GMR.IsQuestActive(questID) then
           tinsert(result, questID)
         end
       end
@@ -122,10 +124,15 @@ local function convertObjectToList(object)
   return list
 end
 
-local function determineQuestStarter(quest)
-  local startNPCID = quest.Starts.NPC[1]
-  local npc = QuestieDB:GetNPC(startNPCID)
-  return npc
+function determineQuestStarter(quest)
+  local NPC = quest.Starts.NPC
+  if NPC then
+    local startNPCID = quest.Starts.NPC[1]
+    local npc = QuestieDB:GetNPC(startNPCID)
+    return npc
+  else
+    return nil
+  end
 end
 
 local function determineTurnInObject(quest)
@@ -139,7 +146,7 @@ local function determineTurnInObject(quest)
   return object
 end
 
-local function determineFirstObjectSpawn(object)
+function determineFirstObjectSpawn(object)
   local spawns = convertObjectToList(object.spawns)
   local spawn = spawns[1]
   if spawn then
@@ -153,9 +160,9 @@ local function determineFirstObjectSpawn(object)
   end
 end
 
-local function determineQuestStartPoint(quest)
+function determineQuestStartPoint(quest)
   local npc = determineQuestStarter(quest)
-  return determineFirstObjectSpawn(npc)
+  return npc and determineFirstObjectSpawn(npc) or nil
 end
 
 function a()
@@ -168,12 +175,12 @@ function a()
     --       Quest pick up before other quest points
     --       Quest turn in after quest pick up and all quest objective points have been done.
     --       Quest objective points after quest pick up.
-    return Array.concat(
+    return Array.selectTrue(Array.concat(
       {
         determineQuestStartPoint(quest)
       },
       quest.Objectives
-    )
+    ))
   end)
   -- Determine an efficient route through the quest points
   questPoints = Array.map(questPoints, function(point)
@@ -207,7 +214,7 @@ local function isValidMapPoint(point)
   return isMapCoordinateInValidRange(point.x) and isMapCoordinateInValidRange(point.y)
 end
 
-local function convertMapPositionToWorldPosition(point)
+function convertMapPositionToWorldPosition(point)
   local mapID = ZoneDB:GetUiMapIdByAreaId(point.zoneID)
   local mapPoint = convertQuestiePointToMapPoint(point)
   if isValidMapPoint(mapPoint) then
@@ -239,22 +246,28 @@ function c()
     questID = tonumber(questID, 10)
     local quest = QuestieDB:GetQuest(questID)
     local questStarter = determineQuestStarter(quest)
-    local object = GMR.FindObject(questStarter.id)
-    local x, y, z
-    if object then
-      x, y, z = GMR.ObjectPosition(object)
-    else
-      local questStartPoint = determineQuestStartPoint(quest)
-      local position = convertMapPositionToWorldPosition(questStartPoint)
-      x = position.x
-      y = position.y
-      z = position.z or 5000
+    if questStarter then
+      local object = GMR.FindObject(questStarter.id)
+      local x, y, z
+      if object then
+        x, y, z = GMR.ObjectPosition(object)
+      else
+        local questStartPoint = determineQuestStartPoint(quest)
+        if questStartPoint then
+          local position = convertMapPositionToWorldPosition(questStartPoint)
+          x = position.x
+          y = position.y
+          z = position.z or 5000
+        end
+      end
+      if x and y and z then
+        print('x', x)
+        print('y', y)
+        print('z', z)
+        print('GMR.Questing.InteractWith', x, y, z)
+        GMR.Questing.InteractWith(x, y, z, questStarter.id, nil, 4)
+      end
     end
-    print('x', x)
-    print('y', y)
-    print('z', z)
-    print('GMR.Questing.InteractWith', x, y, z)
-    GMR.Questing.InteractWith(x, y, z, questStarter.id, nil, 4)
   else
     local questIDs = {}
     for questID in string.gmatch(stepText, '%[QC(%d+)') do
@@ -635,14 +648,16 @@ function moveToContinent(continentID)
     waitForPlayerToHaveArrivedAtDockInStormwind()
     waitForShipToHaveArrivedAtStormwind()
     moveOntoShip()
-    waitForShipToHaveArrivedAtAuberdine()
-    moveOffShip()
+    -- waitForShipToHaveArrivedAtAuberdine()
+    -- moveOffShip()
   elseif isKalimdor(currentContinentID) and isEasternKingdoms(continentID) then
-    moveToDockInAuberdine()
-    waitForPlayerToHaveArrivedAtDockInAuberdine()
-    waitForShipToHaveArrivedAtAuberdine()
+    -- moveToDockInAuberdine()
+    -- waitForPlayerToHaveArrivedAtDockInAuberdine()
+    -- waitForShipToHaveArrivedAtAuberdine()
     moveOntoShip()
     waitForShipToHaveArrivedAtStormwind()
-    moveOffShip()
+    -- moveOffShip()
   end
 end
+
+print('d')
