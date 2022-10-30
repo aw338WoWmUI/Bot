@@ -13,11 +13,23 @@ C_GossipInfo.SelectOption = function (value, ...)
   end
 end
 
+local function isMassQuestId(questID)
+  local thread = coroutine.create(function ()
+    return GMR.IsMassQuestId(questID)
+  end)
+  local hadError, result = coroutine.resume(thread)
+  if hadError then
+    return false
+  else
+    return result
+  end
+end
+
 local function onGossipShow()
   local questID = GMR.GetQuestId()
 
   local function isOneOfTheQuests(quest)
-    return (questID and quest.questID == questID) or GMR.IsMassQuestId(quest.questID)
+    return (questID and quest.questID == questID) or isMassQuestId(quest.questID)
   end
 
   local availableQuests = C_GossipInfo.GetAvailableQuests()
