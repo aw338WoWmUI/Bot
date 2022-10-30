@@ -1,0 +1,6 @@
+[submodule "Wrath of the Lichking/AddOns/Questing/libs/a-star"]
+	path = Wrath of the Lichking/AddOns/Questing/libs/a-star
+	url = https://github.com/AkiKonani/a-star-lua.git
+[submodule "Dragonflight/AddOns/Array"]
+	path = Dragonflight/AddOns/Array
+	url = https://github.com/SanjoSolutions/LuaArray.git

@@ -1,4 +1,4 @@
--- Dependencies: Array
+-- Dependencies: Array, Set, Object
 
 local ALLIANCE = 'Alliance'
 local INTERACT_DISTANCE = 4
@@ -25,7 +25,26 @@ local function defineQuest(questID, questName, pickUpX, pickUpY, pickUpZ, pickUp
   )
 end
 
-local function gossipWithAt(x, y, z, objectID, optionToSelect)
+local function defineQuestsMassPickUp(quests)
+  GMR.DefineQuest(
+    ALLIANCE,
+    nil,
+    nil,
+    '',
+    'MassPickUp',
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    quests
+  )
+end
+
+function gossipWithAt(x, y, z, objectID, optionToSelect)
   GMR.Questing.GossipWith(
     x,
     y,
@@ -33,7 +52,7 @@ local function gossipWithAt(x, y, z, objectID, optionToSelect)
     objectID,
     nil,
     INTERACT_DISTANCE,
-    optionToSelect
+    optionToSelect or 1
   )
 end
 
@@ -49,22 +68,25 @@ local function followNPC(objectID, distance)
   GMR.Questing.FollowNpc(objectID, distance or 5)
 end
 
-local function interactWithAt(x, y, z, objectID)
+function interactWithAt(x, y, z, objectID, distance, delay)
   GMR.Questing.InteractWith(
     x,
     y,
     z,
     objectID,
-    nil,
-    INTERACT_DISTANCE
+    delay or nil,
+    distance or INTERACT_DISTANCE
   )
 end
 
-local function interactWith(objectID)
-  local objectGUID = GMR.FindObject(objectID)
+local function interactWith(objectID, distance, dynamicFlag)
+  local objectGUID = GMR.GetObjectWithInfo({
+    id = objectID,
+    dynamicFlag = dynamicFlag
+  })
   if objectGUID then
     local x, y, z = GMR.ObjectPosition(objectGUID)
-    interactWithAt(x, y, z, objectID)
+    interactWithAt(x, y, z, objectID, distance)
   end
 end
 
@@ -144,15 +166,20 @@ local function createActionSequenceDoer(actions)
       while index <= #actions do
         local action = actions[index]
         if action.isDone() then
-          action.whenIsDone()
+          if action.whenIsDone then
+            action.whenIsDone()
+          end
           index = index + 1
         else
           break
         end
       end
 
+      print('index', index, #actions)
+
       if index <= #actions then
         local action = actions[index]
+        print('run ' .. index)
         action.run()
       end
     end
@@ -184,6 +211,17 @@ local function createMoveToAction(x, y, z)
       if stopMoving then
         GMR.StopMoving = stopMoving
       end
+    end
+  }
+end
+
+local function createQuestingMoveToAction(x, y, z, distance)
+  return {
+    run = function()
+      GMR.Questing.MoveTo(x, y, z)
+    end,
+    isDone = function()
+      return GMR.IsPlayerPosition(x, y, z, distance or 1)
     end
   }
 end
@@ -595,6 +633,481 @@ GMR.DefineQuester(
           end
         end
       )
+
+      do
+        local questID = 47099
+
+        defineQuest(
+          questID,
+          'Get Your Bearings',
+          1051.3264160156,
+          -624.94616699219,
+          0.52023792266846,
+          121235,
+          nil,
+          nil,
+          nil,
+          124630,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              interactWithAt(
+                1036.8646240234,
+                -597.04864501953,
+                1.362363576889,
+                135064
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+              GMR.Questing.MoveTo(
+                1114.5687255859,
+                -620.80346679688,
+                17.533224105835
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
+              GMR.Questing.MoveTo(
+                1173.3037109375,
+                -586.23785400391,
+                31.502172470093
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 4) then
+              interactWithAt(
+                1153.8646240234,
+                -467.99478149414,
+                31.292324066162,
+                124725
+              )
+            end
+          end
+        )
+      end
+
+      do
+        local questID = 46729
+        defineQuest(
+          questID,
+          'The Old Knight',
+          1149.8199462891,
+          -471.0710144043,
+          30.41823387146,
+          124630,
+          1070.4080810547,
+          -489.30151367188,
+          9.7000856399536,
+          121235,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              GMR.Questing.MoveTo(
+                1059.0281982422,
+                -479.19418334961,
+                9.8979616165161
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+              gossipWithAt(
+                1071.4249267578,
+                -486.3076171875,
+                9.700216293335,
+                122370
+              )
+            end
+          end
+        )
+      end
+
+      do
+        local questID = 52128
+        defineQuest(
+          questID,
+          'Ferry Pass',
+          1071.4288330078,
+          -486.3125,
+          9.7001171112061,
+          122370,
+          1071.4288330078,
+          -486.3125,
+          9.7001171112061,
+          122370
+        )
+      end
+
+      --defineQuest2(
+      --  47186,
+      --  1070.4080810547,
+      --  -489.30151367188,
+      --  9.7000856399536,
+      --  121235
+      --)
+
+      do
+        local questID = 47186
+
+        local toTurnInNPCWalker = createActionSequenceDoer(
+          {
+            {
+              run = function()
+                GMR.Questing.MoveTo(
+                  1075.8001708984,
+                  -475.646484375,
+                  20.657657623291
+                )
+              end,
+              isDone = function()
+                return GMR.IsPlayerPosition(
+                  1075.8001708984,
+                  -475.646484375,
+                  20.657657623291,
+                  3
+                )
+              end
+            },
+            createMoveToAction(
+              1060.3134765625,
+              -471.68408203125,
+              11.651566505432
+            ),
+            createMoveToAction(
+              1058.8143310547,
+              -479.13681030273,
+              9.8977861404419
+            ),
+            {
+              run = function()
+                GMR.Questing.InteractWith(
+                  1070.4045410156,
+                  -489.32119750976,
+                  9.7001161575317,
+                  121235
+                )
+              end,
+              isDone = function()
+                return #C_GossipInfo.GetActiveQuests() >= 1
+              end
+            },
+            {
+              run = function()
+                local activeQuests = C_GossipInfo.GetActiveQuests()
+                local quest = Array.find(activeQuests, function(quest)
+                  return quest.questID == questID
+                end)
+                if quest then
+                  C_GossipInfo.SelectActiveQuest(quest.questID)
+                end
+              end,
+              isDone = function()
+                return QuestFrameRewardPanel:IsShown()
+              end
+            },
+            {
+              run = function()
+                CompleteQuest()
+              end,
+              isDone = function()
+                return GMR.IsQuestCompleted(questID)
+              end
+            },
+          }
+        )
+
+        defineQuest(
+          questID,
+          'Sanctum of the Sages',
+          1070.4080810547,
+          -489.30151367188,
+          9.7000856399536,
+          121235,
+          1070.4080810547,
+          -489.30151367188,
+          9.7000856399536,
+          121235,
+          function()
+            print('questinfo')
+            if GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              toTurnInNPCWalker.run()
+            end
+          end,
+          function()
+            print('profile info')
+
+            local offMeshHandler = GMR.OffMeshHandler
+            GMR.OffMeshHandler = function(x, y, z)
+              if x == 1070.4080810547 and y == -489.30151367188 and z == 9.7000856399536 then
+                print('sdhasdkjsa')
+                toTurnInNPCWalker.run()
+              else
+                return offMeshHandler(x, y, z)
+              end
+            end
+          end
+        )
+      end
+
+      do
+        local questID = 47189
+        defineQuest(
+          questID,
+          'A Nation Divided',
+          1070.4045410156,
+          -489.32119750976,
+          9.7001075744629,
+          121235,
+          1070.4045410156,
+          -489.32119750976,
+          9.7001075744629,
+          121235,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              interactWithAt(
+                1069.2083740234,
+                -493.76910400391,
+                13.055233001709,
+                139522,
+                7.3687648766664
+              )
+            end
+          end,
+          function()
+            GMR.AddOffmeshConnection(
+              1161,
+              1069.8162841797,
+              -491.92059326172,
+              9.7003402709961,
+              1069.2083740234,
+              -493.76910400391,
+              13.055233001709,
+              true
+            )
+          end
+        )
+      end
+
+      do
+        local questID = 47960
+        defineQuest(
+          questID,
+          'Tiragarde Sound',
+          1069.2083740234,
+          -493.76910400391,
+          13.055233001709,
+          139522,
+          1070.4045410156,
+          -489.32119750976,
+          9.7001075744629,
+          121235,
+          function()
+
+          end,
+          function()
+            local frame
+
+            local function onAdventureMapOpen()
+              C_AdventureMap.StartQuest(47960)
+              frame:SetScript('OnEvent', nil)
+            end
+
+            local function onEvent(self, event, ...)
+              if event == 'ADVENTURE_MAP_OPEN' then
+                onAdventureMapOpen(...)
+              end
+            end
+
+            frame = CreateFrame('Frame')
+            frame:SetScript('OnEvent', onEvent)
+            frame:RegisterEvent('ADVENTURE_MAP_OPEN')
+
+            interactWithAt(
+              1069.2083740234,
+              -493.76910400391,
+              13.055233001709,
+              139522,
+              7.3687648766664
+            )
+          end
+        )
+      end
+
+      do
+        local questID = 47181
+        defineQuest(
+          questID,
+          'The Smoking Gun',
+          1067.8819580078,
+          -478.79165649414,
+          9.7834596633911,
+          121239,
+          1067.8819580078,
+          -478.79165649414,
+          9.7834596633911,
+          121239,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              useExtraActionButton1()
+            end
+          end
+        )
+      end
+
+      do
+        local questID = 47485
+
+        local mover = createActionSequenceDoer(
+          {
+            createQuestingMoveToAction(
+              1058.796875,
+              -479.12399291992,
+              9.8980073928833
+            ),
+            createMoveToAction(
+              1060.404296875,
+              -471.97653198242,
+              11.650757789612
+            ),
+            createMoveToAction(
+              1067.7041015625,
+              -473.64971923828,
+              15.208990097046
+            ),
+            {
+              run = function()
+                interactWithAt(
+                  1036.8646240234,
+                  -597.04864501953,
+                  1.3624578714371,
+                  135064
+                )
+              end,
+              isDone = function()
+                return GMR.Questing.IsObjectiveCompleted(questID, 1)
+              end
+            }
+          }
+        )
+
+        defineQuest(
+          questID,
+          'The Ashvane Trading Company',
+          1071.4288330078,
+          -486.3125,
+          9.7003087997437,
+          122370,
+          164.22917175293,
+          -711.69964599609,
+          42.609508514404,
+          122671,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              mover.run()
+            end
+          end,
+          function()
+            local offMeshHandler = GMR.OffMeshHandler
+            GMR.OffMeshHandler = function(x, y, z)
+              if x == 164.22917175293 and y == -711.69964599609 and z == 42.609508514404 then
+                print('b')
+                if _G.FlightMapFrame and FlightMapFrame:IsShown() then
+                  local EASTPOINT_STATION_TIRAGARDE_SOUND = 28
+                  TakeTaxiNode(EASTPOINT_STATION_TIRAGARDE_SOUND)
+                else
+                  local objectGUID = GMR.FindObject(135064)
+                  if objectGUID then
+                    GMR.InteractObject(objectGUID)
+                  end
+                end
+              else
+                return offMeshHandler(x, y, z)
+              end
+            end
+          end
+        )
+      end
+
+      defineQuestsMassPickUp({
+        { 47486, 164.22917175293, -711.69964599609, 42.609519958496, 122671 },
+        { 47487, 164.22917175293, -711.69964599609, 42.609519958496, 122671 },
+        { 47488, 161.41319274902, -710.22393798828, 42.636142730713, 122672 },
+        { 50573, 48.684028625488, -873.89581298828, 31.606134414673, 281647 }
+      })
+
+      do
+        local questID = 50573
+        defineQuest(
+          questID,
+          'Message from the Management',
+          nil,
+          nil,
+          nil,
+          nil,
+          nil,
+          nil,
+          nil,
+          nil,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+              GMR.Questing.KillEnemy(
+                -14.793313980103,
+                -876.92706298828,
+                31.603130340576,
+                123264
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              GMR.Questing.KillEnemy(
+                -93.993240356445,
+                -1108.5428466797,
+                63.185768127441,
+                134328
+              )
+            end
+          end,
+          function()
+            GMR.SkipTurnIn(true)
+          end
+        )
+      end
+
+      do
+        local questID = 47486
+        defineQuest(
+          questID,
+          'Suspicious Shipments',
+          164.22917175293,
+          -711.69964599609,
+          42.609519958496,
+          122671,
+          nil,
+          nil,
+          nil,
+          nil,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              interactWith(271616, nil, -65020)
+            end
+          end,
+          function()
+            GMR.SkipTurnIn(true)
+          end
+        )
+      end
+
+      do
+        local questID = 47488
+        defineQuest(
+          questID,
+          'Small Haulers',
+          164.22917175293,
+          -711.69964599609,
+          42.609519958496,
+          122671,
+          nil,
+          nil,
+          nil,
+          nil,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              gossipWith(122681, 1)
+            end
+          end,
+          function()
+            GMR.SkipTurnIn(true)
+          end
+        )
+      end
     end
   end
 )
