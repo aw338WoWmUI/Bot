@@ -17,11 +17,11 @@ local function isMassQuestId(questID)
   local thread = coroutine.create(function ()
     return GMR.IsMassQuestId(questID)
   end)
-  local hadError, result = coroutine.resume(thread)
-  if hadError then
-    return false
-  else
+  local wasSuccessful, result = coroutine.resume(thread)
+  if wasSuccessful then
     return result
+  else
+    return false
   end
 end
 
