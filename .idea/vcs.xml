@@ -2,6 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/AddOns/AStar" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Array" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Object" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Set" vcs="Git" />
