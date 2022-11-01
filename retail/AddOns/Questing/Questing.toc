@@ -1,4 +1,0 @@
-## Title: Questing
-## Interface: 100000
-
-Questing.lua

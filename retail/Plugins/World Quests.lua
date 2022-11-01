@@ -383,25 +383,6 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
 
   local questObjectiveToObjectIDs = {}
 
-  local function addObjectIDToObjective(objectID, questObjectiveIndex)
-    if not questObjectiveToObjectIDs[questObjectiveIndex] then
-      questObjectiveToObjectIDs[questObjectiveIndex] = {}
-    end
-    questObjectiveToObjectIDs[questObjectiveIndex][objectID] = true
-  end
-
-  local function findObjectiveWhichMatchesAndAddItToTheLookup(questInfo, objectIdentifier, doesMatch)
-    local questObjective, questObjectiveIndex = Array.find(questInfo, doesMatch)
-    if questObjective then
-      local objectID = GMR.ObjectId(objectIdentifier)
-      if objectID then
-        addObjectIDToObjective(objectID, questObjectiveIndex)
-      end
-    end
-
-    return questObjective ~= nil
-  end
-
   local race = { 'Alliance', 'Horde' }
   local class = nil
 
@@ -422,27 +403,7 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
     for i = 1, 40 do
       local unitID = 'nameplate' .. i
       tooltip:SetUnit(unitID)
-      for lineIndex = 1, 18 do
-        local textLeft = _G['QuesterTooltipTextLeft' .. lineIndex]
-        if textLeft then
-          local text = textLeft:GetText()
-          if text == questName then
-            for lineIndex2 = lineIndex + 1, 18 do
-              local textLeft = _G['QuesterTooltipTextLeft' .. lineIndex2]
-              if textLeft then
-                local text = textLeft:GetText()
-                local hasFoundQuestObjective = findObjectiveWhichMatchesAndAddItToTheLookup(questInfo, unitID,
-                  function(questObjective)
-                    return questObjective.text == text
-                  end)
-                if not hasFoundQuestObjective then
-                  break
-                end
-              end
-            end
-          end
-        end
-      end
+      findRelationsToQuest(questID, questObjectiveToObjectIDs, 'QuesterTooltip', unitID)
     end
 
     local objects = GMR.GetNearbyObjects(250)
@@ -451,9 +412,9 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
       local questObjectiveIndex = determineObjectiveIndexThatObjectIsObjectiveOf(objectGUID)
       if questObjectiveIndex then
         local objectID = GMR.ObjectId(objectGUID)
-        addObjectIDToObjective(objectID, questObjectiveIndex)
+        addObjectIDToObjective(questObjectiveToObjectIDs, objectID, questObjectiveIndex)
       else
-        findObjectiveWhichMatchesAndAddItToTheLookup(questInfo, objectGUID, function(questObjective)
+        findObjectiveWhichMatchesAndAddItToTheLookup(questObjectiveToObjectIDs, questInfo, objectGUID, function(questObjective)
           local name = string.match(questObjective.text, '%d+/%d+ (.+) slain')
           if name and name == objectName then
             return true
@@ -498,7 +459,7 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
         not GMR.IsBlacklistedGUID(object.GUID) and
           not GMR.IsBlacklistedId(object.ID) and
           (Array.includes(objectIDs, object.ID) or
-            bit.band(GMR.ObjectDynamicFlags(object.GUID), 0x20) == 0x20
+            seemsToBeQuestObject(object.GUID)
           )
       ) and not GMR.UnitIsDead(object.GUID)
     end)

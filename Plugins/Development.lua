@@ -355,12 +355,15 @@ function logAPICalls2(apiName)
   end
 end
 
+--logAPICalls2('GMR.LibDraw.GroundCircle')
 --logAPICalls2('GMR.DefineQuest')
 --logAPICalls2('GMR.GetMeshPoints')
 --logAPICalls2('GMR.GetClosestMeshPolygon')
 --logAPICalls2('GMR.GetClosestPointOnMesh')
 --logAPICalls2('GMR.GetMeshToDestination')
 logAPICalls2('GMR.OffMeshHandler')
+logAPICalls2('GMR.GetPath')
+logAPICalls2('GMR.LibDraw.Circle')
 --logAPICalls2('GMR.LibDraw.GroundCircle')
 -- logAPICalls2('GMR.MoveTo')
 -- logAPICalls2('GMR.MeshTo')
@@ -493,7 +496,7 @@ function logQuestSkeleton()
   local objectID = GMR.ObjectId(unit)
   if objectID then
     local x, y, z = GMR.ObjectPosition(unit)
-    local questID = GetQuestID();
+    local questID = GetQuestID()
     local questName = QuestUtils_GetQuestName(questID)
     local output = '' ..
       'do\n' ..
@@ -517,6 +520,45 @@ function logQuestSkeleton()
       '    end\n' ..
       '  )\n' ..
       'end\n'
+    logToFile(output)
+  end
+end
+
+function logQuestGiver()
+  local unit = 'target'
+  local objectID = GMR.ObjectId(unit)
+  if objectID then
+    local continentID = select(8, GetInstanceInfo())
+    local x, y, z = GMR.ObjectPosition(unit)
+    local questID = GetQuestID();
+    local questName = QuestUtils_GetQuestName(questID)
+    local availableQuests = C_GossipInfo.GetAvailableQuests()
+    local output = '' ..
+      '{\n' ..
+      '  objectID = ' .. objectID .. ',\n' ..
+      '  continentID = ' .. continentID .. ',\n' ..
+      '  x = ' .. x .. ',\n' ..
+      '  y = ' .. y .. ',\n' ..
+      '  z = ' .. z .. ',\n' ..
+      '  questIDs = {\n'
+    local questIDs = {}
+    local questID = GetQuestID()
+    if questID then
+      table.insert(questIDs, questID)
+    end
+    questIDs = Array.concat(
+      questIDs,
+      Array.map(availableQuests, function(quest)
+        return quest.questID
+      end)
+    )
+    Array.forEach(questIDs, function(questID)
+      output = output ..
+        '    ' .. questID .. ',\n'
+    end)
+    output = output ..
+      '  }\n' ..
+      '}'
     logToFile(output)
   end
 end
@@ -711,3 +753,40 @@ end)
 
 print('GMR.Log', GMR.Log)
 enableLogging()
+
+function aadsakjdsa()
+  -- GMR.ModifyPath()
+  return GMR.GetPath(
+    -1589.9603271484,
+      - 873.77026367188,
+  12.970695495605
+  )
+end
+
+function ccdsad()
+  local pointer = GMR.FindObject(278313)
+  local x, y, z = GMR.ObjectPosition(pointer)
+  GMR.FaceDirection(x, y, z)
+end
+
+function ccdsasdasdad()
+  local pointer = GMR.FindObject(278313)
+  local x, y, z = GMR.ObjectPosition(pointer)
+  return GMR.GetDistanceToPosition(x, y, z)
+end
+
+function aaaaaaaadsdjkasd()
+  local dynamicFlags = GMR.ObjectDynamicFlags(GMR.FindObject(278313))
+  local result = ''
+  for index = 1, 16 do
+    if bit.band(bit.rshift(dynamicFlags, index - 1), 1) == 1 then
+      result = '1' .. result
+    else
+      result = '0' .. result
+    end
+  end
+  print(result)
+end
+
+GMR.ObjectRawType(GMR.FindObject(278313)) -- 8
+

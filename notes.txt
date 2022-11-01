@@ -1,1 +1,4 @@
 There seems to be a way to define unstuck paths.
+
+C_QuestLog.IsFailed(questID)
+GMR.AbandonQuest(questID)

@@ -1,3 +1,258 @@
+
+local ALLIANCE = 'Alliance'
+INTERACT_DISTANCE = 4
+
+function defineQuest(questID, questName, pickUpX, pickUpY, pickUpZ, pickUpObjectID, turnInX,
+  turnInY, turnInZ, turnInObjectID, questInfo, profileInfo, ...)
+  GMR.DefineQuest(
+    ALLIANCE,
+    nil,
+    questID,
+    questName,
+    'Custom',
+    pickUpX,
+    pickUpY,
+    pickUpZ,
+    pickUpObjectID,
+    turnInX,
+    turnInY,
+    turnInZ,
+    turnInObjectID,
+    { questInfo },
+    profileInfo,
+    ...
+  )
+end
+
+function generateQuestNameList(quests)
+  return strjoin(', ', unpack(Array.map(quests, function(quest)
+    local questID = quest[1]
+    return QuestUtils_GetQuestName(questID)
+  end)))
+end
+
+function defineQuestsMassPickUp(quests, profileInfo)
+  GMR.DefineQuest(
+    ALLIANCE,
+    nil,
+    nil,
+    'Pick up: ' .. generateQuestNameList(quests),
+    'MassPickUp',
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    quests,
+    profileInfo or nil
+  )
+end
+
+function defineQuestsMassTurnIn(quests)
+  GMR.DefineQuest(
+    ALLIANCE,
+    nil,
+    nil,
+    'Turn in: ' .. generateQuestNameList(quests),
+    'MassTurnIn',
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    quests
+  )
+end
+
+function gossipWithAt(x, y, z, objectID, optionToSelect)
+  GMR.Questing.GossipWith(
+    x,
+    y,
+    z,
+    objectID,
+    nil,
+    INTERACT_DISTANCE,
+    optionToSelect or 1
+  )
+end
+
+function gossipWith(objectID, optionToSelect)
+  local objectGUID = GMR.FindObject(objectID)
+  if objectGUID then
+    local x, y, z = GMR.ObjectPosition(objectGUID)
+    gossipWithAt(x, y, z, objectID, optionToSelect)
+  end
+end
+
+function followNPC(objectID, distance)
+  GMR.Questing.FollowNpc(objectID, distance or 5)
+end
+
+function interactWithAt(x, y, z, objectID, distance, delay)
+  GMR.Questing.InteractWith(
+    x,
+    y,
+    z,
+    objectID,
+    delay or nil,
+    distance or INTERACT_DISTANCE
+  )
+end
+
+function interactWith(objectID, distance, dynamicFlag)
+  local objectGUID = GMR.GetObjectWithInfo({
+    id = objectID,
+    dynamicFlag = dynamicFlag
+  })
+  if objectGUID then
+    local x, y, z = GMR.ObjectPosition(objectGUID)
+    interactWithAt(x, y, z, objectID, distance)
+  end
+end
+
+function areSameGossipOptions(optionsA, optionsB)
+  return Array.equals(optionsA, optionsB, function(option)
+    return option.name
+  end)
+end
+
+function createGossiper(x, y, z, objectID, optionsToSelect)
+  local previousOptions = nil
+  local optionsIndex = 1
+
+  local function hasFinishedGossiping()
+    return optionsIndex > #optionsToSelect
+  end
+
+  return {
+    gossip = function()
+      local numberOfOptions = C_GossipInfo.GetNumOptions()
+      if numberOfOptions == 0 then
+        GMR.Questing.GossipWith(
+          x,
+          y,
+          z,
+          objectID,
+          nil,
+          INTERACT_DISTANCE
+        )
+      elseif not hasFinishedGossiping() then
+        local options = C_GossipInfo.GetOptions()
+        if previousOptions and not areSameGossipOptions(options, previousOptions) then
+          optionsIndex = optionsIndex + 1
+        end
+
+        GMR.Questing.GossipWith(
+          x,
+          y,
+          z,
+          objectID,
+          nil,
+          INTERACT_DISTANCE,
+          optionsToSelect[optionsIndex]
+        )
+
+        previousOptions = options
+      end
+    end,
+
+    hasFinishedGossiping = hasFinishedGossiping
+  }
+end
+
+function setSpecializationToPreferredOrFirstDamagerSpecialization()
+  local specializationNameSetting = GMR.GetSelectedSpecializationValue()
+  local numberOfSpecializations = GetNumSpecializations(false, false)
+  for index = 1, numberOfSpecializations do
+    local name, _, _, role = select(
+      2,
+      GetSpecializationInfo(index, false, false, nil, UnitSex('player'))
+    )
+    if (
+      (specializationNameSetting and name == specializationNameSetting) or
+        (not specializationNameSetting and role == 'DAMAGER')
+    ) then
+      SetSpecialization(index, false)
+      break
+    end
+  end
+end
+
+function createActionSequenceDoer(actions)
+  local index = 1
+
+  return {
+    run = function()
+      while index <= #actions do
+        local action = actions[index]
+        if action.isDone() then
+          if action.whenIsDone then
+            action.whenIsDone()
+          end
+          index = index + 1
+        else
+          break
+        end
+      end
+
+      print('index', index, #actions)
+
+      if index <= #actions then
+        local action = actions[index]
+        print('run ' .. index)
+        action.run()
+      end
+    end
+  }
+end
+
+function moveToWhenNotMoving(x, y, z)
+  if not GMR.IsMoving() then
+    GMR.MoveTo(x, y, z)
+  end
+end
+
+function createMoveToAction(x, y, z)
+  local stopMoving = nil
+  local firstRun = true
+  return {
+    run = function()
+      if firstRun then
+        stopMoving = GMR.StopMoving
+        GMR.StopMoving = function()
+        end
+      end
+      moveToWhenNotMoving(x, y, z)
+    end,
+    isDone = function()
+      return GMR.IsPlayerPosition(x, y, z, 1)
+    end,
+    whenIsDone = function()
+      if stopMoving then
+        GMR.StopMoving = stopMoving
+      end
+    end
+  }
+end
+
+function createQuestingMoveToAction(x, y, z, distance)
+  return {
+    run = function()
+      GMR.Questing.MoveTo(x, y, z)
+    end,
+    isDone = function()
+      return GMR.IsPlayerPosition(x, y, z, distance or 1)
+    end
+  }
+end
+
+
 -- QuestieDB:GetQuestsByZoneId(zoneId)
 -- /dump MapUtil.GetDisplayableMapForPlayer()
 -- /dump QuestieDB:GetQuestsByZoneId(MapUtil.GetDisplayableMapForPlayer())
@@ -6,102 +261,12 @@
 
 -- /dump QuestieDB:GetQuestsByZoneId(QuestiePlayer:GetCurrentZoneId())
 
----@type QuestieDB
-local QuestieDB = QuestieLoader:ImportModule('QuestieDB')
----@type QuestieLib
-local QuestieLib = QuestieLoader:ImportModule('QuestieLib')
----@type QuestieCorrections
-local QuestieCorrections = QuestieLoader:ImportModule('QuestieCorrections')
----@type QuestieEvent
-local QuestieEvent = QuestieLoader:ImportModule('QuestieEvent')
----@type QuestiePlayer
-local QuestiePlayer = QuestieLoader:ImportModule('QuestiePlayer')
----@type QuestieJourney
-local QuestieJourney = QuestieLoader:ImportModule('QuestieJourney')
-
 local function filterQuests(quests)
   local level = UnitLevel('player')
   return Array.filter(quests, function(quest)
     return quest.requiredLevel <= level
   end)
 end
-
-function findQuests()
-  local result = {}
-
-  local zoneId = QuestiePlayer:GetCurrentZoneId()
-  local quests = QuestieDB:GetQuestsByZoneId(zoneId)
-
-  if (not quests) then
-    return nil
-  end
-
-  local sortedQuestByLevel = QuestieLib:SortQuestIDsByLevel(quests)
-
-  for _, levelAndQuest in pairs(sortedQuestByLevel) do
-    ---@type number
-    local questID = levelAndQuest[2]
-    -- Only show quests which are not hidden
-    if QuestieCorrections.hiddenQuests and ((not QuestieCorrections.hiddenQuests[questID]) or QuestieEvent:IsEventQuest(questID)) and QuestieDB.QuestPointers[questID] then
-      -- Completed quests
-      if Questie.db.char.complete[questID] then
-      else
-        local queryResult = QuestieDB.QueryQuest(
-          questID,
-          "exclusiveTo",
-          "nextQuestInChain",
-          "parentQuest",
-          "preQuestSingle",
-          "preQuestGroup",
-          "requiredMinRep",
-          "requiredMaxRep"
-        ) or {}
-        local exclusiveTo = queryResult[1]
-        local nextQuestInChain = queryResult[2]
-        local parentQuest = queryResult[3]
-        local preQuestSingle = queryResult[4]
-        local preQuestGroup = queryResult[5]
-        local requiredMinRep = queryResult[6]
-        local requiredMaxRep = queryResult[7]
-
-        -- Exclusive quests will never be available since another quests permanently blocks them.
-        -- Marking them as complete should be the most satisfying solution for user
-        if (nextQuestInChain and Questie.db.char.complete[nextQuestInChain]) or (exclusiveTo and QuestieDB:IsExclusiveQuestInQuestLogOrComplete(exclusiveTo)) then
-          -- The parent quest has been completed
-        elseif parentQuest and Questie.db.char.complete[parentQuest] then
-          -- Unoptainable reputation quests
-        elseif not QuestieReputation:HasReputation(requiredMinRep, requiredMaxRep) then
-          -- A single pre Quest is missing
-        elseif not QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle) then
-          -- Multiple pre Quests are missing
-        elseif not QuestieDB:IsPreQuestGroupFulfilled(preQuestGroup) then
-          -- Repeatable quests
-        elseif QuestieDB.IsRepeatable(questID) then
-          -- Available quests
-        elseif not GMR.IsQuestActive(questID) then
-          tinsert(result, questID)
-        end
-      end
-      temp = {}
-    end
-  end
-
-  return filterQuests(Array.map(result, function(questID)
-    return QuestieDB:GetQuest(questID)
-  end))
-end
-
---function selectCloseQuests(quests)
---  local playerPosition = GMR.GetPlayerPosition()
---  local MAXIMUM_DISTANCE = 100
---  return Array.filter(quests, function (quest)
---    local questGiverID = quest.
---    local questGiver = QuestieDB:GetNPC(questGiverID)
---    return distance(playerPosition, questGiver) <= MAXIMUM_DISTANCE
---  end)
---end
---
---local quests = selectCloseQuests(findQuests())
 
 function findQuest()
   local quests = findQuests()
@@ -464,7 +629,7 @@ function c()
   end
 end
 
-local function seemsThatIsGoingToCreateHealthstone()
+function seemsThatIsGoingToCreateHealthstone()
   local SOUL_SHARD = 6265
   return (
     not GMR.HealthstoneExists() and
@@ -660,4 +825,169 @@ function moveToContinent(continentID)
   end
 end
 
-print('d')
+function seemsToBeQuestObject(object)
+  return bit.band(GMR.ObjectDynamicFlags(object), 0x20) == 0x20
+end
+
+function isInteractableFlagSet(object)
+  local dynamicFlags = GMR.ObjectDynamicFlags(object)
+  return bit.band(dynamicFlags, 0x4) == 0x04
+end
+
+function isInteractable(object)
+  return GMR.IsObjectInteractable(object) or isInteractableFlagSet(object)
+end
+
+
+function addObjectIDToObjective(questObjectiveToObjectIDs, objectID, questObjectiveIndex)
+  if not questObjectiveToObjectIDs[questObjectiveIndex] then
+    questObjectiveToObjectIDs[questObjectiveIndex] = {}
+  end
+  questObjectiveToObjectIDs[questObjectiveIndex][objectID] = true
+end
+
+function findObjectiveWhichMatchesAndAddItToTheLookup(questObjectiveToObjectIDs, questObjectives, objectIdentifier, doesMatch)
+  local questObjective, questObjectiveIndex = Array.find(questObjectives, doesMatch)
+  if questObjective then
+    local objectID = GMR.ObjectId(objectIdentifier)
+    if objectID then
+      addObjectIDToObjective(questObjectiveToObjectIDs, objectID, questObjectiveIndex)
+    end
+  end
+
+  return questObjective ~= nil
+end
+
+
+function retrieveQuestInfo(index)
+  if C_QuestLog.GetInfo then
+    return C_QuestLog.GetInfo(index)
+  else
+    local title, level, suggestedGroup, isHeader, isCollapsed, isComplete, frequency, questID, startEvent, displayQuestID, isOnMap, hasLocalPOI, isTask, isBounty, isStory, isHidden, isScaling = GetQuestLogTitle(index)
+    return {
+      title = title,
+      questLogIndex = nil,
+      questID = questID,
+      campaignID = nil,
+      level = level,
+      difficultyLevel = nil,
+      suggestedGroup = suggestedGroup,
+      frequency = frequency,
+      isHeader = isHeader,
+      isCollapsed = isCollapsed,
+      startEvent = startEvent,
+      isTask = isTask,
+      isBounty = isBounty,
+      isStory = isStory,
+      isScaling = isScaling,
+      isOnMap = isOnMap,
+      hasLocalPOI = hasLocalPOI,
+      isHidden = isHidden,
+      isAutoComplete = nil,
+      overrideSortOrder = nil,
+      readyForTranslation = nil
+    }
+  end
+end
+
+function retrieveNumberOfQuestLogEntries()
+  if C_QuestLog.GetNumQuestLogEntries then
+    return C_QuestLog.GetNumQuestLogEntries()
+  else
+    return GetNumQuestLogEntries()
+  end
+end
+
+function retrieveQuestLogQuests()
+  local quests = {}
+  for index = 1, retrieveNumberOfQuestLogEntries() do
+    local info = retrieveQuestInfo(index) -- isComplete seems to be a 1 or nil
+    if not info.isHeader then
+      local quest = {
+        id = info.questID,
+        name = info.title
+      }
+      table.insert(quests, quest)
+    end
+  end
+  return quests
+end
+
+function retrieveQuestLogQuestIDs()
+  return Array.map(retrieveQuestLogQuests(), function (quest)
+    return quest.id
+  end)
+end
+
+function findRelationsToQuests(tooltipBaseName, unitID)
+  local quests = retrieveQuestLogQuests()
+  local allQuestObjectives = Array.map(quests, function (quest)
+    GMR.Questing.GetQuestInfo(quest.id)
+  end)
+  local questNameToId = Object.fromEntries(Array.map(quests, function (quest)
+    return {
+      key = quest.name,
+      value = quest.id
+    }
+  end))
+  local relations = {}
+  for lineIndex = 1, 18 do
+    local textLeft = _G[tooltipBaseName .. 'TextLeft' .. lineIndex]
+    if textLeft then
+      local text = textLeft:GetText()
+      local questID = questNameToId[text]
+      if questID then
+        local questObjectives = allQuestObjectives[questID]
+        local questObjectiveToIsRelatedTo = relations[questID] or {}
+        lineIndex = lineIndex + 1
+        while lineIndex <= 18 do
+          local textLeft = _G[tooltipBaseName .. 'TextLeft' .. lineIndex]
+          if textLeft then
+            local text = textLeft:GetText()
+            local questObjective, questObjectiveIndex = Array.find(questObjectives, function(questObjective)
+              return questObjective.text == text
+            end)
+            if questObjectiveIndex then
+              questObjectiveToIsRelatedTo[questObjectiveIndex] = true
+            else
+              break
+            end
+          end
+          lineIndex = lineIndex + 1
+        end
+        if not relations[questID] and next(questObjectiveToIsRelatedTo) then
+          relations[questID] = questObjectiveToIsRelatedTo
+        end
+      end
+    end
+  end
+  return relations
+end
+
+function findRelationsToQuest(questID, questObjectiveToObjectIDs, tooltipBaseName, unitID)
+  local questInfo = GMR.Questing.GetQuestInfo(questID)
+  for lineIndex = 1, 18 do
+    local textLeft = _G[tooltipBaseName .. 'TextLeft' .. lineIndex]
+    if textLeft then
+      local text = textLeft:GetText()
+      if text == questName then
+        for lineIndex2 = lineIndex + 1, 18 do
+          local textLeft = _G[tooltipBaseName .. 'TextLeft' .. lineIndex2]
+          if textLeft then
+            local text = textLeft:GetText()
+            local hasFoundQuestObjective = findObjectiveWhichMatchesAndAddItToTheLookup(questObjectiveToObjectIDs, questInfo, unitID,
+              function(questObjective)
+                return questObjective.text == text
+              end)
+            if not hasFoundQuestObjective then
+              break
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
+--GMR.ObjectDynamicFlags(GMR.FindObject(278313))
+--GMR.IsObjectInteractable(GMR.FindObject(278313))

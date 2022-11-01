@@ -1,5 +1,0 @@
-## Title: Questing
-## Dependencies: Questie, Array, Set
-
-Questing.lua
-Questing2.lua
