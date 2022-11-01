@@ -1,6 +1,7 @@
 position1 = nil
 position2 = nil
 afsdsd = nil
+aStarPoints = nil
 
 local ticker
 ticker = C_Timer.NewTicker(0, function()
@@ -36,6 +37,12 @@ ticker = C_Timer.NewTicker(0, function()
           )
           previousPoint = point
         end
+      end
+
+      if aStarPoints then
+        Array.forEach(aStarPoints, function(point)
+          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.5)
+        end)
       end
     end)
   end
@@ -106,7 +113,7 @@ end
 
 function generateAngles()
   local angles = {}
-  for angle = 0, 2 * PI, 2 * PI / 360 * 10 do
+  for angle = 0, 2 * PI, 2 * PI / 6 do
     table.insert(angles, angle)
   end
   return angles
@@ -119,7 +126,12 @@ function generatePoints(fromPosition, angles)
 end
 
 function generatePoint(fromPosition, angle)
-  return createPoint(GMR.GetPositionFromPosition(fromPosition.x, fromPosition.y, fromPosition.z, 5, angle, 0))
+  local x, y, z = GMR.GetPositionFromPosition(fromPosition.x, fromPosition.y, fromPosition.z, 5, angle, 0)
+  local z2 = GMR.GetGroundZ(x, y, z)
+  if z2 ~= nil then
+    z = z2 + 1
+  end
+  return createPoint(x, y, z)
 end
 
 function isWalkableToEvaluationPoint(evaluation)
@@ -133,6 +145,7 @@ end
 function generateNeighborPoints(fromPosition)
   local angles = generateAngles()
   local points = generatePoints(fromPosition, angles)
+  aStarPoints = points
   return Array.filter(points, function(point)
     return thereAreZeroCollisions(fromPosition, point)
   end)
@@ -238,17 +251,35 @@ function determineStartPosition()
   return start
 end
 
-function moveToAStar(x, y, z)
-  local start = determineStartPosition()
-  local destination = createPoint(x, y, z)
+local pathWalker = nil
 
-  local path = findPath(start, destination, generateNeighborPoints)
-  DevTools_Dump(path)
-  afsdsd = path
-  local pathWalker = createActionSequenceDoer2(Array.map(path, createMoveToAction2))
-  pathWalker.run()
+function moveToAStar(x, y, z)
+  local thread = coroutine.create(function()
+    local start = determineStartPosition()
+    local destination = createPoint(x, y, z)
+
+    local path = findPath(start, destination, generateNeighborPoints)
+    afsdsd = path
+    if path then
+      if pathWalker then
+        pathWalker.stop()
+      end
+      pathWalker = createActionSequenceDoer2(Array.map(path, createMoveToAction2))
+      pathWalker.run()
+    end
+  end)
+  resumeWithShowingError(thread)
 end
 
 function testA()
   return thereAreZeroCollisions(afsdsd[1], afsdsd[2])
 end
+
+function testADD()
+  local z = GMR.GetGroundZ(savedPosition.x, savedPosition.y, savedPosition.z)
+  print(z, GMR.GetDistanceToPosition(savedPosition.x, savedPosition.y, savedPosition.z - 1))
+end
+
+-- view distance = 5: 625
+-- view distance = 10: 975
+-- /dump testADD()

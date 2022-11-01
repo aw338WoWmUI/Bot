@@ -26,34 +26,34 @@ end
 function createActionSequenceDoer2(actions)
   local isRunning = false
   local isActionRunning = false
+  local hasStopped = false
   local index = 1
 
   local run2
   run2 = function ()
-    while index <= #actions do
-      local action = actions[index]
-      if action.isDone() then
-        isActionRunning = false
-        if action.whenIsDone then
-          action.whenIsDone()
-        end
-        index = index + 1
-      else
-        break
-      end
-    end
-
-    if index <= #actions then
-      if not isActionRunning  then
+    if not hasStopped then
+      while index <= #actions do
         local action = actions[index]
-        print('run ' .. index)
-        isActionRunning = true
-        action.run()
+        if action.isDone() then
+          isActionRunning = false
+          if action.whenIsDone then
+            action.whenIsDone()
+          end
+          index = index + 1
+        else
+          break
+        end
       end
 
-      C_Timer.After(0, run2)
-    else
-      print('Done')
+      if index <= #actions then
+        if not isActionRunning  then
+          local action = actions[index]
+          isActionRunning = true
+          action.run()
+        end
+
+        C_Timer.After(0, run2)
+      end
     end
   end
 
@@ -63,6 +63,10 @@ function createActionSequenceDoer2(actions)
         isRunning = true
         run2()
       end
+    end,
+
+    stop = function()
+      hasStopped = true
     end
   }
 end

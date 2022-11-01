@@ -1,5 +1,5 @@
 ## Title: Movement
-## Dependencies: Boolean, ActionSequenceDoer, Array
+## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine
 ## SavedVariables: savedPosition, position1, position2
 
 PointFlyweight.lua
