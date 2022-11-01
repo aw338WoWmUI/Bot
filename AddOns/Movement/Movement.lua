@@ -1,7 +1,6 @@
 position1 = nil
 position2 = nil
-local ddd = nil
-local afsdsd = nil
+afsdsd = nil
 
 local ticker
 ticker = C_Timer.NewTicker(0, function()
@@ -23,18 +22,20 @@ ticker = C_Timer.NewTicker(0, function()
         )
       end
 
-      if ddd and afsdsd then
-        local playerPosition = GMR.GetPlayerPosition()
-        Array.forEach(afsdsd, function (point)
+      if afsdsd then
+        local previousPoint = afsdsd[1]
+        for index = 2, #afsdsd do
+          local point = afsdsd[index]
           GMR.LibDraw.Line(
-            ddd.x,
-            ddd.y,
-            ddd.z,
+            previousPoint.x,
+            previousPoint.y,
+            previousPoint.z,
             point.x,
             point.y,
             point.z
           )
-        end)
+          previousPoint = point
+        end
       end
     end)
   end
@@ -49,7 +50,8 @@ function savePosition2()
 end
 
 function savePosition()
-  savedPosition = GMR.GetPlayerPosition()
+  local playerPosition = GMR.GetPlayerPosition()
+  savedPosition = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + 1)
 end
 
 function moveTo(position)
@@ -60,41 +62,33 @@ local TraceLineHitFlags = {
   COLLISION = 1048849
 }
 
-function toPoint(x, y, z)
-  return {
-    x = x,
-    y = y,
-    z = z
-  }
-end
-
 function calculateIsObstacleInFrontToPosition(position)
-  return toPoint(GMR.GetPositionFromPosition(position.x, position.y, position.z, 5, GMR.ObjectRawFacing('player'),
+  return createPoint(GMR.GetPositionFromPosition(position.x, position.y, position.z, 5, GMR.ObjectRawFacing('player'),
     0))
 end
 
 function isObstacleInFront(position)
-  position1 = {
-    x = position.x,
-    y = position.y,
-    z = position.z + 1
-  }
+  position1 = createPoint(
+    position.x,
+    position.y,
+    position.z + 1
+  )
   position2 = calculateIsObstacleInFrontToPosition(position1)
-  local x, y, z = GMR.TraceLine(position1.x, position1.y, position1.z, position2.x, position2.y, position2.z,
-    TraceLineHitFlags.COLLISION)
-  print(x, y, z)
-  return toBoolean(x and y and z)
+  return not thereAreZeroCollisions(position1, position2)
 end
 
 function canWalkTo(position)
   local playerPosition = GMR.GetPlayerPosition()
-  local fromPosition = {
-    x = playerPosition.x,
-    y = playerPosition.y,
-    z = playerPosition.z + 1
-  }
-  local x, y, z = GMR.TraceLine(fromPosition.x, fromPosition.y, fromPosition.z, position.x, position.y, position.z,
-    TraceLineHitFlags.COLLISION)
+  local fromPosition = createPoint(
+    playerPosition.x,
+    playerPosition.y,
+    playerPosition.z + 1
+  )
+  return thereAreZeroCollisions(fromPosition, position)
+end
+
+function thereAreZeroCollisions(a, b)
+  local x, y, z = GMR.TraceLine(a.x, a.y, a.z, b.x, b.y, b.z, TraceLineHitFlags.COLLISION)
   return toBoolean(not x)
 end
 
@@ -105,21 +99,27 @@ end
 
 function generateWaypoint()
   local playerPosition = GMR.GetPlayerPosition()
-  local x, y, z = GMR.GetPositionFromPosition(playerPosition.x, playerPosition.y, playerPosition.z, 5, GMR.ObjectRawFacing('player'),
-    0)
-  return {
-    x = x,
-    y = y,
-    z = z
-  }
+  return createPoint(GMR.GetPositionFromPosition(playerPosition.x, playerPosition.y, playerPosition.z, 5,
+    GMR.ObjectRawFacing('player'),
+    0))
 end
 
 function generateAngles()
   local angles = {}
-  for angle = 0, 2 * PI, 2 * PI / 360 * 5 do
+  for angle = 0, 2 * PI, 2 * PI / 360 * 10 do
     table.insert(angles, angle)
   end
   return angles
+end
+
+function generatePoints(fromPosition, angles)
+  return Array.map(angles, function(angle)
+    return generatePoint(fromPosition, angle)
+  end)
+end
+
+function generatePoint(fromPosition, angle)
+  return createPoint(GMR.GetPositionFromPosition(fromPosition.x, fromPosition.y, fromPosition.z, 5, angle, 0))
 end
 
 function isWalkableToEvaluationPoint(evaluation)
@@ -130,53 +130,40 @@ function retrievePositionFromEvaluation(evaluation)
   return evaluation.position
 end
 
-function findMostOptimalPosition(evaluations, destination)
-  local walkableToEvaluations = Array.filter(evaluations, isWalkableToEvaluationPoint)
-  local walkableToPoints = Array.map(walkableToEvaluations, retrievePositionFromEvaluation)
-  afsdsd = walkableToPoints
-  print('destination')
-  DevTools_Dump(destination)
-  print('walkableToPoints')
-  DevTools_Dump(walkableToPoints)
-  local mostOptimalPosition = Array.min(walkableToPoints, function (point)
+function generateNeighborPoints(fromPosition)
+  local angles = generateAngles()
+  local points = generatePoints(fromPosition, angles)
+  return Array.filter(points, function(point)
+    return thereAreZeroCollisions(fromPosition, point)
+  end)
+end
+
+function findMostOptimalPosition(points, destination)
+  local mostOptimalPosition = Array.min(points, function(point)
     return GMR.GetDistanceBetweenPositions(point.x, point.y, point.z, destination.x, destination.y, destination.z)
   end)
-  print('mostOptimalEvaluation')
-  DevTools_Dump(mostOptimalPosition)
   return mostOptimalPosition
 end
 
 function findApproachPosition(destination)
   local playerPosition = GMR.GetPlayerPosition()
-  ddd = playerPosition
 
-  local fromPosition = {
-    x = playerPosition.x,
-    y = playerPosition.y,
-    z = playerPosition.z + 1
-  }
+  local fromPosition = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + 1)
 
-  local function evaluateApproachPosition(angle)
-    local x, y, z = GMR.GetPositionFromPosition(fromPosition.x, fromPosition.y, fromPosition.z, 1, angle, 0)
-    local position = {
-      x = x,
-      y = y,
-      z = z
-    }
+  local function evaluateApproachPosition(point)
     return {
-      canWalkTo = canWalkTo(position),
-      position = position
+      canWalkTo = canWalkTo(point),
+      position = point
     }
   end
 
-  local angles = generateAngles()
-  local evaluations = Array.map(angles, evaluateApproachPosition)
-  local mostOptimalPosition = findMostOptimalPosition(evaluations, destination)
+  local points = generateNeighborPoints(fromPosition)
+  local mostOptimalPosition = findMostOptimalPosition(points, destination)
 
   return mostOptimalPosition
 end
 
-function createMoveToAction(waypoint)
+function createMoveToAction2(waypoint)
   local stopMoving = nil
   local firstRun = true
   return {
@@ -189,7 +176,7 @@ function createMoveToAction(waypoint)
       moveTo(waypoint)
     end,
     isDone = function()
-      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 1)
+      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 3)
     end,
     whenIsDone = function()
       if stopMoving then
@@ -201,6 +188,10 @@ end
 
 function moveToSavedPosition()
   local destination = savedPosition
+  moveToAStar(destination.x, destination.y, destination.z)
+end
+
+function moveTo2(destination)
   if GMR.IsPositionInLoS(destination.x, destination.y, destination.z) then
     moveTo(destination)
   else
@@ -238,4 +229,26 @@ function moveCloserTo(x, y, z)
       return
     end
   end
+end
+
+function determineStartPosition()
+  local playerPosition = GMR.GetPlayerPosition()
+  local start = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + 1)
+
+  return start
+end
+
+function moveToAStar(x, y, z)
+  local start = determineStartPosition()
+  local destination = createPoint(x, y, z)
+
+  local path = findPath(start, destination, generateNeighborPoints)
+  DevTools_Dump(path)
+  afsdsd = path
+  local pathWalker = createActionSequenceDoer2(Array.map(path, createMoveToAction2))
+  pathWalker.run()
+end
+
+function testA()
+  return thereAreZeroCollisions(afsdsd[1], afsdsd[2])
 end
