@@ -54,3 +54,28 @@ end
 local frame = CreateFrame('Frame')
 frame:SetScript('OnEvent', onEvent)
 frame:RegisterEvent('GOSSIP_SHOW')
+
+function GetNumQuestLogEntries()
+  return C_QuestLog.GetNumQuestLogEntries()
+end
+
+function GetQuestLogTitle(index)
+  local info = C_QuestLog.GetInfo(index)
+  local isComplete = C_QuestLog.IsComplete(info.questID)
+  return info.title, info.level, info.suggestedGroup, info.isHeader, info.isCollapsed, isComplete, info.frequency, info.questID, info.startEvent, nil, info.isOnMap, info.hasLocalPOI, info.isTask, info.isBounty, info.isStory, info.isHidden, info.isScaling
+end
+
+function SelectQuestLogEntry(index)
+  local info = C_QuestLog.GetInfo(index)
+  if info and info.questID then
+    return C_QuestLog.SetSelectedQuest(info.questID)
+  end
+end
+
+function SetAbandonQuest()
+  return C_QuestLog.SetAbandonQuest()
+end
+
+function AbandonQuest()
+  return C_QuestLog.AbandonQuest()
+end
