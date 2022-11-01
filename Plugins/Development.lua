@@ -143,6 +143,37 @@ local APIDocumentation = {
       }
       -- There are more parameters
     }
+  },
+  ['GMR.GetPositionFromPosition'] = {
+    description = 'Calculates a position based on another position, a length, and two angles.',
+    parameters = {
+      {
+        name = 'x',
+        type = 'number'
+      },
+      {
+        name = 'y',
+        type = 'number'
+      },
+      {
+        name = 'z',
+        type = 'number'
+      },
+      {
+        name = 'length',
+        type = 'number'
+      },
+      {
+        name = 'angle1',
+        type = 'number',
+        description = 'In radian.'
+      },
+      {
+        name = 'angle2',
+        type = 'number',
+        description = 'In radian.'
+      }
+    }
   }
 }
 
