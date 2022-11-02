@@ -432,15 +432,15 @@ end
 --  print(debugstack())
 --end
 
-local TraceLineHitFlags = {
-  COLLISION = 1048849
-}
-
-hooksecurefunc(GMR, 'TraceLine', function(x1, y1, z1, x2, y2, z2, hitFlags)
-  if hitFlags == TraceLineHitFlags.COLLISION then
-    GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
-  end
-end)
+--local TraceLineHitFlags = {
+--  COLLISION = 1048849
+--}
+--
+--hooksecurefunc(GMR, 'TraceLine', function(x1, y1, z1, x2, y2, z2, hitFlags)
+--  if hitFlags == TraceLineHitFlags.COLLISION then
+--    GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
+--  end
+--end)
 
 --hooksecurefunc(GMR.LibDraw, 'clearCanvas', function ()
 --  local playerPosition = GMR.GetPlayerPosition();
