@@ -1,4 +1,4 @@
--- Dependencies: Array, Set, Object
+-- Dependencies: Array, Set, Object, ActionSequenceDoer
 -- Dependencies: Questing
 
 GMR.DefineQuester(

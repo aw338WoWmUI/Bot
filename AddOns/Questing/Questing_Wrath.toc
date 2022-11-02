@@ -1,5 +1,5 @@
 ## Title: Questing
-## Dependencies: Questie, Array, Set, Object
+## Dependencies: Questie, Array, Set, Object, Boolean
 ## Interface: 30400
 
 Questie.lua

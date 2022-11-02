@@ -386,15 +386,18 @@ function logAPICalls2(apiName)
   end
 end
 
+logAPICalls2('GMR.GetPositionFromPosition')
+--logAPICalls2('GMR.LibDraw.Line')
+-- logAPICalls2('GMR.RunString')
 --logAPICalls2('GMR.LibDraw.GroundCircle')
 --logAPICalls2('GMR.DefineQuest')
 --logAPICalls2('GMR.GetMeshPoints')
 --logAPICalls2('GMR.GetClosestMeshPolygon')
 --logAPICalls2('GMR.GetClosestPointOnMesh')
 --logAPICalls2('GMR.GetMeshToDestination')
-logAPICalls2('GMR.OffMeshHandler')
-logAPICalls2('GMR.GetPath')
-logAPICalls2('GMR.LibDraw.Circle')
+-- logAPICalls2('GMR.OffMeshHandler')
+--logAPICalls2('GMR.GetPath')
+--logAPICalls2('GMR.LibDraw.Circle')
 --logAPICalls2('GMR.LibDraw.GroundCircle')
 -- logAPICalls2('GMR.MoveTo')
 -- logAPICalls2('GMR.MeshTo')
@@ -428,15 +431,15 @@ logAPICalls2('GMR.LibDraw.Circle')
 --  print(debugstack())
 --end
 
---local TraceLineHitFlags = {
---  COLLISION = 1048849
---}
---
---hooksecurefunc(GMR, 'TraceLine', function(x1, y1, z1, x2, y2, z2, hitFlags)
---  if hitFlags == TraceLineHitFlags.COLLISION then
---    GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
---  end
---end)
+local TraceLineHitFlags = {
+  COLLISION = 1048849
+}
+
+hooksecurefunc(GMR, 'TraceLine', function(x1, y1, z1, x2, y2, z2, hitFlags)
+  if hitFlags == TraceLineHitFlags.COLLISION then
+    GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
+  end
+end)
 
 --hooksecurefunc(GMR.LibDraw, 'clearCanvas', function ()
 --  local playerPosition = GMR.GetPlayerPosition();
@@ -736,13 +739,35 @@ end
 
 local ticker
 ticker = C_Timer.NewTicker(0, function()
-  if _G.GMR and _G.GMR.LibDraw and _G.GMR.clearCanvas then
+  if _G.GMR and _G.GMR.LibDraw and _G.GMR.LibDraw.clearCanvas then
     ticker:Cancel()
-    local clearCanvas = GMR.LibDraw.clearCanvas()
+    local clearCanvas = GMR.LibDraw.clearCanvas
+
+    function drawPoints(points)
+      local playerPosition = GMR.GetPlayerPosition()
+      --local previousPoint = points[1]
+      --for i = 2, Array.length(points) do
+      --  local point = points[i]
+      --  GMR.LibDraw.Line(previousPoint[1], previousPoint[2], previousPoint[3], point[1], point[2], point[3])
+      --  previousPoint = point
+      --end
+
+      for i = 1, Array.length(points) do
+        local point = points[i]
+        GMR.LibDraw.GroundCircle(point[1], point[2], point[3], 0.5)
+      end
+    end
+
+    function draw()
+      drawPoints(GMR.Tables.Area.DeeprunTram)
+    end
+
+    -- draw()
+
     GMR.LibDraw.clearCanvas = function(...)
       local result = { clearCanvas(...) }
 
-      -- GMR.LibDraw.GroundCircle()
+      -- draw()
 
       return unpack(result)
     end
@@ -806,18 +831,54 @@ function ccdsasdasdad()
   return GMR.GetDistanceToPosition(x, y, z)
 end
 
-function aaaaaaaadsdjkasd()
-  local dynamicFlags = GMR.ObjectDynamicFlags(GMR.FindObject(278313))
+function toBinary(value)
   local result = ''
   for index = 1, 16 do
-    if bit.band(bit.rshift(dynamicFlags, index - 1), 1) == 1 then
+    if bit.band(bit.rshift(value, index - 1), 1) == 1 then
       result = '1' .. result
     else
       result = '0' .. result
     end
+    if index == 8 then
+      result = ' ' .. result
+    end
   end
+  return result
+end
+
+function aaaaaaaadsdjkasd()
+  local dynamicFlags = GMR.ObjectDynamicFlags(GMR.FindObject(278313))
+  local result = toBinary(dynamicFlags)
   print(result)
 end
 
-GMR.ObjectRawType(GMR.FindObject(278313)) -- 8
+-- GMR.ObjectRawType(GMR.FindObject(278313)) -- 8
 
+function hasFlag2(flags, flag)
+  return bit.band(flags, flag) == flag
+end
+
+function hasFlag(flag)
+  local flags1 = GMR.ObjectFlags('target')
+  local flags2 = GMR.ObjectFlags2('target')
+  print('ObjectFlags', hasFlag2(flags1, flag))
+  print('ObjectFlags2', hasFlag2(flags2, flag))
+end
+
+function printFlags()
+  local flags1 = GMR.ObjectFlags('target')
+  local flags2 = GMR.ObjectFlags2('target')
+  print('ObjectFlags', toBinary(flags1))
+  print('ObjectFlags2', toBinary(flags2))
+end
+
+function adjsadjka()
+  local continentID = 0
+  local mapID, point = C_Map.GetMapPosFromWorldPos(continentID, {
+    x = -6153,
+    y = 48,
+    z = 417
+  })
+  local mapPoint = UiMapPoint.CreateFromVector2D(mapID, point)
+  C_Map.SetUserWaypoint(mapPoint)
+end

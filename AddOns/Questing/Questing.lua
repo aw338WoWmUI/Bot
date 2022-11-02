@@ -184,34 +184,6 @@ function setSpecializationToPreferredOrFirstDamagerSpecialization()
   end
 end
 
-function createActionSequenceDoer(actions)
-  local index = 1
-
-  return {
-    run = function()
-      while index <= #actions do
-        local action = actions[index]
-        if action.isDone() then
-          if action.whenIsDone then
-            action.whenIsDone()
-          end
-          index = index + 1
-        else
-          break
-        end
-      end
-
-      print('index', index, #actions)
-
-      if index <= #actions then
-        local action = actions[index]
-        print('run ' .. index)
-        action.run()
-      end
-    end
-  }
-end
-
 function moveToWhenNotMoving(x, y, z)
   if not GMR.IsMoving() then
     GMR.MoveTo(x, y, z)
@@ -330,7 +302,7 @@ function determineQuestStartPoint(quest)
   return npc and determineFirstObjectSpawn(npc) or nil
 end
 
-function a()
+function evaluateSideStepPosition()
   -- Gather all quest points (quest pick up points, quest objective points, quest turn in points)
   local quests = findQuests()
   local questPoints = Array.flatMap(quests, function(quest)
@@ -740,16 +712,20 @@ function g()
   print(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
-function waitFor(predicate)
+function waitFor(predicate, timeout)
   local thread = coroutine.running()
   local ticker
+  local startTime = GetTime()
   ticker = C_Timer.NewTicker(0, function()
     if predicate() then
       ticker:Cancel()
-      coroutine.resume(thread)
+      resumeWithShowingError(thread, true)
+    elseif timeout and GetTime() - startTime >= timeout then
+      ticker:Cancel()
+      resumeWithShowingError(thread, false)
     end
   end)
-  coroutine.yield()
+  return coroutine.yield()
 end
 
 local dockPosition = {
@@ -903,6 +879,17 @@ function retrieveQuestLogQuests()
   for index = 1, retrieveNumberOfQuestLogEntries() do
     local info = retrieveQuestInfo(index) -- isComplete seems to be a 1 or nil
     if not info.isHeader then
+      table.insert(quests, info)
+    end
+  end
+  return quests
+end
+
+function retrieveQuestLogQuests2()
+  local quests = {}
+  for index = 1, retrieveNumberOfQuestLogEntries() do
+    local info = retrieveQuestInfo(index) -- isComplete seems to be a 1 or nil
+    if not info.isHeader then
       local quest = {
         id = info.questID,
         name = info.title
@@ -914,16 +901,19 @@ function retrieveQuestLogQuests()
 end
 
 function retrieveQuestLogQuestIDs()
-  return Array.map(retrieveQuestLogQuests(), function (quest)
+  return Array.map(retrieveQuestLogQuests2(), function (quest)
     return quest.id
   end)
 end
 
 function findRelationsToQuests(tooltipBaseName, unitID)
-  local quests = retrieveQuestLogQuests()
-  local allQuestObjectives = Array.map(quests, function (quest)
-    GMR.Questing.GetQuestInfo(quest.id)
-  end)
+  local quests = retrieveQuestLogQuests2()
+  local questIdToObjectives = Object.fromEntries(Array.map(quests, function (quest)
+    return {
+      key = quest.id,
+      value = GMR.Questing.GetQuestInfo(quest.id)
+    }
+  end))
   local questNameToId = Object.fromEntries(Array.map(quests, function (quest)
     return {
       key = quest.name,
@@ -937,7 +927,7 @@ function findRelationsToQuests(tooltipBaseName, unitID)
       local text = textLeft:GetText()
       local questID = questNameToId[text]
       if questID then
-        local questObjectives = allQuestObjectives[questID]
+        local questObjectives = questIdToObjectives[questID]
         local questObjectiveToIsRelatedTo = relations[questID] or {}
         lineIndex = lineIndex + 1
         while lineIndex <= 18 do
@@ -947,7 +937,7 @@ function findRelationsToQuests(tooltipBaseName, unitID)
             local questObjective, questObjectiveIndex = Array.find(questObjectives, function(questObjective)
               return questObjective.text == text
             end)
-            if questObjectiveIndex then
+            if questObjective then
               questObjectiveToIsRelatedTo[questObjectiveIndex] = true
             else
               break

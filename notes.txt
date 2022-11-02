@@ -2,3 +2,9 @@ There seems to be a way to define unstuck paths.
 
 C_QuestLog.IsFailed(questID)
 GMR.AbandonQuest(questID)
+
+/dump coroutine.wrap(function () exploreObject(GMR.FindObject(278308)) end)()
+
+/dump exploredObjects[278560]
+/dump coroutine.wrap(function () exploreObject(GMR.FindObject(278560)) end)()
+/dump GMR.GetDistanceBetweenObjects('player', 'softinteract')

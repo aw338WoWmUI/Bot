@@ -1,5 +1,5 @@
-[submodule "Wrath of the Lichking/AddOns/Questing/libs/a-star"]
-	path = Wrath of the Lichking/AddOns/Questing/libs/a-star
+[submodule "AddOns/AStar"]
+	path = AddOns/AStar
 	url = https://github.com/AkiKonani/a-star-lua.git
 [submodule "AddOns/Array"]
 	path = AddOns/Array

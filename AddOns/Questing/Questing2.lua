@@ -4,13 +4,6 @@ local addOnName, AddOn = ...
 
 -- /dump C_AreaPoiInfo.GetAreaPOIForMap(w)
 
-local function retrieveQuestLogQuests()
-  local questIDs = retrieveQuestLogQuestIDs()
-  return Array.map(questIDs, function(questID)
-    return QuestieDB:GetQuest(questID)
-  end)
-end
-
 local questGivers = {
   {
     objectID = 128229,
@@ -32,8 +25,22 @@ local questGivers = {
     questIDs = {
       49230,
     }
+  },
+  {
+    objectID = 130159,
+    continentID = 1643,
+    x = -1785.9184570312,
+    y = -735.84027099609,
+    z = 64.303344726562,
+    questIDs = {
+      49405,
+    }
   }
 }
+
+questIDsInDatabase = Set.create(Array.flatMap(questGivers, function (questGiver)
+  return questGiver.questIDs
+end))
 
 local function retrieveQuestStartPoints()
   local continentID = select(8, GetInstanceInfo())
@@ -44,7 +51,7 @@ local function retrieveQuestStartPoints()
     local questID = Array.find(questIDs, function(questID)
       return not GMR.IsQuestCompleted(questID)
     end)
-    if not GMR.IsQuestActive(questID) then
+    if not GMR.IsQuestActive(questID) and not questIDsInDatabase[questID] then
       local questInfo = C_QuestLine.GetQuestLineInfo(questID, mapID)
       local x, y, z = GMR.GetWorldPositionFromMap(mapID, questInfo.x, questInfo.y)
       return {
@@ -66,7 +73,7 @@ local function retrieveQuestStartPoints()
   local points2 = Array.map(
     Array.filter(questGivers, function(questGiver)
       return Array.any(questGiver.questIDs, function(questID)
-        return not GMR.IsQuestCompleted(questID)
+        return not GMR.IsQuestCompleted(questID) and not GMR.IsQuestActive(questID)
       end)
     end),
     function(questGiver)
@@ -122,31 +129,40 @@ function retrieveAvailableQuestLines()
   return questLines
 end
 
-function toBoolean(value)
-  return not not value
-end
-
 local isObjectRelatedToActiveQuestLookup = {}
-
-local objectIDQuestRelations = {}
 
 function isObjectRelatedToAnyActiveQuest(object)
   local objectID = GMR.ObjectId(object)
   if isObjectRelatedToActiveQuestLookup[objectID] then
     return toBoolean(isObjectRelatedToActiveQuestLookup[objectID])
-  elseif UnitName('softtarget') == GameTooltipTextLeft1:GetText() then
-    local relations = findRelationsToQuests('GameTooltip', 'softinteract')
-    objectIDQuestRelations[objectID] = relations
-    return Array.any(Object.entries(relations), function(entry)
-      local questID = entry.key
-      local objectiveIndexesThatObjectIsRelatedTo = entry.value
-      return (
-        not GMR.IsQuestActive(questID) and
-          Set.containsWhichFulfillsCondition(objectiveIndexesThatObjectIsRelatedTo, function(objectiveIndex)
-            return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
-          end)
-      )
-    end)
+  else
+    local relations
+    if (
+      GMR.ObjectPointer(object) == GMR.ObjectPointer('softinteract') and
+        UnitName('softinteract') == GameTooltipTextLeft1:GetText()
+    ) then
+      relations = findRelationsToQuests('GameTooltip', 'softinteract')
+      -- TODO: Merge new quest relationship information into explored object. Also consider the case when the explored object doesn't exist (regarding exploring other info for the object).
+      if exploredObjects[GMR.ObjectId(object)] and not exploredObjects[GMR.ObjectId(object)].questRelationships then
+        exploredObjects[GMR.ObjectId(object)].questRelationships = relations
+      end
+    elseif exploredObjects[GMR.ObjectId(object)] then
+      relations = exploredObjects[GMR.ObjectId(object)].questRelationships
+    end
+
+    if relations then
+      return Array.any(Object.entries(relations), function(entry)
+        local questID = entry.key
+        local objectiveIndexesThatObjectIsRelatedTo = entry.value
+        return (
+          GMR.IsQuestActive(questID) and
+          not GMR.IsQuestCompletable(questID) and
+            Set.containsWhichFulfillsCondition(objectiveIndexesThatObjectIsRelatedTo, function(objectiveIndex)
+              return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
+            end)
+        )
+      end)
+    end
   end
 end
 
@@ -199,23 +215,13 @@ function convertObjectPointersToObjectPoints(objectPointers, type)
   )
 end
 
-function isQuestRelatedObject(object)
-  local objectID = GMR.ObjectId(object)
-  if objectID then
-    local exploredObject = exploredObjects[objectID]
-    if exploredObject then
-      return exploredObject.isQuestGiver
-    end
-  end
-
-  return false
-end
-
 function retrieveObjectPoints()
   local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
   objects = Array.filter(objects, function(object)
-    return (isObjectRelatedToAnyActiveQuest(object.GUID) or seemsToBeQuestObject(object.GUID)) and not GMR.IsDead(object.GUID) and
-      isQuestRelatedObject(object.GUID)
+    return (
+      (isObjectRelatedToAnyActiveQuest(object.GUID) or seemsToBeQuestObject(object.GUID)) and not GMR.IsDead(object.GUID) or
+        (string.match(GMR.ObjectName(object.GUID), 'Chest') and isInteractable(object.GUID))
+      )
   end)
   local objectPointers = Array.map(objects, function(object)
     return object.GUID
@@ -227,7 +233,13 @@ end
 function retrieveExplorationPoints()
   local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
   objects = Array.filter(objects, function(object)
-    return not exploredObjects[object.ID] and not (isObjectRelatedToAnyActiveQuest(object.GUID) or seemsToBeQuestObject(object.GUID)) and not GMR.IsDead(object.GUID) and isInteractable(object.GUID)
+    return (
+      not exploredObjects[object.ID] and
+        not (isObjectRelatedToAnyActiveQuest(object.GUID) or seemsToBeQuestObject(object.GUID)) and
+        not GMR.IsDead(object.GUID) and
+        (isInteractable(object.GUID) or GMR.ObjectHasGossip(object.GUID) or isFriendly(object.GUID)) and
+        not Set.contains(Set.create({ 'Chair', 'Bench', 'Stool', 'Fire', 'Stove' }), GMR.ObjectName(object.GUID))
+    )
   end)
   local objectPointers = Array.map(objects, function(object)
     return object.GUID
@@ -368,8 +380,8 @@ end)
 local previousPointToGo = nil
 
 function isDifferentPointThanPrevious(point)
-  if point.pointer and previousPointToGo and previousPointToGo.pointer then
-    return point.pointer ~= previousPointToGo.pointer
+  if previousPointToGo then
+    return point.x ~= previousPointToGo.x or point.y ~= previousPointToGo.y or point.z ~= previousPointToGo.z
   else
     return true
   end
@@ -382,9 +394,15 @@ function moveToClosestPoint()
     if isDifferentPointThanPrevious(pointToGo) then
       previousPointToGo = pointToGo
     else
-      pointToGo = previousPointToGo
+      if GMR.IsPlayerPosition(previousPointToGo.x, previousPointToGo.y, previousPointToGo.z, 3) then
+        pointToGo = nil
+      else
+        pointToGo = previousPointToGo
+      end
     end
-    moveToPoint(pointToGo)
+    if pointToGo then
+      moveToPoint(pointToGo)
+    end
   end
   pointToMove = pointToGo
 end
@@ -482,91 +500,161 @@ function waitForGossipDialog()
   Events.waitForEvent('GOSSIP_SHOW')
 end
 
+function waitForPlayerFacingObject(object)
+  return waitFor(function ()
+    return GMR.ObjectIsFacing('player', object)
+  end, 5)
+end
+
+function waitForSoftInteract()
+  return waitFor(function ()
+    return GMR.ObjectPointer('softinteract')
+  end, 2)
+end
+
+function waitForSoftInteractNamePlate()
+  return waitFor(function ()
+    return C_NamePlate.GetNamePlateForUnit('softinteract', issecure())
+  end, 2)
+end
+
+function isFriendly(object)
+  local reaction = GMR.UnitReaction(object, 'player')
+  return reaction and reaction >= 4 and not GMR.UnitCanAttack('player', object)
+end
+
+function isEnemy(object)
+  local reaction = GMR.UnitReaction(object, 'player')
+  return reaction and reaction <= 3
+end
+
 function exploreObject(object)
-  local maxDistance = math.min(
-    tonumber(GetCVar('SoftTargetInteractRange'), 10),
-    15.5
-  )
+  local maxDistance
+  if isFriendly(object) then
+    maxDistance = math.min(
+      tonumber(GetCVar('SoftTargetFriendRange'), 10),
+      45
+    )
+  else
+    maxDistance = math.min(
+      tonumber(GetCVar('SoftTargetInteractRange'), 10),
+      15.5
+    )
+  end
   local pointer = GMR.ObjectPointer(object)
   local x, y, z = GMR.ObjectPosition(pointer)
   local distanceToObject = GMR.GetDistanceBetweenObjects('player', object)
+  print(1)
   if distanceToObject <= maxDistance then
+    GMR.ClearTarget()
     GMR.FaceDirection(x, y, z)
     if pointer ~= GMR.ObjectPointer('softinteract') then
       GMR.TargetObject(pointer)
     end
     local skipSaving = false
-    local softInteractPointer = GMR.ObjectPointer('softinteract')
-    local objectID = GMR.ObjectId(pointer)
-    local softInteractObjectID = GMR.ObjectId(softInteractPointer)
-    if softInteractPointer and objectID == softInteractObjectID then
-      local softInteractX, softInteractY, softInteractZ = GMR.ObjectPosition(softInteractPointer)
-      local exploredObject = {
-        positions = {
-          {
-            x = softInteractX,
-            y = softInteractY,
-            z = softInteractZ
+    local wasFacingSuccessful = waitForPlayerFacingObject(pointer)
+    if wasFacingSuccessful then
+      GMR.MoveForwardStart()
+      GMR.MoveForwardStop()
+      waitForSoftInteract()
+      local softInteractPointer = GMR.ObjectPointer('softinteract')
+      local objectID = GMR.ObjectId(pointer)
+      local softInteractObjectID = GMR.ObjectId(softInteractPointer)
+      if softInteractPointer and objectID == softInteractObjectID then
+        local softInteractX, softInteractY, softInteractZ = GMR.ObjectPosition(softInteractPointer)
+        local exploredObject = {
+          positions = {
+            {
+              x = softInteractX,
+              y = softInteractY,
+              z = softInteractZ
+            }
           }
         }
-      }
 
-      local namePlate = C_NamePlate.GetNamePlateForUnit('softinteract', issecure())
-      if namePlate then
-        local icon = namePlate.UnitFrame.SoftTargetFrame.Icon
-        if icon:IsShown() then
-          local texture = icon:GetTexture()
-          if texture == 'Cursor UnableInnkeeper' then
-            GMR.Questing.MoveTo(x, y, z)
-            skipSaving = true
-          elseif texture == 'Cursor Quest' or texture == 'Cursor UnableQuest' then
-            exploredObject.isQuestGiver = true
-          elseif texture == 4675702 or -- Inactive hand
-            texture == 4675650 then
-            -- Active hand
-            exploredObject.isInteractable = true
-          elseif texture == 'Cursor Innkeeper' then
-            exploredObject.isInnkeeper = true
-            local objectID = GMR.ObjectId(pointer)
-            GMR.DefineHearthstoneBindLocation(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
-            GMR.Interact(softInteractPointer)
-            waitForGossipDialog()
-            local options = C_GossipInfo.GetOptions()
-            local canVendor = Array.any(options, function(option)
-              return option.icon == 132060
-            end)
-            if canVendor then
-              exploredObject.isGoodsVendor = true
-              GMR.DefineGoodsVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
+        waitForSoftInteractNamePlate()
+        local namePlate = C_NamePlate.GetNamePlateForUnit('softinteract', issecure())
+        if namePlate then
+          local icon = namePlate.UnitFrame.SoftTargetFrame.Icon
+          if icon:IsShown() then
+            local texture = icon:GetTexture()
+            if texture == 'Cursor UnableInnkeeper' then
+              GMR.Questing.MoveTo(x, y, z)
+              skipSaving = true
+            elseif texture == 'Cursor Quest' or texture == 'Cursor UnableQuest' then
+              exploredObject.isQuestGiver = true
+            elseif texture == 4675702 or -- Inactive hand
+              texture == 4675650 then
+              -- Active hand
+              exploredObject.isInteractable = true
+            elseif texture == 'Cursor Innkeeper' then
+              exploredObject.isInnkeeper = true
+              local objectID = GMR.ObjectId(pointer)
+              GMR.DefineHearthstoneBindLocation(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
+              GMR.Interact(softInteractPointer)
+              waitForGossipDialog()
+              local options = C_GossipInfo.GetOptions()
+              local canVendor = Array.any(options, function(option)
+                return option.icon == 132060
+              end)
+              if canVendor then
+                exploredObject.isGoodsVendor = true
+                GMR.DefineGoodsVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
+                exploredObject.isSellVendor = true
+                GMR.DefineSellVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
+              end
+            elseif texture == 'Cursor RepairNPC' or texture == 'Cursor UnableRepairNPC' then
               exploredObject.isSellVendor = true
               GMR.DefineSellVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
+              exploredObject.isRepairVendor = true
+              GMR.DefineRepairVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
+            elseif texture == 'Cursor Mail' or texture == 'Cursor UnableMail' then
+              exploredObject.isMailbox = true
+              GMR.DefineProfileMailbox(softInteractX, softInteractY, softInteractZ)
+            elseif texture == 'Cursor Pickup' or texture == 'Cursor UnablePickup' then
+              exploredObject.isSellVendor = true
+              GMR.DefineSellVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
+            elseif texture == 'Cursor Taxi' or texture == 'Cursor UnableTaxi' then
+              print(2)
+              exploredObject.isTaxi = true
+              print(3)
+              if texture == 'Cursor Taxi' then
+                GMR.Interact(softInteractPointer)
+              end
             end
-          elseif texture == 'Cursor RepairNPC' or texture == 'Cursor UnableRepairNPC' then
-            exploredObject.isSellVendor = true
-            GMR.DefineSellVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
-            exploredObject.isRepairVendor = true
-            GMR.DefineRepairVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
+
+            if UnitName(softInteractPointer) == GameTooltipTextLeft1:GetText() then
+              exploredObject.questRelationships = findRelationsToQuests('GameTooltip', 'softinteract')
+            else
+              skipSaving = true
+            end
+
+            if texture == 'Cursor UnableTaxi' then
+              print('aa')
+              interactWithAt(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
+            end
           end
         end
-      end
 
-      if not skipSaving then
-        exploredObjects[softInteractObjectID] = exploredObject
-      end
-    elseif distanceToObject <= 4 then
-      local exploredObject = {
-        positions = {
-          {
-            x = x,
-            y = y,
-            z = z
+        if not skipSaving then
+          print('save')
+          exploredObjects[softInteractObjectID] = exploredObject
+        end
+      elseif (not softInteractPointer and distanceToObject <= maxDistance) or distanceToObject <= 5 then
+        local exploredObject = {
+          positions = {
+            {
+              x = x,
+              y = y,
+              z = z
+            }
           }
         }
-      }
-      exploredObjects[objectID] = exploredObject
-    else
-      print('move to')
-      GMR.Questing.MoveTo(x, y, z)
+        print('save')
+        exploredObjects[objectID] = exploredObject
+      else
+        GMR.Questing.MoveTo(x, y, z)
+      end
     end
   else
     GMR.Questing.MoveTo(x, y, z)
@@ -607,6 +695,106 @@ function seemsThatIsGoingToRepair()
   return GMR_SavedVariablesPerCharacter.Repair and GMR.GetRepairStatus() <= GMR.GetRepairValue()
 end
 
+run = nil
+run = function(once)
+  print('run')
+  local thread = coroutine.create(function()
+    if GMR.IsExecuting() and GMR.InCombat() and not GMR.IsAttacking() then
+      local pointer = GMR.GetAttackingEnemy()
+      if pointer then
+        local x, y, z = GMR.ObjectPosition(pointer)
+        local objectID = GMR.ObjectId(pointer)
+        GMR.Questing.KillEnemy(x, y, z, objectID)
+      end
+    end
+    if GMR.IsExecuting() and isIdle() then
+      pointToMove = nil
+
+      local quests = retrieveQuestLogQuests()
+      local quest = Array.find(quests, function (quest)
+        return quest.isAutoComplete and GMR.IsQuestCompletable(quest.questID)
+      end)
+      if quest then
+        ShowQuestComplete(quest.questID)
+      end
+
+      if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
+        CompleteQuest()
+      elseif QuestFrameRewardPanel:IsShown() then
+        GetQuestReward(1)
+      elseif QuestFrameDetailPanel:IsShown() then
+        AcceptQuest()
+      elseif GossipFrame:IsShown() and C_GossipInfo.GetNumActiveQuests() >= 1 then
+        local activeQuests = C_GossipInfo.GetActiveQuests()
+        local activeQuest = activeQuests[1]
+        C_GossipInfo.SelectActiveQuest(activeQuest.questID)
+      elseif QuestFrame:IsShown() and GetNumActiveQuests() >= 1 then
+        SelectActiveQuest(1)
+      elseif GossipFrame:IsShown() and C_GossipInfo.GetNumAvailableQuests() >= 1 then
+        local availableQuests = C_GossipInfo.GetAvailableQuests()
+        local availableQuest = availableQuests[1]
+        C_GossipInfo.SelectAvailableQuest(availableQuest.questID)
+      elseif QuestFrame:IsShown() and GetNumAvailableQuests() >= 1 then
+        SelectAvailableQuest(1)
+      elseif GossipFrame:IsShown() and #C_GossipInfo.GetOptions() >= 1 then
+        local options = C_GossipInfo.GetOptions()
+        local option = options[1]
+        C_GossipInfo.SelectOption(option.gossipOptionID)
+      elseif canInteractWithQuestGiver() then
+        interactWithQuestGiver()
+      elseif canInteractWithObject() then
+        interactWithObject()
+      elseif canGossipWithObject() then
+        gossipWithObject()
+      elseif canTurnInQuest() then
+        turnInQuest()
+      elseif canExploreSoftInteractObject() then
+        exploreSoftInteractObject()
+      else
+        print('D1')
+        local questIDs = retrieveQuestLogQuestIDs()
+        Array.forEach(questIDs, function(questID)
+          if C_QuestLog.IsFailed(questID) then
+            GMR.AbandonQuest(questID)
+          end
+        end)
+
+        local itemID = Array.find(questIDs, function(questID)
+          local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
+          if logIndex then
+            local itemLink = GetQuestLogSpecialItemInfo(logIndex)
+            if itemLink then
+              local itemID = GetItemInfoInstant(itemLink)
+              local startTime, _, enable = GetItemCooldown(itemID)
+              return startTime == 0 and enable == 1
+            end
+          end
+
+          return false
+        end)
+        print('D2')
+
+        if itemID then
+          local itemLink = select(2, GetItemInfo(itemID))
+          print('use item', itemLink)
+          local x, y, z = GMR.GetPlayerPosition()
+          GMR.Questing.UseItemOnPosition(x, y, z, itemID)
+        end
+
+        print('A1')
+        updateIsObjectRelatedToActiveQuestLookup()
+        print('A3')
+        moveToClosestPoint()
+        print('A2')
+      end
+    end
+    if not once then
+      C_Timer.After(1, run)
+    end
+  end)
+  resumeWithShowingError(thread)
+end
+
 function efficientlyLevelToMaximumLevel()
   if not isRunning then
     isRunning = true
@@ -624,93 +812,8 @@ function efficientlyLevelToMaximumLevel()
       if object.isRepairVendor then
         GMR.DefineRepairVendor(object.x, object.y, object.z, objectID)
       end
-    end
-
-    local run
-    run = function()
-      local thread = coroutine.create(function()
-        if GMR.IsExecuting() and GMR.InCombat() and not GMR.IsAttacking() then
-          local pointer = GMR.GetAttackingEnemy()
-          if pointer then
-            local x, y, z = GMR.ObjectPosition(pointer)
-            local objectID = GMR.ObjectId(pointer)
-            GMR.Questing.KillEnemy(x, y, z, objectID)
-          end
-        end
-        if GMR.IsExecuting() and isIdle() then
-          pointToMove = nil
-          if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
-            CompleteQuest()
-          elseif QuestFrameRewardPanel:IsShown() then
-            GetQuestReward(1)
-          elseif QuestFrameDetailPanel:IsShown() then
-            AcceptQuest()
-          elseif GossipFrame:IsShown() and C_GossipInfo.GetNumActiveQuests() >= 1 then
-            local activeQuests = C_GossipInfo.GetActiveQuests()
-            local activeQuest = activeQuests[1]
-            C_GossipInfo.SelectActiveQuest(activeQuest.questID)
-          elseif GossipFrame:IsShown() and C_GossipInfo.GetNumAvailableQuests() >= 1 then
-            local availableQuests = C_GossipInfo.GetAvailableQuests()
-            local availableQuest = availableQuests[1]
-            C_GossipInfo.SelectAvailableQuest(availableQuest.questID)
-          elseif GossipFrame:IsShown() and #C_GossipInfo.GetOptions() >= 1 then
-            local options = C_GossipInfo.GetOptions()
-            local option = options[1]
-            C_GossipInfo.SelectOption(option.gossipOptionID)
-          elseif canInteractWithQuestGiver() then
-            interactWithQuestGiver()
-          elseif canInteractWithObject() then
-            interactWithObject()
-          elseif canGossipWithObject() then
-            gossipWithObject()
-          elseif canTurnInQuest() then
-            turnInQuest()
-          elseif canExploreSoftInteractObject() then
-            exploreSoftInteractObject()
-          else
-            print('D1')
-            local questIDs = retrieveQuestLogQuestIDs()
-
-            Array.forEach(questIDs, function(questID)
-              if C_QuestLog.IsFailed(questID) then
-                GMR.AbandonQuest(questID)
-              end
-            end)
-
-            local itemID = Array.find(questIDs, function(questID)
-              local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
-              if logIndex then
-                local itemLink = GetQuestLogSpecialItemInfo(logIndex)
-                if itemLink then
-                  local itemID = GetItemInfoInstant(itemLink)
-                  local startTime, _, enable = GetItemCooldown(itemID)
-                  return startTime == 0 and enable == 1
-                end
-              end
-
-              return false
-            end)
-            print('D2')
-
-            if itemID then
-              local itemLink = select(2, GetItemInfo(itemID))
-              print('use item', itemLink)
-              local x, y, z = GMR.GetPlayerPosition()
-              GMR.Questing.UseItemOnPosition(x, y, z, itemID)
-            end
-
-            print('A1')
-            updateIsObjectRelatedToActiveQuestLookup()
-            print('A3')
-            moveToClosestPoint()
-            print('A2')
-          end
-        end
-        C_Timer.After(1, run)
-      end)
-      local wasSuccessful, errorMessage = coroutine.resume(thread)
-      if not wasSuccessful then
-        error(errorMessage .. '\n' .. debugstack(thread), 0)
+      if object.isMailbox then
+        GMR.DefineProfileMailbox(object.x, object.y, object.z)
       end
     end
 
