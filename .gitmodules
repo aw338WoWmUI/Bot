@@ -10,3 +10,6 @@
 [submodule "AddOns/Set"]
 	path = AddOns/Set
 	url = https://github.com/SanjoSolutions/LuaSet.git
+[submodule "AddOns/Math"]
+	path = AddOns/Math
+	url = https://github.com/SanjoSolutions/LuaMath.git

@@ -45,22 +45,22 @@ function createActionSequenceDoer2(actions)
                 action.whenIsDone()
               end
               index = index + 1
-            elseif isActionRunning and action.shouldCancel and action.shouldCancel() then
-              if action.onCancel then
-                action.onCancel()
-              end
-              return false
             else
-              break
+              if isActionRunning and action.shouldCancel and action.shouldCancel() then
+                if action.onCancel then
+                  action.onCancel()
+                end
+                return false
+              else
+                break
+              end
             end
           end
 
           if index <= #actions then
-            if not isActionRunning then
-              local action = actions[index]
-              isActionRunning = true
-              action.run()
-            end
+            local action = actions[index]
+            isActionRunning = true
+            action.run()
 
             yielder.yield()
           else
