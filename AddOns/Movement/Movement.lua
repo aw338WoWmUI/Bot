@@ -169,7 +169,7 @@ function canBeWalkedUpTo(from, to)
   local totalDistance = distanceBetween(from, to)
 
   local point1 = from
-  local stepSize = 0.25
+  local stepSize = 1
   local distance = stepSize
   while distance < totalDistance do
     local x, y, z = GMR.GetPositionBetweenPositions(from.x, from.y, from.z, to.x, to.y, to.z, distance)
@@ -179,7 +179,6 @@ function canBeWalkedUpTo(from, to)
       return z - point1.z <= MAXIMUM_WALK_UP_TO_HEIGHT
     end
 
-    print(z - point1.z)
     if not (z - point1.z <= MAXIMUM_WALK_UP_TO_HEIGHT) then
       return false
     end
@@ -188,7 +187,6 @@ function canBeWalkedUpTo(from, to)
     distance = distance + stepSize
   end
 
-  print(to.z - point1.z)
   if not (to.z - point1.z <= MAXIMUM_WALK_UP_TO_HEIGHT) then
     return false
   end
@@ -415,8 +413,11 @@ function createMoveToAction4(waypoint, move)
         GMR.StopMoving = function()
         end
         initialDistance = GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z)
-        move(waypoint)
         firstRun = false
+      end
+
+      if firstRun or not GMR.IsMoving() then
+        move(waypoint)
       end
 
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
@@ -431,11 +432,13 @@ function createMoveToAction4(waypoint, move)
       return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 1)
     end,
     shouldCancel = function()
-      return not GMR.IsMoving() or
-        GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance
+      return GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
     end,
     whenIsDone = cleanUp,
-    onCancel = cleanUp
+    onCancel = function ()
+      print('onCancel')
+      cleanUp()
+    end
   }
 end
 
@@ -689,7 +692,7 @@ function moveToInner(x, y, z, depth)
       -- generateNeighborPoints(start)
       -- generateFlyingNeighborPointsAdaptively(start)
       -- local path = nil
-      path = findPath(start, destination, generateFlyingNeighborPointsAdaptively, MAXIMUM_SEARCH_TIME)
+      path = findPath(start, destination, generateFlyingNeighborPointsAdaptively, MAXIMUM_SEARCH_TIME, true)
       afsdsd = path
       if path then
         if pathMover then
@@ -722,7 +725,7 @@ function moveToInner(x, y, z, depth)
 
     generateNeighborPointsAdaptively(start)
     -- local path = nil
-    path = findPath(start, destination, generateNeighborPointsAdaptively, MAXIMUM_SEARCH_TIME)
+    path = findPath(start, destination, generateNeighborPointsAdaptively, MAXIMUM_SEARCH_TIME, false)
     print('path length', #path)
     DevTools_Dump(path)
     afsdsd = path
@@ -733,9 +736,9 @@ function moveToInner(x, y, z, depth)
       pathMover = createActionSequenceDoer2(Array.map(path, createMoveToAction2))
       pathMover.run()
       waitForPlayerStandingStill()
-      --if depth == 0 and not GMR.IsPlayerPosition(destination.x, destination.y, destination.z, 1) then
-      --  moveToInner(destination.x, destination.y, destination.z, depth + 1)
-      --end
+      if depth == 0 and not GMR.IsPlayerPosition(destination.x, destination.y, destination.z, 1) then
+        moveToInner(destination.x, destination.y, destination.z, depth + 1)
+      end
     end
   end
 end
