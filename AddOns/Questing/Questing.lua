@@ -712,22 +712,6 @@ function g()
   print(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
-function waitFor(predicate, timeout)
-  local thread = coroutine.running()
-  local ticker
-  local startTime = GetTime()
-  ticker = C_Timer.NewTicker(0, function()
-    if predicate() then
-      ticker:Cancel()
-      resumeWithShowingError(thread, true)
-    elseif timeout and GetTime() - startTime >= timeout then
-      ticker:Cancel()
-      resumeWithShowingError(thread, false)
-    end
-  end)
-  return coroutine.yield()
-end
-
 local dockPosition = {
   x = -8641.3349609375,
   y = 1331.2628173828,
@@ -744,12 +728,6 @@ end
 
 function waitForPlayerToHaveArrivedAtDockInStormwind()
   waitForPlayerToBeOnPosition(dockPosition)
-end
-
-function waitForPlayerToBeOnPosition(position)
-  waitFor(function()
-    return GMR.IsPlayerPosition(position.x, position.y, position.z, 3)
-  end)
 end
 
 function waitForShipToHaveArrivedAtStormwind()

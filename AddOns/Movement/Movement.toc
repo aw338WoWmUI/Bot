@@ -3,5 +3,6 @@
 ## SavedVariables: savedPosition, position1, position2
 
 PointFlyweight.lua
+Moving.lua
 Movement.lua
 Meshing.lua

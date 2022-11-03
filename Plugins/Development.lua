@@ -386,6 +386,7 @@ function logAPICalls2(apiName)
   end
 end
 
+logAPICalls2('GMR.GetAnglePercentageBetween')
 -- logAPICalls2('GMR.GetPositionFromPosition')
 -- logAPICalls2('GMR.TraceLine')
 --logAPICalls2('GMR.LibDraw.Line')

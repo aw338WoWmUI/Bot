@@ -29,39 +29,39 @@ function createActionSequenceDoer2(actions)
   local hasStopped = false
   local index = 1
 
-  local run2
-  run2 = function ()
-    if not hasStopped then
-      while index <= #actions do
-        local action = actions[index]
-        if action.isDone() then
-          isActionRunning = false
-          if action.whenIsDone then
-            action.whenIsDone()
-          end
-          index = index + 1
-        else
-          break
-        end
-      end
-
-      if index <= #actions then
-        if not isActionRunning  then
-          local action = actions[index]
-          isActionRunning = true
-          action.run()
-        end
-
-        C_Timer.After(0, run2)
-      end
-    end
-  end
-
   return {
     run = function()
       if not isRunning then
         isRunning = true
-        run2()
+
+        local yielder = createYielder()
+
+        while not hasStopped do
+          while index <= #actions do
+            local action = actions[index]
+            if action.isDone() then
+              isActionRunning = false
+              if action.whenIsDone then
+                action.whenIsDone()
+              end
+              index = index + 1
+            else
+              break
+            end
+          end
+
+          if index <= #actions then
+            if not isActionRunning then
+              local action = actions[index]
+              isActionRunning = true
+              action.run()
+            end
+
+            yielder.yield()
+          else
+            return
+          end
+        end
       end
     end,
 

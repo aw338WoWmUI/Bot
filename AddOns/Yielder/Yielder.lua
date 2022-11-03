@@ -9,7 +9,7 @@ function createYielder()
 
   return {
     hasRanOutOfTime = function()
-      return debugprofilestop() - start >= 1 / 60
+      return debugprofilestop() - start >= 1000 / 60
     end,
 
     yield = function()

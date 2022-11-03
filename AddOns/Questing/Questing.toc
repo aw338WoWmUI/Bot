@@ -1,5 +1,5 @@
 ## Title: Questing
-## Dependencies: Array, Set, Object, Coroutine, Boolean
+## Dependencies: Array, Set, Object, Coroutine, Boolean, Movement
 ## Interface: 100000
 ## SavedVariables: exploredObjects
 

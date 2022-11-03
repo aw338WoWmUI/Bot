@@ -45,27 +45,7 @@ end
 local moveToWhileFacingDistanceProximityTolerance = 0.5
 
 function facePosition(positionToFace)
-  local differenceBetweenAngleFromPlayerToTargetAndPlayerFacingAngle = getDifferenceBetweenAngleFromPlayerToPositionAndPlayerFacingAngle(positionToFace)
-  local isTurningLeft
-  if differenceBetweenAngleFromPlayerToTargetAndPlayerFacingAngle <= math.pi then
-    GMR.TurnLeftStart()
-    isTurningLeft = true
-  else
-    GMR.TurnRightStart()
-    isTurningLeft = false
-  end
-  local handler
-  handler = C_Timer.NewTicker(1 / 60, function()
-    local differenceBetweenAngleFromPlayerToTargetAndPlayerFacingAngle = getDifferenceBetweenAngleFromPlayerToPositionAndPlayerFacingAngle(positionToFace)
-    if isTurningLeft and differenceBetweenAngleFromPlayerToTargetAndPlayerFacingAngle > math.pi then
-      handler:Cancel()
-      GMR.TurnLeftStop()
-    end
-    if not isTurningLeft and differenceBetweenAngleFromPlayerToTargetAndPlayerFacingAngle <= math.pi then
-      handler:Cancel()
-      GMR.TurnRightStop()
-    end
-  end)
+  GMR.FaceDirection(positionToFace.x, positionToFace.y, positionToFace.z)
 end
 
 local moveDirections = {
@@ -211,6 +191,16 @@ function moveToWhileFacing(moveToPosition, positionToFace)
   }
 end
 
-function moveTo(moveToPosition)
+function moveTo3(moveToPosition)
   return moveToWhileFacing(moveToPosition, moveToPosition)
+end
+
+function testMoveTo3()
+  local position = createPoint(
+    -3459.1276855469,
+    712.71026611328,
+    2.9626386165619
+  )
+  savedPosition = position
+  moveTo3(position)
 end

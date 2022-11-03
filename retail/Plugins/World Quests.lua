@@ -1,4 +1,4 @@
--- Dependencies: Set, Array, Object
+-- Dependencies: Set, Array, Object, Movement
 
 local Quester = {}
 
@@ -805,7 +805,7 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
               elseif action.type == 'moveTo' then
                 if not mover or nextActionIndex ~= lastActionIndex then
                   print('moveTo', nextActionIndex)
-                  mover = moveTo(action)
+                  mover = moveTo3(action)
                 end
               elseif action.type == 'stepIntoPortal' then
                 if not isMovingForward then
