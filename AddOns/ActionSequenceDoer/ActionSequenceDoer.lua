@@ -45,6 +45,11 @@ function createActionSequenceDoer2(actions)
                 action.whenIsDone()
               end
               index = index + 1
+            elseif isActionRunning and action.shouldCancel and action.shouldCancel() then
+              if action.onCancel then
+                action.onCancel()
+              end
+              return false
             else
               break
             end
@@ -59,7 +64,7 @@ function createActionSequenceDoer2(actions)
 
             yielder.yield()
           else
-            return
+            return true
           end
         end
       end

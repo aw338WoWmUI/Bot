@@ -28,6 +28,7 @@ ticker = C_Timer.NewTicker(0, function()
 
       if afsdsd then
         local previousPoint = afsdsd[1]
+        GMR.LibDraw.Circle(previousPoint.x, previousPoint.y, previousPoint.z, 0.1)
         for index = 2, #afsdsd do
           local point = afsdsd[index]
           GMR.LibDraw.Line(
@@ -38,6 +39,7 @@ ticker = C_Timer.NewTicker(0, function()
             point.y,
             point.z
           )
+          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
           previousPoint = point
         end
       end
@@ -134,17 +136,27 @@ function canBeWalkedFromPointToPoint(from, to)
     y = to.y,
     z = to.z + MAXIMUM_JUMP_HEIGHT
   }
-  return (
+  local result = (
     thereAreZeroCollisions(from2, to2) and canPlayerStandOnPoint(to) and canBeWalkedUpTo(from, to)
   )
+  return result
 end
 
 function canBeWalkedUpTo(from, to)
+  if from.x == to.x and from.y == to.y then
+    return to.z - from.z <= MAXIMUM_WALK_UP_TO_HEIGHT
+  end
+
   local point1 = from
   local distance = 1
   while GMR.GetDistanceBetweenPositions(point1.x, point1.y, point1.z, to.x, to.y, to.z) >= distance do
     local x, y, z = GMR.GetPositionBetweenPositions(point1.x, point1.y, point1.z, to.x, to.y, to.z, distance)
     local z = GMR.GetGroundZ(x, y, z)
+
+    if point1.x == x and point1.y == y then
+      return z - point1.z <= MAXIMUM_WALK_UP_TO_HEIGHT
+    end
+
     if not (z - point1.z <= MAXIMUM_WALK_UP_TO_HEIGHT) then
       return false
     end
@@ -277,7 +289,7 @@ function retrievePositionFromEvaluation(evaluation)
 end
 
 function generateNeighborPoints(fromPosition, distance)
-  local points = generateGroundPointsAround(fromPosition, distance, 6)
+  local points = generateGroundPointsAround(fromPosition, distance, 8)
   -- aStarPoints = points
   local points2 = Array.filter(points, function(point)
     return canMoveFromPointToPoint(fromPosition, point)
@@ -286,7 +298,7 @@ function generateNeighborPoints(fromPosition, distance)
 end
 
 function generateFlyingNeighborPoints(fromPosition, distance)
-  local points = generateFlyingPointsAround(fromPosition, distance, 6)
+  local points = generateFlyingPointsAround(fromPosition, distance, 8)
   -- aStarPoints = points
   return Array.filter(points, function(point)
     return canFlyFromPointToPoint(fromPosition, point)
@@ -354,23 +366,31 @@ end
 function createMoveToAction4(waypoint, move)
   local stopMoving = nil
   local firstRun = true
+
+  local function cleanUp()
+    if stopMoving then
+      GMR.StopMoving = stopMoving
+    end
+  end
+
   return {
     run = function()
       if firstRun then
         stopMoving = GMR.StopMoving
         GMR.StopMoving = function()
         end
+        firstRun = false
       end
       move(waypoint)
     end,
     isDone = function()
       return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 1)
     end,
-    whenIsDone = function()
-      if stopMoving then
-        GMR.StopMoving = stopMoving
-      end
-    end
+    shouldCancel = function ()
+      return not GMR.IsMoving()
+    end,
+    whenIsDone = cleanUp,
+    onCancel = cleanUp
   }
 end
 
@@ -383,25 +403,34 @@ end
 function createMoveToAction3(waypoint, continueMoving)
   local stopMoving = nil
   local firstRun = true
+
+  local function cleanUp()
+    if stopMoving then
+      GMR.StopMoving = stopMoving
+    end
+  end
+
   return {
     run = function()
       if firstRun then
         stopMoving = GMR.StopMoving
         GMR.StopMoving = function()
         end
+        firstRun = false
       end
       moveTo4(waypoint, continueMoving)
     end,
     isDone = function()
-      return not IsMounted() or GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 1)
+      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 1)
     end,
-    whenIsDone = function()
-      if stopMoving then
-        GMR.StopMoving = stopMoving
-      end
-      if not IsMounted() then
-        GMR.MoveForwardStop()
-      end
+    shouldCancel = function ()
+      return not GMR.IsMoving() or not IsMounted()
+    end,
+    whenIsDone = cleanUp,
+    onCancel = function ()
+      print('Cancel')
+      cleanUp()
+      GMR.MoveForwardStop()
     end
   }
 end
@@ -520,7 +549,7 @@ function liftUp()
   GMR.AscendStop()
 end
 
-local MAXIMUM_SEARCH_TIME = 60 -- seconds
+local MAXIMUM_SEARCH_TIME = nil -- 60 -- seconds
 
 function moveTo(x, y, z)
   local thread = coroutine.create(function()
@@ -560,9 +589,9 @@ function moveToInner(x, y, z, depth)
         local distanceToDestination = distanceBetween(point, destination)
         local distance
         if distanceToDestination <= 20 then
-          distance = 5
+          distance = 2
         else
-          distance = 10
+          distance = 2
         end
         return generateFlyingNeighborPoints(point, distance)
       end
@@ -594,9 +623,9 @@ function moveToInner(x, y, z, depth)
       local distanceToDestination = distanceBetween(point, destination)
       local distance
       if distanceToDestination <= 20 then
-        distance = 5
+        distance = 2
       else
-        distance = 5
+        distance = 2
       end
       return generateNeighborPoints(point, distance)
     end
@@ -605,6 +634,7 @@ function moveToInner(x, y, z, depth)
     -- local path = nil
     local path = findPath(start, destination, generateNeighborPointsAdaptively, MAXIMUM_SEARCH_TIME)
     print('path length', #path)
+    DevTools_Dump(path)
     afsdsd = path
     if path then
       if pathMover then

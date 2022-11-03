@@ -199,6 +199,7 @@ function createMoveToAction(x, y, z)
         stopMoving = GMR.StopMoving
         GMR.StopMoving = function()
         end
+        firstRun = false
       end
       moveToWhenNotMoving(x, y, z)
     end,
