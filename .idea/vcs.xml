@@ -4,6 +4,7 @@
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/AStar" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Array" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/AddOns/Math" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Object" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Set" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/Wrath of the Lichking/AddOns/Questing/libs/a-star" vcs="Git" />

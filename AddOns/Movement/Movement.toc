@@ -3,6 +3,7 @@
 ## SavedVariables: savedPosition, position1, position2, from, to, path
 
 PointFlyweight.lua
+PointWithPathToFlyweight.lua
 Moving.lua
 Movement.lua
 Meshing.lua

@@ -364,6 +364,9 @@ function logAPICalls2(apiName)
   table[parts[#parts]] = function(...)
     local output = 'call to ' .. apiName
     local args = tablePack(...)
+    if apiName == 'GMR.MeshMovementHandler' then
+      temp = args[1]
+    end
     if args.n >= 1 then
       output = output .. ':\n'
       output = output .. outputList(args)
@@ -386,7 +389,10 @@ function logAPICalls2(apiName)
   end
 end
 
-logAPICalls2('GMR.GetAnglePercentageBetween')
+logAPICalls2('GMR.MeshHandler')
+logAPICalls2('GMR.CustomPathHandler')
+logAPICalls2('GMR.MeshMovementHandler')
+-- logAPICalls2('GMR.ExecutePath')
 -- logAPICalls2('GMR.GetPositionFromPosition')
 -- logAPICalls2('GMR.TraceLine')
 --logAPICalls2('GMR.LibDraw.Line')
@@ -394,7 +400,7 @@ logAPICalls2('GMR.GetAnglePercentageBetween')
 --logAPICalls2('GMR.LibDraw.GroundCircle')
 --logAPICalls2('GMR.DefineQuest')
 --logAPICalls2('GMR.GetMeshPoints')
---logAPICalls2('GMR.GetClosestMeshPolygon')
+logAPICalls2('GMR.GetClosestMeshPolygon')
 --logAPICalls2('GMR.GetClosestPointOnMesh')
 --logAPICalls2('GMR.GetMeshToDestination')
 -- logAPICalls2('GMR.OffMeshHandler')
@@ -816,8 +822,8 @@ function aadsakjdsa()
   -- GMR.ModifyPath()
   return GMR.GetPath(
     -1589.9603271484,
-      - 873.77026367188,
-  12.970695495605
+    -873.77026367188,
+    12.970695495605
   )
 end
 
@@ -884,3 +890,15 @@ function adjsadjka()
   local mapPoint = UiMapPoint.CreateFromVector2D(mapID, point)
   C_Map.SetUserWaypoint(mapPoint)
 end
+
+-- GMR.GetClosestMeshPolygon()
+-- GMR.GetClosestPointOnMesh()
+
+-- GMR.GetClosestMeshPolygon(1643, -93.19278717041, -1074.8294677734, 61.544826507568, 1, 1, 1000)
+-- GMR.GetMeshPoints('0x001000540000264B', -93.19278717041, -1074.8294677734, 61.677707672119, 0.13288116455078)
+-- GMR.GetMeshToDestination()
+-- GMR.MeshHandler()
+
+-- GMR.MeshHandler(1135.46484375, 62.296180725098, 13.241092681885, nil)
+-- GMR.CustomPathHandler()
+-- GMR.MeshMovementHandler()

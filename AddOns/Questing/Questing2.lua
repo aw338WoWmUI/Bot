@@ -109,23 +109,14 @@ end
 function retrieveAvailableQuestLines()
   local mapID = GMR.GetMapId()
   local questLines = C_QuestLine.GetAvailableQuestLines(mapID)
-  print('D1')
   if #questLines == 0 then
-    print('D2')
     local wasSuccessful, event, requestRequired = Events.waitForEvent('QUESTLINE_UPDATE', 1)
-    print('D3')
     if wasSuccessful and requestRequired then
-      print('D4')
       C_QuestLine.RequestQuestLinesForMap(mapID)
-      print('D5')
       local wasSuccessful2, event2, requestRequired2 = Events.waitForEvent('QUESTLINE_UPDATE')
-      print('D6')
       questLines = C_QuestLine.GetAvailableQuestLines(mapID)
-      print('D7')
     end
-    print('D8')
   end
-  print('D9')
   return questLines
 end
 
@@ -313,25 +304,21 @@ local function determinePointToGo(points)
   elseif next(points.objectPoints) then
     return determineClosestPoint(points.objectPoints)
   else
-    print(1)
     if next(points.explorationPoints) then
-      print(3)
       return determineClosestPoint(points.explorationPoints)
     else
       local points2 = Array.concat(points.questStartPoints, points.objectivePoints)
       if next(points2) then
-        print(2)
         return determineClosestPoint(points2)
       else
         return nil
       end
     end
-    print(4)
   end
 end
 
 local function moveToPoint(point)
-  print(tableToString(point, 1))
+  -- print(tableToString(point, 1))
   if point.type == 'acceptQuest' then
     print('acceptQuest', point.x, point.y, point.z, point.objectID)
     if point.objectID then
@@ -497,7 +484,7 @@ function canExploreSoftInteractObject()
 end
 
 function waitForGossipDialog()
-  Events.waitForEvent('GOSSIP_SHOW')
+  Events.waitForEvent('GOSSIP_SHOW', 2)
 end
 
 function waitForPlayerFacingObject(object)
@@ -544,7 +531,6 @@ function exploreObject(object)
   local pointer = GMR.ObjectPointer(object)
   local x, y, z = GMR.ObjectPosition(pointer)
   local distanceToObject = GMR.GetDistanceBetweenObjects('player', object)
-  print(1)
   if distanceToObject <= maxDistance then
     GMR.ClearTarget()
     GMR.FaceDirection(x, y, z)
@@ -556,7 +542,9 @@ function exploreObject(object)
     if wasFacingSuccessful then
       GMR.MoveForwardStart()
       GMR.MoveForwardStop()
+      print(1)
       waitForSoftInteract()
+      print(2)
       local softInteractPointer = GMR.ObjectPointer('softinteract')
       local objectID = GMR.ObjectId(pointer)
       local softInteractObjectID = GMR.ObjectId(softInteractPointer)
@@ -572,7 +560,9 @@ function exploreObject(object)
           }
         }
 
+        print(3)
         waitForSoftInteractNamePlate()
+        print(4)
         local namePlate = C_NamePlate.GetNamePlateForUnit('softinteract', issecure())
         if namePlate then
           local icon = namePlate.UnitFrame.SoftTargetFrame.Icon
@@ -592,7 +582,9 @@ function exploreObject(object)
               local objectID = GMR.ObjectId(pointer)
               GMR.DefineHearthstoneBindLocation(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
               GMR.Interact(softInteractPointer)
+              print(5)
               waitForGossipDialog()
+              print(6)
               local options = C_GossipInfo.GetOptions()
               local canVendor = Array.any(options, function(option)
                 return option.icon == 132060
@@ -615,9 +607,7 @@ function exploreObject(object)
               exploredObject.isSellVendor = true
               GMR.DefineSellVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
             elseif texture == 'Cursor Taxi' or texture == 'Cursor UnableTaxi' then
-              print(2)
               exploredObject.isTaxi = true
-              print(3)
               if texture == 'Cursor Taxi' then
                 GMR.Interact(softInteractPointer)
               end
@@ -630,14 +620,12 @@ function exploreObject(object)
             end
 
             if texture == 'Cursor UnableTaxi' then
-              print('aa')
               interactWithAt(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
             end
           end
         end
 
         if not skipSaving then
-          print('save')
           exploredObjects[softInteractObjectID] = exploredObject
         end
       elseif (not softInteractPointer and distanceToObject <= maxDistance) or distanceToObject <= 5 then
@@ -650,7 +638,6 @@ function exploreObject(object)
             }
           }
         }
-        print('save')
         exploredObjects[objectID] = exploredObject
       else
         GMR.Questing.MoveTo(x, y, z)
@@ -687,7 +674,8 @@ function isIdle()
       not GMR.IsUnstuckEnabled() and
       not GMR.IsPreparing() and
       not GMR.IsGhost('player') and
-      not GMR.IsRepairing()
+      not GMR.IsRepairing() and
+      not isPathFinding()
   )
 end
 
@@ -697,7 +685,6 @@ end
 
 run = nil
 run = function(once)
-  print('run')
   local thread = coroutine.create(function()
     if GMR.IsExecuting() and GMR.InCombat() and not GMR.IsAttacking() then
       local pointer = GMR.GetAttackingEnemy()
@@ -751,7 +738,6 @@ run = function(once)
       elseif canExploreSoftInteractObject() then
         exploreSoftInteractObject()
       else
-        print('D1')
         local questIDs = retrieveQuestLogQuestIDs()
         Array.forEach(questIDs, function(questID)
           if C_QuestLog.IsFailed(questID) then
@@ -772,7 +758,6 @@ run = function(once)
 
           return false
         end)
-        print('D2')
 
         if itemID then
           local itemLink = select(2, GetItemInfo(itemID))
@@ -781,11 +766,8 @@ run = function(once)
           GMR.Questing.UseItemOnPosition(x, y, z, itemID)
         end
 
-        print('A1')
         updateIsObjectRelatedToActiveQuestLookup()
-        print('A3')
         moveToClosestPoint()
-        print('A2')
       end
     end
     if not once then

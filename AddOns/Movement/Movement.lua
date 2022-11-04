@@ -175,6 +175,10 @@ function canBeWalkedUpTo(from, to)
     local x, y, z = GMR.GetPositionBetweenPositions(from.x, from.y, from.z, to.x, to.y, to.z, distance)
     local z = GMR.GetGroundZ(x, y, z)
 
+    if not z then
+      return false
+    end
+
     if point1.x == x and point1.y == y then
       return z - point1.z <= MAXIMUM_WALK_UP_TO_HEIGHT
     end
@@ -297,7 +301,8 @@ function generateFlyingPoints(fromPosition, distance, angles)
 end
 
 function generateGroundPoint(fromPosition, distance, angle)
-  local point = createPoint(GMR.GetPositionFromPosition(fromPosition.x, fromPosition.y, fromPosition.z, distance, angle, 0))
+  local point = createPoint(GMR.GetPositionFromPosition(fromPosition.x, fromPosition.y, fromPosition.z, distance, angle,
+    0))
   point = closestPointOnGridWithZLeft(point)
   local z2 = GMR.GetGroundZ(point.x, point.y, point.z)
   if z2 == nil then
@@ -394,7 +399,7 @@ function findApproachPosition(destination)
   return mostOptimalPosition
 end
 
-function createMoveToAction4(waypoint, move)
+function createMoveToAction4(waypoint, move, a)
   local stopMoving = nil
   local firstRun = true
   local initialDistance = nil
@@ -432,23 +437,23 @@ function createMoveToAction4(waypoint, move)
       return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 1)
     end,
     shouldCancel = function()
-      return GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
+      return a.shouldStop() or GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
     end,
     whenIsDone = cleanUp,
-    onCancel = function ()
+    onCancel = function()
       print('onCancel')
       cleanUp()
     end
   }
 end
 
-function createMoveToAction2(waypoint)
+function createMoveToAction2(waypoint, a)
   return createMoveToAction4(waypoint, function(waypoint)
     return GMR.MoveTo(waypoint.x, waypoint.y, waypoint.z)
-  end)
+  end, a)
 end
 
-function createMoveToAction3(waypoint, continueMoving)
+function createMoveToAction3(waypoint, continueMoving, a)
   local stopMoving = nil
   local firstRun = true
   local initialDistance = nil
@@ -484,7 +489,8 @@ function createMoveToAction3(waypoint, continueMoving)
     end,
     shouldCancel = function()
       return (
-        not GMR.IsMoving() or
+        a.shouldStop() or
+          not GMR.IsMoving() or
           not IsMounted() or
           GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance
       )
@@ -528,9 +534,42 @@ function isJumpSituation()
   return false
 end
 
-function moveToSavedPosition()
+local function findPathToSavedPosition2()
   local destination = savedPosition
-  moveTo(destination.x, destination.y, destination.z)
+  local pathFinder = createPathFinder()
+  debugprofilestart()
+  local path = pathFinder.start(destination.x, destination.y, destination.z)
+  local duration = debugprofilestop()
+  logToFile(duration)
+  print(duration)
+  afsdsd = path
+  return path
+end
+
+function findPathToSavedPosition()
+  local thread = coroutine.create(function()
+    local path = findPathToSavedPosition2()
+  end)
+  return resumeWithShowingError(thread)
+end
+
+function moveToSavedPosition()
+  local thread = coroutine.create(function()
+    local path = findPathToSavedPosition2()
+    if path then
+      path = Array.map(path, function(point)
+        return { point.x, point.y, point.z }
+      end)
+      --for index = 2, #path do
+      --  local previousWaypoint = path[index - 1]
+      --  local waypoint = path[index]
+      --  GMR.ModifyPath(previousWaypoint[1], previousWaypoint[2], previousWaypoint[3], waypoint[1], waypoint[2], waypoint[3])
+      --end
+      print('go path')
+      GMR.ExecutePath(true, path)
+    end
+  end)
+  return resumeWithShowingError(thread)
 end
 
 function moveTo2(destination)
@@ -644,11 +683,30 @@ end
 
 local MAXIMUM_SEARCH_TIME = nil -- seconds
 
-function moveTo(x, y, z)
+function moveTo(x, y, z, a)
   local thread = coroutine.create(function()
-    moveToInner(x, y, z, 0)
+    moveToInner(x, y, z, a, 0)
   end)
   resumeWithShowingError(thread)
+end
+
+function createPathFinder()
+  local shouldStop2 = false
+
+  local a = {
+    shouldStop = function()
+      return shouldStop2
+    end
+  }
+
+  return {
+    start = function(x, y, z)
+      return findPath2(x, y, z, a)
+    end,
+    stop = function()
+      shouldStop2 = true
+    end
+  }
 end
 
 function waitForPlayerStandingStill()
@@ -657,7 +715,255 @@ function waitForPlayerStandingStill()
   end)
 end
 
-function moveToInner(x, y, z, depth)
+function findPath2(x, y, z, a)
+  return findPathInner(x, y, z, a, 0)
+end
+
+points = {}
+pointIndexes = {}
+nextPointIndex = 1
+neighbors = {}
+connections = {}
+paths = {}
+nextPathIndex = 1
+
+function retrievePointIndex(point)
+  local x = point.x
+  local y = point.y
+  local z = point.z
+  local a = pointIndexes[x]
+  if a then
+    local b = a[y]
+    if b then
+      local c = b[z]
+      if c then
+        return c
+      end
+    end
+  end
+  return nil
+end
+
+function createPointIndex(point)
+  local x = point.x
+  local y = point.y
+  local z = point.z
+  local pointIndex = nextPointIndex
+  local a = pointIndexes[x]
+  if not a then
+    pointIndexes[x] = {}
+  end
+  if not pointIndexes[x][y] then
+    pointIndexes[x][y] = {}
+  end
+  pointIndexes[x][y][z] = pointIndex
+  points[pointIndex] = point
+  nextPointIndex = nextPointIndex + 1
+  return pointIndex
+end
+
+local function retrievePoint(pointIndex)
+  return points[pointIndex]
+end
+
+local function _retrieveNeighbor(pointIndex)
+  return retrievePoint(pointIndex)
+end
+
+function retrieveConnections(pointIndex)
+  local connections2 = connections[pointIndex]
+  if connections2 then
+    return Array.map(connections2, function(connection)
+      local point = retrievePoint(connection[1])
+      return createPointWithPathTo(point.x, point.y, point.z, connection[2])
+    end)
+  else
+    return {}
+  end
+end
+
+function retrieveNeighbors(pointIndex)
+  local neighborPointIndexes = neighbors[pointIndex]
+  if neighborPointIndexes then
+    local neighborPoints = Array.map(neighborPointIndexes, _retrieveNeighbor)
+    return neighborPoints
+  else
+    return nil
+  end
+end
+
+local function _storeNeighbor(pointIndex, neighbor)
+  local neighborIndex = retrieveOrCreatePointIndex(neighbor)
+  table.insert(neighbors[pointIndex], neighborIndex)
+end
+
+function retrieveOrCreatePointIndex(point)
+  return retrievePointIndex(point) or createPointIndex(point)
+end
+
+function storeNeighbors(pointIndex, neighbors2)
+  neighbors[pointIndex] = {}
+  Array.forEach(neighbors2, Function.partial(_storeNeighbor, pointIndex))
+end
+
+function receiveOrGenerateNeighborPoints(generateNeighborPoints, point)
+  local pointIndex = retrievePointIndex(point)
+  if not pointIndex then
+    pointIndex = createPointIndex(point)
+  end
+
+  local neighbours2 = retrieveNeighbors(pointIndex)
+  if not neighbours2 then
+    neighbours2 = generateNeighborPoints(point)
+    storeNeighbors(pointIndex, neighbours2)
+  end
+
+  local connections2 = retrieveConnections(pointIndex)
+
+  return Array.concat(connections2, neighbours2)
+end
+
+function createReceiveOrGenerateNeighborPoints(generateNeighborPoints)
+  return Function.partial(receiveOrGenerateNeighborPoints, generateNeighborPoints)
+end
+
+local function isPoint(value)
+  return value.x
+end
+
+function createPathIndex(path)
+  local pathIndex = nextPathIndex
+  paths[pathIndex] = Array.map(path, function(value)
+    if isPoint(value) then
+      return retrieveOrCreatePointIndex(value)
+    else
+      return value
+    end
+  end)
+  nextPathIndex = nextPathIndex + 1
+  return pathIndex
+end
+
+function retrievePathIndexFromPathReference(pathReference)
+  return pathReference[1]
+end
+
+function retrievePath(pathIndex)
+  return Array.flatMap(paths[pathIndex], function(value)
+    if type(value) == 'table' then
+      return retrievePath(retrievePathIndexFromPathReference(value))
+    else
+      return retrievePoint(value)
+    end
+  end)
+end
+
+local function createPathReference(pathIndex)
+  return { pathIndex }
+end
+
+function addConnection(pointIndex, connection)
+  if not connections[pointIndex] then
+    connections[pointIndex] = {}
+  end
+  table.insert(connections[pointIndex], connection)
+end
+
+function storeConnection(path)
+  print('store connection')
+  local destinationPointIndex = retrieveOrCreatePointIndex(path[#path])
+
+  local index = #path - 1
+
+  local subPath = Array.slice(path, index)
+  local startPointIndex = retrieveOrCreatePointIndex(subPath[1])
+  local pathIndex = createPathIndex(subPath)
+  local connection = {
+    destinationPointIndex,
+    pathIndex
+  }
+  addConnection(startPointIndex, connection)
+
+  for index = #path - 2, 1, -1 do
+    local subPath = { path[index], createPathReference(pathIndex) }
+    local startPointIndex = retrieveOrCreatePointIndex(subPath[1])
+    pathIndex = createPathIndex(subPath)
+    local connection = {
+      destinationPointIndex,
+      pathIndex
+    }
+    addConnection(startPointIndex, connection)
+  end
+end
+
+function findPathInner(x, y, z, a)
+  local start = determineStartPosition()
+  local destination = createPoint(x, y, z)
+
+  local path
+  if canBeFlownFromPointToPoint(start, destination) then
+    aStarPoints = {}
+
+    local generateFlyingNeighborPointsAdaptively = function(point)
+      local distanceToDestination = distanceBetween(point, destination)
+      local distance
+      if distanceToDestination <= 20 then
+        distance = 2
+      else
+        distance = 2
+      end
+      return generateFlyingNeighborPoints(point, distance)
+    end
+
+    path = findPath(
+      start,
+      destination,
+      createReceiveOrGenerateNeighborPoints(generateFlyingNeighborPointsAdaptively),
+      MAXIMUM_SEARCH_TIME,
+      true,
+      a
+    )
+  else
+    aStarPoints = {}
+
+    local generateNeighborPointsAdaptively = function(point)
+      local distanceToDestination = distanceBetween(point, destination)
+      local distance
+      if distanceToDestination <= 20 then
+        distance = 2
+      else
+        distance = 2
+      end
+      return generateNeighborPoints(point, distance)
+    end
+
+    local receiveNeighborPoints = createReceiveOrGenerateNeighborPoints(generateNeighborPointsAdaptively)
+
+    local pointIndex = retrievePointIndex(start)
+    print('pointIndex', pointIndex)
+    DevTools_Dump(receiveNeighborPoints(start))
+
+    path = findPath(
+      start,
+      destination,
+      receiveNeighborPoints,
+      MAXIMUM_SEARCH_TIME,
+      false,
+      a
+    )
+
+    print('path')
+    DevTools_Dump(path)
+  end
+
+  if path then
+    storeConnection(path)
+  end
+
+  return path
+end
+
+function moveToInner(x, y, z, a, depth)
   local start = determineStartPosition()
   local destination = createPoint(x, y, z)
 
@@ -692,20 +998,32 @@ function moveToInner(x, y, z, depth)
       -- generateNeighborPoints(start)
       -- generateFlyingNeighborPointsAdaptively(start)
       -- local path = nil
-      path = findPath(start, destination, generateFlyingNeighborPointsAdaptively, MAXIMUM_SEARCH_TIME, true)
+      path = findPath(
+        start,
+        destination,
+        createReceiveOrGenerateNeighborPoints(generateFlyingNeighborPointsAdaptively),
+        MAXIMUM_SEARCH_TIME,
+        true,
+        a
+      )
       afsdsd = path
       if path then
+        storeConnection(path)
         if pathMover then
           pathMover.stop()
         end
+        if a.shouldStop() then
+          return
+        end
         local pathLength = #path
         pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint, index)
-          return createMoveToAction3(waypoint, index < pathLength)
+          return createMoveToAction3(waypoint, index < pathLength, a)
         end))
         pathMover.run()
         waitForPlayerStandingStill()
-        if depth == 0 and not GMR.IsPlayerPosition(destination.x, destination.y, destination.z, 1) then
-          moveToInner(destination.x, destination.y, destination.z, depth + 1)
+        if not a.shouldStop() and depth == 0 and not GMR.IsPlayerPosition(destination.x, destination.y, destination.z,
+          1) then
+          moveToInner(destination.x, destination.y, destination.z, a, depth + 1)
         end
       end
     end
@@ -725,19 +1043,33 @@ function moveToInner(x, y, z, depth)
 
     generateNeighborPointsAdaptively(start)
     -- local path = nil
-    path = findPath(start, destination, generateNeighborPointsAdaptively, MAXIMUM_SEARCH_TIME, false)
+    path = findPath(
+      start,
+      destination,
+      createReceiveOrGenerateNeighborPoints(generateNeighborPointsAdaptively),
+      MAXIMUM_SEARCH_TIME,
+      false,
+      a
+    )
     print('path length', #path)
-    DevTools_Dump(path)
+    -- DevTools_Dump(path)
     afsdsd = path
     if path then
+      storeConnection(path)
       if pathMover then
         pathMover.stop()
       end
-      pathMover = createActionSequenceDoer2(Array.map(path, createMoveToAction2))
+      if a.shouldStop() then
+        return
+      end
+      pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint)
+        return createMoveToAction2(waypoint, a)
+      end))
       pathMover.run()
       waitForPlayerStandingStill()
-      if depth == 0 and not GMR.IsPlayerPosition(destination.x, destination.y, destination.z, 1) then
-        moveToInner(destination.x, destination.y, destination.z, depth + 1)
+      if not a.shouldStop() and depth == 0 and not GMR.IsPlayerPosition(destination.x, destination.y, destination.z,
+        1) then
+        moveToInner(destination.x, destination.y, destination.z, a, depth + 1)
       end
     end
   end
@@ -797,4 +1129,25 @@ end
 
 function closestCoordinateOnGrid(coordinate)
   return Math.round(coordinate / GRID_LENGTH) * GRID_LENGTH
+end
+
+function testaa()
+  GMR.GetSurroundingWaterXYZ()
+  local playerPosition = retrievePlayerPosition()
+  local z2 = GMR.GetGroundZ(playerPosition.x, playerPosition.y, playerPosition.z)
+  savedPosition = createPoint(playerPosition.x, playerPosition.y, z2)
+end
+
+function testaa2()
+  local playerPosition = retrievePlayerPosition()
+  local x, y, z = GMR.TraceLine(playerPosition.x, playerPosition.y, playerPosition.z + 1000, playerPosition.x,
+    playerPosition.y, playerPosition.z, bit.bor(TraceLineHitFlags.COLLISION, 131072))
+  savedPosition = createPoint(x, y, z)
+end
+
+function testaa3()
+  local playerPosition = retrievePlayerPosition()
+  local x, y, z = GMR.TraceLine(playerPosition.x, playerPosition.y, playerPosition.z + 1000, playerPosition.x,
+    playerPosition.y, playerPosition.z, 131072)
+  savedPosition = createPoint(x, y, z)
 end
