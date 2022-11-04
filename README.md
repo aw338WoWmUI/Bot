@@ -16,6 +16,8 @@ Some of the code requires one or multiple of the following addons:
 * [Object](https://github.com/SanjoSolutions/LuaObject)
 * [Set](https://github.com/SanjoSolutions/LuaSet)
 
+For the addons the dependencies are listed in the TOC file.
+
 ## AddOn installation
 
 AddOns go into the regular WoW addons folder.

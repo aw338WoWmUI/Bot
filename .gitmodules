@@ -13,3 +13,6 @@
 [submodule "AddOns/Math"]
 	path = AddOns/Math
 	url = https://github.com/SanjoSolutions/LuaMath.git
+[submodule "AddOns/Events"]
+	path = AddOns/Events
+	url = https://github.com/SanjoSolutions/LuaEvents.git
