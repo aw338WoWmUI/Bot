@@ -815,7 +815,6 @@ hooksecurefunc(C_GossipInfo, 'SelectActiveQuest', function(...)
   print('C_GossipInfo.SelectActiveQuest', ...)
 end)
 
-print('GMR.Log', GMR.Log)
 enableLogging()
 
 function aadsakjdsa()
