@@ -47,7 +47,7 @@ ticker = C_Timer.NewTicker(0, function()
 
       if aStarPoints then
         Array.forEach(aStarPoints, function(point)
-          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
+          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.5)
         end)
       end
     end)
@@ -157,7 +157,6 @@ function canBeMovedFromPointToPoint(from, to)
   local a = thereAreZeroCollisions(from2, to2)
   local b = canPlayerStandOnPoint(to)
   local c = canBeMovedFromPointToPointCheckingSubSteps(from, to)
-  print(a, b, c)
   return (
     a and
       b and
@@ -183,11 +182,12 @@ function canBeMovedFromPointToPointCheckingSubSteps(from, to)
 
     if not (isPointInWater(point1) and isPointInWater(point2)) then
       local z = GMR.GetGroundZ(x, y, z)
-      point2 = createPoint(x, y, z)
 
       if not z then
         return false
       end
+
+      point2 = createPoint(x, y, z)
 
       if point1.x == x and point1.y == y then
         return z - point1.z <= MAXIMUM_WALK_UP_TO_HEIGHT
@@ -262,7 +262,8 @@ end
 local MAXIMUM_WATER_DEPTH = 1000
 
 function retrieveGroundZ(position)
-  local x, y, z = GMR.TraceLine(position.x, position.y, position.z, position.x, position.y, position.z - MAXIMUM_WATER_DEPTH, TraceLineHitFlags.COLLISION)
+  local x, y, z = GMR.TraceLine(position.x, position.y, position.z, position.x, position.y,
+    position.z - MAXIMUM_WATER_DEPTH, TraceLineHitFlags.COLLISION)
   return z
 end
 
@@ -411,9 +412,8 @@ end
 
 function findWaterPointBelow(point, distance)
   local groundZ = retrieveGroundZ(point)
-  print('groundZ', groundZ)
   local z
-  if groundZ >= point.z - distance then
+  if groundZ and groundZ >= point.z - distance then
     z = groundZ
   else
     z = point.z - distance
@@ -451,13 +451,15 @@ function generateGroundOrWaterPointsAround(position, distance)
   if isPointInWater(position) then
     local waterPointAbove = findWaterPointAbove(position, distance)
     if waterPointAbove then
+      table.insert(points, waterPointAbove)
       Array.append(points, generateGroundOrWaterPoints(waterPointAbove, distance))
     end
+  end
 
-    local waterPointBelow = findWaterPointBelow(position, distance)
-    if waterPointBelow then
-      Array.append(points, generateGroundOrWaterPoints(waterPointBelow, distance))
-    end
+  local pointBelow = findWaterPointBelow(position, distance)
+  if pointBelow and isPointInWater(pointBelow) then
+    table.insert(points, pointBelow)
+    Array.append(points, generateGroundOrWaterPoints(pointBelow, distance))
   end
 
   return points
@@ -1052,7 +1054,7 @@ function findPathInner(x, y, z, a)
     -- local points = receiveNeighborPoints(start)
     -- print('points')
     -- DevTools_Dump(points)
-    aStarPoints = points
+    -- aStarPoints = points
 
     path = findPath(
       start,
@@ -1072,6 +1074,36 @@ function findPathInner(x, y, z, a)
   end
 
   return path
+end
+
+function movePath(path)
+  if pathMover then
+    pathMover.stop()
+  end
+  local a = {
+    shouldStop = function ()
+      return false
+    end
+  }
+  if canBeFlownFromPointToPoint(start, destination) then
+    if not isMountedOnFlyingMount() then
+      mountOnFlyingMount()
+    end
+    local playerPosition = retrievePlayerPosition()
+    if GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then
+      liftUp()
+    end
+    local pathLength = #path
+    pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint, index)
+      return createMoveToAction3(waypoint, index < pathLength, a)
+    end))
+  else
+    pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint)
+      return createMoveToAction2(waypoint, a)
+    end))
+  end
+  pathMover.run()
+  return pathMover
 end
 
 function moveToInner(x, y, z, a, depth)
@@ -1209,6 +1241,7 @@ end
 function faceDirection(point)
   local yielder = createYielder()
   while not GMR.IsFacingXYZ(point.x, point.y, point.z) do
+    print('aaaa')
     local previousPlayerFacingAngle = GMR.ObjectRawFacing('player')
     GMR.FaceSmoothly(point.x, point.y, point.z)
     yielder.yield()

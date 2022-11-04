@@ -1,5 +1,6 @@
 local runningWithPoint = nil
 local pathFinder = nil
+local pathMover = nil
 
 function isPathFinding()
   return toBoolean(pathFinder)
@@ -22,6 +23,7 @@ GMR.OffMeshHandler = function (x, y, z)
     local thread = coroutine.create(function()
       runningWithPoint = point
       pathFinder = createPathFinder()
+      afsdsd = nil
       print('start pathfinder')
       local path = pathFinder.start(x, y, z)
       if path then
@@ -35,7 +37,10 @@ GMR.OffMeshHandler = function (x, y, z)
         --  GMR.ModifyPath(previousWaypoint[1], previousWaypoint[2], previousWaypoint[3], waypoint[1], waypoint[2], waypoint[3])
         --end
         print('go path')
-        GMR.ExecutePath(true, path)
+        pathMover = movePath(path)
+
+        runningWithPoint = nil
+        pathFinder = nil
       end
     end)
     return resumeWithShowingError(thread)
@@ -44,10 +49,16 @@ GMR.OffMeshHandler = function (x, y, z)
   return true
 end
 
-hooksecurefunc(GMR, 'MeshTo', function (x, y, z)
+local handleMove = function (x, y, z)
+  if pathMover then
+    pathMover.stop()
+    pathMover = nil
+  end
   local point = createPoint(x, y, z)
   if runningWithPoint and point ~= runningWithPoint then
     stopPathFinding()
   end
-end)
+end
 
+hooksecurefunc(GMR, 'MeshTo', handleMove)
+hooksecurefunc(GMR, 'MoveTo', handleMove)

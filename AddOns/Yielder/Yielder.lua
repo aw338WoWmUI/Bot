@@ -1,4 +1,5 @@
-function createYielder()
+function createYielder(timePerRun)
+  timePerRun = (timePerRun or 1 / 60) * 1000
   local thread = coroutine.running()
   local start = debugprofilestop()
 
@@ -9,7 +10,7 @@ function createYielder()
 
   return {
     hasRanOutOfTime = function()
-      return debugprofilestop() - start >= 1000 / 60
+      return debugprofilestop() - start >= timePerRun
     end,
 
     yield = function()
