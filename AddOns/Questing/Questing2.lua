@@ -533,7 +533,9 @@ function exploreObject(object)
   local distanceToObject = GMR.GetDistanceBetweenObjects('player', object)
   if distanceToObject <= maxDistance then
     GMR.ClearTarget()
-    GMR.FaceDirection(x, y, z)
+    print('D1')
+    faceDirection(createPoint(x, y, z))
+    print('D2')
     if pointer ~= GMR.ObjectPointer('softinteract') then
       GMR.TargetObject(pointer)
     end
