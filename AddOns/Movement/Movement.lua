@@ -16,16 +16,16 @@ ticker = C_Timer.NewTicker(0, function()
       if savedPosition then
         GMR.LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
       end
-      if position1 and position2 then
-        GMR.LibDraw.Line(
-          position1.x,
-          position1.y,
-          position1.z,
-          position2.x,
-          position2.y,
-          position2.z
-        )
-      end
+      --if position1 and position2 then
+      --  GMR.LibDraw.Line(
+      --    position1.x,
+      --    position1.y,
+      --    position1.z,
+      --    position2.x,
+      --    position2.y,
+      --    position2.z
+      --  )
+      --end
 
       if afsdsd then
         local previousPoint = afsdsd[1]
@@ -157,6 +157,7 @@ function canBeMovedFromPointToPoint(from, to)
   local a = thereAreZeroCollisions(from2, to2)
   local b = canPlayerStandOnPoint(to)
   local c = canBeMovedFromPointToPointCheckingSubSteps(from, to)
+  -- print(a, b, c)
   return (
     a and
       b and
@@ -318,7 +319,7 @@ function generateGroundOrWaterPoints(fromPosition, distance)
 end
 
 function generateFlyingPoints(fromPosition, distance)
-  return generatePointsAroundOnGrid(fromPosition, distance, generatePoint)
+  return generatePointsAroundOnGrid(fromPosition, distance, generateFlyingPoint)
 end
 
 function generatePointsAroundOnGrid(fromPosition, distance, generatePoint)
@@ -360,10 +361,15 @@ function generateGroundOrWaterPoint(fromPosition, offsetX, offsetY)
   end
 end
 
-function generatePoint(fromPosition, offsetX, offsetY)
+function generateFlyingPoint(fromPosition, offsetX, offsetY)
   return closestPointOnGrid(
     createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
+end
+
+function generatePoint(fromPosition, distance, angle)
+  local x, y, z = GMR.GetPositionFromPosition(fromPosition.x, fromPosition.y, fromPosition.z, distance, angle, 0)
+  return createPoint(x, y, z)
 end
 
 function isWalkableToEvaluationPoint(evaluation)
@@ -376,6 +382,8 @@ end
 
 function generateNeighborPoints(fromPosition, distance)
   local points = generateGroundOrWaterPointsAround(fromPosition, distance)
+
+  -- aStarPoints = points
 
   local points2 = Array.filter(points, function(point)
     return canMoveFromPointToPoint(fromPosition, point)
@@ -1054,7 +1062,7 @@ function findPathInner(x, y, z, a)
     -- local points = receiveNeighborPoints(start)
     -- print('points')
     -- DevTools_Dump(points)
-    -- aStarPoints = points
+     -- aStarPoints = points
 
     path = findPath(
       start,
