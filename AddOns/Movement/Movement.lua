@@ -3,6 +3,8 @@ position2 = nil
 afsdsd = nil
 aStarPoints = nil
 
+-- Minimum flying lift height seems to be ~ 0.25 yards.
+
 local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
 local A = 0.75
