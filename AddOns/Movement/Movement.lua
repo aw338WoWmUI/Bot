@@ -123,7 +123,7 @@ end
 function canBeMovedFromPointToPoint(from, to)
   return (
     canBeWalkedOrSwamFromPointToPoint(from, to)
-      -- or canBeJumpedFromPointToPoint(from, to)
+      or canBeJumpedFromPointToPoint(from, to)
       or canBeFlownFromPointToPoint(from, to)
   )
 end
@@ -706,7 +706,8 @@ function createPointIndex(point)
 end
 
 local function retrievePoint(pointIndex)
-  return points[pointIndex]
+  local point = points[pointIndex]
+  return createPoint(point.x, point.y, point.z)
 end
 
 local function _retrieveNeighbor(pointIndex)
@@ -756,11 +757,7 @@ function storeNeighbors(pointIndex, neighbors2)
 end
 
 function receiveOrGenerateNeighborPoints(generateNeighborPoints, point)
-  local pointIndex = retrievePointIndex(point)
-  if not pointIndex then
-    pointIndex = createPointIndex(point)
-  end
-
+  local pointIndex = retrieveOrCreatePointIndex(point)
   local neighbours2 = retrieveNeighbors(pointIndex)
   if not neighbours2 then
     neighbours2 = generateNeighborPoints(point)
@@ -867,7 +864,7 @@ function findPathInner(x, y, z, a)
   local path
   local generateNeighborPoints2
   local distance = 2
-  aStarPoints = {}
+  -- aStarPoints = {}
 
   generateNeighborPoints2 = function(point)
     return generateNeighborPoints(point, distance)
