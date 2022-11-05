@@ -136,8 +136,8 @@ function isEnoughSpaceOnTop(from, to)
 end
 
 MAXIMUM_WALK_UP_TO_HEIGHT = 0.94
-local JUMP_DETECTION_HEIGHT = 1.5
-local MAXIMUM_JUMP_HEIGHT = 1.675
+JUMP_DETECTION_HEIGHT = 1.5
+MAXIMUM_JUMP_HEIGHT = 1.675
 
 function canBeWalkedOrSwamFromPointToPoint(from, to)
   local from2 = {
@@ -256,7 +256,7 @@ function isFlyingAvailableInZone()
 end
 
 function retrieveGroundZ(position)
-  local x, y, z = GMR.TraceLine(position.x, position.y, position.z, position.x, position.y,
+  local x, y, z = GMR.TraceLine(position.x, position.y, position.z + 8, position.x, position.y,
     position.z - MAXIMUM_AIR_HEIGHT, TraceLineHitFlags.COLLISION)
   return z
 end
@@ -335,7 +335,7 @@ function generateMiddlePoint(fromPosition, offsetX, offsetY)
   if isPointInAir(point) or isPointInWater(point) then
     return point
   else
-    local z2 = GMR.GetGroundZ(point.x, point.y, point.z)
+    local z2 = retrieveGroundZ(point)
     if z2 == nil then
       return nil
     end
@@ -1014,32 +1014,32 @@ function isFirstPointCloserToThanSecond(fromA, fromB, to)
   return euclideanDistance(fromA, to) < euclideanDistance(fromB, to)
 end
 
-function moveTowards(x, y, z)
-  local destination = createPoint(x, y, z)
-  local playerPosition = retrievePlayerPosition()
-  local walkToPoint = playerPosition
-  afsdsd = { walkToPoint }
+function findClosestPointThatCanBeWalkedTo(from, to)
+  local walkToPoint = from
   while true do
     local pointOnMaximumWalkUpToHeight = createPointWithZOffset(walkToPoint, MAXIMUM_WALK_UP_TO_HEIGHT)
-    local destinationOnMaximumWalkUpToHeight = createPointWithZOffset(destination, MAXIMUM_WALK_UP_TO_HEIGHT)
+    local destinationOnMaximumWalkUpToHeight = createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT)
     local collisionPoint = traceLineCollision(pointOnMaximumWalkUpToHeight, destinationOnMaximumWalkUpToHeight)
     if collisionPoint then
       local potentialWalkToPoint = generateWalkToPointFromCollisionPoint(pointOnMaximumWalkUpToHeight, collisionPoint)
-      if not walkToPoint or isFirstPointCloserToThanSecond(potentialWalkToPoint, walkToPoint, destination) then
-        print(1)
+      if not walkToPoint or isFirstPointCloserToThanSecond(potentialWalkToPoint, walkToPoint, to) then
         walkToPoint = potentialWalkToPoint
-        table.insert(afsdsd, walkToPoint)
       else
-        print(2)
         break
       end
     else
-      print(3)
-      walkToPoint = destination
-      table.insert(afsdsd, walkToPoint)
+      walkToPoint = to
       break
     end
   end
+
+  return walkToPoint
+end
+
+function moveTowards(x, y, z)
+  local playerPosition = retrievePlayerPosition()
+  local destination = createPoint(x, y, z)
+  local walkToPoint = findClosestPointThatCanBeWalkedTo(playerPosition, destination)
 
   if walkToPoint ~= playerPosition then
     GMR.MoveTo(walkToPoint.x, walkToPoint.y, walkToPoint.z)
