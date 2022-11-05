@@ -775,13 +775,6 @@ end
 
 local MAXIMUM_SEARCH_TIME = nil -- seconds
 
-function moveTo(x, y, z, a)
-  local thread = coroutine.create(function()
-    moveToInner(x, y, z, a, 0)
-  end)
-  resumeWithShowingError(thread)
-end
-
 function createPathFinder()
   local shouldStop2 = false
 
@@ -1051,118 +1044,6 @@ function movePath(path)
   end))
   pathMover.run()
   return pathMover
-end
-
-function moveToInner(x, y, z, a, depth)
-  local start = determineStartPosition()
-  local destination = createPoint(x, y, z)
-
-  if canBeFlownFromPointToPoint(start, destination) then
-    if not isMountedOnFlyingMount() then
-      mountOnFlyingMount()
-    end
-
-    local playerPosition = retrievePlayerPosition()
-    if GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then
-      liftUp()
-      start = determineStartPosition()
-    end
-
-    if canFlyFromPointToPoint(start, destination) then
-      print('direct fly')
-      GMR.MoveTo(destination.x, destination.y, destination.z)
-    else
-      aStarPoints = {}
-
-      local generateFlyingNeighborPointsAdaptively = function(point)
-        local distanceToDestination = distanceBetween(point, destination)
-        local distance
-        if distanceToDestination <= 20 then
-          distance = 2
-        else
-          distance = 2
-        end
-        return generateFlyingNeighborPoints(point, distance)
-      end
-
-      -- generateNeighborPoints(start)
-      -- generateFlyingNeighborPointsAdaptively(start)
-      -- local path = nil
-      path = findPath(
-        start,
-        destination,
-        createReceiveOrGenerateNeighborPoints(generateFlyingNeighborPointsAdaptively),
-        MAXIMUM_SEARCH_TIME,
-        true,
-        a
-      )
-      afsdsd = path
-      if path then
-        storeConnection(path)
-        if pathMover then
-          pathMover.stop()
-        end
-        if a.shouldStop() then
-          return
-        end
-        local pathLength = #path
-        pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint, index)
-          return createMoveToAction3(waypoint, index < pathLength, a)
-        end))
-        pathMover.run()
-        waitForPlayerStandingStill()
-        if not a.shouldStop() and depth == 0 and not GMR.IsPlayerPosition(destination.x, destination.y, destination.z,
-          1) then
-          moveToInner(destination.x, destination.y, destination.z, a, depth + 1)
-        end
-      end
-    end
-  else
-    aStarPoints = {}
-
-    local generateNeighborPointsAdaptively = function(point)
-      local distanceToDestination = distanceBetween(point, destination)
-      local distance
-      if distanceToDestination <= 20 then
-        distance = 2
-      else
-        distance = 2
-      end
-      return generateNeighborPoints(point, distance)
-    end
-
-    generateNeighborPointsAdaptively(start)
-    -- local path = nil
-    path = findPath(
-      start,
-      destination,
-      createReceiveOrGenerateNeighborPoints(generateNeighborPointsAdaptively),
-      MAXIMUM_SEARCH_TIME,
-      false,
-      a
-    )
-    print('path length', #path)
-    -- DevTools_Dump(path)
-    afsdsd = path
-    if path then
-      storeConnection(path)
-      if pathMover then
-        pathMover.stop()
-      end
-      if a.shouldStop() then
-        return
-      end
-      pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint)
-        return createMoveToAction3(waypoint, false, a)
-      end))
-      pathMover.run()
-      waitForPlayerStandingStill()
-      if not a.shouldStop() and depth == 0 and not GMR.IsPlayerPosition(destination.x, destination.y, destination.z,
-        1) then
-        moveToInner(destination.x, destination.y, destination.z, a, depth + 1)
-      end
-    end
-  end
 end
 
 function testA()
