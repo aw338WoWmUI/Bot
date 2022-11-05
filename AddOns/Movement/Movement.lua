@@ -121,7 +121,10 @@ function canMoveFromPointToPoint(from, to)
 end
 
 function canFlyFromPointToPoint(from, to)
-  return thereAreZeroCollisions(from, to) and isEnoughSpaceOnTop(from, to)
+  local a = thereAreZeroCollisions(createPointWithZOffset(from, 0.1), to)
+  local b = isEnoughSpaceOnTop(from, to)
+  print(a, b)
+  return a and b
 end
 
 function isEnoughSpaceOnTop(from, to)
@@ -1037,6 +1040,11 @@ function findPathInner(x, y, z, a)
   end
 
   local receiveNeighborPoints = createReceiveOrGenerateNeighborPoints(generateNeighborPoints2)
+
+  --log('withFlying', withFlying)
+  --local points = receiveNeighborPoints(start)
+  --aStarPoints = points
+  --log('points', points)
 
   path = findPath(
     start,
