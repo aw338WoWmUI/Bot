@@ -16,3 +16,6 @@
 [submodule "AddOns/Events"]
 	path = AddOns/Events
 	url = https://github.com/SanjoSolutions/LuaEvents.git
+[submodule "AddOns/Coroutine"]
+	path = AddOns/Coroutine
+	url = https://github.com/SanjoSolutions/LuaCoroutine.git
