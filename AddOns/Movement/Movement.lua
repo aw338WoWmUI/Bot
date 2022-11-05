@@ -72,7 +72,7 @@ function savePosition()
   savedPosition = createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
-local TraceLineHitFlags = {
+TraceLineHitFlags = {
   COLLISION = 1048849,
   WATER = 131072,
   WATER2 = 65536
