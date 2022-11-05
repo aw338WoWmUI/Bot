@@ -8,6 +8,9 @@ aStarPoints = nil
 local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
 local A = 0.75
+local MAXIMUM_WATER_DEPTH = 1000
+local MAXIMUM_SEARCH_TIME = nil -- seconds
+local GRID_LENGTH = 2
 
 local ticker
 ticker = C_Timer.NewTicker(0, function()
@@ -114,41 +117,26 @@ function canWalkTo(position)
   return thereAreZeroCollisions(fromPosition, position)
 end
 
-function canMoveFromPointToPoint(from, to)
+function canBeMovedFromPointToPoint(from, to)
   return (
-    canBeMovedFromPointToPoint(from, to)
-    -- or canBeJumpedFromPointToPoint(from, to)
-    -- or canBeFlownFromPointToPoint(from, to)
+    canBeWalkedOrSwamFromPointToPoint(from, to)
+      -- or canBeJumpedFromPointToPoint(from, to)
+      or canBeFlownFromPointToPoint(from, to)
   )
 end
 
-function canFlyFromPointToPoint(from, to)
-  local a = thereAreZeroCollisions(createPointWithZOffset(from, 0.1), to)
-  local b = isEnoughSpaceOnTop(from, to)
-  print(a, b)
-  return a and b
-end
-
 function isEnoughSpaceOnTop(from, to)
-  local a = 3
-  local from2 = {
-    x = from.x,
-    y = from.y,
-    z = from.z + a
-  }
-  local to2 = {
-    x = to.x,
-    y = to.y,
-    z = to.z + a
-  }
-  return thereAreZeroCollisions(from2, to2)
+  return (
+    thereAreZeroCollisions(createPointWithZOffset(from, 0.1), createPointWithZOffset(to, 0.1)) and
+      thereAreZeroCollisions(createPointWithZOffset(from, 3), createPointWithZOffset(to, 3))
+  )
 end
 
 MAXIMUM_WALK_UP_TO_HEIGHT = 0.94
 local JUMP_DETECTION_HEIGHT = 1.5
 local MAXIMUM_JUMP_HEIGHT = 1.675
 
-function canBeMovedFromPointToPoint(from, to)
+function canBeWalkedOrSwamFromPointToPoint(from, to)
   local from2 = {
     x = from.x,
     y = from.y,
@@ -169,8 +157,6 @@ function canBeMovedFromPointToPoint(from, to)
       c
   )
 end
-
--- /dump canBeWalkedUpTo(path[13], path[14])
 
 function canBeMovedFromPointToPointCheckingSubSteps(from, to)
   if from.x == to.x and from.y == to.y then
@@ -241,7 +227,7 @@ function canBeFlownFromPointToPoint(from, to)
   end
   return (
     isFlyingAvailableInZone() and
-      canMountedPlayerStandOnPoint(to)
+      isEnoughSpaceOnTop(from, to)
   )
 end
 
@@ -257,15 +243,9 @@ function canPlayerStandOnPoint(position)
   end)
 end
 
-function canMountedPlayerStandOnPoint(position)
-  return canPlayerStandOnPoint(position)
-end
-
 function isFlyingAvailableInZone()
   return IsFlyableArea()
 end
-
-local MAXIMUM_WATER_DEPTH = 1000
 
 function retrieveGroundZ(position)
   local x, y, z = GMR.TraceLine(position.x, position.y, position.z, position.x, position.y,
@@ -289,9 +269,11 @@ end
 
 function generateWaypoint()
   local playerPosition = GMR.GetPlayerPosition()
-  return createPoint(GMR.GetPositionFromPosition(playerPosition.x, playerPosition.y, playerPosition.z, 5,
-    GMR.ObjectRawFacing('player'),
-    0))
+  return createPoint(
+    GMR.GetPositionFromPosition(
+      playerPosition.x, playerPosition.y, playerPosition.z, 5, GMR.ObjectRawFacing('player'), 0
+    )
+  )
 end
 
 function generateAngles(numberOfAngles)
@@ -311,20 +293,18 @@ function generatePoints(fromPosition, distance, angles)
   end)
 end
 
-function generateGroundPoints(fromPosition, distance, angles)
-  return Array.selectTrue(
-    Array.map(angles, function(angle)
-      return generateGroundPoint(fromPosition, distance, angle)
-    end)
-  )
+function generateMiddlePointsAround(fromPosition, distance)
+  return Array.selectTrue(generatePointsAroundOnGrid(fromPosition, distance, generateMiddlePoint))
 end
 
-function generateGroundOrWaterPoints(fromPosition, distance)
-  return Array.selectTrue(generatePointsAroundOnGrid(fromPosition, distance, generateGroundOrWaterPoint))
+function generateAbovePointsAround(fromPosition, distance)
+  local abovePoint = createPointWithZOffset(fromPosition, distance)
+  return Array.selectTrue(generatePointsAroundOnGrid(abovePoint, distance, generateAbovePoint))
 end
 
-function generateFlyingPoints(fromPosition, distance)
-  return generatePointsAroundOnGrid(fromPosition, distance, generateFlyingPoint)
+function generateBelowPointsAround(fromPosition, distance)
+  local belowPoint = createPointWithZOffset(fromPosition, -distance)
+  return Array.selectTrue(generatePointsAroundOnGrid(belowPoint, distance, generateBelowPoint))
 end
 
 function generatePointsAroundOnGrid(fromPosition, distance, generatePoint)
@@ -340,22 +320,11 @@ function generatePointsAroundOnGrid(fromPosition, distance, generatePoint)
   }
 end
 
-function generateGroundPoint(fromPosition, distance, angle)
-  local point = createPoint(GMR.GetPositionFromPosition(fromPosition.x, fromPosition.y, fromPosition.z, distance, angle,
-    0))
-  point = closestPointOnGridWithZLeft(point)
-  local z2 = GMR.GetGroundZ(point.x, point.y, point.z)
-  if z2 == nil then
-    return nil
-  end
-  return createPoint(point.x, point.y, z2)
-end
-
-function generateGroundOrWaterPoint(fromPosition, offsetX, offsetY)
+function generateMiddlePoint(fromPosition, offsetX, offsetY)
   local point = closestPointOnGridWithZLeft(
     createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
-  if isPointInWater(point) then
+  if isPointInAir(point) or isPointInWater(point) then
     return point
   else
     local z2 = GMR.GetGroundZ(point.x, point.y, point.z)
@@ -366,8 +335,14 @@ function generateGroundOrWaterPoint(fromPosition, offsetX, offsetY)
   end
 end
 
-function generateFlyingPoint(fromPosition, offsetX, offsetY)
-  return closestPointOnGrid(
+function generateAbovePoint(fromPosition, offsetX, offsetY)
+  return closestPointOnGridWithZLeft(
+    createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
+  )
+end
+
+function generateBelowPoint(fromPosition, offsetX, offsetY)
+  return closestPointOnGridWithZLeft(
     createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
 end
@@ -375,27 +350,6 @@ end
 function generatePoint(fromPosition, distance, angle)
   local x, y, z = GMR.GetPositionFromPosition(fromPosition.x, fromPosition.y, fromPosition.z, distance, angle, 0)
   return createPoint(x, y, z)
-end
-
-function isWalkableToEvaluationPoint(evaluation)
-  return evaluation.canWalkTo
-end
-
-function retrievePositionFromEvaluation(evaluation)
-  return evaluation.position
-end
-
-function generateNeighborPoints(fromPosition, distance)
-  local points = generateGroundOrWaterPointsAround(fromPosition, distance)
-
-  -- aStarPoints = points
-
-  local points2 = Array.filter(points, function(point)
-    return canMoveFromPointToPoint(fromPosition, point)
-  end)
-
-  -- aStarPoints = points2
-  return points2
 end
 
 function receiveWaterSurfacePoint(point)
@@ -414,35 +368,11 @@ function isPointInWater(point)
   return toBoolean(GMR.IsPositionUnderwater(point.x, point.y, point.z))
 end
 
-function findWaterPointAbove(point, distance)
-  local waterSurfacePoint = receiveWaterSurfacePoint(point)
-  if waterSurfacePoint and waterSurfacePoint.z > point.z then
-    return createPoint(point.x, point.y, math.min(point.z + distance, waterSurfacePoint.z))
-  else
-    return nil
-  end
-end
-
-function findWaterPointBelow(point, distance)
-  local groundZ = retrieveGroundZ(point)
-  local z
-  if groundZ and groundZ >= point.z - distance then
-    z = groundZ
-  else
-    z = point.z - distance
-  end
-  if z ~= point.z then
-    return createPoint(point.x, point.y, z)
-  else
-    return nil
-  end
-end
-
-function generateFlyingNeighborPoints(fromPosition, distance)
-  local points = generateFlyingPointsAround(fromPosition, distance)
+function generateNeighborPoints(fromPosition, distance)
+  local points = generateNeighborPointsAround(fromPosition, distance)
   -- aStarPoints = points
   return Array.filter(points, function(point)
-    return canFlyFromPointToPoint(fromPosition, point)
+    return canBeMovedFromPointToPoint(fromPosition, point)
   end)
 end
 
@@ -452,78 +382,24 @@ function generatePointsAround(position, distance, numberOfAngles)
   return points
 end
 
-function generateGroundPointsAround(position, distance, numberOfAngles)
-  local angles = generateAngles(numberOfAngles)
-  local points = generateGroundPoints(position, distance, angles)
-  return points
-end
-
-function generateGroundOrWaterPointsAround(position, distance)
-  local points = generateGroundOrWaterPoints(position, distance)
-
-  if isPointInWater(position) then
-    local waterPointAbove = findWaterPointAbove(position, distance)
-    if waterPointAbove then
-      table.insert(points, waterPointAbove)
-      Array.append(points, generateGroundOrWaterPoints(waterPointAbove, distance))
-    end
-  end
-
-  local pointBelow = findWaterPointBelow(position, distance)
-  if pointBelow and isPointInWater(pointBelow) then
-    table.insert(points, pointBelow)
-    Array.append(points, generateGroundOrWaterPoints(pointBelow, distance))
-  end
-
-  return points
-end
-
 function createPointWithZOffset(point, zOffset)
   return createPoint(point.x, point.y, point.z + zOffset)
 end
 
-function generateFlyingPointsAround(position, distance)
-  local pointAbove = closestPointOnGridWithZLeft(createPointWithZOffset(position, distance))
-  local pointBelow = closestPointOnGridWithZLeft(createPointWithZOffset(position, -distance))
-  local points = Array.concat(
-    {
-      pointAbove,
-      pointBelow
-    },
-    generateFlyingPoints(position, distance),
-    generateFlyingPoints(pointAbove, distance),
-    generateFlyingPoints(pointBelow, distance)
+function generateNeighborPointsAround(position, distance)
+  return Array.concat(
+    generateMiddlePointsAround(position, distance),
+    generateAbovePointsAround(position, distance),
+    generateBelowPointsAround(position, distance)
   )
-  return points
-end
-
-function findMostOptimalPosition(points, destination)
-  local mostOptimalPosition = Array.min(points, function(point)
-    return GMR.GetDistanceBetweenPositions(point.x, point.y, point.z, destination.x, destination.y, destination.z)
-  end)
-  return mostOptimalPosition
-end
-
-function findApproachPosition(destination)
-  local playerPosition = GMR.GetPlayerPosition()
-
-  local fromPosition = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + zOffset)
-
-  local function evaluateApproachPosition(point)
-    return {
-      canWalkTo = canWalkTo(point),
-      position = point
-    }
-  end
-
-  local points = generateNeighborPoints(fromPosition, 4)
-  local mostOptimalPosition = findMostOptimalPosition(points, destination)
-
-  return mostOptimalPosition
 end
 
 function isPositionInTheAir(position)
-  return GMR.IsPointInTheAir(position.x, position.y, position.z)
+  return isPointInAir(position)
+end
+
+function isPointInAir(point)
+  return GMR.IsPointInTheAir(point.x, point.y, point.z)
 end
 
 function createMoveToAction3(waypoint, continueMoving, a)
@@ -559,7 +435,7 @@ function createMoveToAction3(waypoint, continueMoving, a)
       end
 
       local playerPosition = retrievePlayerPosition()
-      if canBeMovedFromPointToPoint(playerPosition, waypoint) then
+      if canBeWalkedOrSwamFromPointToPoint(playerPosition, waypoint) then
         if firstRun or not GMR.IsMoving() then
           GMR.MoveTo(waypoint.x, waypoint.y, waypoint.z)
         end
@@ -664,31 +540,6 @@ function moveToSavedPosition()
   return resumeWithShowingError(thread)
 end
 
-function moveTo2(destination)
-  if GMR.IsPositionInLoS(destination.x, destination.y, destination.z) then
-    GMR.MoveTo(destination.x, destination.y, destination.z)
-  else
-    local position = findApproachPosition(destination)
-    print('position', position)
-    if position then
-      GMR.MoveTo(position.x, position.y, position.z)
-    end
-  end
-end
-
-function drawLine()
-  hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
-    print('clearCanvas')
-  end)
-  GMR.LibDraw.Line(-4275.1850585938,
-    168.40158081055,
-    -69.644104003906,
-    -4281.8154296875,
-    165.69804382324,
-    -69.827529907226
-  )
-end
-
 function moveCloserTo(x, y, z)
   local playerPosition = GMR.GetPlayerPosition()
   local px = playerPosition.x
@@ -706,9 +557,7 @@ end
 
 function determineStartPosition()
   local playerPosition = GMR.GetPlayerPosition()
-  local start = createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
-
-  return start
+  return createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
 local pathMover = nil
@@ -758,8 +607,6 @@ function mountOnFlyingMount()
   end
 end
 
--- /dump coroutine.wrap(mountOnFlyingMount)()
-
 function waitForIsInAir()
   return waitFor(function()
     local playerPosition = retrievePlayerPosition()
@@ -772,8 +619,6 @@ function liftUp()
   waitForIsInAir()
   GMR.AscendStop()
 end
-
-local MAXIMUM_SEARCH_TIME = nil -- seconds
 
 function createPathFinder()
   local shouldStop2 = false
@@ -955,7 +800,6 @@ function addConnection(pointIndex, connection)
 end
 
 function storeConnection(path)
-  print('store connection')
   local destinationPointIndex = retrieveOrCreatePointIndex(path[#path])
 
   local index = #path - 1
@@ -986,21 +830,12 @@ function findPathInner(x, y, z, a)
   local destination = createPoint(x, y, z)
 
   local path
-  local withFlying
   local generateNeighborPoints2
   local distance = 2
   aStarPoints = {}
 
-  if canBeFlownFromPointToPoint(start, destination) then
-    generateNeighborPoints2 = function (point)
-      return generateFlyingNeighborPoints(point, distance)
-    end
-    withFlying = true
-  else
-    generateNeighborPoints2 = function (point)
-      return generateNeighborPoints(point, distance)
-    end
-    withFlying = false
+  generateNeighborPoints2 = function(point)
+    return generateNeighborPoints(point, distance)
   end
 
   local receiveNeighborPoints = createReceiveOrGenerateNeighborPoints(generateNeighborPoints2)
@@ -1015,7 +850,6 @@ function findPathInner(x, y, z, a)
     destination,
     receiveNeighborPoints,
     MAXIMUM_SEARCH_TIME,
-    withFlying,
     a
   )
 
@@ -1034,7 +868,7 @@ function movePath(path)
     pathMover.stop()
   end
   local a = {
-    shouldStop = function ()
+    shouldStop = function()
       return false
     end
   }
@@ -1046,18 +880,8 @@ function movePath(path)
   return pathMover
 end
 
-function testA()
-  return thereAreZeroCollisions(afsdsd[1], afsdsd[2])
-end
-
-function testADD()
-  local z = GMR.GetGroundZ(savedPosition.x, savedPosition.y, savedPosition.z)
-  print(z, GMR.GetDistanceToPosition(savedPosition.x, savedPosition.y, savedPosition.z - zOffset))
-end
-
 -- view distance = 5: 625
 -- view distance = 10: 975
--- /dump testADD()
 
 function waitForPlayerToBeOnPosition(position, radius)
   radius = radius or 3
@@ -1069,7 +893,6 @@ end
 function faceDirection(point)
   local yielder = createYielder()
   while not GMR.IsFacingXYZ(point.x, point.y, point.z) do
-    print('aaaa')
     local previousPlayerFacingAngle = GMR.ObjectRawFacing('player')
     GMR.FaceSmoothly(point.x, point.y, point.z)
     yielder.yield()
@@ -1079,8 +902,6 @@ function faceDirection(point)
   end
   GMR.FaceDirection(point.x, point.y, point.z)
 end
-
-local GRID_LENGTH = 2
 
 function closestPointOnGrid(point)
   return createPoint(
@@ -1100,27 +921,6 @@ end
 
 function closestCoordinateOnGrid(coordinate)
   return Math.round(coordinate / GRID_LENGTH) * GRID_LENGTH
-end
-
-function testaa()
-  GMR.GetSurroundingWaterXYZ()
-  local playerPosition = retrievePlayerPosition()
-  local z2 = GMR.GetGroundZ(playerPosition.x, playerPosition.y, playerPosition.z)
-  savedPosition = createPoint(playerPosition.x, playerPosition.y, z2)
-end
-
-function testaa2()
-  local playerPosition = retrievePlayerPosition()
-  local x, y, z = GMR.TraceLine(playerPosition.x, playerPosition.y, playerPosition.z + 1000, playerPosition.x,
-    playerPosition.y, playerPosition.z, bit.bor(TraceLineHitFlags.COLLISION, 131072))
-  savedPosition = createPoint(x, y, z)
-end
-
-function testaa3()
-  local playerPosition = retrievePlayerPosition()
-  local x, y, z = GMR.TraceLine(playerPosition.x, playerPosition.y, playerPosition.z + 1000, playerPosition.x,
-    playerPosition.y, playerPosition.z, 131072)
-  savedPosition = createPoint(x, y, z)
 end
 
 function convertPointToArray(point)
