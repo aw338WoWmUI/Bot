@@ -19,3 +19,6 @@
 [submodule "AddOns/Coroutine"]
 	path = AddOns/Coroutine
 	url = https://github.com/SanjoSolutions/LuaCoroutine.git
+[submodule "AddOns/BinaryHeap/libs/BinaryHeap"]
+	path = AddOns/BinaryHeap/libs/BinaryHeap
+	url = https://github.com/AkiKonani/BinaryHeap.git
