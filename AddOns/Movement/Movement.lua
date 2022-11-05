@@ -1019,63 +1019,36 @@ function findPathInner(x, y, z, a)
   local destination = createPoint(x, y, z)
 
   local path
-  if canBeFlownFromPointToPoint(start, destination) then
-    aStarPoints = {}
+  local withFlying
+  local generateNeighborPoints2
+  local distance = 2
+  aStarPoints = {}
 
-    local generateFlyingNeighborPointsAdaptively = function(point)
-      local distanceToDestination = distanceBetween(point, destination)
-      local distance
-      if distanceToDestination <= 20 then
-        distance = 2
-      else
-        distance = 2
-      end
+  if canBeFlownFromPointToPoint(start, destination) then
+    generateNeighborPoints2 = function (point)
       return generateFlyingNeighborPoints(point, distance)
     end
-
-    path = findPath(
-      start,
-      destination,
-      createReceiveOrGenerateNeighborPoints(generateFlyingNeighborPointsAdaptively),
-      MAXIMUM_SEARCH_TIME,
-      true,
-      a
-    )
+    withFlying = true
   else
-    aStarPoints = {}
-
-    local generateNeighborPointsAdaptively = function(point)
-      local distanceToDestination = distanceBetween(point, destination)
-      local distance
-      if distanceToDestination <= 20 then
-        distance = 2
-      else
-        distance = 2
-      end
+    generateNeighborPoints2 = function (point)
       return generateNeighborPoints(point, distance)
     end
-
-    local receiveNeighborPoints = createReceiveOrGenerateNeighborPoints(generateNeighborPointsAdaptively)
-
-    -- print('start')
-    -- DevTools_Dump(start)
-    -- local points = receiveNeighborPoints(start)
-    -- print('points')
-    -- DevTools_Dump(points)
-     -- aStarPoints = points
-
-    path = findPath(
-      start,
-      destination,
-      receiveNeighborPoints,
-      MAXIMUM_SEARCH_TIME,
-      false,
-      a
-    )
-
-    --print('path')
-    --DevTools_Dump(path)
+    withFlying = false
   end
+
+  local receiveNeighborPoints = createReceiveOrGenerateNeighborPoints(generateNeighborPoints2)
+
+  path = findPath(
+    start,
+    destination,
+    receiveNeighborPoints,
+    MAXIMUM_SEARCH_TIME,
+    withFlying,
+    a
+  )
+
+  --print('path')
+  --DevTools_Dump(path)
 
   if path then
     storeConnection(path)
