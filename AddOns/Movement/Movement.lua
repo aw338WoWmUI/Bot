@@ -718,7 +718,13 @@ function retrieveConnections(pointIndex)
   if connections2 then
     return Array.map(connections2, function(connection)
       local point = retrievePoint(connection[1])
-      return createPointWithPathTo(point.x, point.y, point.z, connection[2])
+      if connection[2] then
+        if connection[3] then
+          return createPointWithPathToAndObjectID(point.x, point.y, point.z, connection[2], connection[3])
+        else
+          return createPointWithPathTo(point.x, point.y, point.z, connection[2])
+        end
+      end
     end)
   else
     return {}
@@ -810,6 +816,22 @@ function addConnection(pointIndex, connection)
     connections[pointIndex] = {}
   end
   table.insert(connections[pointIndex], connection)
+end
+
+function addConnectionFromTo(closestPointOnGridFromFromPoint, from, to)
+  addConnectionFromToWithInteractable(closestPointOnGridFromFromPoint, from, to, nil)
+end
+
+function addConnectionFromToWithInteractable(closestPointOnGridFromFromPoint, from, to, objectID)
+  local closestPointOnGridIndexFromFromPoint = retrieveOrCreatePointIndex(closestPointOnGridFromFromPoint)
+  local toPointIndex = retrieveOrCreatePointIndex(to)
+  local pathIndex = createPathIndex({ from })
+  local connection = {
+    toPointIndex,
+    pathIndex,
+    objectID
+  }
+  addConnection(closestPointOnGridIndexFromFromPoint, connection)
 end
 
 function storeConnection(path)
@@ -931,6 +953,15 @@ function closestPointOnGridWithZLeft(point)
   )
 end
 
+function closestPointOnGridWithZOnGround(point)
+  point = closestPointOnGridWithZLeft(point)
+  return createPoint(
+    point.x,
+    point.y,
+    retrieveGroundZ(point)
+  )
+end
+
 function closestCoordinateOnGrid(coordinate)
   return Math.round(coordinate / GRID_LENGTH) * GRID_LENGTH
 end
@@ -990,7 +1021,7 @@ function moveTowards(x, y, z)
   local destination = createPoint(x, y, z)
   local playerPosition = retrievePlayerPosition()
   local walkToPoint = playerPosition
-  afsdsd = {walkToPoint}
+  afsdsd = { walkToPoint }
   while true do
     local pointOnMaximumWalkUpToHeight = createPointWithZOffset(walkToPoint, MAXIMUM_WALK_UP_TO_HEIGHT)
     local destinationOnMaximumWalkUpToHeight = createPointWithZOffset(destination, MAXIMUM_WALK_UP_TO_HEIGHT)
@@ -1024,3 +1055,55 @@ function moveTowardsSavedPosition()
   end)
   return resumeWithShowingError(thread)
 end
+
+local ticker
+ticker = C_Timer.NewTicker(0, function()
+  if _G.GMR and GMR.IsFullyLoaded and GMR.IsFullyLoaded() then
+    ticker:Cancel()
+
+    -- TODO: Continent ID
+
+    addConnectionFromTo(
+      createPoint(
+        -1728,
+        1284,
+        5451.509765625
+      ),
+      createPoint(
+        -1728.5428466797,
+        1283.0802001953,
+        5451.509765625
+      ),
+      createPoint(
+        -4357.6801757812,
+        800.40002441406,
+        -40.990001678467
+      )
+    )
+
+    addConnectionFromToWithInteractable(
+      createPoint(
+        -4366,
+        814,
+        -40.849704742432
+      ),
+      createPoint(
+        -4366.2514648438,
+        813.20324707031,
+        -40.817531585693
+      ),
+      createPoint(
+        -4357.6801757812,
+        800.40002441406,
+        -40.990001678467
+      ),
+      373592
+    )
+  end
+end)
+
+--log(closestPointOnGridWithZOnGround(createPoint(
+--  -4366.2514648438,
+--  813.20324707031,
+--  -40.817531585693
+--)))
