@@ -341,13 +341,13 @@ function generateMiddlePoint(fromPosition, offsetX, offsetY)
 end
 
 function generateAbovePoint(fromPosition, offsetX, offsetY)
-  return closestPointOnGridWithZLeft(
+  return closestPointOnGrid(
     createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
 end
 
 function generateBelowPoint(fromPosition, offsetX, offsetY)
-  return closestPointOnGridWithZLeft(
+  return closestPointOnGrid(
     createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
 end
