@@ -7,7 +7,6 @@ local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
 local CHARACTER_RADIUS = 0.75 -- the radius might vary race by race
 local MAXIMUM_WATER_DEPTH = 1000
-local MAXIMUM_SEARCH_TIME = nil -- seconds
 local GRID_LENGTH = 2
 local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.25 yards.
 local MAXIMUM_AIR_HEIGHT = 5000
@@ -167,7 +166,7 @@ function canBeMovedFromPointToPointCheckingSubSteps(from, to)
     return to.z - from.z <= MAXIMUM_WALK_UP_TO_HEIGHT or (isPointInWater(from) and isPointInWater(to))
   end
 
-  local totalDistance = distanceBetween(from, to)
+  local totalDistance = euclideanDistance(from, to)
 
   local point1 = from
   local stepSize = 1
@@ -412,6 +411,10 @@ function isPointInAir(point)
   return not z or point.z - z >= MINIMUM_LIFT_HEIGHT
 end
 
+function canBeFlown()
+  return isFlyingAvailableInZone() and GMR.IsOutdoors()
+end
+
 function createMoveToAction3(waypoint, continueMoving, a)
   local stopMoving = nil
   local firstRun = true
@@ -435,7 +438,7 @@ function createMoveToAction3(waypoint, continueMoving, a)
       end
 
       local playerPosition = retrievePlayerPosition()
-      if isPositionInTheAir(waypoint) then
+      if isPositionInTheAir(waypoint) and canBeFlown() then
         if not isMountedOnFlyingMount() then
           waitForPlayerStandingStill()
           mountOnFlyingMount()
@@ -859,7 +862,6 @@ function findPathInner(x, y, z, a)
     start,
     destination,
     receiveNeighborPoints,
-    MAXIMUM_SEARCH_TIME,
     a
   )
 
