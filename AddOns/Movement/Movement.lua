@@ -522,58 +522,8 @@ function findApproachPosition(destination)
   return mostOptimalPosition
 end
 
-function createMoveToAction4(waypoint, move, a)
-  local stopMoving = nil
-  local firstRun = true
-  local initialDistance = nil
-  local lastJumpTime = nil
-
-  local function cleanUp()
-    if stopMoving then
-      GMR.StopMoving = stopMoving
-    end
-  end
-
-  return {
-    run = function()
-      if firstRun then
-        stopMoving = GMR.StopMoving
-        GMR.StopMoving = function()
-        end
-        initialDistance = GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z)
-        firstRun = false
-      end
-
-      if firstRun or not GMR.IsMoving() then
-        move(waypoint)
-      end
-
-      if not lastJumpTime or GetTime() - lastJumpTime > 1 then
-        if (isJumpSituation()) then
-          print('jump')
-          lastJumpTime = GetTime()
-          GMR.Jump()
-        end
-      end
-    end,
-    isDone = function()
-      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 1)
-    end,
-    shouldCancel = function()
-      return a.shouldStop() or GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
-    end,
-    whenIsDone = cleanUp,
-    onCancel = function()
-      print('onCancel')
-      cleanUp()
-    end
-  }
-end
-
-function createMoveToAction2(waypoint, a)
-  return createMoveToAction4(waypoint, function(waypoint)
-    return GMR.MoveTo(waypoint.x, waypoint.y, waypoint.z)
-  end, a)
+function isPositionInTheAir(position)
+  return GMR.IsPointInTheAir(position.x, position.y, position.z)
 end
 
 function createMoveToAction3(waypoint, continueMoving, a)
@@ -595,8 +545,29 @@ function createMoveToAction3(waypoint, continueMoving, a)
         GMR.StopMoving = function()
         end
         initialDistance = GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z)
-        moveTo4(waypoint)
         firstRun = false
+      end
+
+      if isPositionInTheAir(waypoint) then
+        if not isMountedOnFlyingMount() then
+          mountOnFlyingMount()
+        end
+        local playerPosition = retrievePlayerPosition()
+        if GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then
+          liftUp()
+        end
+      end
+
+      local playerPosition = retrievePlayerPosition()
+      if canBeMovedFromPointToPoint(playerPosition, waypoint) then
+        if firstRun or not GMR.IsMoving() then
+          GMR.MoveTo(waypoint.x, waypoint.y, waypoint.z)
+        end
+      else
+        if firstRun then
+          faceDirection(waypoint)
+          GMR.MoveForwardStart()
+        end
       end
 
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
@@ -613,9 +584,7 @@ function createMoveToAction3(waypoint, continueMoving, a)
     shouldCancel = function()
       return (
         a.shouldStop() or
-          not GMR.IsMoving() or
-          not IsMounted() or
-          GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance
+          GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
       )
     end,
     whenIsDone = function()
@@ -794,7 +763,7 @@ end
 function waitForIsInAir()
   return waitFor(function()
     local playerPosition = retrievePlayerPosition()
-    return not GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z)
+    return isPositionInTheAir(playerPosition)
   end)
 end
 
@@ -1076,23 +1045,10 @@ function movePath(path)
       return false
     end
   }
-  if canBeFlownFromPointToPoint(start, destination) then
-    if not isMountedOnFlyingMount() then
-      mountOnFlyingMount()
-    end
-    local playerPosition = retrievePlayerPosition()
-    if GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then
-      liftUp()
-    end
-    local pathLength = #path
-    pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint, index)
-      return createMoveToAction3(waypoint, index < pathLength, a)
-    end))
-  else
-    pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint)
-      return createMoveToAction2(waypoint, a)
-    end))
-  end
+  local pathLength = #path
+  pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint, index)
+    return createMoveToAction3(waypoint, index < pathLength, a)
+  end))
   pathMover.run()
   return pathMover
 end
@@ -1197,7 +1153,7 @@ function moveToInner(x, y, z, a, depth)
         return
       end
       pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint)
-        return createMoveToAction2(waypoint, a)
+        return createMoveToAction3(waypoint, false, a)
       end))
       pathMover.run()
       waitForPlayerStandingStill()
@@ -1241,11 +1197,6 @@ function faceDirection(point)
     end
   end
   GMR.FaceDirection(point.x, point.y, point.z)
-end
-
-function moveTo4(point)
-  faceDirection(point)
-  GMR.MoveForwardStart()
 end
 
 local GRID_LENGTH = 2
