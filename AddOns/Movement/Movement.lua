@@ -5,12 +5,13 @@ aStarPoints = nil
 
 local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
-local A = 0.75
+local CHARACTER_RADIUS = 0.75 -- the radius might vary race by race
 local MAXIMUM_WATER_DEPTH = 1000
 local MAXIMUM_SEARCH_TIME = nil -- seconds
 local GRID_LENGTH = 2
 local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.25 yards.
 local MAXIMUM_AIR_HEIGHT = 5000
+local walkToPoint = nil
 
 local ticker
 ticker = C_Timer.NewTicker(0, function()
@@ -21,20 +22,23 @@ ticker = C_Timer.NewTicker(0, function()
       if savedPosition then
         GMR.LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
       end
-      --if position1 and position2 then
-      --  GMR.LibDraw.Line(
-      --    position1.x,
-      --    position1.y,
-      --    position1.z,
-      --    position2.x,
-      --    position2.y,
-      --    position2.z
-      --  )
-      --end
+      if walkToPoint then
+        GMR.LibDraw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
+      end
+      if position1 and position2 then
+        GMR.LibDraw.Line(
+          position1.x,
+          position1.y,
+          position1.z,
+          position2.x,
+          position2.y,
+          position2.z
+        )
+      end
 
       if afsdsd then
         local previousPoint = afsdsd[1]
-        GMR.LibDraw.Circle(previousPoint.x, previousPoint.y, previousPoint.z, A)
+        GMR.LibDraw.Circle(previousPoint.x, previousPoint.y, previousPoint.z, CHARACTER_RADIUS)
         for index = 2, #afsdsd do
           local point = afsdsd[index]
           GMR.LibDraw.Line(
@@ -45,7 +49,7 @@ ticker = C_Timer.NewTicker(0, function()
             point.y,
             point.z
           )
-          GMR.LibDraw.Circle(point.x, point.y, point.z, A)
+          GMR.LibDraw.Circle(point.x, point.y, point.z, CHARACTER_RADIUS)
           previousPoint = point
         end
       end
@@ -239,7 +243,7 @@ function canPlayerStandOnPoint(position)
   )
 
   if thereAreCollisions(position2, createPointWithZOffset(position, -0.1)) then
-    local points = generatePointsAround(position2, A, 8) -- the radius might vary race by race
+    local points = generatePointsAround(position2, CHARACTER_RADIUS, 8)
     return Array.all(points, function(point)
       return thereAreZeroCollisions(position2, point)
     end)
@@ -443,7 +447,8 @@ function createMoveToAction3(waypoint, continueMoving, a)
       end
 
       local playerPosition = retrievePlayerPosition()
-      if not GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then -- flying or in water
+      if not GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then
+        -- flying or in water
         if firstRun then
           faceDirection(waypoint)
         end
@@ -939,6 +944,81 @@ end
 function moveToSavedPath()
   local thread = coroutine.create(function()
     movePath(path)
+  end)
+  return resumeWithShowingError(thread)
+end
+
+function traceLine(from, to, hitFlags)
+  local x, y, z = GMR.TraceLine(
+    from.x,
+    from.y,
+    from.z,
+    to.x,
+    to.y,
+    to.z,
+    hitFlags
+  )
+  if x then
+    return createPoint(x, y, z)
+  else
+    return nil
+  end
+end
+
+function traceLineCollision(from, to)
+  return traceLine(from, to, TraceLineHitFlags.COLLISION)
+end
+
+function retrievePositionBetweenPositions(a, b, distanceFromA)
+  local x, y, z = GMR.GetPositionBetweenPositions(a.x, a.y, a.z, b.x, b.y, b.z, distanceFromA)
+  return createPoint(x, y, z)
+end
+
+function generateWalkToPointFromCollisionPoint(from, collisionPoint)
+  local pointWithDistanceToCollisionPoint = retrievePositionBetweenPositions(collisionPoint, from, CHARACTER_RADIUS)
+  local z = retrieveGroundZ(pointWithDistanceToCollisionPoint)
+  return createPoint(pointWithDistanceToCollisionPoint.x, pointWithDistanceToCollisionPoint.y, z)
+end
+
+function isFirstPointCloserToThanSecond(fromA, fromB, to)
+  return euclideanDistance(fromA, to) < euclideanDistance(fromB, to)
+end
+
+function moveTowards(x, y, z)
+  local destination = createPoint(x, y, z)
+  local playerPosition = retrievePlayerPosition()
+  local walkToPoint = playerPosition
+  afsdsd = {walkToPoint}
+  while true do
+    local pointOnMaximumWalkUpToHeight = createPointWithZOffset(walkToPoint, MAXIMUM_WALK_UP_TO_HEIGHT)
+    local destinationOnMaximumWalkUpToHeight = createPointWithZOffset(destination, MAXIMUM_WALK_UP_TO_HEIGHT)
+    local collisionPoint = traceLineCollision(pointOnMaximumWalkUpToHeight, destinationOnMaximumWalkUpToHeight)
+    if collisionPoint then
+      local potentialWalkToPoint = generateWalkToPointFromCollisionPoint(pointOnMaximumWalkUpToHeight, collisionPoint)
+      if not walkToPoint or isFirstPointCloserToThanSecond(potentialWalkToPoint, walkToPoint, destination) then
+        print(1)
+        walkToPoint = potentialWalkToPoint
+        table.insert(afsdsd, walkToPoint)
+      else
+        print(2)
+        break
+      end
+    else
+      print(3)
+      walkToPoint = destination
+      table.insert(afsdsd, walkToPoint)
+      break
+    end
+  end
+
+  if walkToPoint ~= playerPosition then
+    GMR.MoveTo(walkToPoint.x, walkToPoint.y, walkToPoint.z)
+  end
+end
+
+function moveTowardsSavedPosition()
+  local thread = coroutine.create(function()
+    moveTowards(savedPosition.x, savedPosition.y, savedPosition.z)
   end)
   return resumeWithShowingError(thread)
 end
