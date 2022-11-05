@@ -471,6 +471,11 @@ function logToFile(content)
   GMR.WriteFile('C:/log.txt', tostring(content) .. '\n', true)
 end
 
+function log(...)
+  local string = strjoin(' ', unpack(Array.map({...}, valueToString)))
+  logToFile(string)
+end
+
 function logTargetPosition()
   local x, y, z = GMR.ObjectPosition('target')
   if x then
