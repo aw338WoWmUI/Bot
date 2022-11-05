@@ -3,14 +3,14 @@ position2 = nil
 afsdsd = nil
 aStarPoints = nil
 
--- Minimum flying lift height seems to be ~ 0.25 yards.
-
 local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
 local A = 0.75
 local MAXIMUM_WATER_DEPTH = 1000
 local MAXIMUM_SEARCH_TIME = nil -- seconds
 local GRID_LENGTH = 2
+local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.25 yards.
+local MAXIMUM_AIR_HEIGHT = 5000
 
 local ticker
 ticker = C_Timer.NewTicker(0, function()
@@ -150,7 +150,7 @@ function canBeWalkedOrSwamFromPointToPoint(from, to)
   local a = thereAreZeroCollisions(from2, to2)
   local b = canPlayerStandOnPoint(to)
   local c = canBeMovedFromPointToPointCheckingSubSteps(from, to)
-  -- print(a, b, c)
+  -- log(a, b, c)
   return (
     a and
       b and
@@ -237,10 +237,15 @@ function canPlayerStandOnPoint(position)
     position.y,
     position.z + MAXIMUM_WALK_UP_TO_HEIGHT
   )
-  local points = generatePointsAround(position2, A, 8) -- the radius might vary race by race
-  return Array.all(points, function(point)
-    return thereAreZeroCollisions(position2, point)
-  end)
+
+  if thereAreCollisions(position2, createPointWithZOffset(position, -0.1)) then
+    local points = generatePointsAround(position2, A, 8) -- the radius might vary race by race
+    return Array.all(points, function(point)
+      return thereAreZeroCollisions(position2, point)
+    end)
+  end
+
+  return false
 end
 
 function isFlyingAvailableInZone()
@@ -249,7 +254,7 @@ end
 
 function retrieveGroundZ(position)
   local x, y, z = GMR.TraceLine(position.x, position.y, position.z, position.x, position.y,
-    position.z - MAXIMUM_WATER_DEPTH, TraceLineHitFlags.COLLISION)
+    position.z - MAXIMUM_AIR_HEIGHT, TraceLineHitFlags.COLLISION)
   return z
 end
 
@@ -399,7 +404,8 @@ function isPositionInTheAir(position)
 end
 
 function isPointInAir(point)
-  return GMR.IsPointInTheAir(point.x, point.y, point.z)
+  local z = retrieveGroundZ(createPointWithZOffset(point, 0.25))
+  return not z or point.z - z >= MINIMUM_LIFT_HEIGHT
 end
 
 function createMoveToAction3(waypoint, continueMoving, a)
@@ -417,15 +423,17 @@ function createMoveToAction3(waypoint, continueMoving, a)
   return {
     run = function()
       if firstRun then
+        -- log('waypoint', waypoint.x, waypoint.y, waypoint.z)
         stopMoving = GMR.StopMoving
         GMR.StopMoving = function()
         end
         initialDistance = GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z)
-        firstRun = false
       end
 
+      local playerPosition = retrievePlayerPosition()
       if isPositionInTheAir(waypoint) then
         if not isMountedOnFlyingMount() then
+          waitForPlayerStandingStill()
           mountOnFlyingMount()
         end
         local playerPosition = retrievePlayerPosition()
@@ -435,27 +443,30 @@ function createMoveToAction3(waypoint, continueMoving, a)
       end
 
       local playerPosition = retrievePlayerPosition()
-      if canBeWalkedOrSwamFromPointToPoint(playerPosition, waypoint) then
-        if firstRun or not GMR.IsMoving() then
-          GMR.MoveTo(waypoint.x, waypoint.y, waypoint.z)
-        end
-      else
+      if not GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then -- flying or in water
         if firstRun then
           faceDirection(waypoint)
+        end
+        if not GMR.IsMoving() then
           GMR.MoveForwardStart()
+        end
+      else
+        if firstRun or not GMR.IsMoving() then
+          GMR.MoveTo(waypoint.x, waypoint.y, waypoint.z)
         end
       end
 
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
         if (isJumpSituation()) then
-          print('jump')
           lastJumpTime = GetTime()
           GMR.Jump()
         end
       end
+
+      firstRun = false
     end,
     isDone = function()
-      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 1)
+      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 3)
     end,
     shouldCancel = function()
       return (
@@ -506,7 +517,7 @@ local function findPathToSavedPosition2()
   local destination = savedPosition
   local pathFinder = createPathFinder()
   debugprofilestart()
-  local path = pathFinder.start(destination.x, destination.y, destination.z)
+  path = pathFinder.start(destination.x, destination.y, destination.z)
   local duration = debugprofilestop()
   logToFile(duration)
   print(duration)
@@ -523,18 +534,10 @@ end
 
 function moveToSavedPosition()
   local thread = coroutine.create(function()
-    local path = findPathToSavedPosition2()
+    path = findPathToSavedPosition2()
     if path then
-      path = Array.map(path, function(point)
-        return { point.x, point.y, point.z }
-      end)
-      --for index = 2, #path do
-      --  local previousWaypoint = path[index - 1]
-      --  local waypoint = path[index]
-      --  GMR.ModifyPath(previousWaypoint[1], previousWaypoint[2], previousWaypoint[3], waypoint[1], waypoint[2], waypoint[3])
-      --end
       print('go path')
-      GMR.ExecutePath(true, path)
+      movePath(path)
     end
   end)
   return resumeWithShowingError(thread)
@@ -615,9 +618,11 @@ function waitForIsInAir()
 end
 
 function liftUp()
+  GMR.MoveForwardStop()
   GMR.JumpOrAscendStart()
   waitForIsInAir()
   GMR.AscendStop()
+  waitForPlayerStandingStill()
 end
 
 function createPathFinder()
@@ -929,4 +934,11 @@ end
 
 function convertPathToGMRPath(path)
   return Array.map(path, convertPointToArray)
+end
+
+function moveToSavedPath()
+  local thread = coroutine.create(function()
+    movePath(path)
+  end)
+  return resumeWithShowingError(thread)
 end

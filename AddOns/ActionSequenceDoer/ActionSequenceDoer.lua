@@ -60,6 +60,7 @@ function createActionSequenceDoer2(actions)
           if index <= #actions then
             local action = actions[index]
             isActionRunning = true
+            print('run action', index, GetTime())
             action.run()
 
             yielder.yield()
