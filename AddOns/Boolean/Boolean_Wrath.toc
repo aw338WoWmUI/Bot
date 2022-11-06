@@ -1,4 +1,4 @@
 ## Title: Boolean
-## Interface: 100000
+## Interface: 30400
 
 Boolean.lua

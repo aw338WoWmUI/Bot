@@ -1,4 +1,4 @@
 ## Title: Yielder
-## Interface: 100000
+## Interface: 30400
 
 Yielder.lua
