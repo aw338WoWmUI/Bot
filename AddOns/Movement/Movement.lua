@@ -201,6 +201,7 @@ ticker = C_Timer.NewTicker(0, function()
             point.y,
             point.z
           )
+          GMR.LibDraw.Circle(point.x, point.y, point.z, CHARACTER_RADIUS)
           previousPoint = point
         end
         local firstPoint = path[1]
@@ -547,13 +548,20 @@ function generateNeighborPoints3(fromPosition, distance)
     local x, y, z = GMR.GetClosestPointOnMesh(continentID, point.x, point.y, point.z)
     if x then
       local point = createPoint(x, y, z)
-      if euclideanDistance2D(fromPosition, point) <= maxDistance then
+      if euclideanDistance2D(fromPosition, point) <= maxDistance and canBeMovedFromAToB(fromPosition, point) then
         return point
       end
     end
 
     return nil
   end))
+end
+
+function canBeMovedFromAToB(from, to)
+  return thereAreZeroCollisions(
+    createPointWithZOffset(from, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1),
+    createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1)
+  )
 end
 
 function generatePointsAround(position, distance, numberOfAngles)
@@ -639,7 +647,6 @@ function createMoveToAction3(waypoint, continueMoving, a)
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
         if (isJumpSituation()) then
           lastJumpTime = GetTime()
-          print('jump')
           GMR.Jump()
         end
       end
@@ -647,7 +654,7 @@ function createMoveToAction3(waypoint, continueMoving, a)
       firstRun = false
     end,
     isDone = function()
-      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 3)
+      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 2)
     end,
     shouldCancel = function()
       return (
@@ -1053,7 +1060,11 @@ function findPathInner(from, to, a)
   -- aStarPoints = {}
 
   generateNeighborPoints2 = function(point)
-    return generateNeighborPoints3(point, distance)
+    local pointIndex = retrieveOrCreatePointIndex(point)
+    local connections2 = retrieveConnections(pointIndex)
+    local neighborPoints = connections2
+    Array.append(neighborPoints, generateNeighborPoints3(point, distance))
+    return neighborPoints
   end
 
   local receiveNeighborPoints = generateNeighborPoints2

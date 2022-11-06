@@ -317,7 +317,7 @@ local function retrievePoints()
     questStartPoints = retrieveQuestStartPoints(),
     objectivePoints = retrieveObjectivePoints(),
     objectPoints = retrieveObjectPoints(),
-    explorationPoints = {} -- retrieveExplorationPoints()
+    explorationPoints = retrieveExplorationPoints()
   }
 end
 
@@ -408,35 +408,13 @@ local function stopPathMover()
   end
 end
 
-local function moveToPoint3(point)
-  local continentID = select(8, GetInstanceInfo())
-  local pathFinder = createPathFinder()
-  local path = pathFinder.start(point.x, point.y, point.z)
-  print('path')
-  DevTools_Dump(path)
-  if path then
-    pointToMove = path[#path]
-    print('m1')
-    stopPathMover()
-    pathMover = movePath(path)
-    print('m2')
-  end
-end
-
 local function isPlayerOnMeshPoint()
   local playerPosition = GMR.GetPlayerPosition()
   return GMR.IsOnMeshPoint(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
 local function moveToPoint2(point)
-  if GMR.GetPath(point.x, point.y, point.z) then
-    print('aa')
-    stopPathMover()
-    GMR.Questing.MoveTo(point.x, point.y, point.z)
-  else
-    print('ab')
-    moveToPoint3(point)
-  end
+  GMR.Questing.MoveTo(point.x, point.y, point.z)
 end
 
 local function moveToPoint(point)
