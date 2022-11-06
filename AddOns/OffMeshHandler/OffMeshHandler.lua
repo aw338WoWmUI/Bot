@@ -5,7 +5,6 @@ ticker = C_Timer.NewTicker(0, function()
 
     local run = nil
     local pathFinder = nil
-    local pathMover = nil
 
     function isPathFinding()
       return toBoolean(pathFinder)
@@ -44,16 +43,7 @@ ticker = C_Timer.NewTicker(0, function()
           DevTools_Dump(path)
           if path then
             afsdsd = path
-            --path = Array.map(path, function(point)
-            --  return { point.x, point.y, point.z }
-            --end)
-            --for index = 2, #path do
-            --  local previousWaypoint = path[index - 1]
-            --  local waypoint = path[index]
-            --  GMR.ModifyPath(previousWaypoint[1], previousWaypoint[2], previousWaypoint[3], waypoint[1], waypoint[2], waypoint[3])
-            --end
-            -- print('go path')
-            -- pathMover = movePath(path)
+            pathMover = movePath(path)
 
             run = nil
             pathFinder = nil
@@ -84,15 +74,5 @@ ticker = C_Timer.NewTicker(0, function()
       return meshTo(...)
     end
     hooksecurefunc(GMR, 'MoveTo', handleMove)
-
-    --GMR.OffMeshHandler = function (x, y, z)
-    --  log('GMR.OffMeshHandler', x, y, z)
-    --  local continentID = select(8, GetInstanceInfo())
-    --  local playerPosition = retrievePlayerPosition()
-    --  local id, x, y, z = findClosestDifferentPolygonTowardsPosition(playerPosition.x, playerPosition.y, playerPosition.z, x, y, z)
-    --  if x then
-    --    GMR.MoveTo(x, y, z)
-    --  end
-    --end
   end
 end)

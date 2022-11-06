@@ -302,22 +302,10 @@ JUMP_DETECTION_HEIGHT = 1.5
 MAXIMUM_JUMP_HEIGHT = 1.675
 
 function canBeWalkedOrSwamFromPointToPoint(from, to)
-  local from2 = {
-    x = from.x,
-    y = from.y,
-    z = from.z + MAXIMUM_WALK_UP_TO_HEIGHT + 0.01
-  }
-  local to2 = {
-    x = to.x,
-    y = to.y,
-    z = to.z + MAXIMUM_WALK_UP_TO_HEIGHT + 0.01
-  }
-  local a = thereAreZeroCollisions(from2, to2)
   local b = canPlayerStandOnPoint(to)
   local c = canBeMovedFromPointToPointCheckingSubSteps(from, to)
-  -- log(a, b, c)
+  log(b, c)
   return (
-    a and
       b and
       c
   )
@@ -396,17 +384,19 @@ function canBeFlownFromPointToPoint(from, to)
   )
 end
 
-function canPlayerStandOnPoint(position)
-  local position2 = createPoint(
-    position.x,
-    position.y,
-    position.z + MAXIMUM_WALK_UP_TO_HEIGHT
+function canPlayerStandOnPoint(point)
+  local point2 = createPoint(
+    point.x,
+    point.y,
+    point.z + MAXIMUM_WALK_UP_TO_HEIGHT
   )
 
-  if thereAreCollisions(position2, createPointWithZOffset(position, -0.1)) then
-    local points = generatePointsAround(position2, CHARACTER_RADIUS, 8)
+  local point3 = createPointWithZOffset(point2, 0.1)
+
+  if thereAreZeroCollisions(point2, createPointWithZOffset(point, 0.1)) then
+    local points = generatePointsAround(point3, CHARACTER_RADIUS, 8)
     return Array.all(points, function(point)
-      return thereAreZeroCollisions(position2, point)
+      return thereAreZeroCollisions(point3, point)
     end)
   end
 
@@ -554,7 +544,7 @@ function generateNeighborPoints3(fromPosition, distance)
     local x, y, z = GMR.GetClosestPointOnMesh(continentID, point.x, point.y, point.z)
     if x then
       local point = createPoint(x, y, z)
-      if euclideanDistance(fromPosition, point) <= maxDistance then
+      if euclideanDistance2D(fromPosition, point) <= maxDistance then
         return point
       end
     end

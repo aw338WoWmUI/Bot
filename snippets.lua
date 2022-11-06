@@ -14,3 +14,6 @@ GMR.GetPathBetweenPoints(1112.2868652344, -466.92352294922, 20.854103088379, 106
 GMR.MeshTo(GMR.ObjectPosition('target'))
 
 GMR.GetPath(GMR.ObjectPosition('target'))
+
+GMR.ExecutePath(true, GMR.GetPath(GMR.ObjectPosition('target')))
+
