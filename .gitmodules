@@ -22,3 +22,6 @@
 [submodule "AddOns/BinaryHeap/libs/BinaryHeap"]
 	path = AddOns/BinaryHeap/libs/BinaryHeap
 	url = https://github.com/AkiKonani/BinaryHeap.git
+[submodule "AddOns/Function"]
+	path = AddOns/Function
+	url = https://github.com/SanjoSolutions/LuaFunction.git
