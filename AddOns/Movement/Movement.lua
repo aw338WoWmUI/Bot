@@ -12,29 +12,182 @@ local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.2
 local MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
 
+local cache = {}
+
+function addPointToCache(fromX, fromY, fromZ, toX, toY, toZ)
+  local a = cache[fromX]
+  if not a then
+    cache[fromX] = {}
+  end
+  if not cache[fromX][fromY] then
+    cache[fromX][fromY] = {}
+  end
+  cache[fromX][fromY][fromZ] = { toX, toY, toZ }
+end
+
+function retrievePointFromCache(x, y, z)
+  local a = cache[x]
+  if a then
+    local b = a[y]
+    if b then
+      local c = b[z]
+      if c then
+        return unpack(c)
+      end
+    end
+  end
+end
+
+function findClosestDifferentPolygon(x, y, z)
+  local continentID = select(8, GetInstanceInfo())
+  local id, x2, y2, z2 = GMR.GetClosestMeshPolygon(continentID, x, y, z, 1, 1, 1000)
+  if id then
+    local stepSize = 1
+
+    local function checkPoint(x3, y3)
+      local z3 = GMR.GetGroundZ(x3, y3, z) or z
+      local id2, x4, y4, z4 = GMR.GetClosestMeshPolygon(continentID, x3, y3, z3, 1, 1, 1000)
+      if id2 and id2 ~= id then
+        return id2, x4, y4, z4
+      else
+        return nil
+      end
+    end
+
+    for distance = 1, 1000 do
+      local y3 = y + distance
+      for x3 = x - distance, x + distance, stepSize do
+        local id2, x4, y4, z4 = checkPoint(x3, y3)
+        if id2 then
+          return id2, x4, y4, z4
+        end
+      end
+
+      local y3 = y - distance
+      for x3 = x - distance, x + distance, stepSize do
+        local id2, x4, y4, z4 = checkPoint(x3, y3)
+        if id2 then
+          return id2, x4, y4, z4
+        end
+      end
+
+      local x3 = x - distance
+      for y3 = y - distance + stepSize, y + distance - stepSize, stepSize do
+        local id2, x4, y4, z4 = checkPoint(x3, y3)
+        if id2 then
+          return id2, x4, y4, z4
+        end
+      end
+
+      local x3 = x + distance
+      for y3 = y - distance + stepSize, y + distance - stepSize, stepSize do
+        local id2, x4, y4, z4 = checkPoint(x3, y3)
+        if id2 then
+          return id2, x4, y4, z4
+        end
+      end
+    end
+  end
+
+  return nil
+end
+
+function findClosestDifferentPolygonTowardsPosition(x, y, z, x5, y5, z5)
+  local continentID = select(8, GetInstanceInfo())
+  local id, x2, y2, z2 = GMR.GetClosestMeshPolygon(continentID, x, y, z, 1, 1, 1000)
+  if id then
+    local stepSize = 1
+
+    local totalDistance = GMR.GetDistanceBetweenPositions(x, y, z, x5, y5, z5)
+
+    function checkPoint(distance)
+      local x3, y3, z3 = GMR.GetPositionBetweenPositions(x, y, z, x5, y5, z5, distance)
+      local z3 = GMR.GetGroundZ(x3, y3, z) or z
+      local id2, x4, y4, z4, d = GMR.GetClosestMeshPolygon(continentID, x3, y3, z3, 1, 1, 1000)
+      if id2 and id2 ~= id then
+        return id2, x4, y4, z4, d
+      end
+    end
+
+    local distance = stepSize
+    while distance < totalDistance do
+      local id2, x4, y4, z4, d = checkPoint(distance)
+      if id2 then
+        return id2, x4, y4, z4, d
+      end
+      distance = distance + stepSize
+    end
+    local id2, x4, y4, z4, d = checkPoint(totalDistance)
+    if id2 then
+      return id2, x4, y4, z4, d
+    end
+  end
+
+  return nil
+end
+
 local ticker
 ticker = C_Timer.NewTicker(0, function()
   if _G.GMR and _G.GMR.LibDraw and _G.GMR.LibDraw.clearCanvas then
     ticker:Cancel()
 
     hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
-      if savedPosition then
-        GMR.LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
-      end
-      if walkToPoint then
-        GMR.LibDraw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
-      end
-      if position1 and position2 then
-        GMR.LibDraw.Line(
-          position1.x,
-          position1.y,
-          position1.z,
-          position2.x,
-          position2.y,
-          position2.z
-        )
+      if not GMR.IsMeshLoaded() then
+        GMR.LoadMeshFiles()
       end
 
+      local continentID = select(8, GetInstanceInfo())
+
+      local playerPosition = retrievePlayerPosition()
+      if playerPosition then
+        GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
+        for y = playerPosition.y - 4, playerPosition.y + 4 do
+          for x = playerPosition.x - 4, playerPosition.x + 4 do
+            local x2, y2, z2 = retrievePointFromCache(x, y, playerPosition.z)
+            if not x2 then
+              local z3 = GMR.GetGroundZ(x, y, playerPosition.z) or playerPosition.z
+              x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, x, y, z3)
+              if x2 then
+                addPointToCache(x, y, playerPosition.z, x2, y2, z2)
+              end
+            end
+            if x2 then
+              GMR.LibDraw.Circle(x2, y2, z2, 0.1)
+            end
+          end
+        end
+      end
+
+      local playerPosition = retrievePlayerPosition()
+      if playerPosition then
+        local x2, y2, z2 = GMR.ObjectPosition('target')
+        if x2 then
+          local id, x, y, z, d = findClosestDifferentPolygonTowardsPosition(playerPosition.x, playerPosition.y,
+            playerPosition.z, x2, y2, z2)
+          if x then
+            GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+            GMR.LibDraw.Circle(x, y, z, 4)
+          end
+        end
+      end
+
+      --if savedPosition then
+      --  GMR.LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
+      --end
+      --if walkToPoint then
+      --  GMR.LibDraw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
+      --end
+      --if position1 and position2 then
+      --  GMR.LibDraw.Line(
+      --    position1.x,
+      --    position1.y,
+      --    position1.z,
+      --    position2.x,
+      --    position2.y,
+      --    position2.z
+      --  )
+      --end
+      --
       if afsdsd then
         local previousPoint = afsdsd[1]
         GMR.LibDraw.Circle(previousPoint.x, previousPoint.y, previousPoint.z, CHARACTER_RADIUS)
@@ -54,8 +207,9 @@ ticker = C_Timer.NewTicker(0, function()
       end
 
       if aStarPoints then
+        GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
         Array.forEach(aStarPoints, function(point)
-          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.5)
+          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
         end)
       end
     end)
@@ -384,6 +538,23 @@ function generateNeighborPoints(fromPosition, distance)
   end)
 end
 
+function generateNeighborPoints3(fromPosition, distance)
+  local points = generateMiddlePointsAround(fromPosition, distance)
+  local continentID = select(8, GetInstanceInfo())
+  local maxDistance = math.sqrt(2 * math.pow(distance, 2))
+  return Array.selectTrue(Array.map(points, function(point)
+    local x, y, z = GMR.GetClosestPointOnMesh(continentID, point.x, point.y, point.z)
+    if x then
+      local point = createPoint(x, y, z)
+      if euclideanDistance(fromPosition, point) <= maxDistance then
+        return point
+      end
+    end
+
+    return nil
+  end))
+end
+
 function generatePointsAround(position, distance, numberOfAngles)
   local angles = generateAngles(numberOfAngles)
   local points = generatePoints(position, distance, angles)
@@ -644,7 +815,37 @@ function createPathFinder()
 
   return {
     start = function(x, y, z)
-      return findPath2(x, y, z, a)
+      local from = retrievePlayerPosition()
+      local to = createPoint(x, y, z)
+      local continentID = select(8, GetInstanceInfo())
+      local x, y, z = GMR.GetClosestPointOnMesh(continentID, from.x, from.y, from.z)
+      local x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, to.x, to.y, to.z)
+      log('1', x, y, z)
+      log('2', x2, y2, z2)
+      if x and y and z and x2 and y2 and z2 then
+        if not GMR.IsMeshLoaded() then
+          GMR.LoadMeshFiles()
+        end
+        local path2 = GMR.GetPathBetweenPoints(x, y, z, x2, y2, z2)
+        if path2 then
+          path2 = convertGMRPathToPath(path2)
+          local path1 = findPath2(from, path2[1], a)
+          log('path1', path1)
+          log('path2', path2)
+          local path3 = findPath2(path2[#path2], to, a)
+          log('path3', tableToString(path3, 3))
+          if path1 and path2 and path3 then
+            path = Array.concat(path1, path2, path3)
+            print('ja')
+            return path
+          end
+        else
+          return findPath2(from, to, a)
+        end
+      else
+        return findPath2(from, to, a)
+      end
+      return findPath2(from, to, a)
     end,
     stop = function()
       shouldStop2 = true
@@ -658,8 +859,8 @@ function waitForPlayerStandingStill()
   end)
 end
 
-function findPath2(x, y, z, a)
-  return findPathInner(x, y, z, a, 0)
+function findPath2(from, to, a)
+  return findPathInner(from, to, a, 0)
 end
 
 points = {}
@@ -766,7 +967,13 @@ function receiveOrGenerateNeighborPoints(generateNeighborPoints, point)
 
   local connections2 = retrieveConnections(pointIndex)
 
-  return Array.concat(connections2, neighbours2)
+  local navMeshPoints = {}
+  local x, y, z = GMR.GetClosestPointOnMesh(GMR.GetMapId(), point.x, point.y, point.z)
+  if x and y and z and (x ~= point.x or y ~= point.y or z ~= point.z) then
+    table.insert(navMeshPoints, createPoint(x, y, z))
+  end
+
+  return Array.concat(navMeshPoints, connections2, neighbours2)
 end
 
 function createReceiveOrGenerateNeighborPoints(generateNeighborPoints)
@@ -857,32 +1064,30 @@ function storeConnection(path)
   end
 end
 
-function findPathInner(x, y, z, a)
-  local start = determineStartPosition()
-  local destination = createPoint(x, y, z)
-
+function findPathInner(from, to, a)
   local path
   local generateNeighborPoints2
   local distance = 2
   -- aStarPoints = {}
 
   generateNeighborPoints2 = function(point)
-    return generateNeighborPoints(point, distance)
+    return generateNeighborPoints3(point, distance)
   end
 
-  local receiveNeighborPoints = createReceiveOrGenerateNeighborPoints(generateNeighborPoints2)
+  local receiveNeighborPoints = generateNeighborPoints2
 
   --log('withFlying', withFlying)
-  --local points = receiveNeighborPoints(start)
+  --local points = receiveNeighborPoints(from)
   --aStarPoints = points
   --log('points', points)
 
   path = findPath(
-    start,
-    destination,
+    from,
+    to,
     receiveNeighborPoints,
     a
   )
+  --path = nil
 
   --print('path')
   --DevTools_Dump(path)
@@ -967,8 +1172,16 @@ function convertPointToArray(point)
   return { point.x, point.y, point.z }
 end
 
+function convertArrayToPoint(point)
+  return createPoint(unpack(point))
+end
+
 function convertPathToGMRPath(path)
   return Array.map(path, convertPointToArray)
+end
+
+function convertGMRPathToPath(path)
+  return Array.map(path, convertArrayToPoint)
 end
 
 function moveToSavedPath()

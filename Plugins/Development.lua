@@ -300,7 +300,7 @@ function tableToStringWithIndention(table, indention, depth, maxDepth, reference
         else
           result = result .. string.rep('  ', indention + 1) .. outputtedKey .. '=' .. tostring(value) .. '\n'
         end
-        references[value] = true
+        -- references[value] = true
       else
         result = result .. string.rep('  ', indention + 1) .. outputtedKey .. '=' .. valueToString(value) .. '\n'
       end
@@ -364,9 +364,6 @@ function logAPICalls2(apiName)
   table[parts[#parts]] = function(...)
     local output = 'call to ' .. apiName
     local args = tablePack(...)
-    if apiName == 'GMR.MeshMovementHandler' then
-      temp = args[1]
-    end
     if args.n >= 1 then
       output = output .. ':\n'
       output = output .. outputList(args)
@@ -389,6 +386,24 @@ function logAPICalls2(apiName)
   end
 end
 
+function logAllAPICalls()
+  for key in pairs(GMR) do
+    if type(GMR[key]) == 'function' then
+      if key ~= 'WriteFile' then
+        logAPICalls2('GMR.' .. key)
+      end
+    end
+  end
+end
+
+--logAPICalls2('GMR.LibDraw.Array')
+--logAPICalls2('GMR.OffMeshHandler')
+--logAPICalls2('GMR.LibDraw.SetColorRaw')
+--logAPICalls2('GMR.GetPath')
+--logAPICalls2('GMR.GetPathBetweenPoints')
+-- logAllAPICalls()
+--logAPICalls2('GMR.GetClosestMeshPolygon')
+--logAPICalls2('GMR.GetPoints')
 -- logAPICalls2('GMR.OffMeshHandler')
 --logAPICalls2('GMR.FaceDirection')
 --logAPICalls2('GMR.FaceSmoothly')
@@ -905,6 +920,7 @@ end
 -- GMR.GetClosestMeshPolygon()
 -- GMR.GetClosestPointOnMesh()
 
+-- GMR.LoadMeshFiles()
 -- GMR.GetClosestMeshPolygon(1643, -93.19278717041, -1074.8294677734, 61.544826507568, 1, 1, 1000)
 -- GMR.GetMeshPoints('0x001000540000264B', -93.19278717041, -1074.8294677734, 61.677707672119, 0.13288116455078)
 -- GMR.GetMeshToDestination()

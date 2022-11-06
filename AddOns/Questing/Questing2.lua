@@ -45,7 +45,7 @@ end))
 function retrieveQuestStartPoints()
   local continentID = select(8, GetInstanceInfo())
   local mapID = GMR.GetMapId()
-  local questLines = retrieveAvailableQuestLines(mapID)
+  local questLines = retrieveAvailableQuestLines(mapID) -- FIXME: It seems that it might be required to request the quest line data from the server before this API returns it.
   while #questLines == 0 and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
     mapID = C_Map.GetMapInfo(mapID).parentMapID
     questLines = retrieveAvailableQuestLines(mapID)
@@ -317,7 +317,7 @@ local function retrievePoints()
     questStartPoints = retrieveQuestStartPoints(),
     objectivePoints = retrieveObjectivePoints(),
     objectPoints = retrieveObjectPoints(),
-    explorationPoints = retrieveExplorationPoints()
+    explorationPoints = {} -- retrieveExplorationPoints()
   }
 end
 
@@ -399,15 +399,27 @@ function waitForSpecialItemUsable(point)
   end, 10)
 end
 
+local pathMover = nil
+
+local function stopPathMover()
+  if pathMover then
+    pathMover.stop()
+    pathMover = nil
+  end
+end
+
 local function moveToPoint3(point)
   local continentID = select(8, GetInstanceInfo())
   local pathFinder = createPathFinder()
   local path = pathFinder.start(point.x, point.y, point.z)
+  print('path')
+  DevTools_Dump(path)
   if path then
     afsdsd = path
     pointToMove = path[#path]
     print('m1')
-    movePath(path)
+    stopPathMover()
+    pathMover = movePath(path)
     print('m2')
   end
 end
@@ -419,8 +431,11 @@ end
 
 local function moveToPoint2(point)
   if GMR.GetPath(point.x, point.y, point.z) then
+    print('aa')
+    stopPathMover()
     GMR.Questing.MoveTo(point.x, point.y, point.z)
   else
+    print('ab')
     moveToPoint3(point)
   end
 end
@@ -430,6 +445,7 @@ local function moveToPoint(point)
   if point.type == 'acceptQuest' then
     print('acceptQuest', point.x, point.y, point.z, point.objectID, point.questName)
     if point.objectID then
+      print('path', GMR.GetPath(point.x, point.y, point.z))
       GMR.Questing.InteractWith(point.x, point.y, point.z, point.objectID)
     else
       moveToPoint2(point)
@@ -508,8 +524,10 @@ function moveToClosestPoint()
   print('pointToGo')
   DevTools_Dump(pointToGo)
   if pointToGo then
-    previousPointsToGo[2] = previousPointsToGo[1]
-    previousPointsToGo[1] = pointToGo
+    if previousPointsToGo[1] == nil or not seemToBeSamePoints(pointToGo, previousPointsToGo[1]) then
+      previousPointsToGo[2] = previousPointsToGo[1]
+      previousPointsToGo[1] = pointToGo
+    end
 
     pointToMove = pointToGo
     moveToPoint(pointToGo)
@@ -843,80 +861,87 @@ end
 run = nil
 run = function(once)
   local thread = coroutine.create(function()
-    if GMR.IsExecuting() and GMR.InCombat() and not GMR.IsAttacking() then
-      local pointer = GMR.GetAttackingEnemy()
-      if pointer then
-        local x, y, z = GMR.ObjectPosition(pointer)
-        local objectID = GMR.ObjectId(pointer)
-        GMR.Questing.KillEnemy(x, y, z, objectID)
+    local yielder = createYielder()
+
+    while true do
+      if GMR.IsExecuting() and GMR.InCombat() and not GMR.IsAttacking() then
+        local pointer = GMR.GetAttackingEnemy()
+        if pointer then
+          local x, y, z = GMR.ObjectPosition(pointer)
+          local objectID = GMR.ObjectId(pointer)
+          GMR.Questing.KillEnemy(x, y, z, objectID)
+        end
       end
-    end
-    if GMR.IsExecuting() and isIdle() then
-      pointToMove = nil
+      if GMR.IsExecuting() and isIdle() then
+        pointToMove = nil
 
-      local quests = retrieveQuestLogQuests()
-      local quest = Array.find(quests, function(quest)
-        return quest.isAutoComplete and GMR.IsQuestCompletable(quest.questID)
-      end)
-      if quest then
-        ShowQuestComplete(quest.questID)
-      end
+        local quests = retrieveQuestLogQuests()
+        local quest = Array.find(quests, function(quest)
+          return quest.isAutoComplete and GMR.IsQuestCompletable(quest.questID)
+        end)
+        if quest then
+          ShowQuestComplete(quest.questID)
+        end
 
-      for index = 1, GetNumAutoQuestPopUps() do
-        local questID, popUpType = GetAutoQuestPopUp(index)
+        for index = 1, GetNumAutoQuestPopUps() do
+          local questID, popUpType = GetAutoQuestPopUp(index)
 
-        if popUpType == 'OFFER' then
-          ShowQuestOffer(questID)
+          if popUpType == 'OFFER' then
+            ShowQuestOffer(questID)
+          end
+        end
+
+        if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
+          CompleteQuest()
+        elseif QuestFrameRewardPanel:IsShown() then
+          GetQuestReward(1)
+        elseif QuestFrameDetailPanel:IsShown() then
+          AcceptQuest()
+        elseif GossipFrame:IsShown() and C_GossipInfo.GetNumActiveQuests() >= 1 then
+          local activeQuests = C_GossipInfo.GetActiveQuests()
+          local activeQuest = activeQuests[1]
+          C_GossipInfo.SelectActiveQuest(activeQuest.questID)
+        elseif QuestFrame:IsShown() and GetNumActiveQuests() >= 1 then
+          SelectActiveQuest(1)
+        elseif GossipFrame:IsShown() and C_GossipInfo.GetNumAvailableQuests() >= 1 then
+          local availableQuests = C_GossipInfo.GetAvailableQuests()
+          local availableQuest = availableQuests[1]
+          C_GossipInfo.SelectAvailableQuest(availableQuest.questID)
+        elseif QuestFrame:IsShown() and GetNumAvailableQuests() >= 1 then
+          SelectAvailableQuest(1)
+        elseif GossipFrame:IsShown() and #C_GossipInfo.GetOptions() >= 1 then
+          local options = C_GossipInfo.GetOptions()
+          local option = options[1]
+          C_GossipInfo.SelectOption(option.gossipOptionID)
+        elseif canInteractWithQuestGiver() and lastQuestGiverObjectPointerInteractedWith ~= GMR.ObjectPointer('softinteract') then
+          interactWithQuestGiver()
+        elseif canInteractWithObject() then
+          interactWithObject()
+        elseif canGossipWithObject() and lastGossipedWithObjectPointer ~= GMR.ObjectPointer('softinteract') then
+          gossipWithObject()
+        elseif canTurnInQuest() then
+          turnInQuest()
+        elseif canExploreSoftInteractObject() then
+          exploreSoftInteractObject()
+        else
+          print('a')
+          local questIDs = retrieveQuestLogQuestIDs()
+          Array.forEach(questIDs, function(questID)
+            if C_QuestLog.IsFailed(questID) then
+              GMR.AbandonQuest(questID)
+            end
+          end)
+
+          updateIsObjectRelatedToActiveQuestLookup()
+          moveToClosestPoint()
         end
       end
 
-      if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
-        CompleteQuest()
-      elseif QuestFrameRewardPanel:IsShown() then
-        GetQuestReward(1)
-      elseif QuestFrameDetailPanel:IsShown() then
-        AcceptQuest()
-      elseif GossipFrame:IsShown() and C_GossipInfo.GetNumActiveQuests() >= 1 then
-        local activeQuests = C_GossipInfo.GetActiveQuests()
-        local activeQuest = activeQuests[1]
-        C_GossipInfo.SelectActiveQuest(activeQuest.questID)
-      elseif QuestFrame:IsShown() and GetNumActiveQuests() >= 1 then
-        SelectActiveQuest(1)
-      elseif GossipFrame:IsShown() and C_GossipInfo.GetNumAvailableQuests() >= 1 then
-        local availableQuests = C_GossipInfo.GetAvailableQuests()
-        local availableQuest = availableQuests[1]
-        C_GossipInfo.SelectAvailableQuest(availableQuest.questID)
-      elseif QuestFrame:IsShown() and GetNumAvailableQuests() >= 1 then
-        SelectAvailableQuest(1)
-      elseif GossipFrame:IsShown() and #C_GossipInfo.GetOptions() >= 1 then
-        local options = C_GossipInfo.GetOptions()
-        local option = options[1]
-        C_GossipInfo.SelectOption(option.gossipOptionID)
-      elseif canInteractWithQuestGiver() and lastQuestGiverObjectPointerInteractedWith ~= GMR.ObjectPointer('softinteract') then
-        interactWithQuestGiver()
-      elseif canInteractWithObject() then
-        interactWithObject()
-      elseif canGossipWithObject() and lastGossipedWithObjectPointer ~= GMR.ObjectPointer('softinteract') then
-        gossipWithObject()
-      elseif canTurnInQuest() then
-        turnInQuest()
-      elseif canExploreSoftInteractObject() then
-        exploreSoftInteractObject()
-      else
-        print('a')
-        local questIDs = retrieveQuestLogQuestIDs()
-        Array.forEach(questIDs, function(questID)
-          if C_QuestLog.IsFailed(questID) then
-            GMR.AbandonQuest(questID)
-          end
-        end)
-
-        updateIsObjectRelatedToActiveQuestLookup()
-        moveToClosestPoint()
+      if once then
+        return
       end
-    end
-    if not once then
-      C_Timer.After(1, run)
+
+      yielder.yield()
     end
   end)
   resumeWithShowingError(thread)
@@ -953,16 +978,6 @@ end
 -- 5, friendly
 function aaaaaaa()
   local namePlate = C_NamePlate.GetNamePlateForUnit('softinteract', issecure())
-  if namePlate then
-    local icon = namePlate.UnitFrame.SoftTargetFrame.Icon
-    if icon:IsShown() then
-      logToFile('icon: ' .. icon:GetTexture())
-    end
-  end
-end
-
-function aaaaaaa2()
-  local namePlate = C_NamePlate.GetNamePlateForUnit('target', issecure())
   if namePlate then
     local icon = namePlate.UnitFrame.SoftTargetFrame.Icon
     if icon:IsShown() then
