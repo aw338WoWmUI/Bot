@@ -2,6 +2,7 @@ position1 = nil
 position2 = nil
 afsdsd = nil
 aStarPoints = nil
+aStarPoints2 = nil
 
 local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
@@ -209,6 +210,13 @@ ticker = C_Timer.NewTicker(0, function()
       if aStarPoints then
         GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
         Array.forEach(aStarPoints, function(point)
+          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
+        end)
+      end
+
+      if aStarPoints2 then
+        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+        Array.forEach(aStarPoints2, function(point)
           GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
         end)
       end
@@ -1077,8 +1085,8 @@ function findPathInner(from, to, a)
   local receiveNeighborPoints = generateNeighborPoints2
 
   --log('withFlying', withFlying)
-  --local points = receiveNeighborPoints(from)
-  --aStarPoints = points
+  -- local points = receiveNeighborPoints(from)
+  -- aStarPoints = points
   --log('points', points)
 
   path = findPath(
@@ -1087,7 +1095,6 @@ function findPathInner(from, to, a)
     receiveNeighborPoints,
     a
   )
-  --path = nil
 
   --print('path')
   --DevTools_Dump(path)

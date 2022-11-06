@@ -40,6 +40,8 @@ ticker = C_Timer.NewTicker(0, function()
           afsdsd = nil
           print('start pathfinder')
           path = pathFinder.start(x, y, z)
+          print('path')
+          DevTools_Dump(path)
           if path then
             afsdsd = path
             --path = Array.map(path, function(point)
@@ -50,8 +52,7 @@ ticker = C_Timer.NewTicker(0, function()
             --  local waypoint = path[index]
             --  GMR.ModifyPath(previousWaypoint[1], previousWaypoint[2], previousWaypoint[3], waypoint[1], waypoint[2], waypoint[3])
             --end
-            print('go path')
-            DevTools_Dump(path)
+            -- print('go path')
             -- pathMover = movePath(path)
 
             run = nil
@@ -77,7 +78,11 @@ ticker = C_Timer.NewTicker(0, function()
       end
     end
 
-    hooksecurefunc(GMR, 'MeshTo', handleMove)
+    local meshTo = GMR.MeshTo
+    GMR.MeshTo = function (...)
+      handleMove(...)
+      return meshTo(...)
+    end
     hooksecurefunc(GMR, 'MoveTo', handleMove)
 
     --GMR.OffMeshHandler = function (x, y, z)
