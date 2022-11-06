@@ -415,7 +415,6 @@ local function moveToPoint3(point)
   print('path')
   DevTools_Dump(path)
   if path then
-    afsdsd = path
     pointToMove = path[#path]
     print('m1')
     stopPathMover()

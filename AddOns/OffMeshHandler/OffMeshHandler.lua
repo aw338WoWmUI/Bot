@@ -23,7 +23,7 @@ ticker = C_Timer.NewTicker(0, function()
     end
 
     GMR.OffMeshHandler = function(x, y, z)
-      print('GMR.OffMeshHandler', x, y, z)
+      -- print('GMR.OffMeshHandler', x, y, z)
       local from = retrievePlayerPosition()
       local to = createPoint(x, y, z)
       if run and isDifferentPathFindingRequestThanRun(from, to) then
@@ -36,13 +36,11 @@ ticker = C_Timer.NewTicker(0, function()
             to = to
           }
           pathFinder = createPathFinder()
-          afsdsd = nil
-          print('start pathfinder')
+          -- print('start pathfinder')
           path = pathFinder.start(x, y, z)
-          print('path')
-          DevTools_Dump(path)
+          -- print('path')
+          -- DevTools_Dump(path)
           if path then
-            afsdsd = path
             pathMover = movePath(path)
 
             run = nil

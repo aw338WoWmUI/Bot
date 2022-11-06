@@ -1,6 +1,6 @@
 ## Title: Movement
 ## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math
-## SavedVariables: savedPosition, position1, position2, from, to, path, afsdsd
+## SavedVariables: savedPosition, position1, position2, from, to
 
 PointFlyweight.lua
 PointWithPathToFlyweight.lua

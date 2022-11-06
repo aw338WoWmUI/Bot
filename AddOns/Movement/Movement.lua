@@ -1,6 +1,5 @@
 position1 = nil
 position2 = nil
-afsdsd = nil
 aStarPoints = nil
 aStarPoints2 = nil
 
@@ -133,51 +132,51 @@ ticker = C_Timer.NewTicker(0, function()
     ticker:Cancel()
 
     hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
-      if not GMR.IsMeshLoaded() then
-        GMR.LoadMeshFiles()
-      end
-
-      local continentID = select(8, GetInstanceInfo())
-
-      local playerPosition = retrievePlayerPosition()
-      if playerPosition then
-        GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
-        for y = playerPosition.y - 4, playerPosition.y + 4 do
-          for x = playerPosition.x - 4, playerPosition.x + 4 do
-            local x2, y2, z2 = retrievePointFromCache(x, y, playerPosition.z)
-            if not x2 then
-              local z3 = GMR.GetGroundZ(x, y, playerPosition.z) or playerPosition.z
-              x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, x, y, z3)
-              if x2 then
-                addPointToCache(x, y, playerPosition.z, x2, y2, z2)
-              end
-            end
-            if x2 then
-              GMR.LibDraw.Circle(x2, y2, z2, 0.1)
-            end
-          end
-        end
-      end
-
-      local playerPosition = retrievePlayerPosition()
-      if playerPosition then
-        local x2, y2, z2 = GMR.ObjectPosition('target')
-        if x2 then
-          local id, x, y, z, d = findClosestDifferentPolygonTowardsPosition(playerPosition.x, playerPosition.y,
-            playerPosition.z, x2, y2, z2)
-          if x then
-            GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-            GMR.LibDraw.Circle(x, y, z, 4)
-          end
-        end
-      end
-
-      --if savedPosition then
-      --  GMR.LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
-      --end
-      --if walkToPoint then
-      --  GMR.LibDraw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
-      --end
+      --      if not GMR.IsMeshLoaded() then
+      --        GMR.LoadMeshFiles()
+      --      end
+      --
+      --      local continentID = select(8, GetInstanceInfo())
+      --
+      --      local playerPosition = retrievePlayerPosition()
+      --      if playerPosition then
+      --        GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
+      --        for y = playerPosition.y - 4, playerPosition.y + 4 do
+      --          for x = playerPosition.x - 4, playerPosition.x + 4 do
+      --            local x2, y2, z2 = retrievePointFromCache(x, y, playerPosition.z)
+      --            if not x2 then
+      --              local z3 = GMR.GetGroundZ(x, y, playerPosition.z) or playerPosition.z
+      --              x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, x, y, z3)
+      --              if x2 then
+      --                addPointToCache(x, y, playerPosition.z, x2, y2, z2)
+      --              end
+      --            end
+      --            if x2 then
+      --              GMR.LibDraw.Circle(x2, y2, z2, 0.1)
+      --            end
+      --          end
+      --        end
+      --      end
+      --
+      --      local playerPosition = retrievePlayerPosition()
+      --      if playerPosition then
+      --        local x2, y2, z2 = GMR.ObjectPosition('target')
+      --        if x2 then
+      --          local id, x, y, z, d = findClosestDifferentPolygonTowardsPosition(playerPosition.x, playerPosition.y,
+      --            playerPosition.z, x2, y2, z2)
+      --          if x then
+      --            GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+      --            GMR.LibDraw.Circle(x, y, z, 4)
+      --          end
+      --        end
+      --      end
+      --
+      --      --if savedPosition then
+      --      --  GMR.LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
+      --      --end
+      --      --if walkToPoint then
+      --      --  GMR.LibDraw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
+      --      --end
       --if position1 and position2 then
       --  GMR.LibDraw.Line(
       --    position1.x,
@@ -188,12 +187,12 @@ ticker = C_Timer.NewTicker(0, function()
       --    position2.z
       --  )
       --end
-      --
-      if afsdsd then
-        local previousPoint = afsdsd[1]
-        GMR.LibDraw.Circle(previousPoint.x, previousPoint.y, previousPoint.z, CHARACTER_RADIUS)
-        for index = 2, #afsdsd do
-          local point = afsdsd[index]
+
+      if GMR.IsChecked('DisplayMovement') and path then
+        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+        local previousPoint = path[1]
+        for index = 2, #path do
+          local point = path[index]
           GMR.LibDraw.Line(
             previousPoint.x,
             previousPoint.y,
@@ -202,24 +201,27 @@ ticker = C_Timer.NewTicker(0, function()
             point.y,
             point.z
           )
-          GMR.LibDraw.Circle(point.x, point.y, point.z, CHARACTER_RADIUS)
           previousPoint = point
         end
+        local firstPoint = path[1]
+        local lastPoint = path[#path]
+        GMR.LibDraw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, CHARACTER_RADIUS)
+        GMR.LibDraw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, CHARACTER_RADIUS)
       end
-
-      if aStarPoints then
-        GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
-        Array.forEach(aStarPoints, function(point)
-          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
-        end)
-      end
-
-      if aStarPoints2 then
-        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-        Array.forEach(aStarPoints2, function(point)
-          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
-        end)
-      end
+      --
+      --      if aStarPoints then
+      --        GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
+      --        Array.forEach(aStarPoints, function(point)
+      --          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
+      --        end)
+      --      end
+      --
+      --      if aStarPoints2 then
+      --        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+      --        Array.forEach(aStarPoints2, function(point)
+      --          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
+      --        end)
+      --      end
     end)
   end
 end)
@@ -258,7 +260,8 @@ function positionInFrontOfPlayer(distance, deltaZ)
 end
 
 function calculateIsObstacleInFrontToPosition(position)
-  return createPoint(GMR.GetPositionFromPosition(position.x, position.y, position.z, 5, GMR.ObjectRawFacing('player'),
+  return createPoint(GMR.GetPositionFromPosition(position.x, position.y, position.z, 5,
+    GMR.ObjectRawFacing('player'),
     0))
 end
 
@@ -306,7 +309,7 @@ function canBeWalkedOrSwamFromPointToPoint(from, to)
   local c = canBeMovedFromPointToPointCheckingSubSteps(from, to)
   log(b, c)
   return (
-      b and
+    b and
       c
   )
 end
@@ -636,6 +639,7 @@ function createMoveToAction3(waypoint, continueMoving, a)
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
         if (isJumpSituation()) then
           lastJumpTime = GetTime()
+          print('jump')
           GMR.Jump()
         end
       end
@@ -666,28 +670,15 @@ function createMoveToAction3(waypoint, continueMoving, a)
 end
 
 function isJumpSituation()
-  --local playerPosition = retrievePlayerPosition()
-  --local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + JUMP_DETECTION_HEIGHT)
-  --local positionB = positionInFrontOfPlayer(3, JUMP_DETECTION_HEIGHT)
-  --position1 = positionA
-  --position2 = positionB
-  --local a = thereAreCollisions(
-  --  positionA,
-  --  positionB
-  --)
-  ----position1 = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + MAXIMUM_JUMP_HEIGHT)
-  ----position2 = positionInFrontOfPlayer(3, MAXIMUM_JUMP_HEIGHT)
-  ----local b = thereAreZeroCollisions(
-  ----  position1,
-  ----  position2
-  ----)
-  ----print('a', a)
-  ----print('b', b)
-  --return (
-  --  a
-  --  --and b
-  --)
-  return false
+  local playerPosition = retrievePlayerPosition()
+  local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + JUMP_DETECTION_HEIGHT)
+  local positionB = positionInFrontOfPlayer(3, JUMP_DETECTION_HEIGHT)
+  position1 = positionA
+  position2 = positionB
+  return thereAreCollisions(
+    positionA,
+    positionB
+  )
 end
 
 local function findPathToSavedPosition2()
@@ -696,9 +687,7 @@ local function findPathToSavedPosition2()
   debugprofilestart()
   path = pathFinder.start(destination.x, destination.y, destination.z)
   local duration = debugprofilestop()
-  logToFile(duration)
-  print(duration)
-  afsdsd = path
+  log(duration)
   return path
 end
 
@@ -813,28 +802,23 @@ function createPathFinder()
 
   return {
     start = function(x, y, z)
+      if not GMR.IsMeshLoaded() then
+        GMR.LoadMeshFiles()
+      end
+
       local from = retrievePlayerPosition()
       local to = createPoint(x, y, z)
       local continentID = select(8, GetInstanceInfo())
       local x, y, z = GMR.GetClosestPointOnMesh(continentID, from.x, from.y, from.z)
       local x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, to.x, to.y, to.z)
-      log('1', x, y, z)
-      log('2', x2, y2, z2)
       if x and y and z and x2 and y2 and z2 then
-        if not GMR.IsMeshLoaded() then
-          GMR.LoadMeshFiles()
-        end
         local path2 = GMR.GetPathBetweenPoints(x, y, z, x2, y2, z2)
         if path2 then
           path2 = convertGMRPathToPath(path2)
           local path1 = findPath2(from, path2[1], a)
-          log('path1', path1)
-          log('path2', path2)
           local path3 = findPath2(path2[#path2], to, a)
-          log('path3', tableToString(path3, 3))
           if path1 and path2 and path3 then
             path = Array.concat(path1, path2, path3)
-            print('ja')
             return path
           end
         else
@@ -1231,7 +1215,8 @@ function findClosestPointThatCanBeWalkedTo(from, to)
     local destinationOnMaximumWalkUpToHeight = createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT)
     local collisionPoint = traceLineCollision(pointOnMaximumWalkUpToHeight, destinationOnMaximumWalkUpToHeight)
     if collisionPoint then
-      local potentialWalkToPoint = generateWalkToPointFromCollisionPoint(pointOnMaximumWalkUpToHeight, collisionPoint)
+      local potentialWalkToPoint = generateWalkToPointFromCollisionPoint(pointOnMaximumWalkUpToHeight,
+        collisionPoint)
       if not walkToPoint or isFirstPointCloserToThanSecond(potentialWalkToPoint, walkToPoint, to) then
         walkToPoint = potentialWalkToPoint
       else

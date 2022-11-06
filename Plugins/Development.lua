@@ -486,9 +486,13 @@ function logToFile(content)
   GMR.WriteFile('C:/log.txt', tostring(content) .. '\n', true)
 end
 
+local IS_LOGGING_ENABLED = false
+
 function log(...)
-  local string = strjoin(' ', unpack(Array.map({...}, valueToString)))
-  logToFile(string)
+  if IS_LOGGING_ENABLED then
+    local string = strjoin(' ', unpack(Array.map({...}, valueToString)))
+    logToFile(string)
+  end
 end
 
 function logTargetPosition()
