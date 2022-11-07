@@ -52,3 +52,51 @@ canBeMovedFromPointToPoint(Movement.path[4], Movement.path[5])
 canBeWalkedOrSwamFromPointToPoint(Movement.path[4], Movement.path[5])
 
 canBeJumpedFromPointToPoint(Movement.path[4], Movement.path[5])
+
+canBeMovedFromPointToPoint(Movement.path[5], Movement.path[6])
+
+canBeWalkedOrSwamFromPointToPoint(Movement.path[5], Movement.path[6])
+
+canBeJumpedFromPointToPoint(Movement.path[5], Movement.path[6]) -- true
+
+canBeFlownFromPointToPoint(Movement.path[5], Movement.path[6])
+
+-- CHARACTER_HEIGHT
+
+local pz = GMR.GetPlayerPosition().z; print(Movement.path[8].z - pz)
+
+canBeMovedFromPointToPoint(Movement.path[9], Movement.path[10])
+
+canBeWalkedOrSwamFromPointToPoint(Movement.path[9], Movement.path[10])
+
+canBeJumpedFromPointToPoint(Movement.path[9], Movement.path[10])
+
+canBeFlownFromPointToPoint(Movement.path[9], Movement.path[10])
+
+canBeMovedFromPointToPoint(Movement.path[17], Movement.path[18])
+
+canBeWalkedOrSwamFromPointToPoint(Movement.path[17], Movement.path[18])
+
+canBeJumpedFromPointToPoint(Movement.path[17], Movement.path[18])
+
+canBeFlownFromPointToPoint(Movement.path[17], Movement.path[18])
+
+canBeMovedFromPointToPoint(Movement.path[18], Movement.path[19])
+
+canBeWalkedOrSwamFromPointToPoint(Movement.path[18], Movement.path[19])
+
+canBeJumpedFromPointToPoint(Movement.path[18], Movement.path[19])
+
+canBeFlownFromPointToPoint(Movement.path[18], Movement.path[19])
+
+canPlayerStandOnPoint(Movement.path[19], { withMount = true })
+
+p = PointToValueMap:new()
+
+p:retrieveValue({ x = 0, y = 0, z = 0})
+
+p:setValue({ x = 0, y = 0, z = 0}, 1)
+
+p:setValue({ x = 1, y = 2, z = 3}, 2)
+
+p:retrieveValue({ x = 1, y = 2, z = 3})

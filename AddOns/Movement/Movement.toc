@@ -3,6 +3,8 @@
 ## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math
 ## SavedVariables: savedPosition, position1, position2, from, to
 
+ObjectToValueLookup.lua
+PointToValueMap.lua
 PointFlyweight.lua
 PointWithPathToFlyweight.lua
 Moving.lua

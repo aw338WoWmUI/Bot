@@ -5,7 +5,7 @@ position2 = nil
 aStarPoints = nil
 aStarPoints2 = nil
 
-local DEVELOPMENT = false
+local DEVELOPMENT = true
 local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
 local CHARACTER_RADIUS = 0.75 -- the radius might vary race by race
@@ -14,6 +14,10 @@ local GRID_LENGTH = 2
 local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.25 yards.
 local MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
+local CHARACTER_HEIGHT = 2 -- ~ for human
+local MOUNTED_CHARACTER_HEIGHT = 3 -- only an approximation. Seems to depend on mount and maybe also character model.
+local canBeStoodOnPointCache = PointToValueMap:new()
+local canBeStoodWithMountOnPointCache = PointToValueMap:new()
 
 local cache = {}
 
@@ -216,13 +220,15 @@ ticker = C_Timer.NewTicker(0, function()
         GMR.LibDraw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, CHARACTER_RADIUS)
         GMR.LibDraw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, CHARACTER_RADIUS)
       end
-      --
-      --      if aStarPoints then
-      --        GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
-      --        Array.forEach(aStarPoints, function(point)
-      --          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
-      --        end)
-      --      end
+
+      if DEVELOPMENT then
+        if aStarPoints then
+          GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
+          Array.forEach(aStarPoints, function(point)
+            GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
+          end)
+        end
+      end
       --
       --      if aStarPoints2 then
       --        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
@@ -303,9 +309,22 @@ end
 
 function isEnoughSpaceOnTop(from, to)
   return (
-    thereAreZeroCollisions(createPointWithZOffset(from, 0.1), createPointWithZOffset(to, 0.1)) and
-      thereAreZeroCollisions(createPointWithZOffset(from, 3), createPointWithZOffset(to, 3))
+    thereAreZeroCollisions(
+      createPointWithZOffset(from, 0.1),
+      createPointWithZOffset(from, MOUNTED_CHARACTER_HEIGHT)
+    ) and
+      thereAreZeroCollisions(
+        createPointWithZOffset(to, 0.1),
+        createPointWithZOffset(to, MOUNTED_CHARACTER_HEIGHT)
+      ) and
+      thereAreZeroCollisions2(from, to, MOUNTED_CHARACTER_HEIGHT)
   )
+end
+
+function thereAreZeroCollisions2(from, to, zHeight)
+  return Array.isTrueForAllInInterval(0, zHeight, 1, function(zOffset)
+    return thereAreZeroCollisions(createPointWithZOffset(from, zOffset), createPointWithZOffset(to, zOffset))
+  end)
 end
 
 MAXIMUM_WALK_UP_TO_HEIGHT = 0.94
@@ -381,7 +400,8 @@ end
 function canBeJumpedFromPointToPoint(from, to)
   return (
     isPointOnGround(from) and
-    to.z - from.z <= MAXIMUM_JUMP_HEIGHT and
+      isPointOnGround(to) and
+      to.z - from.z <= MAXIMUM_JUMP_HEIGHT and
       thereAreZeroCollisions(
         createPointWithZOffset(from, MAXIMUM_JUMP_HEIGHT),
         createPointWithZOffset(to, MAXIMUM_JUMP_HEIGHT)
@@ -409,11 +429,33 @@ function canBeFlownFromPointToPoint(from, to)
   end
   return (
     isFlyingAvailableInZone() and
-      isEnoughSpaceOnTop(from, to)
+      isEnoughSpaceOnTop(from, to) and
+      canPlayerStandOnPoint(to, { withMount = true })
   )
 end
 
-function canPlayerStandOnPoint(point)
+function canPlayerStandOnPoint(point, options)
+  options = options or {}
+
+  if options.withMount then
+    local value = canBeStoodWithMountOnPointCache:retrieveValue(point)
+    if value ~= nil then
+      return value
+    end
+  else
+    local value = canBeStoodOnPointCache:retrieveValue(point)
+    if value ~= nil then
+      return value
+    end
+  end
+
+  local height
+  if options.withMount then
+    height = MOUNTED_CHARACTER_HEIGHT
+  else
+    height = CHARACTER_HEIGHT
+  end
+
   local point2 = createPoint(
     point.x,
     point.y,
@@ -422,14 +464,26 @@ function canPlayerStandOnPoint(point)
 
   local point3 = createPointWithZOffset(point2, 0.1)
 
-  if thereAreZeroCollisions(point2, createPointWithZOffset(point, 0.1)) then
+  local result
+  if (
+    thereAreZeroCollisions(point2, createPointWithZOffset(point, 0.1)) and
+      thereAreZeroCollisions(point3, createPointWithZOffset(point, height))
+  ) then
     local points = generatePointsAround(point3, CHARACTER_RADIUS, 8)
-    return Array.all(points, function(point)
+    result = Array.all(points, function(point)
       return thereAreZeroCollisions(point3, point)
     end)
+  else
+    result = false
   end
 
-  return false
+  if options.withMount then
+    canBeStoodWithMountOnPointCache:setValue(point, result)
+  else
+    canBeStoodOnPointCache:setValue(point, result)
+  end
+
+  return result
 end
 
 function isFlyingAvailableInZone()
@@ -487,12 +541,12 @@ function generateMiddlePointsAround(fromPosition, distance)
 end
 
 function generateAbovePointsAround(fromPosition, distance)
-  local abovePoint = createPointWithZOffset(fromPosition, distance)
+  local abovePoint = closestPointOnGrid(createPointWithZOffset(fromPosition, distance))
   return Array.selectTrue(generatePointsAroundOnGrid(abovePoint, distance, generateAbovePoint))
 end
 
 function generateBelowPointsAround(fromPosition, distance)
-  local belowPoint = createPointWithZOffset(fromPosition, -distance)
+  local belowPoint = closestPointOnGrid(createPointWithZOffset(fromPosition, -distance))
   return Array.selectTrue(generatePointsAroundOnGrid(belowPoint, distance, generateBelowPoint))
 end
 
@@ -510,12 +564,15 @@ function generatePointsAroundOnGrid(fromPosition, distance, generatePoint)
 end
 
 function generateMiddlePoint(fromPosition, offsetX, offsetY)
-  local point = closestPointOnGridWithZLeft(
+  local point2 = closestPointOnGrid(
     createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
-  if isPointInAir(point) or isPointInWater(point) then
-    return point
+  if isPointInAir(point2) or isPointInWater(point2) then
+    return point2
   else
+    local point = closestPointOnGridWithZLeft(
+      createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
+    )
     local z2 = retrieveGroundZ(point)
     if z2 == nil then
       return nil
@@ -525,15 +582,11 @@ function generateMiddlePoint(fromPosition, offsetX, offsetY)
 end
 
 function generateAbovePoint(fromPosition, offsetX, offsetY)
-  return closestPointOnGrid(
-    createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
-  )
+  return createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
 end
 
 function generateBelowPoint(fromPosition, offsetX, offsetY)
-  return closestPointOnGrid(
-    createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
-  )
+  return createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
 end
 
 function generatePoint(fromPosition, distance, angle)
@@ -891,7 +944,7 @@ function findPath2(from, to, a)
 end
 
 points = {}
-pointIndexes = {}
+pointIndexes = PointToValueMap:new()
 nextPointIndex = 1
 neighbors = {}
 connections = {}
@@ -899,35 +952,12 @@ paths = {}
 nextPathIndex = 1
 
 function retrievePointIndex(point)
-  local x = point.x
-  local y = point.y
-  local z = point.z
-  local a = pointIndexes[x]
-  if a then
-    local b = a[y]
-    if b then
-      local c = b[z]
-      if c then
-        return c
-      end
-    end
-  end
-  return nil
+  return pointIndexes:retrieveValue(point)
 end
 
 function createPointIndex(point)
-  local x = point.x
-  local y = point.y
-  local z = point.z
   local pointIndex = nextPointIndex
-  local a = pointIndexes[x]
-  if not a then
-    pointIndexes[x] = {}
-  end
-  if not pointIndexes[x][y] then
-    pointIndexes[x][y] = {}
-  end
-  pointIndexes[x][y][z] = pointIndex
+  pointIndexes:setValue(point, pointIndex)
   points[pointIndex] = point
   nextPointIndex = nextPointIndex + 1
   return pointIndex
