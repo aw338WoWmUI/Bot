@@ -943,28 +943,20 @@ function findPath2(from, to, a)
   return findPathInner(from, to, a, 0)
 end
 
-points = {}
-pointIndexes = PointToValueMap:new()
-nextPointIndex = 1
-neighbors = {}
-connections = {}
-paths = {}
-nextPathIndex = 1
-
 function retrievePointIndex(point)
-  return pointIndexes:retrieveValue(point)
+  return MovementSavedVariables.pointIndexes:retrieveValue(point)
 end
 
 function createPointIndex(point)
-  local pointIndex = nextPointIndex
-  pointIndexes:setValue(point, pointIndex)
-  points[pointIndex] = point
-  nextPointIndex = nextPointIndex + 1
+  local pointIndex = MovementSavedVariables.nextPointIndex
+  MovementSavedVariables.pointIndexes:setValue(point, pointIndex)
+  MovementSavedVariables.points[pointIndex] = point
+  MovementSavedVariables.nextPointIndex = MovementSavedVariables.nextPointIndex + 1
   return pointIndex
 end
 
 local function retrievePoint(pointIndex)
-  local point = points[pointIndex]
+  local point = MovementSavedVariables.points[pointIndex]
   return createPoint(point.x, point.y, point.z)
 end
 
@@ -973,7 +965,7 @@ local function _retrieveNeighbor(pointIndex)
 end
 
 function retrieveConnections(pointIndex)
-  local connections2 = connections[pointIndex]
+  local connections2 = MovementSavedVariables.connections[pointIndex]
   if connections2 then
     return Array.map(connections2, function(connection)
       local point = retrievePoint(connection[1])
@@ -991,7 +983,7 @@ function retrieveConnections(pointIndex)
 end
 
 function retrieveNeighbors(pointIndex)
-  local neighborPointIndexes = neighbors[pointIndex]
+  local neighborPointIndexes = MovementSavedVariables.neighbors[pointIndex]
   if neighborPointIndexes then
     local neighborPoints = Array.map(neighborPointIndexes, _retrieveNeighbor)
     return neighborPoints
@@ -1002,7 +994,7 @@ end
 
 local function _storeNeighbor(pointIndex, neighbor)
   local neighborIndex = retrieveOrCreatePointIndex(neighbor)
-  table.insert(neighbors[pointIndex], neighborIndex)
+  table.insert(MovementSavedVariables.neighbors[pointIndex], neighborIndex)
 end
 
 function retrieveOrCreatePointIndex(point)
@@ -1010,7 +1002,7 @@ function retrieveOrCreatePointIndex(point)
 end
 
 function storeNeighbors(pointIndex, neighbors2)
-  neighbors[pointIndex] = {}
+  MovementSavedVariables.neighbors[pointIndex] = {}
   Array.forEach(neighbors2, Function.partial(_storeNeighbor, pointIndex))
 end
 
@@ -1019,15 +1011,15 @@ local function isPoint(value)
 end
 
 function createPathIndex(path)
-  local pathIndex = nextPathIndex
-  paths[pathIndex] = Array.map(path, function(value)
+  local pathIndex = MovementSavedVariables.nextPathIndex
+  MovementSavedVariables.paths[pathIndex] = Array.map(path, function(value)
     if isPoint(value) then
       return retrieveOrCreatePointIndex(value)
     else
       return value
     end
   end)
-  nextPathIndex = nextPathIndex + 1
+  MovementSavedVariables.nextPathIndex = MovementSavedVariables.nextPathIndex + 1
   return pathIndex
 end
 
@@ -1036,7 +1028,7 @@ function retrievePathIndexFromPathReference(pathReference)
 end
 
 function retrievePath(pathIndex)
-  return Array.flatMap(paths[pathIndex], function(value)
+  return Array.flatMap(MovementSavedVariables.paths[pathIndex], function(value)
     if type(value) == 'table' then
       return retrievePath(retrievePathIndexFromPathReference(value))
     else
@@ -1050,10 +1042,10 @@ local function createPathReference(pathIndex)
 end
 
 function addConnection(pointIndex, connection)
-  if not connections[pointIndex] then
-    connections[pointIndex] = {}
+  if not MovementSavedVariables.connections[pointIndex] then
+    MovementSavedVariables.connections[pointIndex] = {}
   end
-  table.insert(connections[pointIndex], connection)
+  table.insert(MovementSavedVariables.connections[pointIndex], connection)
 end
 
 function addConnectionFromTo(closestPointOnGridFromFromPoint, from, to)
@@ -1367,3 +1359,50 @@ end)
 --  813.20324707031,
 --  -40.817531585693
 --)))
+
+function Movement.onEvent(self, event, ...)
+  if event == 'ADDON_LOADED' then
+    Movement.onAddonLoaded(...)
+  end
+end
+
+function Movement.onAddonLoaded(addonName)
+  if addonName == 'Movement' then
+    Movement.initializeSavedVariables()
+  end
+end
+
+function Movement.initializeSavedVariables()
+  if not MovementSavedVariables then
+    MovementSavedVariables = {}
+  end
+  if not MovementSavedVariables.connections then
+    MovementSavedVariables.connections = {}
+  end
+  if not MovementSavedVariables.points then
+    MovementSavedVariables.points = {}
+  end
+  if not MovementSavedVariables.pointIndexes then
+    MovementSavedVariables.pointIndexes = PointToValueMap:new()
+  else
+    local pointIndexes = MovementSavedVariables.pointIndexes
+    MovementSavedVariables.pointIndexes = PointToValueMap:new()
+    MovementSavedVariables.pointIndexes._values = pointIndexes._values
+  end
+  if not MovementSavedVariables.nextPointIndex then
+    MovementSavedVariables.nextPointIndex = 1
+  end
+  if not MovementSavedVariables.neighbors then
+    MovementSavedVariables.neighbors = {}
+  end
+  if not MovementSavedVariables.paths then
+    MovementSavedVariables.paths = {}
+  end
+  if not MovementSavedVariables.nextPathIndex then
+    MovementSavedVariables.nextPathIndex = 1
+  end
+end
+
+Movement.frame = CreateFrame('Frame')
+Movement.frame:SetScript('OnEvent', Movement.onEvent)
+Movement.frame:RegisterEvent('ADDON_LOADED')
