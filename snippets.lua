@@ -1,11 +1,11 @@
-GMR.ExecutePath(true, convertPathToGMRPath(path))
+GMR.ExecutePath(true, convertPathToGMRPath(Movement.path))
 GMR.GetPath(savedPosition.x, savedPosition.y, savedPosition.z)
 GMR.LoadMeshFiles()
 
 GMR.ExecutePath(true, GMR.GetPath(savedPosition.x, savedPosition.y, savedPosition.z))
-local playerPosition = GMR.GetPlayerPosition(); print(GMR.GetDistanceBetweenPositions(playerPosition.x, playerPosition.y, playerPosition.z, path[5].x, path[5].y, path[5].z))
-GMR.MoveTo(path[2].x, path[2].y, path[2].z)
-isPositionInTheAir(path[2])
+local playerPosition = GMR.GetPlayerPosition(); print(GMR.GetDistanceBetweenPositions(playerPosition.x, playerPosition.y, playerPosition.z, Movement.path[5].x, Movement.path[5].y, Movement.path[5].z))
+GMR.MoveTo(Movement.path[2].x, Movement.path[2].y, Movement.path[2].z)
+isPositionInTheAir(Movement.path[2])
 moveToSavedPath()
 coroutine.wrap(function () DevTools_Dump(retrieveQuestStartPoints()) end)()
 

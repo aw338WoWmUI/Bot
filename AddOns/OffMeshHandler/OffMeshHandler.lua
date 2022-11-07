@@ -37,7 +37,8 @@ ticker = C_Timer.NewTicker(0, function()
           }
           pathFinder = createPathFinder()
           -- print('start pathfinder')
-          path = pathFinder.start(x, y, z)
+          local path = pathFinder.start(x, y, z)
+          Movement.path = path
           -- print('path')
           -- DevTools_Dump(path)
           if path then
@@ -58,7 +59,7 @@ ticker = C_Timer.NewTicker(0, function()
         if pathMover then
           pathMover.stop()
           pathMover = nil
-          path = nil
+          Movement.path = nil
         end
         local point = createPoint(x, y, z)
         if run then

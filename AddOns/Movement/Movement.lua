@@ -1,3 +1,5 @@
+Movement = {}
+
 position1 = nil
 position2 = nil
 aStarPoints = nil
@@ -192,6 +194,7 @@ ticker = C_Timer.NewTicker(0, function()
       --  )
       --end
 
+      local path = Movement.path
       if GMR.IsChecked('DisplayMovement') and path then
         GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
         local previousPoint = path[1]
@@ -695,7 +698,8 @@ local function findPathToSavedPosition2()
   local destination = savedPosition
   local pathFinder = createPathFinder()
   debugprofilestart()
-  path = pathFinder.start(destination.x, destination.y, destination.z)
+  local path = pathFinder.start(destination.x, destination.y, destination.z)
+  Movement.path = path
   local duration = debugprofilestop()
   -- log(duration)
   return path
@@ -703,14 +707,15 @@ end
 
 function findPathToSavedPosition()
   local thread = coroutine.create(function()
-    path = findPathToSavedPosition2()
+    Movement.path = findPathToSavedPosition2()
   end)
   return resumeWithShowingError(thread)
 end
 
 function moveToSavedPosition()
   local thread = coroutine.create(function()
-    path = findPathToSavedPosition2()
+    local path = findPathToSavedPosition2()
+    Movement.path = path
     if path then
       print('go path')
       movePath(path)
@@ -828,7 +833,8 @@ function createPathFinder()
           local path1 = findPath2(from, path2[1], a)
           local path3 = findPath2(path2[#path2], to, a)
           if path1 and path2 and path3 then
-            path = Array.concat(path1, path2, path3)
+            local path = Array.concat(path1, path2, path3)
+            Movement.path = path
             return path
           end
         else
@@ -1077,12 +1083,14 @@ function findPathInner(from, to, a)
   -- aStarPoints = points
   --log('points', points)
 
-  path = findPath(
+  local path = findPath(
     from,
     to,
     receiveNeighborPoints,
     a
   )
+
+  Movement.path = path
 
   --print('path')
   --DevTools_Dump(path)
