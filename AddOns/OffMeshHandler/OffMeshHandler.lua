@@ -59,7 +59,6 @@ ticker = C_Timer.NewTicker(0, function()
         if pathMover then
           pathMover.stop()
           pathMover = nil
-          Movement.path = nil
         end
         local point = createPoint(x, y, z)
         if run then
@@ -70,6 +69,11 @@ ticker = C_Timer.NewTicker(0, function()
 
     local meshTo = GMR.MeshTo
     GMR.MeshTo = function (...)
+      if x and y and z then
+        if pathMover then
+          Movement.path = nil
+        end
+      end
       handleMove(...)
       return meshTo(...)
     end
