@@ -728,7 +728,7 @@ function moveToDockInStormwind()
 end
 
 function waitForPlayerToHaveArrivedAtDockInStormwind()
-  waitForPlayerToBeOnPosition(dockPosition)
+  Movement.waitForPlayerToBeOnPosition(dockPosition)
 end
 
 function waitForShipToHaveArrivedAtStormwind()

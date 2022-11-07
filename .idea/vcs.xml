@@ -7,6 +7,7 @@
     <mapping directory="$PROJECT_DIR$/AddOns/BinaryHeap/libs/BinaryHeap" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Coroutine" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Events" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/AddOns/Function" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Math" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Object" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Set" vcs="Git" />

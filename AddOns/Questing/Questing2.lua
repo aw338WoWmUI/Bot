@@ -513,12 +513,12 @@ function moveToClosestPoint()
       local continentID = select(8, GetInstanceInfo())
       local playerPosition = GMR.GetPlayerPosition()
       local x, y, z = GMR.GetClosestPointOnMesh(continentID, playerPosition.x, playerPosition.y, playerPosition.z)
-      local pathFinder = createPathFinder()
+      local pathFinder = Movement.createPathFinder()
       local path = pathFinder.start(x, y, z)
       if path then
         pointToMove = path[#path]
         print('m1')
-        movePath(path)
+        Movement.movePath(path)
         print('m2')
       end
     end
@@ -672,7 +672,7 @@ function exploreObject(object)
   if distanceToObject and distanceToObject <= maxDistance then
     GMR.ClearTarget()
     print('D1')
-    faceDirection(createPoint(x, y, z))
+    Movement.faceDirection(createPoint(x, y, z))
     print('D2')
     if pointer ~= GMR.ObjectPointer('softinteract') then
       GMR.TargetObject(pointer)

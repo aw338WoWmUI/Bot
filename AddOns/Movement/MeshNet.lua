@@ -8,7 +8,7 @@ function mesh(fromX, fromY, toX, toY)
     local a = {}
     zCoordinates[y] = a
     for x = fromX, toX, GRID_LENGTH do
-      local tracePoint = traceLineCollision(
+      local tracePoint = Movement.traceLineCollision(
         createPoint(x, y, MAXIMUM_Z),
         createPoint(x, y, MINIMUM_Z)
       )
@@ -25,11 +25,11 @@ function makePolygons(zCoordinates)
 end
 
 function savePosition1()
-  position1 = closestPointOnGrid(retrievePlayerPosition())
+  position1 = Movement.closestPointOnGrid(Movement.retrievePlayerPosition())
 end
 
 function savePosition2()
-  position2 = closestPointOnGrid(retrievePlayerPosition())
+  position2 = Movement.closestPointOnGrid(Movement.retrievePlayerPosition())
 end
 
 function generateMeshNetForSavedPositions()

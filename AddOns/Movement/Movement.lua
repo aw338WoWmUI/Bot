@@ -21,7 +21,7 @@ local canBeStoodWithMountOnPointCache = PointToValueMap:new()
 
 local cache = {}
 
-function addPointToCache(fromX, fromY, fromZ, toX, toY, toZ)
+function Movement.addPointToCache(fromX, fromY, fromZ, toX, toY, toZ)
   local a = cache[fromX]
   if not a then
     cache[fromX] = {}
@@ -32,7 +32,7 @@ function addPointToCache(fromX, fromY, fromZ, toX, toY, toZ)
   cache[fromX][fromY][fromZ] = { toX, toY, toZ }
 end
 
-function retrievePointFromCache(x, y, z)
+function Movement.retrievePointFromCache(x, y, z)
   local a = cache[x]
   if a then
     local b = a[y]
@@ -45,7 +45,7 @@ function retrievePointFromCache(x, y, z)
   end
 end
 
-function findClosestDifferentPolygon(x, y, z)
+function Movement.findClosestDifferentPolygon(x, y, z)
   local continentID = select(8, GetInstanceInfo())
   local id, x2, y2, z2 = GMR.GetClosestMeshPolygon(continentID, x, y, z, 1, 1, 1000)
   if id then
@@ -99,7 +99,7 @@ function findClosestDifferentPolygon(x, y, z)
   return nil
 end
 
-function findClosestDifferentPolygonTowardsPosition(x, y, z, x5, y5, z5)
+function Movement.findClosestDifferentPolygonTowardsPosition(x, y, z, x5, y5, z5)
   local continentID = select(8, GetInstanceInfo())
   local id, x2, y2, z2 = GMR.GetClosestMeshPolygon(continentID, x, y, z, 1, 1, 1000)
   if id then
@@ -146,17 +146,17 @@ ticker = C_Timer.NewTicker(0, function()
 
         local continentID = select(8, GetInstanceInfo())
 
-        local playerPosition = retrievePlayerPosition()
+        local playerPosition = Movement.retrievePlayerPosition()
         if playerPosition then
           GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
           for y = playerPosition.y - 4, playerPosition.y + 4 do
             for x = playerPosition.x - 4, playerPosition.x + 4 do
-              local x2, y2, z2 = retrievePointFromCache(x, y, playerPosition.z)
+              local x2, y2, z2 = Movement.retrievePointFromCache(x, y, playerPosition.z)
               if not x2 then
                 local z3 = GMR.GetGroundZ(x, y, playerPosition.z) or playerPosition.z
                 x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, x, y, z3)
                 if x2 then
-                  addPointToCache(x, y, playerPosition.z, x2, y2, z2)
+                  Movement.addPointToCache(x, y, playerPosition.z, x2, y2, z2)
                 end
               end
               if x2 then
@@ -172,7 +172,7 @@ ticker = C_Timer.NewTicker(0, function()
       --      if playerPosition then
       --        local x2, y2, z2 = GMR.ObjectPosition('target')
       --        if x2 then
-      --          local id, x, y, z, d = findClosestDifferentPolygonTowardsPosition(playerPosition.x, playerPosition.y,
+      --          local id, x, y, z, d = Movement.findClosestDifferentPolygonTowardsPosition(playerPosition.x, playerPosition.y,
       --            playerPosition.z, x2, y2, z2)
       --          if x then
       --            GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
@@ -240,27 +240,27 @@ ticker = C_Timer.NewTicker(0, function()
   end
 end)
 
-function savePosition1()
+function Movement.savePosition1()
   position1 = GMR.GetPlayerPosition()
 end
 
-function savePosition2()
+function Movement.savePosition2()
   position2 = GMR.GetPlayerPosition()
 end
 
-function savePosition()
+function Movement.savePosition()
   local playerPosition = GMR.GetPlayerPosition()
   savedPosition = createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
-TraceLineHitFlags = {
+Movement.TraceLineHitFlags = {
   COLLISION = 1048849,
   WATER = 131072,
   WATER2 = 65536
 }
 
-function positionInFrontOfPlayer(distance, deltaZ)
-  local playerPosition = retrievePlayerPosition()
+function Movement.positionInFrontOfPlayer(distance, deltaZ)
+  local playerPosition = Movement.retrievePlayerPosition()
   return createPoint(
     GMR.GetPositionFromPosition(
       playerPosition.x,
@@ -273,76 +273,76 @@ function positionInFrontOfPlayer(distance, deltaZ)
   )
 end
 
-function calculateIsObstacleInFrontToPosition(position)
+function Movement.calculateIsObstacleInFrontToPosition(position)
   return createPoint(GMR.GetPositionFromPosition(position.x, position.y, position.z, 5,
     GMR.ObjectRawFacing('player'),
     0))
 end
 
-function isObstacleInFront(position)
+function Movement.isObstacleInFront(position)
   position1 = createPoint(
     position.x,
     position.y,
     position.z + zOffset
   )
-  position2 = calculateIsObstacleInFrontToPosition(position1)
-  return not thereAreZeroCollisions(position1, position2)
+  position2 = Movement.calculateIsObstacleInFrontToPosition(position1)
+  return not Movement.thereAreZeroCollisions(position1, position2)
 end
 
-function canWalkTo(position)
+function Movement.canWalkTo(position)
   local playerPosition = GMR.GetPlayerPosition()
   local fromPosition = createPoint(
     playerPosition.x,
     playerPosition.y,
     playerPosition.z + zOffset
   )
-  return thereAreZeroCollisions(fromPosition, position)
+  return Movement.thereAreZeroCollisions(fromPosition, position)
 end
 
-function canBeMovedFromPointToPoint(from, to)
+function Movement.canBeMovedFromPointToPoint(from, to)
   return (
-    canBeWalkedOrSwamFromPointToPoint(from, to)
-      or canBeJumpedFromPointToPoint(from, to)
-      or canBeFlownFromPointToPoint(from, to)
+    Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
+      or Movement.canBeJumpedFromPointToPoint(from, to)
+      or Movement.canBeFlownFromPointToPoint(from, to)
   )
 end
 
-function isEnoughSpaceOnTop(from, to)
+function Movement.isEnoughSpaceOnTop(from, to)
   return (
-    thereAreZeroCollisions(
-      createPointWithZOffset(from, 0.1),
-      createPointWithZOffset(from, MOUNTED_CHARACTER_HEIGHT)
+    Movement.thereAreZeroCollisions(
+      Movement.createPointWithZOffset(from, 0.1),
+      Movement.createPointWithZOffset(from, MOUNTED_CHARACTER_HEIGHT)
     ) and
-      thereAreZeroCollisions(
-        createPointWithZOffset(to, 0.1),
-        createPointWithZOffset(to, MOUNTED_CHARACTER_HEIGHT)
+      Movement.thereAreZeroCollisions(
+        Movement.createPointWithZOffset(to, 0.1),
+        Movement.createPointWithZOffset(to, MOUNTED_CHARACTER_HEIGHT)
       ) and
-      thereAreZeroCollisions2(from, to, MOUNTED_CHARACTER_HEIGHT)
+      Movement.thereAreZeroCollisions2(from, to, MOUNTED_CHARACTER_HEIGHT)
   )
 end
 
-function thereAreZeroCollisions2(from, to, zHeight)
+function Movement.thereAreZeroCollisions2(from, to, zHeight)
   return Array.isTrueForAllInInterval(0, zHeight, 1, function(zOffset)
-    return thereAreZeroCollisions(createPointWithZOffset(from, zOffset), createPointWithZOffset(to, zOffset))
+    return Movement.thereAreZeroCollisions(Movement.createPointWithZOffset(from, zOffset), Movement.createPointWithZOffset(to, zOffset))
   end)
 end
 
-MAXIMUM_WALK_UP_TO_HEIGHT = 0.94
-JUMP_DETECTION_HEIGHT = 1.5
-MAXIMUM_JUMP_HEIGHT = 1.675
+Movement.MAXIMUM_WALK_UP_TO_HEIGHT = 0.94
+Movement.JUMP_DETECTION_HEIGHT = 1.5
+Movement.MAXIMUM_JUMP_HEIGHT = 1.675
 
-function canBeWalkedOrSwamFromPointToPoint(from, to)
-  local b = canPlayerStandOnPoint(to)
-  local c = canBeMovedFromPointToPointCheckingSubSteps(from, to)
+function Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
+  local b = Movement.canPlayerStandOnPoint(to)
+  local c = Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   return (
     b and
       c
   )
 end
 
-function canBeMovedFromPointToPointCheckingSubSteps(from, to)
+function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   if from.x == to.x and from.y == to.y then
-    return to.z - from.z <= MAXIMUM_WALK_UP_TO_HEIGHT or (isPointInWater(from) and isPointInWater(to))
+    return to.z - from.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInWater(from) and Movement.isPointInWater(to))
   end
 
   local totalDistance = euclideanDistance(from, to)
@@ -354,7 +354,7 @@ function canBeMovedFromPointToPointCheckingSubSteps(from, to)
     local x, y, z = GMR.GetPositionBetweenPositions(from.x, from.y, from.z, to.x, to.y, to.z, distance)
     local point2 = createPoint(x, y, z)
 
-    if not (isPointInWater(point1) and isPointInWater(point2)) then
+    if not (Movement.isPointInWater(point1) and Movement.isPointInWater(point2)) then
       local z = GMR.GetGroundZ(x, y, z)
 
       if not z then
@@ -364,17 +364,17 @@ function canBeMovedFromPointToPointCheckingSubSteps(from, to)
       point2 = createPoint(x, y, z)
 
       if point1.x == x and point1.y == y then
-        return z - point1.z <= MAXIMUM_WALK_UP_TO_HEIGHT
+        return z - point1.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT
       end
 
-      if not (z - point1.z <= MAXIMUM_WALK_UP_TO_HEIGHT) then
+      if not (z - point1.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT) then
         return false
       end
     end
 
-    if not thereAreZeroCollisions(
-      createPointWithZOffset(point1, MAXIMUM_WALK_UP_TO_HEIGHT),
-      createPointWithZOffset(point2, MAXIMUM_WALK_UP_TO_HEIGHT)
+    if not Movement.thereAreZeroCollisions(
+      Movement.createPointWithZOffset(point1, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
+      Movement.createPointWithZOffset(point2, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
     ) then
       return false
     end
@@ -383,13 +383,13 @@ function canBeMovedFromPointToPointCheckingSubSteps(from, to)
     distance = distance + stepSize
   end
 
-  if not (to.z - point1.z <= MAXIMUM_WALK_UP_TO_HEIGHT or (isPointInWater(point1) and isPointInWater(to))) then
+  if not (to.z - point1.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInWater(point1) and Movement.isPointInWater(to))) then
     return false
   end
 
-  if not thereAreZeroCollisions(
-    createPointWithZOffset(point1, MAXIMUM_WALK_UP_TO_HEIGHT),
-    createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT)
+  if not Movement.thereAreZeroCollisions(
+    Movement.createPointWithZOffset(point1, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
+    Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
   ) then
     return false
   end
@@ -397,26 +397,26 @@ function canBeMovedFromPointToPointCheckingSubSteps(from, to)
   return true
 end
 
-function canBeJumpedFromPointToPoint(from, to)
+function Movement.canBeJumpedFromPointToPoint(from, to)
   return (
-    isPointOnGround(from) and
-      isPointOnGround(to) and
-      to.z - from.z <= MAXIMUM_JUMP_HEIGHT and
-      thereAreZeroCollisions(
-        createPointWithZOffset(from, MAXIMUM_JUMP_HEIGHT),
-        createPointWithZOffset(to, MAXIMUM_JUMP_HEIGHT)
+    Movement.isPointOnGround(from) and
+      Movement.isPointOnGround(to) and
+      to.z - from.z <= Movement.MAXIMUM_JUMP_HEIGHT and
+      Movement.thereAreZeroCollisions(
+        Movement.createPointWithZOffset(from, Movement.MAXIMUM_JUMP_HEIGHT),
+        Movement.createPointWithZOffset(to, Movement.MAXIMUM_JUMP_HEIGHT)
       ) and
-      canPlayerStandOnPoint(to)
+      Movement.canPlayerStandOnPoint(to)
   )
 end
 
-function retrievePlayerPosition()
+function Movement.retrievePlayerPosition()
   local playerPosition = GMR.GetPlayerPosition()
   return createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
-function canBeFlownFromPointToPoint(from, to)
-  local playerPosition = retrievePlayerPosition()
+function Movement.canBeFlownFromPointToPoint(from, to)
+  local playerPosition = Movement.retrievePlayerPosition()
   if playerPosition == from then
     if IsIndoors() then
       return false
@@ -428,13 +428,13 @@ function canBeFlownFromPointToPoint(from, to)
     end
   end
   return (
-    isFlyingAvailableInZone() and
-      isEnoughSpaceOnTop(from, to) and
-      canPlayerStandOnPoint(to, { withMount = true })
+    Movement.isFlyingAvailableInZone() and
+      Movement.isEnoughSpaceOnTop(from, to) and
+      Movement.canPlayerStandOnPoint(to, { withMount = true })
   )
 end
 
-function canPlayerStandOnPoint(point, options)
+function Movement.canPlayerStandOnPoint(point, options)
   options = options or {}
 
   if options.withMount then
@@ -459,19 +459,19 @@ function canPlayerStandOnPoint(point, options)
   local point2 = createPoint(
     point.x,
     point.y,
-    point.z + MAXIMUM_WALK_UP_TO_HEIGHT
+    point.z + Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   )
 
-  local point3 = createPointWithZOffset(point2, 0.1)
+  local point3 = Movement.createPointWithZOffset(point2, 0.1)
 
   local result
   if (
-    thereAreZeroCollisions(point2, createPointWithZOffset(point, 0.1)) and
-      thereAreZeroCollisions(point3, createPointWithZOffset(point, height))
+    Movement.thereAreZeroCollisions(point2, Movement.createPointWithZOffset(point, 0.1)) and
+      Movement.thereAreZeroCollisions(point3, Movement.createPointWithZOffset(point, height))
   ) then
-    local points = generatePointsAround(point3, CHARACTER_RADIUS, 8)
+    local points = Movement.generatePointsAround(point3, CHARACTER_RADIUS, 8)
     result = Array.all(points, function(point)
-      return thereAreZeroCollisions(point3, point)
+      return Movement.thereAreZeroCollisions(point3, point)
     end)
   else
     result = false
@@ -486,31 +486,31 @@ function canPlayerStandOnPoint(point, options)
   return result
 end
 
-function isFlyingAvailableInZone()
+function Movement.isFlyingAvailableInZone()
   return IsFlyableArea()
 end
 
-function retrieveGroundZ(position)
+function Movement.retrieveGroundZ(position)
   local x, y, z = GMR.TraceLine(position.x, position.y, position.z + 8, position.x, position.y,
-    position.z - MAXIMUM_AIR_HEIGHT, TraceLineHitFlags.COLLISION)
+    position.z - MAXIMUM_AIR_HEIGHT, Movement.TraceLineHitFlags.COLLISION)
   return z
 end
 
-function thereAreCollisions(a, b)
-  local x, y, z = GMR.TraceLine(a.x, a.y, a.z, b.x, b.y, b.z, TraceLineHitFlags.COLLISION)
+function Movement.thereAreCollisions(a, b)
+  local x, y, z = GMR.TraceLine(a.x, a.y, a.z, b.x, b.y, b.z, Movement.TraceLineHitFlags.COLLISION)
   return toBoolean(x)
 end
 
-function thereAreZeroCollisions(a, b)
-  return not thereAreCollisions(a, b)
+function Movement.thereAreZeroCollisions(a, b)
+  return not Movement.thereAreCollisions(a, b)
 end
 
-function isObstacleInFrontOfPlayer()
+function Movement.isObstacleInFrontOfPlayer()
   local playerPosition = GMR.GetPlayerPosition()
-  return isObstacleInFront(playerPosition)
+  return Movement.isObstacleInFront(playerPosition)
 end
 
-function generateWaypoint()
+function Movement.generateWaypoint()
   local playerPosition = GMR.GetPlayerPosition()
   return createPoint(
     GMR.GetPositionFromPosition(
@@ -519,7 +519,7 @@ function generateWaypoint()
   )
 end
 
-function generateAngles(numberOfAngles)
+function Movement.generateAngles(numberOfAngles)
   local angles = {}
   local angle = 0
   local delta = 2 * PI / numberOfAngles
@@ -530,50 +530,50 @@ function generateAngles(numberOfAngles)
   return angles
 end
 
-function generatePoints(fromPosition, distance, angles)
+function Movement.generatePoints(fromPosition, distance, angles)
   return Array.map(angles, function(angle)
-    return generatePoint(fromPosition, distance, angle)
+    return Movement.generatePoint(fromPosition, distance, angle)
   end)
 end
 
-function generateMiddlePointsAround(fromPosition, distance)
-  return Array.selectTrue(generatePointsAroundOnGrid(fromPosition, distance, generateMiddlePoint))
+function Movement.generateMiddlePointsAround(fromPosition, distance)
+  return Array.selectTrue(Movement.generatePointsAroundOnGrid(fromPosition, distance, Movement.generateMiddlePoint))
 end
 
-function generateAbovePointsAround(fromPosition, distance)
-  local abovePoint = closestPointOnGrid(createPointWithZOffset(fromPosition, distance))
-  return Array.selectTrue(generatePointsAroundOnGrid(abovePoint, distance, generateAbovePoint))
+function Movement.generateAbovePointsAround(fromPosition, distance)
+  local abovePoint = Movement.closestPointOnGrid(Movement.createPointWithZOffset(fromPosition, distance))
+  return Array.selectTrue(Movement.generatePointsAroundOnGrid(abovePoint, distance, Movement.generateAbovePoint))
 end
 
-function generateBelowPointsAround(fromPosition, distance)
-  local belowPoint = closestPointOnGrid(createPointWithZOffset(fromPosition, -distance))
-  return Array.selectTrue(generatePointsAroundOnGrid(belowPoint, distance, generateBelowPoint))
+function Movement.generateBelowPointsAround(fromPosition, distance)
+  local belowPoint = Movement.closestPointOnGrid(Movement.createPointWithZOffset(fromPosition, -distance))
+  return Array.selectTrue(Movement.generatePointsAroundOnGrid(belowPoint, distance, Movement.generateBelowPoint))
 end
 
-function generatePointsAroundOnGrid(fromPosition, distance, generatePoint)
+function Movement.generatePointsAroundOnGrid(fromPosition, distance, generatePoint)
   return {
-    generatePoint(fromPosition, -distance, distance),
-    generatePoint(fromPosition, 0, distance),
-    generatePoint(fromPosition, distance, distance),
-    generatePoint(fromPosition, -distance, 0),
-    generatePoint(fromPosition, distance, 0),
-    generatePoint(fromPosition, -distance, -distance),
-    generatePoint(fromPosition, 0, -distance),
-    generatePoint(fromPosition, distance, -distance)
+    Movement.generatePoint(fromPosition, -distance, distance),
+    Movement.generatePoint(fromPosition, 0, distance),
+    Movement.generatePoint(fromPosition, distance, distance),
+    Movement.generatePoint(fromPosition, -distance, 0),
+    Movement.generatePoint(fromPosition, distance, 0),
+    Movement.generatePoint(fromPosition, -distance, -distance),
+    Movement.generatePoint(fromPosition, 0, -distance),
+    Movement.generatePoint(fromPosition, distance, -distance)
   }
 end
 
-function generateMiddlePoint(fromPosition, offsetX, offsetY)
-  local point2 = closestPointOnGrid(
+function Movement.generateMiddlePoint(fromPosition, offsetX, offsetY)
+  local point2 = Movement.closestPointOnGrid(
     createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
-  if isPointInAir(point2) or isPointInWater(point2) then
+  if Movement.isPointInAir(point2) or Movement.isPointInWater(point2) then
     return point2
   else
-    local point = closestPointOnGridWithZLeft(
+    local point = Movement.closestPointOnGridWithZLeft(
       createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
     )
-    local z2 = retrieveGroundZ(point)
+    local z2 = Movement.retrieveGroundZ(point)
     if z2 == nil then
       return nil
     end
@@ -581,22 +581,22 @@ function generateMiddlePoint(fromPosition, offsetX, offsetY)
   end
 end
 
-function generateAbovePoint(fromPosition, offsetX, offsetY)
+function Movement.generateAbovePoint(fromPosition, offsetX, offsetY)
   return createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
 end
 
-function generateBelowPoint(fromPosition, offsetX, offsetY)
+function Movement.generateBelowPoint(fromPosition, offsetX, offsetY)
   return createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
 end
 
-function generatePoint(fromPosition, distance, angle)
+function Movement.generatePoint(fromPosition, distance, angle)
   local x, y, z = GMR.GetPositionFromPosition(fromPosition.x, fromPosition.y, fromPosition.z, distance, angle, 0)
   return createPoint(x, y, z)
 end
 
-function receiveWaterSurfacePoint(point)
+function Movement.receiveWaterSurfacePoint(point)
   local x, y, z = GMR.TraceLine(point.x, point.y, point.z + MAXIMUM_WATER_DEPTH, point.x, point.y, point.z,
-    TraceLineHitFlags.WATER)
+    Movement.TraceLineHitFlags.WATER)
   if x then
     return createPoint(x, y, z)
   else
@@ -604,29 +604,29 @@ function receiveWaterSurfacePoint(point)
   end
 end
 
-function isPointInWater(point)
-  -- local waterSurfacePoint = receiveWaterSurfacePoint(point)
+function Movement.isPointInWater(point)
+  -- local waterSurfacePoint = Movement.receiveWaterSurfacePoint(point)
   -- return toBoolean(waterSurfacePoint and waterSurfacePoint.z >= point.z)
   return toBoolean(GMR.IsPositionUnderwater(point.x, point.y, point.z))
 end
 
-function generateNeighborPoints(fromPosition, distance)
-  local points = generateNeighborPointsAround(fromPosition, distance)
+function Movement.generateNeighborPoints(fromPosition, distance)
+  local points = Movement.generateNeighborPointsAround(fromPosition, distance)
   -- aStarPoints = points
   return Array.filter(points, function(point)
-    return canBeMovedFromPointToPoint(fromPosition, point)
+    return Movement.canBeMovedFromPointToPoint(fromPosition, point)
   end)
 end
 
-function generateNeighborPointsBasedOnNavMesh(fromPosition, distance)
-  local points = generateMiddlePointsAround(fromPosition, distance)
+function Movement.generateNeighborPointsBasedOnNavMesh(fromPosition, distance)
+  local points = Movement.generateMiddlePointsAround(fromPosition, distance)
   local continentID = select(8, GetInstanceInfo())
   local maxDistance = math.sqrt(2 * math.pow(distance, 2))
   return Array.selectTrue(Array.map(points, function(point)
     local x, y, z = GMR.GetClosestPointOnMesh(continentID, point.x, point.y, point.z)
     if x then
       local point = createPoint(x, y, z)
-      if euclideanDistance2D(fromPosition, point) <= maxDistance and canBeMovedFromAToB(fromPosition, point) then
+      if euclideanDistance2D(fromPosition, point) <= maxDistance and Movement.canBeMovedFromAToB(fromPosition, point) then
         return point
       end
     end
@@ -635,53 +635,53 @@ function generateNeighborPointsBasedOnNavMesh(fromPosition, distance)
   end))
 end
 
-function canBeMovedFromAToB(from, to)
+function Movement.canBeMovedFromAToB(from, to)
   return (
-    to.z - from.z <= MAXIMUM_JUMP_HEIGHT and
-      thereAreZeroCollisions(
-        createPointWithZOffset(from, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1),
-        createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1)
+    to.z - from.z <= Movement.MAXIMUM_JUMP_HEIGHT and
+      Movement.thereAreZeroCollisions(
+        Movement.createPointWithZOffset(from, Movement.MAXIMUM_WALK_UP_TO_HEIGHT + 0.1),
+        Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT + 0.1)
       )
   )
 end
 
-function generatePointsAround(position, distance, numberOfAngles)
-  local angles = generateAngles(numberOfAngles)
-  local points = generatePoints(position, distance, angles)
+function Movement.generatePointsAround(position, distance, numberOfAngles)
+  local angles = Movement.generateAngles(numberOfAngles)
+  local points = Movement.generatePoints(position, distance, angles)
   return points
 end
 
-function createPointWithZOffset(point, zOffset)
+function Movement.createPointWithZOffset(point, zOffset)
   return createPoint(point.x, point.y, point.z + zOffset)
 end
 
-function generateNeighborPointsAround(position, distance)
+function Movement.generateNeighborPointsAround(position, distance)
   return Array.concat(
-    generateMiddlePointsAround(position, distance),
-    generateAbovePointsAround(position, distance),
-    generateBelowPointsAround(position, distance)
+    Movement.generateMiddlePointsAround(position, distance),
+    Movement.generateAbovePointsAround(position, distance),
+    Movement.generateBelowPointsAround(position, distance)
   )
 end
 
-function isPositionInTheAir(position)
-  return isPointInAir(position)
+function Movement.isPositionInTheAir(position)
+  return Movement.isPointInAir(position)
 end
 
-function isPointInAir(point)
-  local z = retrieveGroundZ(createPointWithZOffset(point, 0.25))
+function Movement.isPointInAir(point)
+  local z = Movement.retrieveGroundZ(Movement.createPointWithZOffset(point, 0.25))
   return not z or point.z - z >= MINIMUM_LIFT_HEIGHT
 end
 
-function isPointOnGround(point)
-  local z = retrieveGroundZ(createPointWithZOffset(point, 0.25))
+function Movement.isPointOnGround(point)
+  local z = Movement.retrieveGroundZ(Movement.createPointWithZOffset(point, 0.25))
   return z == point.z
 end
 
-function canBeFlown()
-  return isFlyingAvailableInZone() and GMR.IsOutdoors()
+function Movement.canBeFlown()
+  return Movement.isFlyingAvailableInZone() and GMR.IsOutdoors()
 end
 
-function createMoveToAction3(waypoint, continueMoving, a)
+function Movement.createMoveToAction3(waypoint, continueMoving, a)
   local stopMoving = nil
   local firstRun = true
   local initialDistance = nil
@@ -703,23 +703,23 @@ function createMoveToAction3(waypoint, continueMoving, a)
         initialDistance = GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z)
       end
 
-      local playerPosition = retrievePlayerPosition()
-      if isPositionInTheAir(waypoint) and canBeFlown() then
-        if not isMountedOnFlyingMount() then
-          waitForPlayerStandingStill()
-          mountOnFlyingMount()
+      local playerPosition = Movement.retrievePlayerPosition()
+      if Movement.isPositionInTheAir(waypoint) and Movement.canBeFlown() then
+        if not Movement.isMountedOnFlyingMount() then
+          Movement.waitForPlayerStandingStill()
+          Movement.mountOnFlyingMount()
         end
-        local playerPosition = retrievePlayerPosition()
+        local playerPosition = Movement.retrievePlayerPosition()
         if GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then
-          liftUp()
+          Movement.liftUp()
         end
       end
 
-      local playerPosition = retrievePlayerPosition()
+      local playerPosition = Movement.retrievePlayerPosition()
       if not GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then
         -- flying or in water
         if firstRun then
-          faceDirection(waypoint)
+          Movement.faceDirection(waypoint)
         end
         if not GMR.IsMoving() then
           GMR.MoveForwardStart()
@@ -731,7 +731,7 @@ function createMoveToAction3(waypoint, continueMoving, a)
       end
 
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
-        if (isJumpSituation(waypoint)) then
+        if (Movement.isJumpSituation(waypoint)) then
           lastJumpTime = GetTime()
           GMR.Jump()
         end
@@ -762,14 +762,14 @@ function createMoveToAction3(waypoint, continueMoving, a)
   }
 end
 
-function isJumpSituation(to)
-  local playerPosition = retrievePlayerPosition()
-  if to.z - playerPosition.z > MAXIMUM_WALK_UP_TO_HEIGHT then
-    local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + JUMP_DETECTION_HEIGHT)
-    local positionB = positionInFrontOfPlayer(3, JUMP_DETECTION_HEIGHT)
+function Movement.isJumpSituation(to)
+  local playerPosition = Movement.retrievePlayerPosition()
+  if to.z - playerPosition.z > Movement.MAXIMUM_WALK_UP_TO_HEIGHT then
+    local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + Movement.JUMP_DETECTION_HEIGHT)
+    local positionB = Movement.positionInFrontOfPlayer(3, Movement.JUMP_DETECTION_HEIGHT)
     position1 = positionA
     position2 = positionB
-    return thereAreCollisions(
+    return Movement.thereAreCollisions(
       positionA,
       positionB
     )
@@ -778,7 +778,7 @@ end
 
 local function findPathToSavedPosition2()
   local destination = savedPosition
-  local pathFinder = createPathFinder()
+  local pathFinder = Movement.createPathFinder()
   debugprofilestart()
   local path = pathFinder.start(destination.x, destination.y, destination.z)
   Movement.path = path
@@ -787,26 +787,26 @@ local function findPathToSavedPosition2()
   return path
 end
 
-function findPathToSavedPosition()
+function Movement.findPathToSavedPosition()
   local thread = coroutine.create(function()
     Movement.path = findPathToSavedPosition2()
   end)
   return resumeWithShowingError(thread)
 end
 
-function moveToSavedPosition()
+function Movement.moveToSavedPosition()
   local thread = coroutine.create(function()
     local path = findPathToSavedPosition2()
     Movement.path = path
     if path then
       print('go path')
-      movePath(path)
+      Movement.movePath(path)
     end
   end)
   return resumeWithShowingError(thread)
 end
 
-function moveCloserTo(x, y, z)
+function Movement.moveCloserTo(x, y, z)
   local playerPosition = GMR.GetPlayerPosition()
   local px = playerPosition.x
   local py = playerPosition.y
@@ -821,14 +821,14 @@ function moveCloserTo(x, y, z)
   end
 end
 
-function determineStartPosition()
+function Movement.determineStartPosition()
   local playerPosition = GMR.GetPlayerPosition()
   return createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
 local pathMover = nil
 
-function receiveActiveMount()
+function Movement.receiveActiveMount()
   local mountIDs = C_MountJournal.GetMountIDs()
   for _, mountID in ipairs(mountIDs) do
     local mountInfo = { C_MountJournal.GetMountInfoByID(mountID) }
@@ -839,9 +839,9 @@ function receiveActiveMount()
   return nil
 end
 
-function isMountedOnFlyingMount()
+function Movement.isMountedOnFlyingMount()
   if IsMounted() then
-    local mountID = select(12, receiveActiveMount())
+    local mountID = select(12, Movement.receiveActiveMount())
     if mountID then
       local mountTypeID = select(5, C_MountJournal.GetMountInfoExtraByID(mountID))
       return mountTypeID == 247 or mountTypeID == 248
@@ -850,45 +850,45 @@ function isMountedOnFlyingMount()
   return false
 end
 
-function waitForDismounted()
+function Movement.waitForDismounted()
   return waitFor(function()
     return not IsMounted()
   end)
 end
 
-function waitForMounted()
+function Movement.waitForMounted()
   return waitFor(function()
     return IsMounted()
   end)
 end
 
-function mountOnFlyingMount()
-  if not isMountedOnFlyingMount() then
+function Movement.mountOnFlyingMount()
+  if not Movement.isMountedOnFlyingMount() then
     if IsMounted() then
       GMR.Dismount()
     end
-    waitForDismounted()
+    Movement.waitForDismounted()
     GMR.CastSpellByName(GMR.GetFlyingMount())
-    waitForMounted()
+    Movement.waitForMounted()
   end
 end
 
-function waitForIsInAir()
+function Movement.waitForIsInAir()
   return waitFor(function()
-    local playerPosition = retrievePlayerPosition()
-    return isPositionInTheAir(playerPosition)
+    local playerPosition = Movement.retrievePlayerPosition()
+    return Movement.isPositionInTheAir(playerPosition)
   end)
 end
 
-function liftUp()
+function Movement.liftUp()
   GMR.MoveForwardStop()
   GMR.JumpOrAscendStart()
-  waitForIsInAir()
+  Movement.waitForIsInAir()
   GMR.AscendStop()
-  waitForPlayerStandingStill()
+  Movement.waitForPlayerStandingStill()
 end
 
-function createPathFinder()
+function Movement.createPathFinder()
   local shouldStop2 = false
 
   local a = {
@@ -903,7 +903,7 @@ function createPathFinder()
         GMR.LoadMeshFiles()
       end
 
-      local from = retrievePlayerPosition()
+      local from = Movement.retrievePlayerPosition()
       local to = createPoint(x, y, z)
       local continentID = select(8, GetInstanceInfo())
       local x, y, z = GMR.GetClosestPointOnMesh(continentID, from.x, from.y, from.z)
@@ -911,21 +911,21 @@ function createPathFinder()
       if x and y and z and x2 and y2 and z2 then
         local path2 = GMR.GetPathBetweenPoints(x, y, z, x2, y2, z2)
         if path2 then
-          path2 = convertGMRPathToPath(path2)
-          local path1 = findPath2(from, path2[1], a)
-          local path3 = findPath2(path2[#path2], to, a)
+          path2 = Movement.convertGMRPathToPath(path2)
+          local path1 = Movement.findPath2(from, path2[1], a)
+          local path3 = Movement.findPath2(path2[#path2], to, a)
           if path1 and path2 and path3 then
             local path = Array.concat(path1, path2, path3)
             Movement.path = path
             return path
           end
         else
-          return findPath2(from, to, a)
+          return Movement.findPath2(from, to, a)
         end
       else
-        return findPath2(from, to, a)
+        return Movement.findPath2(from, to, a)
       end
-      return findPath2(from, to, a)
+      return Movement.findPath2(from, to, a)
     end,
     stop = function()
       shouldStop2 = true
@@ -933,21 +933,21 @@ function createPathFinder()
   }
 end
 
-function waitForPlayerStandingStill()
+function Movement.waitForPlayerStandingStill()
   return waitFor(function()
     return not GMR.IsMoving()
   end)
 end
 
-function findPath2(from, to, a)
-  return findPathInner(from, to, a, 0)
+function Movement.findPath2(from, to, a)
+  return Movement.findPathInner(from, to, a, 0)
 end
 
-function retrievePointIndex(point)
+function Movement.retrievePointIndex(point)
   return MovementSavedVariables.pointIndexes:retrieveValue(point)
 end
 
-function createPointIndex(point)
+function Movement.createPointIndex(point)
   local pointIndex = MovementSavedVariables.nextPointIndex
   MovementSavedVariables.pointIndexes:setValue(point, pointIndex)
   MovementSavedVariables.points[pointIndex] = point
@@ -964,7 +964,7 @@ local function _retrieveNeighbor(pointIndex)
   return retrievePoint(pointIndex)
 end
 
-function retrieveConnections(pointIndex)
+function Movement.retrieveConnections(pointIndex)
   local connections2 = MovementSavedVariables.connections[pointIndex]
   if connections2 then
     return Array.map(connections2, function(connection)
@@ -982,7 +982,7 @@ function retrieveConnections(pointIndex)
   end
 end
 
-function retrieveNeighbors(pointIndex)
+function Movement.retrieveNeighbors(pointIndex)
   local neighborPointIndexes = MovementSavedVariables.neighbors[pointIndex]
   if neighborPointIndexes then
     local neighborPoints = Array.map(neighborPointIndexes, _retrieveNeighbor)
@@ -993,15 +993,15 @@ function retrieveNeighbors(pointIndex)
 end
 
 local function _storeNeighbor(pointIndex, neighbor)
-  local neighborIndex = retrieveOrCreatePointIndex(neighbor)
+  local neighborIndex = Movement.retrieveOrCreatePointIndex(neighbor)
   table.insert(MovementSavedVariables.neighbors[pointIndex], neighborIndex)
 end
 
-function retrieveOrCreatePointIndex(point)
-  return retrievePointIndex(point) or createPointIndex(point)
+function Movement.retrieveOrCreatePointIndex(point)
+  return Movement.retrievePointIndex(point) or Movement.createPointIndex(point)
 end
 
-function storeNeighbors(pointIndex, neighbors2)
+function Movement.storeNeighbors(pointIndex, neighbors2)
   MovementSavedVariables.neighbors[pointIndex] = {}
   Array.forEach(neighbors2, Function.partial(_storeNeighbor, pointIndex))
 end
@@ -1010,11 +1010,11 @@ local function isPoint(value)
   return value.x
 end
 
-function createPathIndex(path)
+function Movement.createPathIndex(path)
   local pathIndex = MovementSavedVariables.nextPathIndex
   MovementSavedVariables.paths[pathIndex] = Array.map(path, function(value)
     if isPoint(value) then
-      return retrieveOrCreatePointIndex(value)
+      return Movement.retrieveOrCreatePointIndex(value)
     else
       return value
     end
@@ -1023,14 +1023,14 @@ function createPathIndex(path)
   return pathIndex
 end
 
-function retrievePathIndexFromPathReference(pathReference)
+function Movement.retrievePathIndexFromPathReference(pathReference)
   return pathReference[1]
 end
 
-function retrievePath(pathIndex)
+function Movement.retrievePath(pathIndex)
   return Array.flatMap(MovementSavedVariables.paths[pathIndex], function(value)
     if type(value) == 'table' then
-      return retrievePath(retrievePathIndexFromPathReference(value))
+      return Movement.retrievePath(Movement.retrievePathIndexFromPathReference(value))
     else
       return retrievePoint(value)
     end
@@ -1041,62 +1041,62 @@ local function createPathReference(pathIndex)
   return { pathIndex }
 end
 
-function addConnection(pointIndex, connection)
+function Movement.addConnection(pointIndex, connection)
   if not MovementSavedVariables.connections[pointIndex] then
     MovementSavedVariables.connections[pointIndex] = {}
   end
   table.insert(MovementSavedVariables.connections[pointIndex], connection)
 end
 
-function addConnectionFromTo(closestPointOnGridFromFromPoint, from, to)
-  addConnectionFromToWithInteractable(closestPointOnGridFromFromPoint, from, to, nil)
+function Movement.addConnectionFromTo(closestPointOnGridFromFromPoint, from, to)
+  Movement.addConnectionFromToWithInteractable(closestPointOnGridFromFromPoint, from, to, nil)
 end
 
-function addConnectionFromToWithInteractable(closestPointOnGridFromFromPoint, from, to, objectID)
-  local closestPointOnGridIndexFromFromPoint = retrieveOrCreatePointIndex(closestPointOnGridFromFromPoint)
-  local toPointIndex = retrieveOrCreatePointIndex(to)
-  local pathIndex = createPathIndex({ from })
+function Movement.addConnectionFromToWithInteractable(closestPointOnGridFromFromPoint, from, to, objectID)
+  local closestPointOnGridIndexFromFromPoint = Movement.retrieveOrCreatePointIndex(closestPointOnGridFromFromPoint)
+  local toPointIndex = Movement.retrieveOrCreatePointIndex(to)
+  local pathIndex = Movement.createPathIndex({ from })
   local connection = {
     toPointIndex,
     pathIndex,
     objectID
   }
-  addConnection(closestPointOnGridIndexFromFromPoint, connection)
+  Movement.addConnection(closestPointOnGridIndexFromFromPoint, connection)
 end
 
-function storeConnection(path)
-  local destinationPointIndex = retrieveOrCreatePointIndex(path[#path])
+function Movement.storeConnection(path)
+  local destinationPointIndex = Movement.retrieveOrCreatePointIndex(path[#path])
 
   local index = #path - 1
 
   local subPath = Array.slice(path, index)
-  local startPointIndex = retrieveOrCreatePointIndex(subPath[1])
-  local pathIndex = createPathIndex(subPath)
+  local startPointIndex = Movement.retrieveOrCreatePointIndex(subPath[1])
+  local pathIndex = Movement.createPathIndex(subPath)
   local connection = {
     destinationPointIndex,
     pathIndex
   }
-  addConnection(startPointIndex, connection)
+  Movement.addConnection(startPointIndex, connection)
 
   for index = #path - 2, 1, -1 do
     local subPath = { path[index], createPathReference(pathIndex) }
-    local startPointIndex = retrieveOrCreatePointIndex(subPath[1])
-    pathIndex = createPathIndex(subPath)
+    local startPointIndex = Movement.retrieveOrCreatePointIndex(subPath[1])
+    pathIndex = Movement.createPathIndex(subPath)
     local connection = {
       destinationPointIndex,
       pathIndex
     }
-    addConnection(startPointIndex, connection)
+    Movement.addConnection(startPointIndex, connection)
   end
 end
 
-function findPathInner(from, to, a)
+function Movement.findPathInner(from, to, a)
   local path
   local distance = 2
   -- aStarPoints = {}
 
   --log('withFlying', withFlying)
-  -- local points = receiveNeighborPoints(from)
+  -- local points = Movement.receiveNeighborPoints(from)
   -- aStarPoints = points
   --log('points', points)
 
@@ -1104,7 +1104,7 @@ function findPathInner(from, to, a)
     from,
     to,
     function(point)
-      return receiveNeighborPoints(point, distance)
+      return Movement.receiveNeighborPoints(point, distance)
     end,
     a
   )
@@ -1115,24 +1115,24 @@ function findPathInner(from, to, a)
   --DevTools_Dump(path)
 
   if path then
-    storeConnection(path)
+    Movement.storeConnection(path)
   end
 
   return path
 end
 
-function receiveNeighborPoints(point, distance)
-  local pointIndex = retrieveOrCreatePointIndex(point)
-  local connections2 = retrieveConnections(pointIndex)
+function Movement.receiveNeighborPoints(point, distance)
+  local pointIndex = Movement.retrieveOrCreatePointIndex(point)
+  local connections2 = Movement.retrieveConnections(pointIndex)
   local neighborPoints = connections2
-  local neighborPointsBasedOnNavMesh = generateNeighborPointsBasedOnNavMesh(point, distance)
+  local neighborPointsBasedOnNavMesh = Movement.generateNeighborPointsBasedOnNavMesh(point, distance)
   if next(neighborPointsBasedOnNavMesh) then
     Array.append(neighborPoints, neighborPointsBasedOnNavMesh)
   else
-    local neighborPointsRetrievedFromInGameMesh = retrieveNeighbors(pointIndex)
+    local neighborPointsRetrievedFromInGameMesh = Movement.retrieveNeighbors(pointIndex)
     if not neighborPointsRetrievedFromInGameMesh then
-      neighborPointsRetrievedFromInGameMesh = generateNeighborPoints(point, distance)
-      storeNeighbors(pointIndex, neighborPointsRetrievedFromInGameMesh)
+      neighborPointsRetrievedFromInGameMesh = Movement.generateNeighborPoints(point, distance)
+      Movement.storeNeighbors(pointIndex, neighborPointsRetrievedFromInGameMesh)
     end
     Array.append(neighborPoints, neighborPointsRetrievedFromInGameMesh)
   end
@@ -1140,7 +1140,7 @@ function receiveNeighborPoints(point, distance)
   return neighborPoints
 end
 
-function movePath(path)
+function Movement.movePath(path)
   if pathMover then
     pathMover.stop()
   end
@@ -1151,7 +1151,7 @@ function movePath(path)
   }
   local pathLength = #path
   pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint, index)
-    return createMoveToAction3(waypoint, index < pathLength, a)
+    return Movement.createMoveToAction3(waypoint, index < pathLength, a)
   end))
   pathMover.run()
   return pathMover
@@ -1160,14 +1160,14 @@ end
 -- view distance = 5: 625
 -- view distance = 10: 975
 
-function waitForPlayerToBeOnPosition(position, radius)
+function Movement.waitForPlayerToBeOnPosition(position, radius)
   radius = radius or 3
   waitFor(function()
     return GMR.IsPlayerPosition(position.x, position.y, position.z, radius)
   end)
 end
 
-function faceDirection(point)
+function Movement.faceDirection(point)
   local yielder = createYielder()
   while not GMR.IsFacingXYZ(point.x, point.y, point.z) do
     local previousPlayerFacingAngle = GMR.ObjectRawFacing('player')
@@ -1180,59 +1180,59 @@ function faceDirection(point)
   GMR.FaceDirection(point.x, point.y, point.z)
 end
 
-function closestPointOnGrid(point)
+function Movement.closestPointOnGrid(point)
   return createPoint(
-    closestCoordinateOnGrid(point.x),
-    closestCoordinateOnGrid(point.y),
-    closestCoordinateOnGrid(point.z)
+    Movement.closestCoordinateOnGrid(point.x),
+    Movement.closestCoordinateOnGrid(point.y),
+    Movement.closestCoordinateOnGrid(point.z)
   )
 end
 
-function closestPointOnGridWithZLeft(point)
+function Movement.closestPointOnGridWithZLeft(point)
   return createPoint(
-    closestCoordinateOnGrid(point.x),
-    closestCoordinateOnGrid(point.y),
+    Movement.closestCoordinateOnGrid(point.x),
+    Movement.closestCoordinateOnGrid(point.y),
     point.z
   )
 end
 
-function closestPointOnGridWithZOnGround(point)
-  point = closestPointOnGridWithZLeft(point)
+function Movement.closestPointOnGridWithZOnGround(point)
+  point = Movement.closestPointOnGridWithZLeft(point)
   return createPoint(
     point.x,
     point.y,
-    retrieveGroundZ(point)
+    Movement.retrieveGroundZ(point)
   )
 end
 
-function closestCoordinateOnGrid(coordinate)
+function Movement.closestCoordinateOnGrid(coordinate)
   return Math.round(coordinate / GRID_LENGTH) * GRID_LENGTH
 end
 
-function convertPointToArray(point)
+function Movement.convertPointToArray(point)
   return { point.x, point.y, point.z }
 end
 
-function convertArrayToPoint(point)
+function Movement.convertArrayToPoint(point)
   return createPoint(unpack(point))
 end
 
-function convertPathToGMRPath(path)
-  return Array.map(path, convertPointToArray)
+function Movement.convertPathToGMRPath(path)
+  return Array.map(path, Movement.convertPointToArray)
 end
 
-function convertGMRPathToPath(path)
-  return Array.map(path, convertArrayToPoint)
+function Movement.convertGMRPathToPath(path)
+  return Array.map(path, Movement.convertArrayToPoint)
 end
 
-function moveToSavedPath()
+function Movement.moveToSavedPath()
   local thread = coroutine.create(function()
-    movePath(path)
+    Movement.movePath(path)
   end)
   return resumeWithShowingError(thread)
 end
 
-function traceLine(from, to, hitFlags)
+function Movement.traceLine(from, to, hitFlags)
   local x, y, z = GMR.TraceLine(
     from.x,
     from.y,
@@ -1249,35 +1249,35 @@ function traceLine(from, to, hitFlags)
   end
 end
 
-function traceLineCollision(from, to)
-  return traceLine(from, to, TraceLineHitFlags.COLLISION)
+function Movement.traceLineCollision(from, to)
+  return Movement.traceLine(from, to, Movement.TraceLineHitFlags.COLLISION)
 end
 
-function retrievePositionBetweenPositions(a, b, distanceFromA)
+function Movement.retrievePositionBetweenPositions(a, b, distanceFromA)
   local x, y, z = GMR.GetPositionBetweenPositions(a.x, a.y, a.z, b.x, b.y, b.z, distanceFromA)
   return createPoint(x, y, z)
 end
 
-function generateWalkToPointFromCollisionPoint(from, collisionPoint)
-  local pointWithDistanceToCollisionPoint = retrievePositionBetweenPositions(collisionPoint, from, CHARACTER_RADIUS)
-  local z = retrieveGroundZ(pointWithDistanceToCollisionPoint)
+function Movement.generateWalkToPointFromCollisionPoint(from, collisionPoint)
+  local pointWithDistanceToCollisionPoint = Movement.retrievePositionBetweenPositions(collisionPoint, from, CHARACTER_RADIUS)
+  local z = Movement.retrieveGroundZ(pointWithDistanceToCollisionPoint)
   return createPoint(pointWithDistanceToCollisionPoint.x, pointWithDistanceToCollisionPoint.y, z)
 end
 
-function isFirstPointCloserToThanSecond(fromA, fromB, to)
+function Movement.isFirstPointCloserToThanSecond(fromA, fromB, to)
   return euclideanDistance(fromA, to) < euclideanDistance(fromB, to)
 end
 
-function findClosestPointThatCanBeWalkedTo(from, to)
+function Movement.findClosestPointThatCanBeWalkedTo(from, to)
   local walkToPoint = from
   while true do
-    local pointOnMaximumWalkUpToHeight = createPointWithZOffset(walkToPoint, MAXIMUM_WALK_UP_TO_HEIGHT)
-    local destinationOnMaximumWalkUpToHeight = createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT)
-    local collisionPoint = traceLineCollision(pointOnMaximumWalkUpToHeight, destinationOnMaximumWalkUpToHeight)
+    local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(walkToPoint, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
+    local destinationOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
+    local collisionPoint = Movement.traceLineCollision(pointOnMaximumWalkUpToHeight, destinationOnMaximumWalkUpToHeight)
     if collisionPoint then
-      local potentialWalkToPoint = generateWalkToPointFromCollisionPoint(pointOnMaximumWalkUpToHeight,
+      local potentialWalkToPoint = Movement.generateWalkToPointFromCollisionPoint(pointOnMaximumWalkUpToHeight,
         collisionPoint)
-      if not walkToPoint or isFirstPointCloserToThanSecond(potentialWalkToPoint, walkToPoint, to) then
+      if not walkToPoint or Movement.isFirstPointCloserToThanSecond(potentialWalkToPoint, walkToPoint, to) then
         walkToPoint = potentialWalkToPoint
       else
         break
@@ -1291,19 +1291,19 @@ function findClosestPointThatCanBeWalkedTo(from, to)
   return walkToPoint
 end
 
-function moveTowards(x, y, z)
-  local playerPosition = retrievePlayerPosition()
+function Movement.moveTowards(x, y, z)
+  local playerPosition = Movement.retrievePlayerPosition()
   local destination = createPoint(x, y, z)
-  local walkToPoint = findClosestPointThatCanBeWalkedTo(playerPosition, destination)
+  local walkToPoint = Movement.findClosestPointThatCanBeWalkedTo(playerPosition, destination)
 
   if walkToPoint ~= playerPosition then
     GMR.MoveTo(walkToPoint.x, walkToPoint.y, walkToPoint.z)
   end
 end
 
-function moveTowardsSavedPosition()
+function Movement.moveTowardsSavedPosition()
   local thread = coroutine.create(function()
-    moveTowards(savedPosition.x, savedPosition.y, savedPosition.z)
+    Movement.moveTowards(savedPosition.x, savedPosition.y, savedPosition.z)
   end)
   return resumeWithShowingError(thread)
 end
@@ -1315,7 +1315,7 @@ ticker = C_Timer.NewTicker(0, function()
 
     -- TODO: Continent ID
 
-    addConnectionFromTo(
+    Movement.addConnectionFromTo(
       createPoint(
         -1728,
         1284,
@@ -1333,7 +1333,7 @@ ticker = C_Timer.NewTicker(0, function()
       )
     )
 
-    addConnectionFromToWithInteractable(
+    Movement.addConnectionFromToWithInteractable(
       createPoint(
         -4366,
         814,
@@ -1353,12 +1353,6 @@ ticker = C_Timer.NewTicker(0, function()
     )
   end
 end)
-
---log(closestPointOnGridWithZOnGround(createPoint(
---  -4366.2514648438,
---  813.20324707031,
---  -40.817531585693
---)))
 
 function Movement.onEvent(self, event, ...)
   if event == 'ADDON_LOADED' then

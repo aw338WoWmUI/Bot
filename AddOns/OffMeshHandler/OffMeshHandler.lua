@@ -24,7 +24,7 @@ ticker = C_Timer.NewTicker(0, function()
 
     GMR.OffMeshHandler = function(x, y, z)
       -- print('GMR.OffMeshHandler', x, y, z)
-      local from = retrievePlayerPosition()
+      local from = Movement.retrievePlayerPosition()
       local to = createPoint(x, y, z)
       if run and isDifferentPathFindingRequestThanRun(from, to) then
         stopPathFinding()
@@ -35,14 +35,14 @@ ticker = C_Timer.NewTicker(0, function()
             from = from,
             to = to
           }
-          pathFinder = createPathFinder()
+          pathFinder = Movement.createPathFinder()
           -- print('start pathfinder')
           local path = pathFinder.start(x, y, z)
           Movement.path = path
           -- print('path')
           -- DevTools_Dump(path)
           if path then
-            pathMover = movePath(path)
+            pathMover = Movement.movePath(path)
 
             run = nil
             pathFinder = nil
