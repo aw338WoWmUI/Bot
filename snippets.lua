@@ -27,3 +27,10 @@ GMR.GetDistanceToPosition(Movement.path[8].x, Movement.path[8].y, Movement.path[
 
 canBeMovedFromAToB(Movement.path[#Movement.path - 1], Movement.path[#Movement.path])
 
+canBeMovedFromPointToPoint(Movement.path[1], Movement.path[2])
+
+canBeWalkedOrSwamFromPointToPoint(Movement.path[1], Movement.path[2])
+
+canBeJumpedFromPointToPoint(Movement.path[1], Movement.path[2])  -- true
+
+canBeFlownFromPointToPoint(Movement.path[1], Movement.path[2])

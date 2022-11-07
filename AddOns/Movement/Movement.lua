@@ -367,6 +367,10 @@ end
 function canBeJumpedFromPointToPoint(from, to)
   return (
     to.z - from.z <= MAXIMUM_JUMP_HEIGHT and
+      thereAreZeroCollisions(
+        createPointWithZOffset(from, MAXIMUM_JUMP_HEIGHT),
+        createPointWithZOffset(to, MAXIMUM_JUMP_HEIGHT)
+      ) and
       canPlayerStandOnPoint(to)
   )
 end
@@ -546,7 +550,7 @@ function generateNeighborPoints(fromPosition, distance)
   end)
 end
 
-function generateNeighborPoints3(fromPosition, distance)
+function generateNeighborPointsBasedOnNavMesh(fromPosition, distance)
   local points = generateMiddlePointsAround(fromPosition, distance)
   local continentID = select(8, GetInstanceInfo())
   local maxDistance = math.sqrt(2 * math.pow(distance, 2))
@@ -960,29 +964,6 @@ function storeNeighbors(pointIndex, neighbors2)
   Array.forEach(neighbors2, Function.partial(_storeNeighbor, pointIndex))
 end
 
-function receiveOrGenerateNeighborPoints(generateNeighborPoints, point)
-  local pointIndex = retrieveOrCreatePointIndex(point)
-  local neighbours2 = retrieveNeighbors(pointIndex)
-  if not neighbours2 then
-    neighbours2 = generateNeighborPoints(point)
-    storeNeighbors(pointIndex, neighbours2)
-  end
-
-  local connections2 = retrieveConnections(pointIndex)
-
-  local navMeshPoints = {}
-  local x, y, z = GMR.GetClosestPointOnMesh(GMR.GetMapId(), point.x, point.y, point.z)
-  if x and y and z and (x ~= point.x or y ~= point.y or z ~= point.z) then
-    table.insert(navMeshPoints, createPoint(x, y, z))
-  end
-
-  return Array.concat(navMeshPoints, connections2, neighbours2)
-end
-
-function createReceiveOrGenerateNeighborPoints(generateNeighborPoints)
-  return Function.partial(receiveOrGenerateNeighborPoints, generateNeighborPoints)
-end
-
 local function isPoint(value)
   return value.x
 end
@@ -1069,19 +1050,8 @@ end
 
 function findPathInner(from, to, a)
   local path
-  local generateNeighborPoints2
   local distance = 2
   -- aStarPoints = {}
-
-  generateNeighborPoints2 = function(point)
-    local pointIndex = retrieveOrCreatePointIndex(point)
-    local connections2 = retrieveConnections(pointIndex)
-    local neighborPoints = connections2
-    Array.append(neighborPoints, generateNeighborPoints3(point, distance))
-    return neighborPoints
-  end
-
-  local receiveNeighborPoints = generateNeighborPoints2
 
   --log('withFlying', withFlying)
   -- local points = receiveNeighborPoints(from)
@@ -1091,7 +1061,9 @@ function findPathInner(from, to, a)
   local path = findPath(
     from,
     to,
-    receiveNeighborPoints,
+    function (point)
+      return receiveNeighborPoints(point, distance)
+    end,
     a
   )
 
@@ -1105,6 +1077,25 @@ function findPathInner(from, to, a)
   end
 
   return path
+end
+
+function receiveNeighborPoints(point, distance)
+  local pointIndex = retrieveOrCreatePointIndex(point)
+  local connections2 = retrieveConnections(pointIndex)
+  local neighborPoints = connections2
+  local neighborPointsBasedOnNavMesh = generateNeighborPointsBasedOnNavMesh(point, distance)
+  if next(neighborPointsBasedOnNavMesh) then
+    Array.append(neighborPoints, neighborPointsBasedOnNavMesh)
+  else
+    local neighborPointsRetrievedFromInGameMesh = retrieveNeighbors(pointIndex)
+    if not neighborPointsRetrievedFromInGameMesh then
+      neighborPointsRetrievedFromInGameMesh = generateNeighborPoints(point, distance)
+      storeNeighbors(pointIndex, neighborPointsRetrievedFromInGameMesh)
+    end
+    Array.append(neighborPoints, neighborPointsRetrievedFromInGameMesh)
+  end
+
+  return neighborPoints
 end
 
 function movePath(path)
