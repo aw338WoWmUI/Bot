@@ -719,6 +719,44 @@ function Movement.canBeFlown()
   return Movement.isFlyingAvailableInZone() and GMR.IsOutdoors()
 end
 
+local TOLERANCE_RANGE = 1
+
+function Movement.distanceOfPointToLine(point, line)
+  local A = line[1]
+  local B = line[2]
+
+  local BA = Vector:new(
+    point.x - A.x,
+    point.y - A.y,
+    point.z - A.z
+  )
+
+  local BC = Vector:new(
+    B.x - A.x,
+    B.y - A.y,
+    B.z - A.z
+  )
+
+  return BA:cross(BC):magnitude() / BC:magnitude()
+end
+
+function Movement.canReachWaypointWithCurrentMovementDirection(waypoint)
+  local playerPosition = Movement.retrievePlayerPosition()
+  local pitch = GMR.GetPitch('player')
+  local yaw = GMR.ObjectRawFacing('player')
+  local movementVector = {
+    x = math.cos(yaw) * math.cos(pitch),
+    y = math.sin(yaw) * math.cos(pitch),
+    z = math.sin(pitch),
+  }
+  local positionB = {
+    x = playerPosition.x + movementVector.x,
+    y = playerPosition.y + movementVector.y,
+    z = playerPosition.z + movementVector.z
+  }
+  return Movement.distanceOfPointToLine(waypoint, { playerPosition, positionB }) <= TOLERANCE_RANGE
+end
+
 function Movement.createMoveToAction3(waypoint, continueMoving, a)
   local stopMoving = nil
   local firstRun = true
@@ -748,24 +786,18 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
           Movement.mountOnFlyingMount()
         end
         local playerPosition = Movement.retrievePlayerPosition()
-        if GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then
+        if playerPosition.z < waypoint.z and GMR.IsGroundPosition(playerPosition.x, playerPosition.y,
+          playerPosition.z) then
           Movement.liftUp()
         end
       end
 
-      local playerPosition = Movement.retrievePlayerPosition()
-      if not GMR.IsGroundPosition(playerPosition.x, playerPosition.y, playerPosition.z) then
-        -- flying or in water
-        if firstRun then
-          Movement.faceDirection(waypoint)
-        end
-        if not GMR.IsMoving() then
-          GMR.MoveForwardStart()
-        end
-      else
-        if firstRun or not GMR.IsMoving() then
-          GMR.MoveTo(waypoint.x, waypoint.y, waypoint.z)
-        end
+      if not Movement.canReachWaypointWithCurrentMovementDirection(waypoint) then
+        GMR.MoveForwardStop()
+        Movement.faceDirection(waypoint)
+      end
+      if not GMR.IsMoving() then
+        GMR.MoveForwardStart()
       end
 
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
@@ -778,7 +810,7 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
       firstRun = false
     end,
     isDone = function()
-      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 1)
+      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, TOLERANCE_RANGE)
     end,
     shouldCancel = function()
       return (
@@ -801,6 +833,10 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
 end
 
 function Movement.isJumpSituation(to)
+  if GMR.IsUnitFlying('player') or Movement.isMountedOnFlyingMount() and Movement.isFlyingAvailableInZone() then
+    return false
+  end
+
   local playerPosition = Movement.retrievePlayerPosition()
   if to.z - playerPosition.z > Movement.MAXIMUM_WALK_UP_TO_HEIGHT then
     local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + Movement.JUMP_DETECTION_HEIGHT)
@@ -819,9 +855,7 @@ local function findPathToSavedPosition2()
   local to = savedPosition
   local pathFinder = Movement.createPathFinder()
   debugprofilestart()
-  print(1)
   local path = pathFinder.start(from, to)
-  print(2)
   Movement.path = path
   local duration = debugprofilestop()
   -- log(duration)
@@ -840,7 +874,7 @@ function Movement.moveToSavedPosition()
     local path = findPathToSavedPosition2()
     Movement.path = path
     if path then
-      print('go path')
+      -- print('go path')
       Movement.movePath(path)
     end
   end)

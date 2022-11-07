@@ -681,9 +681,7 @@ function exploreObject(object)
     local skipSaving = false
     local wasFacingSuccessful = waitForPlayerFacingObject(pointer)
     if wasFacingSuccessful then
-      print(1)
       waitForSoftInteract()
-      print(2)
       local softInteractPointer = GMR.ObjectPointer('softinteract')
       local objectID = GMR.ObjectId(pointer)
       local softInteractObjectID = GMR.ObjectId(softInteractPointer)
