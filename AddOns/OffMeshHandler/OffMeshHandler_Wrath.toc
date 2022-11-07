@@ -1,5 +1,5 @@
 ## Title: Off Mesh Handler
-## Interface: 100000
+## Interface: 30400
 ## Dependencies: Boolean, Movement, Array, Coroutine
 
 OffMeshHandler.lua
