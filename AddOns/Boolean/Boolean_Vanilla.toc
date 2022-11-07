@@ -1,0 +1,4 @@
+## Title: Boolean
+## Interface: 11403
+
+Boolean.lua

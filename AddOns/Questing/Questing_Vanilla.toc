@@ -1,0 +1,7 @@
+## Title: Questing
+## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events
+## Interface: 11403
+
+Questie.lua
+Questing.lua
+Questing2.lua
