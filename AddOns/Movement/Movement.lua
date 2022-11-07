@@ -564,9 +564,12 @@ function generateNeighborPoints3(fromPosition, distance)
 end
 
 function canBeMovedFromAToB(from, to)
-  return thereAreZeroCollisions(
-    createPointWithZOffset(from, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1),
-    createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1)
+  return (
+    to.z - from.z <= MAXIMUM_JUMP_HEIGHT and
+    thereAreZeroCollisions(
+      createPointWithZOffset(from, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1),
+      createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1)
+    )
   )
 end
 
@@ -651,7 +654,7 @@ function createMoveToAction3(waypoint, continueMoving, a)
       end
 
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
-        if (isJumpSituation()) then
+        if (isJumpSituation(waypoint)) then
           lastJumpTime = GetTime()
           GMR.Jump()
         end
@@ -660,7 +663,7 @@ function createMoveToAction3(waypoint, continueMoving, a)
       firstRun = false
     end,
     isDone = function()
-      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 2)
+      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, 1)
     end,
     shouldCancel = function()
       return (
@@ -682,16 +685,18 @@ function createMoveToAction3(waypoint, continueMoving, a)
   }
 end
 
-function isJumpSituation()
+function isJumpSituation(to)
   local playerPosition = retrievePlayerPosition()
-  local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + JUMP_DETECTION_HEIGHT)
-  local positionB = positionInFrontOfPlayer(3, JUMP_DETECTION_HEIGHT)
-  position1 = positionA
-  position2 = positionB
-  return thereAreCollisions(
-    positionA,
-    positionB
-  )
+  if to.z - playerPosition.z > MAXIMUM_WALK_UP_TO_HEIGHT then
+    local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + JUMP_DETECTION_HEIGHT)
+    local positionB = positionInFrontOfPlayer(3, JUMP_DETECTION_HEIGHT)
+    position1 = positionA
+    position2 = positionB
+    return thereAreCollisions(
+      positionA,
+      positionB
+    )
+  end
 end
 
 local function findPathToSavedPosition2()

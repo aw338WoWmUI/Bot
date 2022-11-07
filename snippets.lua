@@ -18,3 +18,12 @@ GMR.GetPath(GMR.ObjectPosition('target'))
 GMR.ExecutePath(true, GMR.GetPath(GMR.ObjectPosition('target')))
 
 GMR.OffMeshHandler(GMR.ObjectPosition('target'))
+
+GMR.MoveTo(GMR.ObjectPosition('target'))
+
+GMR.GetDistanceBetweenObjects('player', 'target')
+
+GMR.GetDistanceToPosition(Movement.path[8].x, Movement.path[8].y, Movement.path[8].z)
+
+canBeMovedFromAToB(Movement.path[#Movement.path - 1], Movement.path[#Movement.path])
+
