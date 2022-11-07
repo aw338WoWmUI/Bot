@@ -511,10 +511,11 @@ function moveToClosestPoint()
   else
     if not isPlayerOnMeshPoint() then
       local continentID = select(8, GetInstanceInfo())
-      local playerPosition = GMR.GetPlayerPosition()
+      local playerPosition = Movement.retrievePlayerPosition()
       local x, y, z = GMR.GetClosestPointOnMesh(continentID, playerPosition.x, playerPosition.y, playerPosition.z)
+      local to = createPoint(x, y, z)
       local pathFinder = Movement.createPathFinder()
-      local path = pathFinder.start(x, y, z)
+      local path = pathFinder.start(playerPosition, to)
       if path then
         pointToMove = path[#path]
         print('m1')

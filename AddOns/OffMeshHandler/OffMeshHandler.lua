@@ -37,7 +37,7 @@ ticker = C_Timer.NewTicker(0, function()
           }
           pathFinder = Movement.createPathFinder()
           -- print('start pathfinder')
-          local path = pathFinder.start(x, y, z)
+          local path = pathFinder.start(from, to)
           Movement.path = path
           -- print('path')
           -- DevTools_Dump(path)

@@ -181,9 +181,12 @@ ticker = C_Timer.NewTicker(0, function()
       --        end
       --      end
       --
-      --      --if savedPosition then
-      --      --  GMR.LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
-      --      --end
+      if DEVELOPMENT then
+        if savedPosition then
+          GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
+          GMR.LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
+        end
+      end
       --      --if walkToPoint then
       --      --  GMR.LibDraw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
       --      --end
@@ -323,7 +326,8 @@ end
 
 function Movement.thereAreZeroCollisions2(from, to, zHeight)
   return Array.isTrueForAllInInterval(0, zHeight, 1, function(zOffset)
-    return Movement.thereAreZeroCollisions(Movement.createPointWithZOffset(from, zOffset), Movement.createPointWithZOffset(to, zOffset))
+    return Movement.thereAreZeroCollisions(Movement.createPointWithZOffset(from, zOffset),
+      Movement.createPointWithZOffset(to, zOffset))
   end)
 end
 
@@ -626,7 +630,8 @@ function Movement.generateNeighborPointsBasedOnNavMesh(fromPosition, distance)
     local x, y, z = GMR.GetClosestPointOnMesh(continentID, point.x, point.y, point.z)
     if x then
       local point = createPoint(x, y, z)
-      if euclideanDistance2D(fromPosition, point) <= maxDistance and Movement.canBeMovedFromAToB(fromPosition, point) then
+      if euclideanDistance2D(fromPosition, point) <= maxDistance and Movement.canBeMovedFromAToB(fromPosition,
+        point) then
         return point
       end
     end
@@ -777,10 +782,13 @@ function Movement.isJumpSituation(to)
 end
 
 local function findPathToSavedPosition2()
-  local destination = savedPosition
+  local from = Movement.retrievePlayerPosition()
+  local to = savedPosition
   local pathFinder = Movement.createPathFinder()
   debugprofilestart()
-  local path = pathFinder.start(destination.x, destination.y, destination.z)
+  print(1)
+  local path = pathFinder.start(from, to)
+  print(2)
   Movement.path = path
   local duration = debugprofilestop()
   -- log(duration)
@@ -898,13 +906,11 @@ function Movement.createPathFinder()
   }
 
   return {
-    start = function(x, y, z)
+    start = function(from, to)
       if not GMR.IsMeshLoaded() then
         GMR.LoadMeshFiles()
       end
 
-      local from = Movement.retrievePlayerPosition()
-      local to = createPoint(x, y, z)
       local continentID = select(8, GetInstanceInfo())
       local x, y, z = GMR.GetClosestPointOnMesh(continentID, from.x, from.y, from.z)
       local x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, to.x, to.y, to.z)
@@ -1259,7 +1265,8 @@ function Movement.retrievePositionBetweenPositions(a, b, distanceFromA)
 end
 
 function Movement.generateWalkToPointFromCollisionPoint(from, collisionPoint)
-  local pointWithDistanceToCollisionPoint = Movement.retrievePositionBetweenPositions(collisionPoint, from, CHARACTER_RADIUS)
+  local pointWithDistanceToCollisionPoint = Movement.retrievePositionBetweenPositions(collisionPoint, from,
+    CHARACTER_RADIUS)
   local z = Movement.retrieveGroundZ(pointWithDistanceToCollisionPoint)
   return createPoint(pointWithDistanceToCollisionPoint.x, pointWithDistanceToCollisionPoint.y, z)
 end
@@ -1271,7 +1278,8 @@ end
 function Movement.findClosestPointThatCanBeWalkedTo(from, to)
   local walkToPoint = from
   while true do
-    local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(walkToPoint, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
+    local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(walkToPoint,
+      Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
     local destinationOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
     local collisionPoint = Movement.traceLineCollision(pointOnMaximumWalkUpToHeight, destinationOnMaximumWalkUpToHeight)
     if collisionPoint then
