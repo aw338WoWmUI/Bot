@@ -34,3 +34,21 @@ canBeWalkedOrSwamFromPointToPoint(Movement.path[1], Movement.path[2])
 canBeJumpedFromPointToPoint(Movement.path[1], Movement.path[2])  -- true
 
 canBeFlownFromPointToPoint(Movement.path[1], Movement.path[2])
+
+canBeMovedFromPointToPoint(Movement.path[6], Movement.path[7])
+
+canBeWalkedOrSwamFromPointToPoint(Movement.path[6], Movement.path[7]) -- true
+
+canBeJumpedFromPointToPoint(Movement.path[6], Movement.path[7])
+
+canBeFlownFromPointToPoint(Movement.path[6], Movement.path[7])
+
+canPlayerStandOnPoint(Movement.path[7])
+
+canBeMovedFromPointToPointCheckingSubSteps(Movement.path[6], Movement.path[7])
+
+canBeMovedFromPointToPoint(Movement.path[4], Movement.path[5])
+
+canBeWalkedOrSwamFromPointToPoint(Movement.path[4], Movement.path[5])
+
+canBeJumpedFromPointToPoint(Movement.path[4], Movement.path[5])

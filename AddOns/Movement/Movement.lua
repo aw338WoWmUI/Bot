@@ -353,6 +353,13 @@ function canBeMovedFromPointToPointCheckingSubSteps(from, to)
       end
     end
 
+    if not thereAreZeroCollisions(
+      createPointWithZOffset(point1, MAXIMUM_WALK_UP_TO_HEIGHT),
+      createPointWithZOffset(point2, MAXIMUM_WALK_UP_TO_HEIGHT)
+    ) then
+      return false
+    end
+
     point1 = point2
     distance = distance + stepSize
   end
@@ -361,11 +368,19 @@ function canBeMovedFromPointToPointCheckingSubSteps(from, to)
     return false
   end
 
+  if not thereAreZeroCollisions(
+    createPointWithZOffset(point1, MAXIMUM_WALK_UP_TO_HEIGHT),
+    createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT)
+  ) then
+    return false
+  end
+
   return true
 end
 
 function canBeJumpedFromPointToPoint(from, to)
   return (
+    isPointOnGround(from) and
     to.z - from.z <= MAXIMUM_JUMP_HEIGHT and
       thereAreZeroCollisions(
         createPointWithZOffset(from, MAXIMUM_JUMP_HEIGHT),
@@ -570,10 +585,10 @@ end
 function canBeMovedFromAToB(from, to)
   return (
     to.z - from.z <= MAXIMUM_JUMP_HEIGHT and
-    thereAreZeroCollisions(
-      createPointWithZOffset(from, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1),
-      createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1)
-    )
+      thereAreZeroCollisions(
+        createPointWithZOffset(from, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1),
+        createPointWithZOffset(to, MAXIMUM_WALK_UP_TO_HEIGHT + 0.1)
+      )
   )
 end
 
@@ -602,6 +617,11 @@ end
 function isPointInAir(point)
   local z = retrieveGroundZ(createPointWithZOffset(point, 0.25))
   return not z or point.z - z >= MINIMUM_LIFT_HEIGHT
+end
+
+function isPointOnGround(point)
+  local z = retrieveGroundZ(createPointWithZOffset(point, 0.25))
+  return z == point.z
 end
 
 function canBeFlown()
@@ -1061,7 +1081,7 @@ function findPathInner(from, to, a)
   local path = findPath(
     from,
     to,
-    function (point)
+    function(point)
       return receiveNeighborPoints(point, distance)
     end,
     a
