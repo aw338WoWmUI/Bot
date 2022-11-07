@@ -17,3 +17,4 @@ GMR.GetPath(GMR.ObjectPosition('target'))
 
 GMR.ExecutePath(true, GMR.GetPath(GMR.ObjectPosition('target')))
 
+GMR.OffMeshHandler(GMR.ObjectPosition('target'))

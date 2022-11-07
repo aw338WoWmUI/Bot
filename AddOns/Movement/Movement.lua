@@ -3,6 +3,7 @@ position2 = nil
 aStarPoints = nil
 aStarPoints2 = nil
 
+local DEVELOPMENT = false
 local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
 local CHARACTER_RADIUS = 0.75 -- the radius might vary race by race
@@ -132,31 +133,34 @@ ticker = C_Timer.NewTicker(0, function()
     ticker:Cancel()
 
     hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
-      --      if not GMR.IsMeshLoaded() then
-      --        GMR.LoadMeshFiles()
-      --      end
-      --
-      --      local continentID = select(8, GetInstanceInfo())
-      --
-      --      local playerPosition = retrievePlayerPosition()
-      --      if playerPosition then
-      --        GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
-      --        for y = playerPosition.y - 4, playerPosition.y + 4 do
-      --          for x = playerPosition.x - 4, playerPosition.x + 4 do
-      --            local x2, y2, z2 = retrievePointFromCache(x, y, playerPosition.z)
-      --            if not x2 then
-      --              local z3 = GMR.GetGroundZ(x, y, playerPosition.z) or playerPosition.z
-      --              x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, x, y, z3)
-      --              if x2 then
-      --                addPointToCache(x, y, playerPosition.z, x2, y2, z2)
-      --              end
-      --            end
-      --            if x2 then
-      --              GMR.LibDraw.Circle(x2, y2, z2, 0.1)
-      --            end
-      --          end
-      --        end
-      --      end
+      if DEVELOPMENT then
+        if not GMR.IsMeshLoaded() then
+          GMR.LoadMeshFiles()
+        end
+
+        local continentID = select(8, GetInstanceInfo())
+
+        local playerPosition = retrievePlayerPosition()
+        if playerPosition then
+          GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
+          for y = playerPosition.y - 4, playerPosition.y + 4 do
+            for x = playerPosition.x - 4, playerPosition.x + 4 do
+              local x2, y2, z2 = retrievePointFromCache(x, y, playerPosition.z)
+              if not x2 then
+                local z3 = GMR.GetGroundZ(x, y, playerPosition.z) or playerPosition.z
+                x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, x, y, z3)
+                if x2 then
+                  addPointToCache(x, y, playerPosition.z, x2, y2, z2)
+                end
+              end
+              if x2 then
+                GMR.LibDraw.Circle(x2, y2, z2, 0.1)
+              end
+            end
+          end
+        end
+      end
+
       --
       --      local playerPosition = retrievePlayerPosition()
       --      if playerPosition then
@@ -308,7 +312,6 @@ MAXIMUM_JUMP_HEIGHT = 1.675
 function canBeWalkedOrSwamFromPointToPoint(from, to)
   local b = canPlayerStandOnPoint(to)
   local c = canBeMovedFromPointToPointCheckingSubSteps(from, to)
-  log(b, c)
   return (
     b and
       c
@@ -694,7 +697,7 @@ local function findPathToSavedPosition2()
   debugprofilestart()
   path = pathFinder.start(destination.x, destination.y, destination.z)
   local duration = debugprofilestop()
-  log(duration)
+  -- log(duration)
   return path
 end
 

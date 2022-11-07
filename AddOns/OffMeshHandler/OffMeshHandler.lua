@@ -58,6 +58,7 @@ ticker = C_Timer.NewTicker(0, function()
         if pathMover then
           pathMover.stop()
           pathMover = nil
+          path = nil
         end
         local point = createPoint(x, y, z)
         if run then
