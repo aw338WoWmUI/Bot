@@ -18,6 +18,7 @@ local CHARACTER_HEIGHT = 2 -- ~ for human
 local MOUNTED_CHARACTER_HEIGHT = 3 -- only an approximation. Seems to depend on mount and maybe also character model.
 local canBeStoodOnPointCache = PointToValueMap:new()
 local canBeStoodWithMountOnPointCache = PointToValueMap:new()
+local DISTANCE = GRID_LENGTH
 
 local cache = {}
 
@@ -226,9 +227,10 @@ ticker = C_Timer.NewTicker(0, function()
 
       if DEVELOPMENT then
         if aStarPoints then
-          GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
+          GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+          local radius = DISTANCE / 2
           Array.forEach(aStarPoints, function(point)
-            GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
+            GMR.LibDraw.Circle(point.x, point.y, point.z, radius)
           end)
         end
       end
@@ -303,32 +305,38 @@ function Movement.canWalkTo(position)
 end
 
 function Movement.canBeMovedFromPointToPoint(from, to)
-  return (
-    Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
-      or Movement.canBeJumpedFromPointToPoint(from, to)
-      or Movement.canBeFlownFromPointToPoint(from, to)
-  )
+  local a = Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
+  local b = Movement.canBeJumpedFromPointToPoint(from, to)
+  local c = Movement.canBeFlownFromPointToPoint(from, to)
+  return a or b or c
 end
 
 function Movement.isEnoughSpaceOnTop(from, to)
-  return (
-    Movement.thereAreZeroCollisions(
-      Movement.createPointWithZOffset(from, 0.1),
-      Movement.createPointWithZOffset(from, MOUNTED_CHARACTER_HEIGHT)
-    ) and
-      Movement.thereAreZeroCollisions(
-        Movement.createPointWithZOffset(to, 0.1),
-        Movement.createPointWithZOffset(to, MOUNTED_CHARACTER_HEIGHT)
-      ) and
-      Movement.thereAreZeroCollisions2(from, to, MOUNTED_CHARACTER_HEIGHT)
+  local offset = 0.1
+  local a = Movement.thereAreZeroCollisions(
+    Movement.createPointWithZOffset(from, offset),
+    Movement.createPointWithZOffset(from, MOUNTED_CHARACTER_HEIGHT)
   )
+  local b = Movement.thereAreZeroCollisions(
+    Movement.createPointWithZOffset(to, offset),
+    Movement.createPointWithZOffset(to, MOUNTED_CHARACTER_HEIGHT)
+  )
+
+  local c = Movement.thereAreZeroCollisions2(Movement.createPointWithZOffset(from, offset),
+    Movement.createPointWithZOffset(to, offset), MOUNTED_CHARACTER_HEIGHT - offset)
+  return a and b and c
 end
 
 function Movement.thereAreZeroCollisions2(from, to, zHeight)
-  return Array.isTrueForAllInInterval(0, zHeight, 1, function(zOffset)
-    return Movement.thereAreZeroCollisions(Movement.createPointWithZOffset(from, zOffset),
-      Movement.createPointWithZOffset(to, zOffset))
-  end)
+  local function thereAreZeroCollisions(zOffset)
+    return Movement.thereAreZeroCollisions(
+      Movement.createPointWithZOffset(from, zOffset),
+      Movement.createPointWithZOffset(to, zOffset)
+    )
+  end
+  local interval = 1
+  return Array.isTrueForAllInInterval(0, zHeight, interval, thereAreZeroCollisions) and
+    (zHeight % interval == 0 or thereAreZeroCollisions(zHeight))
 end
 
 Movement.MAXIMUM_WALK_UP_TO_HEIGHT = 0.94
@@ -431,11 +439,10 @@ function Movement.canBeFlownFromPointToPoint(from, to)
       return false
     end
   end
-  return (
-    Movement.isFlyingAvailableInZone() and
-      Movement.isEnoughSpaceOnTop(from, to) and
-      Movement.canPlayerStandOnPoint(to, { withMount = true })
-  )
+  local a = Movement.isFlyingAvailableInZone()
+  local b = Movement.isEnoughSpaceOnTop(from, to)
+  local c = Movement.canPlayerStandOnPoint(to, { withMount = true })
+  return a and b and c
 end
 
 function Movement.canPlayerStandOnPoint(point, options)
@@ -556,14 +563,14 @@ end
 
 function Movement.generatePointsAroundOnGrid(fromPosition, distance, generatePoint)
   return {
-    Movement.generatePoint(fromPosition, -distance, distance),
-    Movement.generatePoint(fromPosition, 0, distance),
-    Movement.generatePoint(fromPosition, distance, distance),
-    Movement.generatePoint(fromPosition, -distance, 0),
-    Movement.generatePoint(fromPosition, distance, 0),
-    Movement.generatePoint(fromPosition, -distance, -distance),
-    Movement.generatePoint(fromPosition, 0, -distance),
-    Movement.generatePoint(fromPosition, distance, -distance)
+    generatePoint(fromPosition, -distance, distance),
+    generatePoint(fromPosition, 0, distance),
+    generatePoint(fromPosition, distance, distance),
+    generatePoint(fromPosition, -distance, 0),
+    generatePoint(fromPosition, distance, 0),
+    generatePoint(fromPosition, -distance, -distance),
+    generatePoint(fromPosition, 0, -distance),
+    generatePoint(fromPosition, distance, -distance)
   }
 end
 
@@ -571,8 +578,19 @@ function Movement.generateMiddlePoint(fromPosition, offsetX, offsetY)
   local point2 = Movement.closestPointOnGrid(
     createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
-  if Movement.isPointInAir(point2) or Movement.isPointInWater(point2) then
-    return point2
+  local isInAir = Movement.isPointInAir(point2)
+  if isInAir or Movement.isPointInWater(point2) then
+    if isInAir then
+      local point3 = {
+        x = point2.x,
+        y = point2.y,
+        z = point2.z,
+        isInAir = isInAir
+      }
+      return point3
+    else
+      return point2
+    end
   else
     local point = Movement.closestPointOnGridWithZLeft(
       createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
@@ -586,11 +604,23 @@ function Movement.generateMiddlePoint(fromPosition, offsetX, offsetY)
 end
 
 function Movement.generateAbovePoint(fromPosition, offsetX, offsetY)
-  return createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
+  local point = createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
+  return {
+    x = point.x,
+    y = point.y,
+    z = point.z,
+    isInAir = Movement.isPointInAir(point)
+  }
 end
 
 function Movement.generateBelowPoint(fromPosition, offsetX, offsetY)
-  return createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
+  local point = createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
+  return {
+    x = point.x,
+    y = point.y,
+    z = point.z,
+    isInAir = Movement.isPointInAir(point)
+  }
 end
 
 function Movement.generatePoint(fromPosition, distance, angle)
@@ -661,10 +691,13 @@ function Movement.createPointWithZOffset(point, zOffset)
 end
 
 function Movement.generateNeighborPointsAround(position, distance)
+  local a = Movement.generateMiddlePointsAround(position, distance)
+  local b = Movement.generateAbovePointsAround(position, distance)
+  local c = Movement.generateBelowPointsAround(position, distance)
   return Array.concat(
-    Movement.generateMiddlePointsAround(position, distance),
-    Movement.generateAbovePointsAround(position, distance),
-    Movement.generateBelowPointsAround(position, distance)
+    a,
+    b,
+    c
   )
 end
 
@@ -1098,22 +1131,29 @@ end
 
 function Movement.findPathInner(from, to, a)
   local path
-  local distance = 2
   -- aStarPoints = {}
 
-  --log('withFlying', withFlying)
-  -- local points = Movement.receiveNeighborPoints(from)
-  -- aStarPoints = points
-  --log('points', points)
+  local receiveNeighborPoints = function(point)
+    return Movement.receiveNeighborPoints(point, DISTANCE)
+  end
+
+  --local points = receiveNeighborPoints(from)
+  --DevTools_Dump(points)
+  --aStarPoints = points
+
+  -- local yielder = createResumableYielder()
+  local yielder = createYielder(1 / 60)
+  Movement.yielder = yielder
 
   local path = findPath(
     from,
     to,
-    function(point)
-      return Movement.receiveNeighborPoints(point, distance)
-    end,
-    a
+    receiveNeighborPoints,
+    a,
+    yielder
   )
+
+  --local path = nil
 
   Movement.path = path
 
@@ -1125,6 +1165,12 @@ function Movement.findPathInner(from, to, a)
   end
 
   return path
+end
+
+function Movement.resume()
+  if Movement.yielder then
+    Movement.yielder.resume()
+  end
 end
 
 function Movement.receiveNeighborPoints(point, distance)

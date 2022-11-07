@@ -19,3 +19,23 @@ function createYielder(timePerRun)
     end
   }
 end
+
+function createResumableYielder()
+  local thread = coroutine.running()
+
+  return {
+    resume = function ()
+      if coroutine.status(thread) == 'suspended' then
+        resumeWithShowingError(thread)
+      end
+    end,
+
+    hasRanOutOfTime = function()
+      return true
+    end,
+
+    yield = function()
+      coroutine.yield()
+    end
+  }
+end
