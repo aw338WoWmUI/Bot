@@ -439,7 +439,7 @@ function Movement.canBeFlownFromPointToPoint(from, to)
       return false
     end
   end
-  local a = Movement.isFlyingAvailableInZone()
+  local a = Movement.isFlyingAvailableInZone() and Movement.canCharacterFly()
   local b = Movement.isEnoughSpaceOnTop(from, to)
   local c = Movement.canPlayerStandOnPoint(to, { withMount = true })
   return a and b and c
@@ -499,6 +499,22 @@ end
 
 function Movement.isFlyingAvailableInZone()
   return IsFlyableArea()
+end
+
+local EXPERT_RIDING = 34092
+
+function Movement.canCharacterFly()
+  return GMR.IsSpellKnown(EXPERT_RIDING) and Movement.isAFlyingMountAvailable()
+end
+
+function Movement.isAFlyingMountAvailable()
+  local mountIDs = C_MountJournal.GetMountIDs()
+  return Array.any(mountIDs, Movement.isFlyingMount)
+end
+
+function Movement.isFlyingMount(mountID)
+  local mountTypeID = select(5, C_MountJournal.GetMountInfoExtraByID(mountID))
+  return mountTypeID == 247 or mountTypeID == 248
 end
 
 function Movement.retrieveGroundZ(position)
@@ -716,7 +732,7 @@ function Movement.isPointOnGround(point)
 end
 
 function Movement.canBeFlown()
-  return Movement.isFlyingAvailableInZone() and GMR.IsOutdoors()
+  return Movement.isFlyingAvailableInZone() and GMR.IsOutdoors() and Movement.canCharacterFly()
 end
 
 local TOLERANCE_RANGE = 1
@@ -918,8 +934,7 @@ function Movement.isMountedOnFlyingMount()
   if IsMounted() then
     local mountID = select(12, Movement.receiveActiveMount())
     if mountID then
-      local mountTypeID = select(5, C_MountJournal.GetMountInfoExtraByID(mountID))
-      return mountTypeID == 247 or mountTypeID == 248
+      return Movement.isFlyingMount(mountID)
     end
   end
   return false
@@ -1211,15 +1226,27 @@ function Movement.receiveNeighborPoints(point, distance)
   local pointIndex = Movement.retrieveOrCreatePointIndex(point)
   local connections2 = Movement.retrieveConnections(pointIndex)
   local neighborPoints = connections2
-  local neighborPointsBasedOnNavMesh = Movement.generateNeighborPointsBasedOnNavMesh(point, distance)
-
-  Array.append(neighborPoints, neighborPointsBasedOnNavMesh)
+  --local neighborPointsBasedOnNavMesh = Movement.generateNeighborPointsBasedOnNavMesh(point, distance)
+  --
+  --Array.append(neighborPoints, neighborPointsBasedOnNavMesh)
 
   local neighborPointsRetrievedFromInGameMesh = Movement.retrieveNeighbors(pointIndex)
   if not neighborPointsRetrievedFromInGameMesh then
     neighborPointsRetrievedFromInGameMesh = Movement.generateNeighborPoints(point, distance)
     Movement.storeNeighbors(pointIndex, neighborPointsRetrievedFromInGameMesh)
   end
+  local pointToConnectionPoint = PointToValueMap:new()
+  Array.forEach(connections2, function (point)
+    pointToConnectionPoint:setValue(point, point)
+  end)
+  neighborPointsRetrievedFromInGameMesh = Array.map(neighborPointsRetrievedFromInGameMesh, function (point)
+    local connectionPoint = pointToConnectionPoint:retrieveValue(point)
+    if connectionPoint then
+      return connectionPoint
+    else
+      return point
+    end
+  end)
   Array.append(neighborPoints, neighborPointsRetrievedFromInGameMesh)
 
   return neighborPoints

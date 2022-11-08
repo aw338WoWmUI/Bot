@@ -100,3 +100,5 @@ p:setValue({ x = 0, y = 0, z = 0}, 1)
 p:setValue({ x = 1, y = 2, z = 3}, 2)
 
 p:retrieveValue({ x = 1, y = 2, z = 3})
+
+Movement.canBeFlownFromPointToPoint(Movement.path[2], Movement.path[3])
