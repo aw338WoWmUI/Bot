@@ -1422,6 +1422,10 @@ function Movement.moveTowardsSavedPosition()
   return resumeWithShowingError(thread)
 end
 
+function Movement.havePointsSameCoordinates(a, b)
+  return a.x == b.x and a.y == b.y and a.z == b.z
+end
+
 local ticker
 ticker = C_Timer.NewTicker(0, function()
   if _G.GMR and GMR.IsFullyLoaded and GMR.IsFullyLoaded() then
