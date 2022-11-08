@@ -1212,16 +1212,15 @@ function Movement.receiveNeighborPoints(point, distance)
   local connections2 = Movement.retrieveConnections(pointIndex)
   local neighborPoints = connections2
   local neighborPointsBasedOnNavMesh = Movement.generateNeighborPointsBasedOnNavMesh(point, distance)
-  if next(neighborPointsBasedOnNavMesh) then
-    Array.append(neighborPoints, neighborPointsBasedOnNavMesh)
-  else
-    local neighborPointsRetrievedFromInGameMesh = Movement.retrieveNeighbors(pointIndex)
-    if not neighborPointsRetrievedFromInGameMesh then
-      neighborPointsRetrievedFromInGameMesh = Movement.generateNeighborPoints(point, distance)
-      Movement.storeNeighbors(pointIndex, neighborPointsRetrievedFromInGameMesh)
-    end
-    Array.append(neighborPoints, neighborPointsRetrievedFromInGameMesh)
+
+  Array.append(neighborPoints, neighborPointsBasedOnNavMesh)
+
+  local neighborPointsRetrievedFromInGameMesh = Movement.retrieveNeighbors(pointIndex)
+  if not neighborPointsRetrievedFromInGameMesh then
+    neighborPointsRetrievedFromInGameMesh = Movement.generateNeighborPoints(point, distance)
+    Movement.storeNeighbors(pointIndex, neighborPointsRetrievedFromInGameMesh)
   end
+  Array.append(neighborPoints, neighborPointsRetrievedFromInGameMesh)
 
   return neighborPoints
 end
