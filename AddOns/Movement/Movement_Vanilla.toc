@@ -1,8 +1,10 @@
 ## Title: Movement
 ## Interface: 11403
-## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math
+## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector
 ## SavedVariables: savedPosition, position1, position2, from, to
 
+ObjectToValueLookup.lua
+PointToValueMap.lua
 PointFlyweight.lua
 PointWithPathToFlyweight.lua
 Moving.lua

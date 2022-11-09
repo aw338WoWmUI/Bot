@@ -1,0 +1,5 @@
+## Title: Compatibility
+## Interface: 100000
+## Dependencies: Boolean, Caching
+
+Compatibility.lua

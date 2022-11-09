@@ -7,6 +7,7 @@ C_GossipInfo.SelectOption = function (value, ...)
   local options = C_GossipInfo.GetOptions()
   if value >= 1 and value <= #options then
     local option = options[value]
+    print('selectOption', value, option.gossipOptionID)
     return selectOption(option.gossipOptionID, ...)
   else
     return selectOption(value, ...)
@@ -79,3 +80,4 @@ end
 function AbandonQuest()
   return C_QuestLog.AbandonQuest()
 end
+

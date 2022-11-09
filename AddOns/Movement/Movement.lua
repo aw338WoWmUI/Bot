@@ -234,6 +234,22 @@ ticker = C_Timer.NewTicker(0, function()
           end)
         end
       end
+
+      --if DEVELOPMENT then
+      --  if sellVendors then
+      --    GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+      --    local radius = 0.75
+      --    Array.forEach(sellVendors, function(point)
+      --      local pointer = GMR.FindObject(point[4])
+      --      if pointer then
+      --        local x, y, z = GMR.ObjectPosition(pointer)
+      --        GMR.LibDraw.Circle(x, y, z, radius)
+      --      else
+      --        GMR.LibDraw.Circle(point[1], point[2], point[3], radius)
+      --      end
+      --    end)
+      --  end
+      --end
       --
       --      if aStarPoints2 then
       --        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)

@@ -1,7 +1,11 @@
 ## Title: Questing
-## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events
 ## Interface: 11403
+## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility
+## SavedVariables: exploredObjects
 
+namespace.lua
 Questie.lua
+Database_Classic.lua
 Questing.lua
 Questing2.lua
+ClosestNPCUpdater.lua

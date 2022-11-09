@@ -154,3 +154,7 @@ WorldMapFrame:GetMapID()
 coroutine.wrap(function () DevTools_Dump(retrieveObjectPoints()) end)()
 
 questID = C_SuperTrack.GetSuperTrackedQuestID()
+
+C_GossipInfo.GetOptions()
+
+-- 38009

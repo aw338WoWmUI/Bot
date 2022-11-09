@@ -82,13 +82,16 @@ async function copyQuest(id) {
       const text = li.textContent
       const match = requiresLevelRegExp.exec(text)
       if (match) {
-        object.requiresLevel = parseInt(match[1], 10)
+        object.requiredLevel = parseInt(match[1], 10)
       } else if (text.startsWith('Start: ')) {
-        const a = li.querySelector('a')
-        const href = a.href
-        const match = npcIDRegExp.exec(href)
-        if (match) {
-          object.starterID = parseInt(match[1], 10)
+        const elements = Array.from(li.querySelectorAll('a'))
+        object.starterIDs = []
+        for (const element of elements) {
+          const href = element.href
+          const match = npcIDRegExp.exec(href)
+          if (match) {
+            object.starterIDs.push(parseInt(match[1], 10))
+          }
         }
       }  else if (text.startsWith('End: ')) {
         const a = li.querySelector('a')

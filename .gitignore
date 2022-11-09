@@ -1,2 +1,2 @@
 AddOns/navigation*.zip
-AddOns/Questing/data/*.lua
+AddOns/Questing/data/**/*.lua

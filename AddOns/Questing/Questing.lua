@@ -78,7 +78,7 @@ function gossipWithAt(x, y, z, objectID, optionToSelect)
     objectID,
     nil,
     INTERACT_DISTANCE,
-    optionToSelect or 1
+    optionToSelect
   )
 end
 
@@ -234,22 +234,6 @@ end
 
 -- /dump QuestieDB:GetQuestsByZoneId(QuestiePlayer:GetCurrentZoneId())
 
-local function filterQuests(quests)
-  local level = UnitLevel('player')
-  return Array.filter(quests, function(quest)
-    return quest.requiredLevel <= level
-  end)
-end
-
-function findQuest()
-  local quests = findQuests()
-  local quest = Array.find(quests, function(quest)
-    return quest.Id == 87
-  end)
-  logToFile(tableToString(quest, 3))
-  return quest
-end
-
 local function convertObjectToList(object)
   local list = {}
   for key, value in pairs(object) do
@@ -301,40 +285,6 @@ end
 function determineQuestStartPoint(quest)
   local npc = determineQuestStarter(quest)
   return npc and determineFirstObjectSpawn(npc) or nil
-end
-
-function evaluateSideStepPosition()
-  -- Gather all quest points (quest pick up points, quest objective points, quest turn in points)
-  local quests = findQuests()
-  local questPoints = Array.flatMap(quests, function(quest)
-    -- TODO: Quest pick up point
-    -- TODO: Quest turn in point
-    -- TODO: Point dependencies (what is required to be done before others)
-    --       Quest pick up before other quest points
-    --       Quest turn in after quest pick up and all quest objective points have been done.
-    --       Quest objective points after quest pick up.
-    return Array.selectTrue(Array.concat(
-      {
-        determineQuestStartPoint(quest)
-      },
-      quest.Objectives
-    ))
-  end)
-  -- Determine an efficient route through the quest points
-  questPoints = Array.map(questPoints, function(point)
-    local mapID = ZoneDB:GetUiMapIdByAreaId(point.zoneID)
-    local x, y, z = GMR.GetWorldPositionFromMap(mapID, point.x, point.y)
-    return {
-      x = x,
-      y = y,
-      z = z
-    }
-  end)
-  -- Do the route
-
-  if GMR.IsExecuting() then
-
-  end
 end
 
 local function isMapCoordinateInValidRange(coordinate)
