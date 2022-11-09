@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@sanjo/write-file": "^1.0.0",
+    "puppeteer": "^19.2.2"
+  }
+}

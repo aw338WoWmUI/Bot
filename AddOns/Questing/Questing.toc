@@ -1,7 +1,10 @@
 ## Title: Questing
-## Interface: 30400
+## Interface: 100000
 ## Dependencies: Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events
 ## SavedVariables: exploredObjects
 
+data/quests.lua
+data/quest_giver_npc_ids.lua
+data/NPCs.lua
 Questing.lua
 Questing2.lua

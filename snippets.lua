@@ -102,3 +102,55 @@ p:setValue({ x = 1, y = 2, z = 3}, 2)
 p:retrieveValue({ x = 1, y = 2, z = 3})
 
 Movement.canBeFlownFromPointToPoint(Movement.path[2], Movement.path[3])
+
+GMR.ObjectPointer('target')
+
+getmetatable(GMR.GetObject('target'))
+
+GMR.GetObject(GMR.ObjectPointer('target'))
+
+Object.keys(GMR.GetObject('target'))
+
+type(GMR.GetObject('target'))
+
+GMR.ObjectFlags('target')
+
+GMR.ObjectFlags2('target')
+
+GMR.GetObjectWithIndex(1)
+
+GMR.GetObjectWithXYZ()
+
+GMR.ScanObjects()
+
+GMR.Object
+
+getmetatable(GMR.GetObject(GMR.ObjectPointer('target')))
+
+GMR.GetObject(GMR.ObjectPointer('target'))
+
+GMR.GetNearbyObjects(250)
+
+coroutine.wrap(function () DevTools_Dump(retrieveQuestStartPoints()) end)()
+
+C_SuperTrack.GetSuperTrackedQuestID()
+
+shouldQuestBeAvailable(Array.find(quests, function (quest) return quest.id == 26391 end))
+
+GMR.IsQuestCompleted(quest.id)
+
+GMR.IsQuestCompleted(26389)
+
+retrieveAvailableQuestLines(GMR.GetMapId())
+
+retrieveAvailableQuestLines(425)
+
+retrieveAvailableQuestLines(37)
+
+C_Map.GetBestMapForUnit('player')
+
+WorldMapFrame:GetMapID()
+
+coroutine.wrap(function () DevTools_Dump(retrieveObjectPoints()) end)()
+
+questID = C_SuperTrack.GetSuperTrackedQuestID()

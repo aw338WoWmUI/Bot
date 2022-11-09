@@ -424,7 +424,11 @@ end
 
 function Movement.retrievePlayerPosition()
   local playerPosition = GMR.GetPlayerPosition()
-  return createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
+  if playerPosition then
+    return createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
+  else
+    return nil
+  end
 end
 
 function Movement.canBeFlownFromPointToPoint(from, to)

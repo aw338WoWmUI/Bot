@@ -1,17 +1,8 @@
 GMR.DefineSetting('Disable', 'AvoidWater')
 GMR.DefineSetting('Enable', 'FightOnTravels')
-GMR.DefineSellVendor(
-  -1707.3454589844,
-  -1423.5191650391,
-  34.289108276367,
-  128227
-)
-GMR.DefineRepairVendor(
-  -1707.3454589844,
-  -1423.5191650391,
-  34.289108276367,
-  128227
-)
+GMR.DefineSetting('Disable', 'Grinding')
+SetCVar('nameplateShowFriendlyNPCs', 1)
+SetCVar('cameraSmoothStyle', 2)
 SetCVar('SoftTargetInteract', 3)
 SetCVar('SoftTargetIconInteract', 1)
 SetCVar('SoftTargetIconGameObject', 1)
@@ -28,3 +19,5 @@ SetCVar('SoftTargetTooltipInteract', 1)
 SetCVar('SoftTargetTooltipLocked', 1)
 -- /dump GetCVar('SoftTargetFriend')
 -- SetCVar('SoftTargetFriend', 1)
+
+C_Timer.After(0, efficientlyLevelToMaximumLevel)

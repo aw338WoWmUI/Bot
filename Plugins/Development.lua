@@ -396,6 +396,7 @@ function logAllAPICalls()
   end
 end
 
+--logAPICalls2('GMR.GetObject')
 --logAPICalls2('GMR.LibDraw.Array')
 --logAPICalls2('GMR.OffMeshHandler')
 --logAPICalls2('GMR.LibDraw.SetColorRaw')
@@ -825,7 +826,11 @@ function stopMoving()
 end
 
 function enableLogging()
-  GMR.Log = logToFile
+  local gmrLog = GMR.Log
+  GMR.Log = function (...)
+    log(...)
+    return gmrLog(...)
+  end
 end
 
 function findTaxiNode(name)
