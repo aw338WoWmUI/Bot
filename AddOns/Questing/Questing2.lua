@@ -378,7 +378,6 @@ function retrieveObjectPoints()
         local matchingObjects = Array.filter(objects, function(object)
           return Set.contains(objectIDs, object.ID) and GMR.IsAlive(object.GUID)
         end)
-        print('aaa', #matchingObjects)
         Array.append(
           objectPoints,
           convertObjectPointersToObjectPoints(
@@ -1093,6 +1092,7 @@ run = function(once)
 
             if popUpType == 'OFFER' then
               ShowQuestOffer(questID)
+              print(1)
             end
           end
         end
@@ -1130,10 +1130,10 @@ run = function(once)
           C_GossipInfo.SelectAvailableQuest(availableQuest.questID)
         elseif QuestFrame:IsShown() and GetNumAvailableQuests() >= 1 then
           SelectAvailableQuest(1)
-        --elseif GossipFrame:IsShown() and #C_GossipInfo.GetOptions() >= 1 then
-        --  local options = C_GossipInfo.GetOptions()
-        --  local option = options[1]
-        --  C_GossipInfo.SelectOption(option.gossipOptionID)
+          --elseif GossipFrame:IsShown() and #C_GossipInfo.GetOptions() >= 1 then
+          --  local options = C_GossipInfo.GetOptions()
+          --  local option = options[1]
+          --  C_GossipInfo.SelectOption(option.gossipOptionID)
         elseif canInteractWithQuestGiver() and lastQuestGiverObjectPointerInteractedWith ~= GMR.ObjectPointer('softinteract') then
           interactWithQuestGiver()
           --elseif canInteractWithObject() then
