@@ -5,6 +5,7 @@
 
 namespace.lua
 doWhenGMRIsFullyLoaded.lua
+VendoringFix.lua
 Questie.lua
 Database_Classic.lua
 Questing.lua
