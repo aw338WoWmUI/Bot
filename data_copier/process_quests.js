@@ -1,68 +1,9 @@
+import { readFile } from '@sanjo/read-file'
 import { writeFile } from '@sanjo/write-file'
-import { request } from '@sanjo/request'
 import { escapeForRegExp } from '@sanjo/escape-for-reg-exp'
-
-async function copyAllQuests(baseURL) {
-  const totalNumberOfQuests = await determineTotalNumberOfQuests(baseURL)
-
-  let quests = []
-  let from = 1
-  const maxResultSize = 1000
-  do {
-    const to = from + maxResultSize - 1
-    quests = quests.concat(await copyQuests(baseURL, from, to))
-    from = to + 1
-  } while (quests.length < totalNumberOfQuests)
-
-  return quests
-}
-
-function parseNumber(numberText) {
-  return parseInt(numberText.replaceAll(',', ''), 10)
-}
-
-const numberOfQuestsFoundRegExp = /([\d,]+) quests found/
-
-async function determineTotalNumberOfQuests(baseURL) {
-  const response = await request(baseURL)
-  const content = response.body
-
-  const match = numberOfQuestsFoundRegExp.exec(content)
-  const numberOfQuests = parseNumber(match[1])
-
-  return numberOfQuests
-}
-
-const questsRegExp = /new Listview.+/
-
-async function copyQuests(baseURL, from, to) {
-  const quests = []
-
-  const response = await request(baseURL + '?filter=30:30;2:4;' + from + ':' + to)
-  const content = response.body
-
-  const match2 = questsRegExp.exec(content)
-  if (match2) {
-    const content2 = match2[0]
-    const idRegExp = /"id":(\d+)/g
-    let match
-    const IDs = []
-    while (match = idRegExp.exec(content2)) {
-      const ID = Number(match[1])
-      IDs.push(ID)
-    }
-
-    await Promise.all(IDs.map(async ID => {
-      const quest = await copyQuest(ID)
-      quests.push(quest)
-    }))
-  }
-
-  return quests
-}
-
-let i = 0
-let startTime
+import { readdir } from 'node:fs/promises'
+import { concurrent, convertToLua } from './lib.js'
+import { parse } from 'node-html-parser'
 
 const infoBoxContentRegExp = /WH\.markup\.printHtml.+?;/s
 const requiresLevelRegExp = /Requires level (\d+)/
@@ -73,11 +14,8 @@ const seriesRegExp = /<table class="series">(.*?)<\/table>/
 const questRegExp = /quest=(\d+)/
 const storylineRegExp = /<div class="quick-facts-storyline-list">(.*?)<\/div>/s
 
-async function copyQuest(id) {
-  const redirectResponse = await request('https://www.wowhead.com/quest=' + id)
-  const location = redirectResponse.headers.location
-  const response = await request('https://www.wowhead.com' + location)
-  const content = response.body
+async function processQuest(id) {
+  const content = await readFile('quests/' + id + '.html')
 
   const quest = {
     id,
@@ -134,12 +72,7 @@ async function copyQuest(id) {
 
   quest.preQuestIDs = extractPreQuestIDs(content)
   quest.storylinePreQuestIDs = extractStorylinePreQuestIDs(content)
-
-  i++
-
-  if (i % 1000 == 0) {
-    console.log(i, ((Date.now() - startTime) / i) / 60)
-  }
+  quest.objectives = extractObjectives(content)
 
   return quest
 }
@@ -203,53 +136,50 @@ function extractStorylinePreQuestIDs(content) {
   return storylinePreQuestIDs
 }
 
-const baseURL = 'https://www.wowhead.com/quests'
-// const baseURL = 'https://www.wowhead.com/quests'
-startTime = Date.now()
-const quests = await copyAllQuests(baseURL)
+const npcIDRegExp = /(?:npc|object)=(\d+)/
 
-// const quests = [await copyQuest2(24545)]
-
-function generateLuaListTable(list, indention) {
-  let result = '{\n'
-  for (const element of list) {
-    result += indent(convertToLua(element, indention) + ',', 1) + '\n'
+function extractObjectives(content) {
+  const objectives = []
+  const match = /(<table class="icon-list">.*?)<script/s.exec(content)
+  if (match) {
+    const content2 = match[1]
+    const html = parse(content2)
+    const table = html.querySelector('table')
+    const TRs = table.childNodes.filter(element => element.tagName === 'TR')
+    for (const TR of TRs) {
+      const As = TR.querySelectorAll('a')
+      const objective = []
+      for (const A of As) {
+        const match2 = npcIDRegExp.exec(A.getAttribute('href'))
+        if (match2) {
+          const id = parseInt(match2[1], 10)
+          objective.push(id)
+        }
+      }
+      objectives.push(objective)
+    }
   }
-  result += '}'
-  return result
+  return objectives
 }
 
-function generateLuaTable(object, indention) {
-  let result = '{\n'
-  for (const [key, value] of Object.entries(object)) {
-    result += indent(`['${ key }'] = ${ convertToLua(value, indention) },`, 1) + '\n'
+const files = await readdir('quests')
+const IDs = []
+const fileNameRegExp = /(\d+)\.html/
+for (const file of files) {
+  const match = fileNameRegExp.exec(file)
+  if (match) {
+    const id = parseInt(match[1], 10)
+    IDs.push(id)
   }
-  result += '}'
-  return result
 }
 
-function convertToLua(value, indention = 0) {
-  const type = typeof value
-  let result
-  if (type === 'string') {
-    result = `'${ value }'`
-  } else if (type === 'number') {
-    result = String(value)
-  } else if (Array.isArray(value)) {
-    result = generateLuaListTable(value, indention + 1)
-  } else if (type === 'object') {
-    result = generateLuaTable(value, indention + 1)
-  } else {
-    throw new Error(`Unhandled case for type "${ type }".`)
+const quests = []
+await concurrent(IDs, 1000, async function (ID) {
+  const quest = await processQuest(ID)
+  if (quest) {
+    quests.push(quest)
   }
-  return result
-}
-
-function indent(value, indention) {
-  const lines = value.split('\n')
-  const indentedLines = lines.map(line => '  '.repeat(indention) + line)
-  return indentedLines.join('\n')
-}
+})
 
 const content = 'quests = ' + convertToLua(quests)
 await writeFile('quests.lua', content)

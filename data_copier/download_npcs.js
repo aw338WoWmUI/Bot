@@ -2,7 +2,7 @@ import { writeFile } from '@sanjo/write-file'
 import { readdir } from 'node:fs/promises'
 import { request } from '@sanjo/request'
 
-async function copyAllNPCs(baseURL, from = 1) {
+async function downloadAllNPCs(baseURL, from = 1) {
   const totalNumberOfNPCs = await determineTotalNumberOfNPCs(baseURL)
 
   const numberOfAlreadyDownloadedNPCs = await determineNumberOfAlreadyDownloadedNPCs()
@@ -12,7 +12,7 @@ async function copyAllNPCs(baseURL, from = 1) {
   const maxResultSize = 1000
   while (totalNumberOfDownloadedNPCs < totalNumberOfNPCs) {
     const to = from + maxResultSize - 1
-    const numberOfNPCsThatHaveBeenDownloaded = await copyNPCs(baseURL, from, to)
+    const numberOfNPCsThatHaveBeenDownloaded = await downloadNPCs(baseURL, from, to)
     totalNumberOfDownloadedNPCs += numberOfNPCsThatHaveBeenDownloaded
 
     console.log(Math.floor(totalNumberOfDownloadedNPCs / totalNumberOfNPCs * 100) + '%')
@@ -52,7 +52,7 @@ async function determineTotalNumberOfNPCs(baseURL) {
 
 const npcsRegExp = /new Listview.+/
 
-async function copyNPCs(baseURL, from, to) {
+async function downloadNPCs(baseURL, from, to) {
   let numberOfNPCsThatHaveBeenDownloaded = 0
 
   const response = await request(baseURL + '?filter=37:37;2:4;' + from + ':' + to)
@@ -70,7 +70,7 @@ async function copyNPCs(baseURL, from, to) {
     }
 
     await Promise.all(IDs.map(async ID => {
-      const hasBeenDownloaded = await copyNPC(ID)
+      const hasBeenDownloaded = await downloadNPC(ID)
       if (hasBeenDownloaded) {
         numberOfNPCsThatHaveBeenDownloaded++
       }
@@ -82,7 +82,7 @@ async function copyNPCs(baseURL, from, to) {
 
 let startTime
 
-async function copyNPC(id) {
+async function downloadNPC(id) {
   let hasBeenDownloaded
   const redirectResponse = await request('https://www.wowhead.com/npc=' + id)
   const location = redirectResponse.headers.location
@@ -100,4 +100,4 @@ async function copyNPC(id) {
 
 const baseURL = 'https://www.wowhead.com/npcs'
 startTime = Date.now()
-await copyAllNPCs(baseURL, 199026)
+await downloadAllNPCs(baseURL, 199026)
