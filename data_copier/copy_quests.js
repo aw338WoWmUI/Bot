@@ -182,10 +182,19 @@ await page.setViewport({
   width: 1024,
   height: 768,
 })
+await page.setRequestInterception(true)
+page.on('request', request => {
+  const resourceType = request.resourceType()
+  if (resourceType === 'image' || resourceType == 'font' || resourceType == 'other') {
+    request.abort()
+  } else {
+    request.continue()
+  }
+})
 
 await refuseAll()
 
-const baseURL = 'https://www.wowhead.com/quests/eastern-kingdoms/elwynn-forest'
+const baseURL = 'https://www.wowhead.com/quests/eastern-kingdoms/westfall'
 // const baseURL = 'https://www.wowhead.com/quests'
 const quests = await copyAllQuests(page, baseURL)
 

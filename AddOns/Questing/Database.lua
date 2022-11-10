@@ -59,3 +59,24 @@ local questGiverIDsSet = Set.create(questGiverIDs)
 function Questing.Database.isQuestGiver(npcID)
   return toBoolean(questGiverIDsSet[npcID])
 end
+
+local turnInNPCIDs = Set.create(Array.map(quests, function (quest)
+  return quest.enderID
+end))
+
+function Questing.Database.isTurnInNPC(npcID)
+  return toBoolean(turnInNPCIDs[npcID])
+end
+
+local npcLocations = {}
+
+function Questing.Database.storeNPCLocation(npcID, location)
+  if not npcLocations[npcID] then
+    npcLocations[npcID] = {}
+  end
+  table.insert(npcLocations[npcID], location)
+end
+
+function Questing.Database.retrieveNPCLocation(npcID)
+  return npcLocations[npcID]
+end

@@ -1013,26 +1013,6 @@ function Movement.createPathFinder()
         GMR.LoadMeshFiles()
       end
 
-      local continentID = select(8, GetInstanceInfo())
-      local x, y, z = GMR.GetClosestPointOnMesh(continentID, from.x, from.y, from.z)
-      local x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, to.x, to.y, to.z)
-      if x and y and z and x2 and y2 and z2 then
-        local path2 = GMR.GetPathBetweenPoints(x, y, z, x2, y2, z2)
-        if path2 then
-          path2 = Movement.convertGMRPathToPath(path2)
-          local path1 = Movement.findPath2(from, path2[1], a)
-          local path3 = Movement.findPath2(path2[#path2], to, a)
-          if path1 and path2 and path3 then
-            local path = Array.concat(path1, path2, path3)
-            Movement.path = path
-            return path
-          end
-        else
-          return Movement.findPath2(from, to, a)
-        end
-      else
-        return Movement.findPath2(from, to, a)
-      end
       return Movement.findPath2(from, to, a)
     end,
     stop = function()
@@ -1246,9 +1226,6 @@ function Movement.receiveNeighborPoints(point, distance)
   local pointIndex = Movement.retrieveOrCreatePointIndex(point)
   local connections2 = Movement.retrieveConnections(pointIndex)
   local neighborPoints = connections2
-  --local neighborPointsBasedOnNavMesh = Movement.generateNeighborPointsBasedOnNavMesh(point, distance)
-  --
-  --Array.append(neighborPoints, neighborPointsBasedOnNavMesh)
 
   local neighborPointsRetrievedFromInGameMesh = Movement.retrieveNeighbors(pointIndex)
   if not neighborPointsRetrievedFromInGameMesh then

@@ -16,6 +16,7 @@ ticker = C_Timer.NewTicker(0, function()
       end
       pathFinder = nil
       run = nil
+      aStarPoints = nil
     end
 
     local function isDifferentPathFindingRequestThanRun(from, to)

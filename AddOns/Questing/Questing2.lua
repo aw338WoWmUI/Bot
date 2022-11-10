@@ -209,6 +209,9 @@ function retrieveObjectivePoints()
   return Array.selectTrue(
     Array.map(quests, function(quest)
       local x, y, z = GMR.GetWorldPositionFromMap(mapID, quest.x, quest.y)
+      if not Movement.canPlayerStandOnPoint(createPoint(x, y, z)) then
+        x, y, z = GMR.TraceLine(x, y, z, x, y, z + 1000, Movement.TraceLineHitFlags.COLLISION)
+      end
       return {
         x = x,
         y = y,

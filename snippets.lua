@@ -158,3 +158,5 @@ questID = C_SuperTrack.GetSuperTrackedQuestID()
 C_GossipInfo.GetOptions()
 
 -- 38009
+
+C_QuestLog.GetNextWaypoint(C_SuperTrack.GetSuperTrackedQuestID())
