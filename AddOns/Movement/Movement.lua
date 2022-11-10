@@ -1190,8 +1190,8 @@ function Movement.findPathInner(from, to, a)
   --DevTools_Dump(points)
   --aStarPoints = points
 
-  -- local yielder = createResumableYielder()
-  local yielder = createYielder(1 / 60)
+  -- local yielder = createYielder()
+  local yielder = createYielderWithTimeTracking(1 / 60)
   Movement.yielder = yielder
 
   local path = findPath(

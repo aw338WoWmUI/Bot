@@ -2,7 +2,11 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@sanjo/escape-for-reg-exp": "^1.0.0",
+    "@sanjo/read-file": "^2.0.0",
+    "@sanjo/request": "^0.4.0",
     "@sanjo/write-file": "^1.0.0",
+    "node-fetch": "^3.2.10",
     "puppeteer": "^19.2.2"
   }
 }

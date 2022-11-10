@@ -220,8 +220,8 @@ function Questing.Database.convertQuestieNPCToQuestingNPC(npc)
       return Array.map(coordinatePairs, function(coordinates)
         return {
           mapID,
-          coordinates[1],
-          coordinates[2]
+          coordinates[1] / 100,
+          coordinates[2] / 100
         }
       end)
     end),

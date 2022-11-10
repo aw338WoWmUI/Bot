@@ -6,6 +6,12 @@ local addOnName, AddOn = ...
 
 unavailableQuestIDs = Set.create()
 
+local questHandlers = {}
+
+function defineQuest(questID, questHandler)
+  questHandlers[questID] = questHandler
+end
+
 local questGivers = {
   {
     objectID = 128229,
@@ -44,20 +50,28 @@ questIDsInDatabase = Set.create(Array.flatMap(questGivers, function(questGiver)
   return questGiver.questIDs
 end))
 
+function retrievePlayerClassID()
+  return select(3, UnitClass('player'))
+end
+
+function retrievePlayerRaceID()
+  return select(3, UnitRace('player'))
+end
+
 function shouldQuestBeAvailable(quest)
   local playerLevel = UnitLevel('player')
   local faction = GMR.GetFaction('player')
-  local playerClass = GMR.GetClass('player')
-  local playerRace = GMR.GetRace('player')
+  local playerClassID = retrievePlayerClassID()
+  local playerRaceID = retrievePlayerRaceID()
   return (
     not GMR.IsQuestCompleted(quest.id) and
       not GMR.IsQuestActive(quest.id) and
       (not quest.requiresLevel or playerLevel >= quest.requiresLevel) and
       (not quest.classes or Array.any(quest.classes, function(class)
-        return playerClass == string.upper(class)
+        return playerClassID == class
       end)) and
       (not quest.races or Array.any(quest.races, function(race)
-        return playerRace == race
+        return playerRaceID == race
       end)) and
       Array.includes(quest.sides, faction) and
       Array.all(quest.preQuestIDs, function(preQuestID)
@@ -83,12 +97,15 @@ function retrieveNPCPosition(npc)
   ) then
     local point = {
       zoneID = npcMapPosition[1],
-      x = npcMapPosition[2] / 100,
-      y = npcMapPosition[3] / 100
+      x = npcMapPosition[2],
+      y = npcMapPosition[3]
     }
     local continentID = C_Map.GetWorldPosFromMapPos(npcMapPosition[1], point)
-    local x, y, z = GMR.GetWorldPositionFromMap(npcMapPosition[1], npcMapPosition[2] / 100,
-      npcMapPosition[3] / 100)
+    local x, y, z = GMR.GetWorldPositionFromMap(
+      npcMapPosition[1],
+      npcMapPosition[2],
+      npcMapPosition[3]
+    )
     return continentID, x, y, z
   else
     return nil
@@ -209,8 +226,25 @@ function retrieveObjectivePoints()
   return Array.selectTrue(
     Array.map(quests, function(quest)
       local x, y, z = GMR.GetWorldPositionFromMap(mapID, quest.x, quest.y)
-      if not Movement.canPlayerStandOnPoint(createPoint(x, y, z)) then
-        x, y, z = GMR.TraceLine(x, y, z, x, y, z + 1000, Movement.TraceLineHitFlags.COLLISION)
+      if not Movement.canPlayerStandOnPoint(createPoint(x, y, z)) or not GMR.IsOnMeshPoint(x, y, z) then
+        print(2)
+        local x2, y2, z2 = GMR.TraceLine(x, y, z, x, y, z + 1000, Movement.TraceLineHitFlags.COLLISION)
+        print('z2', z2)
+        if x2 then
+          x, y, z = x2, y2, z2
+          if GMR.IsOnMeshPoint(x, y, z) then
+            local point = {
+              zoneID = mapID,
+              x = quest.x / 100,
+              y = quest.y / 100
+            }
+            local continentID = C_Map.GetWorldPosFromMapPos(mapID, point)
+            local x3, y3, z3 = GMR.GetClosestPointOnMesh(continentID, x, y, z)
+            if x3 and y3 and z3 then
+              x, y, z = x3, y3, z3
+            end
+          end
+        end
       end
       return {
         x = x,
@@ -671,6 +705,14 @@ local function moveToPoint(point)
   elseif point.type == 'gossipWith' then
     print('gossip with')
     gossipWithAt(point.x, point.y, point.z, point.objectID, point.optionToSelect)
+  elseif point.type == 'objective' then
+    local questHandler = questHandlers[point.questID]
+    if questHandler then
+      questHandler()
+    else
+      print('moveToPoint', point.x, point.y, point.z)
+      moveToPoint2(point)
+    end
   else
     print('moveToPoint', point.x, point.y, point.z)
     moveToPoint2(point)
@@ -1096,6 +1138,15 @@ run = function(once)
             if popUpType == 'OFFER' then
               ShowQuestOffer(questID)
               print(1)
+              local wasSuccessful = waitFor(function()
+                return QuestFrame:IsShown()
+              end, 1)
+              print(2)
+              if wasSuccessful then
+                print(3)
+                AcceptQuest()
+              end
+              print(4)
             end
           end
         end
@@ -1126,7 +1177,13 @@ run = function(once)
           local activeQuest = activeQuests[1]
           C_GossipInfo.SelectActiveQuest(activeQuest.questID)
         elseif QuestFrame:IsShown() and GetNumActiveQuests() >= 1 then
-          SelectActiveQuest(1)
+          for index = 1, GetNumActiveQuests() do
+            local questID = GetActiveQuestID(index)
+            if GMR.IsQuestCompletable(questID) then
+              SelectActiveQuest(index)
+              break
+            end
+          end
         elseif GossipFrame:IsShown() and C_GossipInfo.GetNumAvailableQuests() >= 1 then
           local availableQuests = C_GossipInfo.GetAvailableQuests()
           local availableQuest = availableQuests[1]

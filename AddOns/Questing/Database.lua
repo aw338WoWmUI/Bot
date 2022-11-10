@@ -6,21 +6,8 @@ for _, quest in ipairs(quests) do
   questLookup[quest.id] = quest
 end
 
-Array.forEach(quests, function(quest)
-  if quest.requiresLevel then
-    quest.requiredLevel = quest.requiresLevel
-    quest.requiresLevel = nil
-  end
-  if quest.starterID and type(quest.starterID) == 'number' then
-    quest.starterIDs = { quest.starterID }
-    quest.starterID = nil
-  else
-    quest.starterIDs = { }
-  end
-end)
-
 quests = Array.filter(quests, function (quest)
-  return quest.sides[1] ~= 'None' and next(quest.starterIDs)
+  return (not quest.sides or quest.sides[1] ~= 'None') and next(quest.starterIDs)
 end)
 
 function Questing.Database.retrieveQuest(id)

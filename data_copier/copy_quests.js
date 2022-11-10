@@ -1,204 +1,214 @@
-import puppeteer from 'puppeteer'
 import { writeFile } from '@sanjo/write-file'
+import { request } from '@sanjo/request'
+import { escapeForRegExp } from '@sanjo/escape-for-reg-exp'
 
-async function refuseAll() {
-  await page.goto('https://www.wowhead.com/quests?filter=30:30;2:4;0:0')
-  await page.click('#onetrust-reject-all-handler')
-  await page.waitForSelector('#onetrust-reject-all-handler', { hidden: true })
-}
-
-async function copyAllQuests(page, baseURL) {
-  const totalNumberOfQuests = await determineTotalNumberOfQuests(page, baseURL)
+async function copyAllQuests(baseURL) {
+  const totalNumberOfQuests = await determineTotalNumberOfQuests(baseURL)
 
   let quests = []
   let from = 1
   const maxResultSize = 1000
   do {
     const to = from + maxResultSize - 1
-    quests = quests.concat(await copyQuests(page, baseURL, from, to))
+    quests = quests.concat(await copyQuests(baseURL, from, to))
     from = to + 1
   } while (quests.length < totalNumberOfQuests)
 
   return quests
 }
 
-async function determineTotalNumberOfQuests(page, baseURL) {
-  await page.goto(baseURL)
-  const numberOfQuests = await page.evaluate(() => {
-    function parseNumber(numberText) {
-      return parseInt(numberText.replaceAll(',', ''), 10)
-    }
+function parseNumber(numberText) {
+  return parseInt(numberText.replaceAll(',', ''), 10)
+}
 
-    const element = document.querySelector('#lv-quests > div.listview-band-top > div.listview-note')
-    const text = element.textContent
-    const match = /^[\d,]+/.exec(text)
-    let numberOfQuests
-    if (match) {
-      numberOfQuests = parseNumber(match[0])
-    } else {
-      const element2 = document.querySelector(
-        '#lv-quests > div.listview-band-top > div.listview-nav.listview-nav-nocontrols > span > b:nth-child(3)')
-      const text = element2.textContent
-      numberOfQuests = parseNumber(text)
-    }
-    return numberOfQuests
-  })
+const numberOfQuestsFoundRegExp = /([\d,]+) quests found/
+
+async function determineTotalNumberOfQuests(baseURL) {
+  const response = await request(baseURL)
+  const content = response.body
+
+  const match = numberOfQuestsFoundRegExp.exec(content)
+  const numberOfQuests = parseNumber(match[1])
+
   return numberOfQuests
 }
 
-async function copyQuests(page, baseURL, from, to) {
-  await page.goto(baseURL + '?filter=30:30;2:4;' + from + ':' + to)
-  {
-    const selector = '.listview-option-button.fa-clipboard'
-    if (await page.$(selector) === null) {
-      return []
-    }
-    await page.waitForSelector(selector, { visible: true })
-    await page.click(selector)
-  }
-  const selector = '.menu .menu-item:nth-child(2) > a'
-  await page.waitForSelector(selector)
-  await page.click(selector)
-  const text = await page.evaluate(() => {
-    return navigator.clipboard.readText()
-  })
-  const IDs = text.split(', ').map(Number)
+const questsRegExp = /new Listview.+/
+
+async function copyQuests(baseURL, from, to) {
   const quests = []
-  for (const ID of IDs) {
-    const quest = await copyQuest(ID)
-    quests.push(quest)
+
+  const response = await request(baseURL + '?filter=30:30;2:4;' + from + ':' + to)
+  const content = response.body
+
+  const match2 = questsRegExp.exec(content)
+  if (match2) {
+    const content2 = match2[0]
+    const idRegExp = /"id":(\d+)/g
+    let match
+    const IDs = []
+    while (match = idRegExp.exec(content2)) {
+      const ID = Number(match[1])
+      IDs.push(ID)
+    }
+
+    await Promise.all(IDs.map(async ID => {
+      const quest = await copyQuest(ID)
+      quests.push(quest)
+    }))
   }
+
   return quests
 }
 
+let i = 0
+let startTime
+
+const infoBoxContentRegExp = /WH\.markup\.printHtml.+?;/s
+const requiresLevelRegExp = /Requires level (\d+)/
+const sideRegExp = /Side: ([^\[]+)/
+const classesRegExp = /Class(?:es)?: (.+)/
+const racesRegExp = /Races?: ([^\\]+)/
+const seriesRegExp = /<table class="series">(.*?)<\/table>/
+const questRegExp = /quest=(\d+)/
+const storylineRegExp = /<div class="quick-facts-storyline-list">(.*?)<\/div>/s
+
 async function copyQuest(id) {
-  await page.goto('http://www.wowhead.com/quest=' + id)
-  const info = await page.evaluate(() => {
-    const LIs = Array.from(document.querySelectorAll('#infobox-contents-0 > ul > li'))
-    const object = {}
-    const requiresLevelRegExp = /^Requires level (\d+)$/
-    const npcIDRegExp = /npc=(\d+)/
-    LIs.forEach((li) => {
-      const text = li.textContent
-      const match = requiresLevelRegExp.exec(text)
-      if (match) {
-        object.requiredLevel = parseInt(match[1], 10)
-      } else if (text.startsWith('Start: ')) {
-        const elements = Array.from(li.querySelectorAll('a'))
-        object.starterIDs = []
-        for (const element of elements) {
-          const href = element.href
-          const match = npcIDRegExp.exec(href)
-          if (match) {
-            object.starterIDs.push(parseInt(match[1], 10))
-          }
-        }
-      }  else if (text.startsWith('End: ')) {
-        const a = li.querySelector('a')
-        const href = a.href
-        const match = npcIDRegExp.exec(href)
-        if (match) {
-          object.enderID = parseInt(match[1], 10)
-        }
-      } else {
-        const sideRegExp = /^Side: (.+)$/
-        const match = sideRegExp.exec(text)
-        if (match) {
-          object.sides = [match[1]]
-        } else {
-          const classesRegExp = /^Class(?:es)?: (.+)$/
-          const match = classesRegExp.exec(text)
-          if (match) {
-            object.classes = match[1].split(', ').map(klass => klass.trim())
-          } else {
-            const racesRegExp = /^Races?: (.+)$/
-            const match = racesRegExp.exec(text)
-            if (match) {
-              object.races = match[1].split(', ').map(race => race.trim())
-            }
-          }
-        }
-      }
-    })
-    return object
-  })
-
-  const preQuestIDs = await page.evaluate(() => {
-    const elements = Array.from(document.querySelectorAll('.series td'))
-    const preQuestIDs = []
-    for (const element of elements) {
-      const a = element.querySelector('a')
-      if (a) {
-        const href = a.href
-        const match = /quest=(\d+)/.exec(href)
-        if (match) {
-          const id = parseInt(match[1], 10)
-          preQuestIDs.push(id)
-        }
-      } else {
-        break
-      }
-    }
-    return preQuestIDs
-  })
-
-  const storylinePreQuestIDs = await page.evaluate(() => {
-    const elements = Array.from(document.querySelectorAll('.quick-facts-storyline-list li'))
-    const storylinePreQuestIDs = []
-    for (const element of elements) {
-      const a = element.querySelector('a')
-      if (a) {
-        const href = a.href
-        const match = /quest=(\d+)/.exec(href)
-        if (match) {
-          const id = parseInt(match[1], 10)
-          storylinePreQuestIDs.push(id)
-        }
-      } else {
-        break
-      }
-    }
-    return storylinePreQuestIDs
-  })
+  const redirectResponse = await request('https://www.wowhead.com/quest=' + id)
+  const location = redirectResponse.headers.location
+  const response = await request('https://www.wowhead.com' + location)
+  const content = response.body
 
   const quest = {
     id,
-    ...info,
-    preQuestIDs,
-    storylinePreQuestIDs
+  }
+
+  let infoBoxContent
+  {
+    const match = infoBoxContentRegExp.exec(content)
+    infoBoxContent = match[0]
+  }
+
+  {
+    const match = requiresLevelRegExp.exec(infoBoxContent)
+    if (match) {
+      quest.requiredLevel = parseInt(match[1], 10)
+    }
+  }
+
+  quest.starterIDs = extractObjectIDs(infoBoxContent, '[icon name=quest-start]Start')
+  quest.enderID = extractObjectIDs(infoBoxContent, '[icon name=quest-end]End')
+
+  {
+    const match = sideRegExp.exec(infoBoxContent)
+    if (match) {
+      quest.sides = [match[1]]
+    }
+  }
+
+  {
+    const match = classesRegExp.exec(infoBoxContent)
+    if (match) {
+      const content2 = match[1]
+      const classRegExp = /class=(\d+)/g
+      let match2
+      quest.classes = []
+      while (match2 = classRegExp.exec(content2)) {
+        const classID = parseInt(match2[1], 10)
+        quest.classes.push(classID)
+      }
+    }
+  }
+
+  const match = racesRegExp.exec(infoBoxContent)
+  if (match) {
+    const content2 = match[0]
+    const raceRegExp = /race=(\d+)/g
+    let match2
+    quest.races = []
+    while (match2 = raceRegExp.exec(content2)) {
+      const raceID = parseInt(match2[1], 10)
+      quest.races.push(raceID)
+    }
+  }
+
+  quest.preQuestIDs = extractPreQuestIDs(content)
+  quest.storylinePreQuestIDs = extractStorylinePreQuestIDs(content)
+
+  i++
+
+  if (i % 1000 == 0) {
+    console.log(i, ((Date.now() - startTime) / i) / 60)
   }
 
   return quest
 }
 
-const browser = await puppeteer.launch({
-  headless: false,
-})
-await browser
-  .defaultBrowserContext()
-  .overridePermissions('https://www.wowhead.com', ['clipboard-read', 'clipboard-write'])
-const page = await browser.newPage()
-await page.setViewport({
-  width: 1024,
-  height: 768,
-})
-await page.setRequestInterception(true)
-page.on('request', request => {
-  const resourceType = request.resourceType()
-  if (resourceType === 'image' || resourceType == 'font' || resourceType == 'other') {
-    request.abort()
-  } else {
-    request.continue()
+function extractObjectIDs(content, label) {
+  const IDs = []
+  const startsWithRegExp = new RegExp('\\[li\\]' + escapeForRegExp(label) + ': .*?\\[\\\\\\/li\\]')
+  const match = startsWithRegExp.exec(content)
+  if (match) {
+    const npcIDRegExp = /(?:npc|object)=(\d+)/g
+    let match2
+    while (match2 = npcIDRegExp.exec(match[0])) {
+      const starterID = parseInt(match2[1], 10)
+      IDs.push(starterID)
+    }
   }
-})
+  return IDs
+}
 
-await refuseAll()
+function extractPreQuestIDs(content) {
+  const preQuestIDs = []
+  const match = seriesRegExp.exec(content)
+  if (match) {
+    const content2 = match[1]
+    const regExp2 = /<td>(.*?)<\/td>/g
+    let match2
+    while (match2 = regExp2.exec(content2)) {
+      const content3 = match2[1]
+      const match = questRegExp.exec(content3)
+      if (match) {
+        const id = parseInt(match[1], 10)
+        preQuestIDs.push(id)
+      } else {
+        break
+      }
+    }
+  }
 
-const baseURL = 'https://www.wowhead.com/quests/eastern-kingdoms/westfall'
+  return preQuestIDs
+}
+
+function extractStorylinePreQuestIDs(content) {
+  const storylinePreQuestIDs = []
+  const match = storylineRegExp.exec(content)
+  if (match) {
+    const content2 = match[1]
+    const regExp2 = /<li.*?>(.*?)<\/li>/g
+    let match2
+    while (match2 = regExp2.exec(content2)) {
+      const content3 = match2[1]
+      const match = questRegExp.exec(content3)
+      if (match) {
+        const id = parseInt(match[1], 10)
+        storylinePreQuestIDs.push(id)
+      } else {
+        break
+      }
+    }
+  }
+
+  return storylinePreQuestIDs
+}
+
+const baseURL = 'https://www.wowhead.com/quests'
 // const baseURL = 'https://www.wowhead.com/quests'
-const quests = await copyAllQuests(page, baseURL)
+startTime = Date.now()
+const quests = await copyAllQuests(baseURL)
 
-browser.close()
+// const quests = [await copyQuest2(24545)]
 
 function generateLuaListTable(list, indention) {
   let result = '{\n'

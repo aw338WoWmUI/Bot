@@ -4,6 +4,7 @@
 ## SavedVariables: exploredObjects
 
 namespace.lua
+doWhenGMRIsFullyLoaded.lua
 data/retail/quests.lua
 data/retail/quest_giver_npc_ids.lua
 data/retail/NPCs.lua

@@ -1,41 +1,35 @@
-function createYielder(timePerRun)
-  timePerRun = (timePerRun or 1 / 60) * 1000
-  local thread = coroutine.running()
-  local start = debugprofilestop()
-
-  local function scheduleNextResume()
-    start = debugprofilestop()
-    resumeWithShowingError(thread)
-  end
-
-  return {
-    hasRanOutOfTime = function()
-      return debugprofilestop() - start >= timePerRun
-    end,
-
-    yield = function()
-      C_Timer.After(0, scheduleNextResume)
-      coroutine.yield()
-    end
-  }
-end
-
-function createResumableYielder()
-  local thread = coroutine.running()
-
-  return {
-    resume = function ()
-      if coroutine.status(thread) == 'suspended' then
-        resumeWithShowingError(thread)
+function createYielder()
+  local yielder
+  yielder = {
+    thread = coroutine.running(),
+    resume = function(...)
+      if coroutine.status(yielder.thread) == 'suspended' then
+        return resumeWithShowingError(yielder.thread, ...)
       end
     end,
-
-    hasRanOutOfTime = function()
-      return true
-    end,
-
     yield = function()
+      C_Timer.After(0, yielder.resume)
       coroutine.yield()
     end
   }
+  return yielder
+end
+
+function createYielderWithTimeTracking(timePerRun)
+  local yielder = createYielder()
+
+  timePerRun = (timePerRun or 1 / 60) * 1000
+  local start = debugprofilestop()
+
+  local resume = yielder.resume
+  yielder.resume = function (...)
+    start = debugprofilestop()
+    return resume(...)
+  end
+
+  yielder.hasRanOutOfTime = function()
+    return debugprofilestop() - start >= timePerRun
+  end
+
+  return yielder
 end

@@ -4,6 +4,7 @@
 ## SavedVariables: exploredObjects
 
 namespace.lua
+doWhenGMRIsFullyLoaded.lua
 Questie.lua
 Database_Classic.lua
 Questing.lua

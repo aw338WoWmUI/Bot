@@ -82,5 +82,11 @@ ticker = C_Timer.NewTicker(0, function()
         end
       end
     end)
+
+    C_Timer.NewTicker(0, function ()
+      if not GMR.IsExecuting() then
+        stopPathFinding()
+      end
+    end)
   end
 end)
