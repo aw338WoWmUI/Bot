@@ -162,3 +162,5 @@ C_GossipInfo.GetOptions()
 C_QuestLog.GetNextWaypoint(C_SuperTrack.GetSuperTrackedQuestID())
 
 GMR.Questing.GetQuestInfo(C_SuperTrack.GetSuperTrackedQuestID())
+
+coroutine.wrap(function () DevTools_Dump(retrieveNavigationPosition()) end)()

@@ -1,5 +1,22 @@
 local addOnName, AddOn = ...
 
+local frame2 = CreateFrame('Frame')
+frame2:SetWidth(1)
+frame2:SetHeight(10)
+local texture = frame2:CreateTexture(nil, 'OVERLAY')
+texture:SetAllPoints()
+texture:SetColorTexture(1, 0, 0, 1)
+
+local frame3 = CreateFrame('Frame')
+frame3:SetWidth(1)
+frame3:SetHeight(10)
+local texture2 = frame3:CreateTexture(nil, 'OVERLAY')
+texture2:SetAllPoints()
+texture2:SetColorTexture(1, 1, 0, 1)
+
+local point = nil
+local point2d = nil
+
 -- Requires in-game language: English
 
 -- /dump C_AreaPoiInfo.GetAreaPOIForMap(w)
@@ -764,13 +781,77 @@ local function isPlayerOnMeshPoint()
 end
 
 local function moveToPoint2(point)
-  local continentID = select(8, GetInstanceInfo())
-  local point2 = createPoint(GMR.GetClosestPointOnMesh(continentID, point.x, point.y, point.z))
-  print('moveToPoint2', point.x, point.y, point.z)
-  DevTools_Dump(point2)
-  print('---')
+  Questing.Coroutine.moveTo(point)
+end
 
-  Questing.Coroutine.moveTo(point2)
+function retrieveNavigationPosition()
+  local yielder = createYielderWithTimeTracking(1 / 60)
+
+  local lastDistance = nil
+  local lastPosition = nil
+
+  local pitch = GMR.GetPitch('player')
+  local yaw = GMR.ObjectRawFacing('player')
+
+  while true do
+    local playerPosition = Movement.retrievePlayerPosition()
+    local navigationPointDistance = C_Navigation.GetDistance()
+    local navigationX, navigationY = C_Navigation.GetFrame():GetCenter()
+    local scale = UIParent:GetEffectiveScale()
+    navigationX = navigationX * scale
+    navigationY = navigationY * scale
+
+    frame3:SetPoint('CENTER', UIParent, 'BOTTOMLEFT', navigationX, navigationY)
+
+    local vector = Vector:new(
+      navigationPointDistance * math.cos(yaw) * math.cos(pitch),
+      navigationPointDistance * math.sin(yaw) * math.cos(pitch),
+      navigationPointDistance * math.sin(pitch)
+    )
+    local position = createPoint(
+      playerPosition.x + vector.x,
+      playerPosition.y + vector.y,
+      playerPosition.z + vector.z
+    )
+    point = position
+
+    local x, y = GMR.WorldToScreen(position.x, position.y, position.z)
+    point2d = { x = x, y = y }
+    frame2:SetPoint('CENTER', UIParent, 'BOTTOMLEFT', x, y)
+
+    local deltaX = navigationX - x
+    local deltaY = navigationY - y
+
+    local distance = euclideanDistance2D(
+      { x = navigationX, y = navigationY },
+      { x = x, y = y }
+    )
+
+    if lastDistance and lastDistance <= distance then
+      point = lastPosition
+      return lastPosition
+    end
+
+    local oneDegree = 2 * PI / 360
+    if deltaX < 0 then
+      yaw = yaw + oneDegree
+    elseif deltaX > 0 then
+      yaw = yaw - oneDegree
+    end
+
+    if deltaY < 0 then
+      pitch = pitch - oneDegree
+    elseif deltaY > 0 then
+      pitch = pitch + oneDegree
+    end
+
+    if yielder.hasRanOutOfTime() then
+      yielder.yield()
+    end
+
+    lastDistance = distance
+    lastPosition = position
+  end
 end
 
 function waitForPlayerHasArrivedAt(position)
@@ -885,6 +966,13 @@ ticker = C_Timer.NewTicker(0, function()
       if pointToMove then
         GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
         GMR.LibDraw.Circle(pointToMove.x, pointToMove.y, pointToMove.z, 3)
+      end
+
+      if point then
+        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+        local playerPosition = Movement.retrievePlayerPosition()
+        GMR.LibDraw.Line(playerPosition.x, playerPosition.y, playerPosition.z, point.x, point.y, point.z)
+        GMR.LibDraw.Circle(point.x, point.y, point.z, 0.75)
       end
     end)
   end
