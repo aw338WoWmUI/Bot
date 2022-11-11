@@ -13,10 +13,10 @@ ticker = C_Timer.NewTicker(0, function()
     local function stopPathFinding()
       if pathFinder then
         pathFinder.stop()
+        pathFinder = nil
+        run = nil
+        aStarPoints = nil
       end
-      pathFinder = nil
-      run = nil
-      aStarPoints = nil
     end
 
     local function isDifferentPathFindingRequestThanRun(from, to)
@@ -83,7 +83,7 @@ ticker = C_Timer.NewTicker(0, function()
       end
     end)
 
-    C_Timer.NewTicker(0, function ()
+    C_Timer.NewTicker(0, function()
       if not GMR.IsExecuting() then
         stopPathFinding()
       end

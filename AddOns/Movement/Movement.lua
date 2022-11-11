@@ -140,33 +140,33 @@ ticker = C_Timer.NewTicker(0, function()
     ticker:Cancel()
 
     hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
-      if DEVELOPMENT then
-        if not GMR.IsMeshLoaded() then
-          GMR.LoadMeshFiles()
-        end
-
-        local continentID = select(8, GetInstanceInfo())
-
-        local playerPosition = Movement.retrievePlayerPosition()
-        if playerPosition then
-          GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
-          for y = playerPosition.y - 4, playerPosition.y + 4 do
-            for x = playerPosition.x - 4, playerPosition.x + 4 do
-              local x2, y2, z2 = Movement.retrievePointFromCache(x, y, playerPosition.z)
-              if not x2 then
-                local z3 = GMR.GetGroundZ(x, y, playerPosition.z) or playerPosition.z
-                x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, x, y, z3)
-                if x2 then
-                  Movement.addPointToCache(x, y, playerPosition.z, x2, y2, z2)
-                end
-              end
-              if x2 then
-                GMR.LibDraw.Circle(x2, y2, z2, 0.1)
-              end
-            end
-          end
-        end
-      end
+      --if DEVELOPMENT then
+      --  if not GMR.IsMeshLoaded() then
+      --    GMR.LoadMeshFiles()
+      --  end
+      --
+      --  local continentID = select(8, GetInstanceInfo())
+      --
+      --  local playerPosition = Movement.retrievePlayerPosition()
+      --  if playerPosition then
+      --    GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
+      --    for y = playerPosition.y - 4, playerPosition.y + 4 do
+      --      for x = playerPosition.x - 4, playerPosition.x + 4 do
+      --        local x2, y2, z2 = Movement.retrievePointFromCache(x, y, playerPosition.z)
+      --        if not x2 then
+      --          local z3 = GMR.GetGroundZ(x, y, playerPosition.z) or playerPosition.z
+      --          x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, x, y, z3)
+      --          if x2 then
+      --            Movement.addPointToCache(x, y, playerPosition.z, x2, y2, z2)
+      --          end
+      --        end
+      --        if x2 then
+      --          GMR.LibDraw.Circle(x2, y2, z2, 0.1)
+      --        end
+      --      end
+      --    end
+      --  end
+      --end
 
       --
       --      local playerPosition = retrievePlayerPosition()
@@ -524,7 +524,7 @@ end
 local EXPERT_RIDING = 34092
 
 function Movement.canCharacterFly()
-  return GMR.IsSpellKnown(EXPERT_RIDING) and Movement.isAFlyingMountAvailable()
+  return toBoolean(GMR.IsSpellKnown(EXPERT_RIDING) and Movement.isAFlyingMountAvailable())
 end
 
 function Movement.isAFlyingMountAvailable()
@@ -618,18 +618,16 @@ function Movement.generateMiddlePoint(fromPosition, offsetX, offsetY)
     createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
   local isInAir = Movement.isPointInAir(point2)
-  if isInAir or Movement.isPointInWater(point2) then
-    if isInAir then
-      local point3 = {
-        x = point2.x,
-        y = point2.y,
-        z = point2.z,
-        isInAir = isInAir
-      }
-      return point3
-    else
-      return point2
-    end
+  if isInAir and Movement.canCharacterFly() then
+    local point3 = {
+      x = point2.x,
+      y = point2.y,
+      z = point2.z,
+      isInAir = isInAir
+    }
+    return point3
+  elseif Movement.isPointInWater(point2) then
+    return point2
   else
     local point = Movement.closestPointOnGridWithZLeft(
       createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
@@ -1189,9 +1187,9 @@ function Movement.findPathInner(from, to, a)
     return Movement.receiveNeighborPoints(point, DISTANCE)
   end
 
-  --local points = receiveNeighborPoints(from)
-  --DevTools_Dump(points)
-  --aStarPoints = points
+  -- local points = receiveNeighborPoints(from)
+  -- DevTools_Dump(points)
+  -- aStarPoints = points
 
   -- local yielder = createYielder()
   local yielder = createYielderWithTimeTracking(1 / 60)
@@ -1236,10 +1234,10 @@ function Movement.receiveNeighborPoints(point, distance)
     Movement.storeNeighbors(pointIndex, neighborPointsRetrievedFromInGameMesh)
   end
   local pointToConnectionPoint = PointToValueMap:new()
-  Array.forEach(connections2, function (point)
+  Array.forEach(connections2, function(point)
     pointToConnectionPoint:setValue(point, point)
   end)
-  neighborPointsRetrievedFromInGameMesh = Array.map(neighborPointsRetrievedFromInGameMesh, function (point)
+  neighborPointsRetrievedFromInGameMesh = Array.map(neighborPointsRetrievedFromInGameMesh, function(point)
     local connectionPoint = pointToConnectionPoint:retrieveValue(point)
     if connectionPoint then
       return connectionPoint

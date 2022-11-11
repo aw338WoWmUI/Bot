@@ -785,6 +785,9 @@ local function moveToPoint2(point)
 end
 
 function retrieveNavigationPosition()
+  frame2:Show()
+  frame3:Show()
+
   local yielder = createYielderWithTimeTracking(1 / 60)
 
   local lastDistance = nil
@@ -829,6 +832,8 @@ function retrieveNavigationPosition()
 
     if lastDistance and lastDistance <= distance then
       point = lastPosition
+      frame2:Hide()
+      frame3:Hide()
       return lastPosition
     end
 
