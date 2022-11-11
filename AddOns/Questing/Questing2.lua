@@ -269,16 +269,27 @@ function determineFirstOpenObjectiveIndex(questID)
   end
 end
 
+function canQuestBeTurnedIn(questID)
+  return GMR.IsQuestCompletable(questID)
+end
+
 function retrieveObjectivePoints()
   local quests, mapID = retrieveQuestsOnMap()
   return Array.selectTrue(
     Array.map(quests, function(quest)
       local questID = quest.questID
+
       local continentID, position = retrieveWorldPositionFromMapPosition(mapID, quest.x, quest.y)
       local x, y, z = position.x, position.y, position.z
 
       local firstOpenObjectiveIndex = determineFirstOpenObjectiveIndex(questID)
-      local objectIDs = retrieveQuestObjectiveInfo(questID, firstOpenObjectiveIndex)
+      local objectIDs
+      if canQuestBeTurnedIn(questID) then
+        local quest2 = Questing.Database.retrieveQuest(questID)
+        objectIDs = quest2.enderIDs
+      else
+        objectIDs = retrieveQuestObjectiveInfo(questID, firstOpenObjectiveIndex)
+      end
       local objectID
       if objectIDs then
         objectID = objectIDs[1]
