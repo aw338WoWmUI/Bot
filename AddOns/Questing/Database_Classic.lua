@@ -110,7 +110,6 @@ function Questing.Database.convertQuestieQuestToQuestingQuest(quest)
   local sidesAndRaces = Questing.Database.convertQuestieRacesToQuestingSidesAndRaces(quest.requiredRaces)
   local starterIDs = select(2, next(quest.startedBy))
   local enderIDs = select(2, next(quest.finishedBy))
-  local enderID = enderIDs and enderIDs[1] or nil
   return {
     id = quest.Id,
     requiredLevel = quest.requiredLevel,
@@ -118,7 +117,7 @@ function Questing.Database.convertQuestieQuestToQuestingQuest(quest)
     races = sidesAndRaces.races,
     classes = Questing.Database.convertQuestieClassesToQuestingClasses(quest.requiredClasses),
     starterIDs = starterIDs,
-    enderID = enderID,
+    enderIDs = enderIDs,
     preQuestIDs = Array.concat(quest.preQuestGroup, quest.preQuestSingle),
     storylinePreQuestIDs = {}
   }

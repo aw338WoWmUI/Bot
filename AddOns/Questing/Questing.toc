@@ -11,5 +11,6 @@ data/retail/quest_giver_npc_ids.lua
 data/retail/NPCs.lua
 Database.lua
 Questing.lua
+QuestingCoroutine.lua
 Questing2.lua
 ClosestNPCUpdater.lua

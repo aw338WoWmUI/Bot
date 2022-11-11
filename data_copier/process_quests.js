@@ -35,7 +35,7 @@ async function processQuest(id) {
   }
 
   quest.starterIDs = extractObjectIDs(infoBoxContent, '[icon name=quest-start]Start')
-  quest.enderID = extractObjectIDs(infoBoxContent, '[icon name=quest-end]End')
+  quest.enderIDs = extractObjectIDs(infoBoxContent, '[icon name=quest-end]End')
 
   {
     const match = sideRegExp.exec(infoBoxContent)

@@ -9,6 +9,10 @@ local faceSmoothly = GMR.FaceSmoothly
 GMR.FaceSmoothly = function(x, y, z)
   local playerPosition = GMR.GetPlayerPosition()
   if GMR.IsPositionUnderwater(playerPosition.x, playerPosition.y, playerPosition.z) then
+    if type(x) == 'string' then
+      x, y, z = GMR.ObjectPosition(x)
+    end
+
     local distance = calculateDistance(playerPosition, { x = x, y = y })
 
     if distance > 0.5 then

@@ -1,3 +1,11 @@
+function yieldAndResume()
+  local thread = coroutine.running()
+  C_Timer.After(0, function ()
+    resumeWithShowingError(thread)
+  end)
+  coroutine.yield()
+end
+
 function createYielder()
   local yielder
   yielder = {

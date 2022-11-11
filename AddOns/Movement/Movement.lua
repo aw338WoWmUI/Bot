@@ -538,8 +538,11 @@ function Movement.isFlyingMount(mountID)
 end
 
 function Movement.retrieveGroundZ(position)
-  local x, y, z = GMR.TraceLine(position.x, position.y, position.z + 8, position.x, position.y,
-    position.z - MAXIMUM_AIR_HEIGHT, Movement.TraceLineHitFlags.COLLISION)
+  local x, y, z = GMR.TraceLine(
+    position.x, position.y, position.z + Movement.MAXIMUM_JUMP_HEIGHT,
+    position.x, position.y, position.z - MAXIMUM_AIR_HEIGHT,
+    Movement.TraceLineHitFlags.COLLISION
+  )
   return z
 end
 
@@ -731,9 +734,9 @@ function Movement.generateNeighborPointsAround(position, distance)
   local b = Movement.generateAbovePointsAround(position, distance)
   local c = Movement.generateBelowPointsAround(position, distance)
   return Array.concat(
-    a,
-    b,
-    c
+   a,
+   b,
+   c
   )
 end
 

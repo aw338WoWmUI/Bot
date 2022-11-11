@@ -9,5 +9,6 @@ VendoringFix.lua
 Questie.lua
 Database_Classic.lua
 Questing.lua
+QuestingCoroutine.lua
 Questing2.lua
 ClosestNPCUpdater.lua
