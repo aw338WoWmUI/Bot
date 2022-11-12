@@ -8,9 +8,9 @@ aStarPoints2 = nil
 local DEVELOPMENT = true
 local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
-local CHARACTER_RADIUS = 0.75 -- the radius might vary race by race
+local CHARACTER_RADIUS = 0.55 -- the radius might vary race by race
 local MAXIMUM_WATER_DEPTH = 1000
-local GRID_LENGTH = 2
+local GRID_LENGTH = 0.75
 local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.25 yards.
 local MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
@@ -228,7 +228,7 @@ ticker = C_Timer.NewTicker(0, function()
       if DEVELOPMENT then
         if aStarPoints then
           GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-          local radius = DISTANCE / 2
+          local radius = GRID_LENGTH / 2
           Array.forEach(aStarPoints, function(point)
             GMR.LibDraw.Circle(point.x, point.y, point.z, radius)
           end)
@@ -487,22 +487,24 @@ function Movement.canPlayerStandOnPoint(point, options)
     height = CHARACTER_HEIGHT
   end
 
-  local point2 = createPoint(
-    point.x,
-    point.y,
-    point.z + Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+  local point2 = Movement.createPointWithZOffset(
+    point,
+    Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   )
 
   local point3 = Movement.createPointWithZOffset(point2, 0.1)
 
+  local a = Movement.thereAreZeroCollisions(point2, Movement.createPointWithZOffset(point, 0.1))
+  local b = Movement.thereAreZeroCollisions(point3, Movement.createPointWithZOffset(point, height))
   local result
   if (
-    Movement.thereAreZeroCollisions(point2, Movement.createPointWithZOffset(point, 0.1)) and
-      Movement.thereAreZeroCollisions(point3, Movement.createPointWithZOffset(point, height))
+    a and
+      b
   ) then
     local points = Movement.generatePointsAround(point3, CHARACTER_RADIUS, 8)
     result = Array.all(points, function(point)
-      return Movement.thereAreZeroCollisions(point3, point)
+      local a = Movement.thereAreZeroCollisions(point3, point)
+      return a
     end)
   else
     result = false
@@ -731,10 +733,11 @@ function Movement.generateNeighborPointsAround(position, distance)
   local a = Movement.generateMiddlePointsAround(position, distance)
   local b = Movement.generateAbovePointsAround(position, distance)
   local c = Movement.generateBelowPointsAround(position, distance)
+  -- aStarPoints = a
   return Array.concat(
-   a,
-   b,
-   c
+    a,
+    b,
+    c
   )
 end
 
@@ -1188,15 +1191,15 @@ function Movement.findPathInner(from, to, a)
     return Movement.receiveNeighborPoints(point, DISTANCE)
   end
 
-  -- local points = receiveNeighborPoints(from)
-  -- DevTools_Dump(points)
-  -- aStarPoints = points
+  --local points = receiveNeighborPoints(from)
+  --DevTools_Dump(points)
+  --aStarPoints = points
 
   -- local yielder = createYielder()
   local yielder = createYielderWithTimeTracking(1 / 60)
   Movement.yielder = yielder
 
-  local path = findPath(
+  local path, subPathWhichHasBeenGeneratedFromMovementPoints = findPath(
     from,
     to,
     receiveNeighborPoints,
@@ -1204,15 +1207,12 @@ function Movement.findPathInner(from, to, a)
     yielder
   )
 
-  --local path = nil
+  local path = nil
 
   Movement.path = path
 
-  --print('path')
-  --DevTools_Dump(path)
-
-  if path then
-    Movement.storeConnection(path)
+  if subPathWhichHasBeenGeneratedFromMovementPoints then
+    Movement.storeConnection(subPathWhichHasBeenGeneratedFromMovementPoints)
   end
 
   return path

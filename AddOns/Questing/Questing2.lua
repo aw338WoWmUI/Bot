@@ -542,7 +542,8 @@ function retrieveObjectPoints()
               local startTime, _, enable = GetItemCooldown(itemID)
               if startTime == 0 and enable == 1 then
                 local itemDescription = retrieveItemDescription(itemID)
-                local name = string.match(itemDescription, 'of a ([%a %d]+)')
+
+                local name = string.match(itemDescription, 'corpse of a ([%a %d]+)')
                 if name then
                   local nameLower = string.lower(name)
                   local matchingObjects = Array.filter(objects, function(object)
@@ -552,7 +553,7 @@ function retrieveObjectPoints()
                     objectPoints,
                     convertObjectPointersToObjectPoints(
                       convertObjectsToPointers(matchingObjects),
-                      'objectToUseItemOn',
+                      'objectToUseItemOnWhenDead',
                       function(point)
                         point.itemID = itemID
                         point.questLogIndex = logIndex
@@ -560,6 +561,26 @@ function retrieveObjectPoints()
                       end
                     )
                   )
+                else
+                  local name = string.match(itemDescription, 'of a ([%a %d]+)')
+                  if name then
+                    local nameLower = string.lower(name)
+                    local matchingObjects = Array.filter(objects, function(object)
+                      return isUnitAlive(object.GUID) and string.lower(object.Name) == nameLower
+                    end)
+                    Array.append(
+                      objectPoints,
+                      convertObjectPointersToObjectPoints(
+                        convertObjectsToPointers(matchingObjects),
+                        'objectToUseItemOn',
+                        function(point)
+                          point.itemID = itemID
+                          point.questLogIndex = logIndex
+                          return point
+                        end
+                      )
+                    )
+                  end
                 end
               end
             end
@@ -886,7 +907,7 @@ local function doSomethingWithObject(point)
     objectIDsOfObjectsWhichCurrentlySeemAbsent[point.objectID] = true
   else
     if pointer and GMR.UnitCanAttack('player', pointer) then
-      Questing.Coroutine.doMob(point, point.objectID)
+      Questing.Coroutine.doMob(point, pointer)
     elseif pointer and (GMR.ObjectHasGossip(pointer) or next(C_GossipInfo.GetOptions())) then
       gossipWithAt(point.x, point.y, point.z, point.objectID)
       waitForPlayerHasArrivedAt(point) -- FIXME
@@ -922,6 +943,10 @@ local function moveToPoint(point)
     end
     if questGiverPoint then
       Questing.Coroutine.interactWithAt(questGiverPoint, questGiverPoint.objectID)
+      local npcID = GMR.ObjectId('npc')
+      if not npcID then
+        registerUnavailableQuests(questGiverPoint.objectID)
+      end
     else
       moveToPoint2(point)
     end
@@ -942,24 +967,33 @@ local function moveToPoint(point)
     if isSpecialItemUsable(point) then
       print('use')
       local distance = GMR.GetDistanceBetweenObjects('player', point.pointer)
-      GMR.Questing.UseItemOnNpc(point.x, point.y, point.z, point.objectID, point.itemID, distance)
-      waitForPlayerHasArrivedAt(point)
+      Questing.Coroutine.useItemOnNPC(point, point.objectID, point.itemID, distance)
     else
       print('move to')
-      GMR.Questing.UseItemOnNpc(point.x, point.y, point.z, point.objectID, point.itemID)
+      Questing.Coroutine.useItemOnNPC(point, point.objectID, point.itemID)
       waitForSpecialItemUsable(point)
       print('use after wait')
       local name = GetItemInfo(point.itemID)
       GMR.CastSpellByName(name)
     end
+  elseif point.type == 'objectToUseItemOnWhenDead' then
+    print('objectToUseItemOnWhenDead')
+    if GMR.IsAlive(point.pointer) then
+      Questing.Coroutine.doMob(point, point.pointer)
+    end
+    GMR.TargetObject(point.pointer)
+    if isSpecialItemUsable(point) then
+      local distance = GMR.GetDistanceBetweenObjects('player', point.pointer)
+      Questing.Coroutine.useItemOnNPC(point, point.objectID, point.itemID, distance)
+    else
+      Questing.Coroutine.useItemOnNPC(point, point.objectID, point.itemID)
+    end
   elseif point.type == 'objectToUseItemAtPosition' then
     print('quest log special item at position')
-    GMR.Questing.UseItemOnGround(point.x, point.y, point.z, point.itemID, 3)
-    waitForPlayerHasArrivedAt(point)
+    Questing.Coroutine.useItemOnGround(point, point.itemID, 3)
   elseif point.type == 'gossipWith' then
     print('gossip with')
-    gossipWithAt(point.x, point.y, point.z, point.objectID, point.optionToSelect)
-    waitForPlayerHasArrivedAt(point)
+    Questing.Coroutine.gossipWithAt(point, point.objectID, point.optionToSelect)
   elseif point.type == 'objective' then
     local questHandler = questHandlers[point.questID]
     if questHandler then
@@ -1249,21 +1283,15 @@ function exploreObject(object)
               end)
               if canVendor then
                 exploredObject.isGoodsVendor = true
-                GMR.DefineGoodsVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
                 exploredObject.isSellVendor = true
-                GMR.DefineSellVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
               end
             elseif texture == 'Cursor RepairNPC' or texture == 'Cursor UnableRepairNPC' then
               exploredObject.isSellVendor = true
-              GMR.DefineSellVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
               exploredObject.isRepairVendor = true
-              GMR.DefineRepairVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
             elseif texture == 'Cursor Mail' or texture == 'Cursor UnableMail' then
               exploredObject.isMailbox = true
-              GMR.DefineProfileMailbox(softInteractX, softInteractY, softInteractZ)
             elseif texture == 'Cursor Pickup' or texture == 'Cursor UnablePickup' then
               exploredObject.isSellVendor = true
-              GMR.DefineSellVendor(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
             elseif texture == 'Cursor Taxi' or texture == 'Cursor UnableTaxi' then
               exploredObject.isTaxi = true
               if texture == 'Cursor Taxi' then
@@ -1373,6 +1401,32 @@ function hasEnoughFreeSlotsToCompleteQuest()
   return numberOfItemsAddedToBag <= numberOfFreeInventorySlots
 end
 
+function waitForQuestHasBeenAccepted()
+  return Events.waitForEvent('QUEST_ACCEPTED', 1)
+end
+
+function isAnyActiveQuestCompletable()
+  for index = 1, GetNumActiveQuests() do
+    local questID = GetActiveQuestID(index)
+    if GMR.IsQuestCompletable(questID) then
+      return true
+    end
+  end
+end
+
+function registerUnavailableQuests(npcID)
+  local questsThatShouldBeAvailableFromNPC = Questing.Database.retrieveQuestsThatShouldBeAvailableFromNPC(npcID)
+  local availableQuests = C_GossipInfo.GetAvailableQuests()
+  local availableQuestIDs = Set.create(Array.map(availableQuests, function(quest)
+    return quest.questID
+  end))
+  Array.forEach(questsThatShouldBeAvailableFromNPC, function(quest)
+    if not availableQuestIDs[quest.id] then
+      unavailableQuestIDs[quest.id] = true
+    end
+  end)
+end
+
 function run (once)
   hooksecurefunc(GMR, 'Log', function(message)
     lastLogMessage = message
@@ -1385,8 +1439,7 @@ function run (once)
       local pointer = GMR.GetAttackingEnemy()
       if pointer then
         local point = createPoint(GMR.ObjectPosition(pointer))
-        local objectID = GMR.ObjectId(pointer)
-        Questing.Coroutine.doMob(point, objectID)
+        Questing.Coroutine.doMob(point, pointer)
       end
     end
     if GMR.IsExecuting() and isIdle() then
@@ -1418,16 +1471,7 @@ function run (once)
 
       local npcID = GMR.ObjectId('npc')
       if npcID then
-        local questsThatShouldBeAvailableFromNPC = Questing.Database.retrieveQuestsThatShouldBeAvailableFromNPC(npcID)
-        local availableQuests = C_GossipInfo.GetAvailableQuests()
-        local availableQuestIDs = Set.create(Array.map(availableQuests, function(quest)
-          return quest.questID
-        end))
-        Array.forEach(questsThatShouldBeAvailableFromNPC, function(quest)
-          if not availableQuestIDs[quest.id] then
-            unavailableQuestIDs[quest.id] = true
-          end
-        end)
+        registerUnavailableQuests(npcID)
       end
 
       if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
@@ -1437,11 +1481,12 @@ function run (once)
       elseif QuestFrameDetailPanel:IsShown() then
         print('AcceptQuest')
         AcceptQuest()
+        waitForQuestHasBeenAccepted()
       elseif GossipFrame:IsShown() and C_GossipInfo.GetNumActiveQuests() >= 1 then
         local activeQuests = C_GossipInfo.GetActiveQuests()
         local activeQuest = activeQuests[1]
         C_GossipInfo.SelectActiveQuest(activeQuest.questID)
-      elseif QuestFrame:IsShown() and GetNumActiveQuests() >= 1 then
+      elseif QuestFrame:IsShown() and GetNumActiveQuests() >= 1 and isAnyActiveQuestCompletable() then
         for index = 1, GetNumActiveQuests() do
           local questID = GetActiveQuestID(index)
           if GMR.IsQuestCompletable(questID) then
@@ -1477,6 +1522,7 @@ function run (once)
           end
         end)
 
+        print(1)
         updateIsObjectRelatedToActiveQuestLookup()
         moveToClosestPoint()
       end

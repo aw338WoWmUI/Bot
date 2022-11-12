@@ -41,7 +41,6 @@ doWhenGMRIsFullyLoaded(function()
 
   function updateNPCPositionsToClosest()
     local npc = findClosestSellVendor()
-    print('npc', npc[5])
     if npc then
       local position = determineObjectPosition(
         npc[5],

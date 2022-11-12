@@ -10,12 +10,17 @@ ticker = C_Timer.NewTicker(0, function()
       return toBoolean(pathFinder)
     end
 
-    local function stopPathFinding()
+    local function stopPathFindingAndMoving()
       if pathFinder then
         pathFinder.stop()
         pathFinder = nil
         run = nil
         aStarPoints = nil
+        Movement.path = nil
+      end
+      if pathMover then
+        pathMover.stop()
+        pathMover = nil
       end
     end
 
@@ -28,7 +33,7 @@ ticker = C_Timer.NewTicker(0, function()
       local from = Movement.retrievePlayerPosition()
       local to = createPoint(x, y, z)
       if run and isDifferentPathFindingRequestThanRun(from, to) then
-        stopPathFinding()
+        stopPathFindingAndMoving()
       end
       if not run or isDifferentPathFindingRequestThanRun(from, to) then
         local thread = coroutine.create(function()
@@ -64,7 +69,7 @@ ticker = C_Timer.NewTicker(0, function()
         local from = Movement.retrievePlayerPosition()
         local to = createPoint(x, y, z)
         if run and isDifferentPathFindingRequestThanRun(from, to) then
-          stopPathFinding()
+          stopPathFindingAndMoving()
         end
       end
       return meshTo(x, y, z)
@@ -78,14 +83,14 @@ ticker = C_Timer.NewTicker(0, function()
         end
         local point = createPoint(x, y, z)
         if run then
-          stopPathFinding()
+          stopPathFindingAndMoving()
         end
       end
     end)
 
     C_Timer.NewTicker(0, function()
       if not GMR.IsExecuting() then
-        stopPathFinding()
+        stopPathFindingAndMoving()
       end
     end)
   end
