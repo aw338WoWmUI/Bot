@@ -10,7 +10,7 @@ local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
 local CHARACTER_RADIUS = 0.55 -- the radius might vary race by race
 local MAXIMUM_WATER_DEPTH = 1000
-local GRID_LENGTH = 0.75
+local GRID_LENGTH = 2
 local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.25 yards.
 local MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
@@ -1199,15 +1199,16 @@ function Movement.findPathInner(from, to, a)
   local yielder = createYielderWithTimeTracking(1 / 60)
   Movement.yielder = yielder
 
-  local path, subPathWhichHasBeenGeneratedFromMovementPoints = findPath(
+  local path = nil
+  local subPathWhichHasBeenGeneratedFromMovementPoints = nil
+
+  path, subPathWhichHasBeenGeneratedFromMovementPoints = findPath(
     from,
     to,
     receiveNeighborPoints,
     a,
     yielder
   )
-
-  local path = nil
 
   Movement.path = path
 
