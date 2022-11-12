@@ -1,0 +1,5 @@
+## Title: Warrior
+## Interface: 100000
+## Dependencies: Questing, Yielder
+
+Warrior.lua

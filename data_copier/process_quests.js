@@ -7,7 +7,7 @@ import { parse } from 'node-html-parser'
 
 const infoBoxContentRegExp = /WH\.markup\.printHtml.+?;/s
 const requiresLevelRegExp = /Requires level (\d+)/
-const sideRegExp = /Side: ([^\[]+)/
+const sideRegExp = /Side: .*?([a-zA-Z]+?)\[\\/
 const classesRegExp = /Class(?:es)?: (.+)/
 const racesRegExp = /Races?: ([^\\]+)/
 const seriesRegExp = /<table class="series">(.*?)<\/table>/

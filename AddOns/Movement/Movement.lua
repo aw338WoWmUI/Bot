@@ -852,6 +852,7 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
     shouldCancel = function()
       return (
         a.shouldStop() or
+          not GMR.IsExecuting() or
           GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
       )
     end,

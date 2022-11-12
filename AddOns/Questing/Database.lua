@@ -10,6 +10,8 @@ quests = Array.filter(quests, function (quest)
   return (not quest.sides or quest.sides[1] ~= 'None') and next(quest.starterIDs)
 end)
 
+table.insert(questLookup[49402].preQuestIDs, 49239)
+
 function Questing.Database.retrieveQuest(id)
   return questLookup[id]
 end

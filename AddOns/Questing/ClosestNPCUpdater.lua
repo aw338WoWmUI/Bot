@@ -1,6 +1,7 @@
 goodsVendorNPCs = {}
 sellVendors = {}
 canRepairNPCs = {}
+gryphonMasters = {}
 
 doWhenGMRIsFullyLoaded(function()
   function a()
@@ -10,7 +11,7 @@ doWhenGMRIsFullyLoaded(function()
       local continentID, x, y, z = retrieveNPCPosition(NPC)
       if x and y and z then
         if NPC.isGoodsVendor or NPC.isVendor or NPC.canRepair then
-          local entry = { x, y, z, NPC.id }
+          local entry = { continentID, x, y, z, NPC.id }
           if NPC.isGoodsVendor then
             table.insert(goodsVendorNPCs, entry)
           end
@@ -19,6 +20,9 @@ doWhenGMRIsFullyLoaded(function()
           end
           if NPC.canRepair then
             table.insert(canRepairNPCs, entry)
+          end
+          if NPC.isGryphonMaster then
+            table.insert(gryphonMasters, entry)
           end
         end
       end
@@ -36,9 +40,20 @@ doWhenGMRIsFullyLoaded(function()
   end
 
   function updateNPCPositionsToClosest()
+    local npc = findClosestSellVendor()
+    print('npc', npc[5])
+    if npc then
+      local position = determineObjectPosition(
+        npc[5],
+        createPoint(npc[2], npc[3], npc[4])
+      )
+      GMR.LibDraw.SetColorRaw(1, 0, 0, 1)
+      GMR.LibDraw.Circle(position.x, position.y, position.z, 0.75)
+    end
     updateGoodsVendorToClosest()
     updateSellVendorToClosest()
     updateRepairerToClosest()
+    updateGryphonMasterToClosest()
   end
 
   function updateGoodsVendorToClosest()
@@ -53,32 +68,43 @@ doWhenGMRIsFullyLoaded(function()
     updateNPCPositionToClosest(findClosestCanRepairNPC, GMR.DefineRepairVendor)
   end
 
+  function updateGryphonMasterToClosest()
+    updateNPCPositionToClosest(findClosestGryphonMaster, GMR.DefineGryphonMaster)
+  end
+
   function updateNPCPositionToClosest(find, update)
     local npc = find()
     if npc then
       local position = determineObjectPosition(
-        npc[4],
-        createPoint(npc[1], npc[2], npc[3])
+        npc[5],
+        createPoint(npc[2], npc[3], npc[4])
       )
-      update(position.x, position.y, position.z, npc[4])
+      update(position.x, position.y, position.z, npc[5])
     end
   end
 
   function findClosestGoodsVendor()
-    return Array.min(goodsVendorNPCs, function(value)
-      return GMR.GetDistanceToPosition(value[1], value[2], value[3])
-    end)
+    return findClosestNPC(goodsVendorNPCs)
   end
 
   function findClosestSellVendor()
-    return Array.min(sellVendors, function(value)
-      return GMR.GetDistanceToPosition(value[1], value[2], value[3])
-    end)
+    return findClosestNPC(sellVendors)
   end
 
   function findClosestCanRepairNPC()
-    return Array.min(canRepairNPCs, function(value)
-      return GMR.GetDistanceToPosition(value[1], value[2], value[3])
+    return findClosestNPC(canRepairNPCs)
+  end
+
+  function findClosestGryphonMaster()
+    return findClosestNPC(gryphonMasters)
+  end
+
+  function findClosestNPC(NPCs)
+    local continentID = select(8, GetInstanceInfo())
+    return Array.min(Array.filter(NPCs, function(npc)
+      return npc[1] == continentID
+    end), function(value)
+      return GMR.GetDistanceToPosition(value[2], value[3], value[4])
     end)
   end
 

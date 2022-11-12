@@ -27,7 +27,7 @@ local objectIDsOfObjectsWhichCurrentlySeemAbsent = Set.create()
 
 local questHandlers = {}
 
-function defineQuest(questID, questHandler)
+function defineQuest2(questID, questHandler)
   questHandlers[questID] = questHandler
 end
 
@@ -91,14 +91,14 @@ function shouldQuestBeAvailable(quest)
   return (
     not GMR.IsQuestCompleted(quest.id) and
       not GMR.IsQuestActive(quest.id) and
-      (not quest.requiresLevel or playerLevel >= quest.requiresLevel) and
+      (not quest.requiredLevel or playerLevel >= quest.requiredLevel) and
       (not quest.classes or Array.any(quest.classes, function(class)
         return playerClassID == class
       end)) and
       (not quest.races or Array.any(quest.races, function(race)
         return playerRaceID == race
       end)) and
-      (not quest.sides or Array.includes(quest.sides, faction)) and
+      (not quest.sides or Array.includes(quest.sides, 'Both') or Array.includes(quest.sides, faction)) and
       Array.all(quest.preQuestIDs, function(preQuestID)
         return GMR.IsQuestCompleted(preQuestID)
       end) and
@@ -109,7 +109,7 @@ function shouldQuestBeAvailable(quest)
 end
 
 function isValidMapCoordinate(coordinate)
-  return coordinate >= 0 and coordinate <= 100
+  return coordinate >= 0 and coordinate <= 1
 end
 
 function retrieveNPCPosition(npc)
@@ -140,9 +140,12 @@ end
 function retrieveQuestStartPoints()
   local quests2 = Questing.Database.retrieveQuestsThatShouldBeAvailable()
 
-  local points1 = Array.selectTrue(Array.map(quests2, function(quest)
+  local yielder = createYielderWithTimeTracking(1 / 60)
+
+  local points1 = Array.selectTrue(Array.flatMap(quests2, function(quest)
     if not unavailableQuestIDs[quest.id] then
       if quest.starterIDs and next(quest.starterIDs) then
+        local points4 = {}
         Array.forEach(quest.starterIDs, function(starterID)
           local npc = Questing.Database.retrieveNPC(starterID)
           if npc then
@@ -152,10 +155,10 @@ function retrieveQuestStartPoints()
               x, y, z = GMR.ObjectPosition(npcPointer)
             end
             if continentID and x and y and z then
-              if GMR.GetDistanceToPosition(x, y, z) <= GMR.GetScanRadius() and not npcPointer then
+              if not npcPointer and GMR.GetDistanceToPosition(x, y, z) <= GMR.GetScanRadius() then
                 return nil
               else
-                return {
+                local point = {
                   objectID = npc.id,
                   continentID = continentID,
                   x = x,
@@ -167,6 +170,7 @@ function retrieveQuestStartPoints()
                   },
                   questName = QuestUtils_GetQuestName(quest.id)
                 }
+                table.insert(points4, point)
               end
             else
               -- print('Missing NPC coordinates for NPC with ID "' .. npc.id .. '".')
@@ -174,7 +178,12 @@ function retrieveQuestStartPoints()
           else
             -- print('Missing NPC for ID "' .. starterID .. '" for quest "' .. quest.id .. '".')
           end
+
+          if yielder.hasRanOutOfTime() then
+            yielder.yield()
+          end
         end)
+        return points4
       else
         -- print('Missing quest starter IDs for quest "' .. quest.id .. '".')
       end
@@ -421,9 +430,11 @@ function convertObjectPointersToObjectPoints(objectPointers, type, adjustPoint)
 end
 
 function convertObjectPointerToObjectPoint(pointer, type, adjustPoint)
+  local continentID = select(8, GetInstanceInfo())
   local x, y, z = GMR.ObjectPosition(pointer)
   local point = {
     name = GMR.ObjectName(pointer),
+    continentID = continentID,
     x = x,
     y = y,
     z = z,
@@ -664,6 +675,7 @@ end
 
 local function retrievePoints()
   local yielder = createYielderWithTimeTracking(1 / 60)
+
   local questStartPoints = retrieveQuestStartPoints()
   if yielder.hasRanOutOfTime() then
     yielder.yield()
@@ -874,12 +886,12 @@ local function doSomethingWithObject(point)
     objectIDsOfObjectsWhichCurrentlySeemAbsent[point.objectID] = true
   else
     if pointer and GMR.UnitCanAttack('player', pointer) then
-      Questing.Coroutine.doMob(point.x, point.y, point.z, point.objectID)
+      Questing.Coroutine.doMob(point, point.objectID)
     elseif pointer and (GMR.ObjectHasGossip(pointer) or next(C_GossipInfo.GetOptions())) then
       gossipWithAt(point.x, point.y, point.z, point.objectID)
       waitForPlayerHasArrivedAt(point) -- FIXME
     elseif objectID then
-      Questing.Coroutine.interactWithAt(point.x, point.y, point.z, objectID)
+      Questing.Coroutine.interactWithAt(point, objectID)
     else
       moveToPoint2(point)
     end
@@ -891,7 +903,7 @@ local function moveToPoint(point)
   DevTools_Dump(point)
   -- print(tableToString(point, 1))
   if point.type == 'acceptQuest' then
-    print('acceptQuest', point.x, point.y, point.z, point.objectID, point.questName)
+    print('acceptQuest', point.x, point.y, point.z, point.objectID, point.questName, point.questIDs[1])
     local questGiverPoint
     if point.objectID then
       questGiverPoint = point
@@ -909,16 +921,16 @@ local function moveToPoint(point)
       end
     end
     if questGiverPoint then
-      GMR.Questing.InteractWith(questGiverPoint.x, questGiverPoint.y, questGiverPoint.z, questGiverPoint.objectID)
-      waitForPlayerHasArrivedAt(questGiverPoint)
+      Questing.Coroutine.interactWithAt(questGiverPoint, questGiverPoint.objectID)
     else
       moveToPoint2(point)
     end
+    print('--------')
   elseif point.type == 'object' then
     doSomethingWithObject(point)
   elseif point.type == 'endQuest' then
     print('end quest')
-    Questing.Coroutine.interactWithAt(point.x, point.y, point.z, point.objectID)
+    Questing.Coroutine.interactWithAt(point, point.objectID)
   elseif point.type == 'exploration' then
     local name = GMR.ObjectName(point.pointer)
     print('explore object', name)
@@ -995,13 +1007,15 @@ end
 
 function moveToClosestPoint()
   local points = retrievePoints()
-  if previousPointsToGo[2] then
-    -- A B A
-    for key, value in pairs(points) do
-      points[key] = Array.filter(value, function(point)
-        return not seemToBeSamePoints(point, previousPointsToGo[2])
-      end)
-    end
+  local continentID = select(8, GetInstanceInfo())
+  for key, value in pairs(points) do
+    points[key] = Array.filter(value, function(point)
+      return (
+        point.continentID == continentID and
+          -- A B A
+          (not previousPointsToGo[2] or not seemToBeSamePoints(point, previousPointsToGo[2]))
+      )
+    end)
   end
   local pointToGo = determinePointToGo(points)
   print('pointToGo')
@@ -1273,7 +1287,10 @@ function exploreObject(object)
             end
 
             if texture == 'Cursor UnableTaxi' then
-              Questing.Coroutine.interactWithAt(softInteractX, softInteractY, softInteractZ, softInteractObjectID)
+              Questing.Coroutine.interactWithAt(
+                createPoint(softInteractX, softInteractY, softInteractZ),
+                softInteractObjectID
+              )
             end
           end
         end
@@ -1364,13 +1381,12 @@ function run (once)
   local yielder = createYielder()
 
   while true do
-    log('1')
     if GMR.IsExecuting() and GMR.InCombat() and not GMR.IsAttacking() then
       local pointer = GMR.GetAttackingEnemy()
       if pointer then
-        local x, y, z = GMR.ObjectPosition(pointer)
+        local point = createPoint(GMR.ObjectPosition(pointer))
         local objectID = GMR.ObjectId(pointer)
-        Questing.Coroutine.doMob(x, y, z, objectID)
+        Questing.Coroutine.doMob(point, objectID)
       end
     end
     if GMR.IsExecuting() and isIdle() then
@@ -1390,16 +1406,12 @@ function run (once)
 
           if popUpType == 'OFFER' then
             ShowQuestOffer(questID)
-            print(1)
             local wasSuccessful = waitFor(function()
               return QuestFrame:IsShown()
             end, 1)
-            print(2)
             if wasSuccessful then
-              print(3)
               AcceptQuest()
             end
-            print(4)
           end
         end
       end

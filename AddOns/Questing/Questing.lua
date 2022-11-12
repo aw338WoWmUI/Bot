@@ -78,7 +78,7 @@ function gossipWithAt(x, y, z, objectID, optionToSelect)
     objectID,
     nil,
     INTERACT_DISTANCE,
-    optionToSelect
+    optionToSelect or 1
   )
 end
 
