@@ -137,7 +137,21 @@ function retrieveNPCPosition(npc)
   end
 end
 
+function isQuestLogFull()
+  local currentNumberOfQuests = select(2, C_QuestLog.GetNumQuestLogEntries())
+  local maximumNumberOfQuests = C_QuestLog.GetMaxNumQuests()
+  return currentNumberOfQuests >= maximumNumberOfQuests
+end
+
+function canPickUpQuest()
+  return not isQuestLogFull()
+end
+
 function retrieveQuestStartPoints()
+  if isQuestLogFull() then
+    return {}
+  end
+
   local quests2 = Questing.Database.retrieveQuestsThatShouldBeAvailable()
 
   local yielder = createYielderWithTimeTracking(1 / 60)
@@ -208,9 +222,6 @@ function retrieveQuestStartPoints()
     local questIDs = Set.create(Array.flatMap(points, function(point)
       return point.questIDs
     end))
-
-    print('questIDs')
-    DevTools_Dump(questIDs)
 
     local continentID = select(8, GetInstanceInfo())
     local mapID = GMR.GetMapId()
@@ -907,14 +918,66 @@ local function doSomethingWithObject(point)
     objectIDsOfObjectsWhichCurrentlySeemAbsent[point.objectID] = true
   else
     if pointer and GMR.UnitCanAttack('player', pointer) then
+      print('doMob')
       Questing.Coroutine.doMob(point, pointer)
     elseif pointer and (GMR.ObjectHasGossip(pointer) or next(C_GossipInfo.GetOptions())) then
-      gossipWithAt(point.x, point.y, point.z, point.objectID)
-      waitForPlayerHasArrivedAt(point) -- FIXME
+      print('gossipWithAt')
+      Questing.Coroutine.gossipWithAt(point, point.objectID)
     elseif objectID then
+      print('interactWithAt')
       Questing.Coroutine.interactWithAt(point, objectID)
     else
+      print('moveToPoint2')
       moveToPoint2(point)
+    end
+  end
+end
+
+function acceptQuest(point)
+  local questGiverPoint
+  if point.objectID then
+    questGiverPoint = point
+  else
+    local object = findClosestQuestGiver(point)
+    print('object')
+    DevTools_Dump(object)
+    if object then
+      questGiverPoint = {
+        objectID = object.ID,
+        x = object.x,
+        y = object.y,
+        z = object.z
+      }
+    end
+  end
+  if questGiverPoint then
+    print('A1')
+    Questing.Coroutine.interactWithAt(questGiverPoint, questGiverPoint.objectID)
+    local npcID = GMR.ObjectId('npc')
+    print('aaa', npcID ~= questGiverPoint.objectID, npcID, questGiverPoint.objectID)
+    if npcID == questGiverPoint.objectID then
+      local availableQuests = C_GossipInfo.GetAvailableQuests()
+      local quest = Array.find(availableQuests, function (quest)
+        return quest.questID == point.questID
+      end)
+      if quest then
+        C_GossipInfo.SelectAvailableQuest(quest.questID)
+        local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
+        if wasSuccessful then
+          AcceptQuest()
+        else
+          print('dasjlkjklasd QUEST_DETAIL')
+        end
+      end
+    else
+      registerUnavailableQuests(questGiverPoint.objectID)
+    end
+  else
+    print('A2')
+    local TOLERANCE_RADIUS = 10
+    if GMR.GetDistanceToPosition(point.x, point.y, point.z) > GMR.GetScanRadius() - TOLERANCE_RADIUS then
+      moveToPoint2(point)
+      acceptQuest(point)
     end
   end
 end
@@ -925,31 +988,7 @@ local function moveToPoint(point)
   -- print(tableToString(point, 1))
   if point.type == 'acceptQuest' then
     print('acceptQuest', point.x, point.y, point.z, point.objectID, point.questName, point.questIDs[1])
-    local questGiverPoint
-    if point.objectID then
-      questGiverPoint = point
-    else
-      local object = findClosestQuestGiver(point)
-      print('object')
-      DevTools_Dump(object)
-      if object then
-        questGiverPoint = {
-          objectID = object.ID,
-          x = object.x,
-          y = object.y,
-          z = object.z
-        }
-      end
-    end
-    if questGiverPoint then
-      Questing.Coroutine.interactWithAt(questGiverPoint, questGiverPoint.objectID)
-      local npcID = GMR.ObjectId('npc')
-      if not npcID then
-        registerUnavailableQuests(questGiverPoint.objectID)
-      end
-    else
-      moveToPoint2(point)
-    end
+    acceptQuest(point)
     print('--------')
   elseif point.type == 'object' then
     doSomethingWithObject(point)
@@ -1414,6 +1453,13 @@ function isAnyActiveQuestCompletable()
   end
 end
 
+function isAnyActiveQuestCompletable2()
+  local activeQuests = C_GossipInfo.GetActiveQuests()
+  return Array.any(activeQuests, function(quest)
+    return GMR.IsQuestCompletable(quest.questID)
+  end)
+end
+
 function registerUnavailableQuests(npcID)
   local questsThatShouldBeAvailableFromNPC = Questing.Database.retrieveQuestsThatShouldBeAvailableFromNPC(npcID)
   local availableQuests = C_GossipInfo.GetAvailableQuests()
@@ -1482,11 +1528,18 @@ function run (once)
         print('AcceptQuest')
         AcceptQuest()
         waitForQuestHasBeenAccepted()
-      elseif GossipFrame:IsShown() and C_GossipInfo.GetNumActiveQuests() >= 1 then
+        -- if
+        -- HideUIPanel(QuestFrame)
+        -- HideUIPanel(QuestFrameDetailPanel)
+      elseif GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
         local activeQuests = C_GossipInfo.GetActiveQuests()
-        local activeQuest = activeQuests[1]
-        C_GossipInfo.SelectActiveQuest(activeQuest.questID)
-      elseif QuestFrame:IsShown() and GetNumActiveQuests() >= 1 and isAnyActiveQuestCompletable() then
+        local quest = Array.find(activeQuests, function(quest)
+          return GMR.IsQuestCompletable(quest.questID)
+        end)
+        if quest then
+          C_GossipInfo.SelectActiveQuest(quest.questID)
+        end
+      elseif QuestFrame:IsShown() and isAnyActiveQuestCompletable() then
         for index = 1, GetNumActiveQuests() do
           local questID = GetActiveQuestID(index)
           if GMR.IsQuestCompletable(questID) then
@@ -1612,6 +1665,10 @@ local function onEvent(self, event, ...)
     onQuestlineUpdate(...)
   elseif event == 'QUEST_TURNED_IN' then
     onQuestTurnedIn(...)
+  elseif event == 'QUEST_DETAIL' then
+    print('QUEST_DETAIL')
+  elseif event == 'GOSSIP_SHOW' then
+    print('GOSSIP_SHOW')
   end
 end
 
@@ -1621,4 +1678,6 @@ if Compatibility.isRetail() then
   frame:RegisterEvent('QUESTLINE_UPDATE')
 end
 frame:RegisterEvent('QUEST_TURNED_IN')
+frame:RegisterEvent('QUEST_DETAIL')
+frame:RegisterEvent('GOSSIP_SHOW')
 frame:SetScript('OnEvent', onEvent)

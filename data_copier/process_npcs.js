@@ -58,11 +58,6 @@ async function processNPC(id) {
     NPC.isInnkeeper = true
   }
 
-  const gryphonMasterRegExp = /&lt;Gryphon&nbsp;Master&gt;$/
-  if (gryphonMasterRegExp.test(h1Text)) {
-    NPC.isGryphonMaster = true
-  }
-
   const isVendor = Boolean(/WH\.TERMS\.sells/.exec(content))
   if (isVendor) {
     NPC.isVendor = isVendor

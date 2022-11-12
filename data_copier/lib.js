@@ -66,3 +66,20 @@ export function indent(value, indention) {
   const indentedLines = lines.map(line => '  '.repeat(indention) + line)
   return indentedLines.join('\n')
 }
+
+const npcsRegExp = /new Listview.+/
+
+export function extractNPCIds(content) {
+  const IDs = []
+  const match2 = npcsRegExp.exec(content)
+  if (match2) {
+    const content2 = match2[0]
+    const idRegExp = /"id":(\d+)/g
+    let match
+    while (match = idRegExp.exec(content2)) {
+      const ID = Number(match[1])
+      IDs.push(ID)
+    }
+  }
+  return IDs
+}

@@ -10,7 +10,7 @@ ticker = C_Timer.NewTicker(0, function()
       return toBoolean(pathFinder)
     end
 
-    local function stopPathFindingAndMoving()
+    local function stopPathFinding()
       if pathFinder then
         pathFinder.stop()
         pathFinder = nil
@@ -18,10 +18,18 @@ ticker = C_Timer.NewTicker(0, function()
         aStarPoints = nil
         Movement.path = nil
       end
+    end
+
+    local function stopPathMoving()
       if pathMover then
         pathMover.stop()
         pathMover = nil
       end
+    end
+
+    local function stopPathFindingAndMoving()
+      stopPathFinding()
+      stopPathMoving()
     end
 
     local function isDifferentPathFindingRequestThanRun(from, to)
@@ -44,6 +52,7 @@ ticker = C_Timer.NewTicker(0, function()
           pathFinder = Movement.createPathFinder()
           -- print('start pathfinder')
           local path = pathFinder.start(from, to)
+          stopPathFinding()
           Movement.path = path
           -- print('path')
           -- DevTools_Dump(path)

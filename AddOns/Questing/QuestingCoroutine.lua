@@ -27,6 +27,10 @@ function Questing.Coroutine.moveTo(point, distance)
       yieldAndResume()
     end
   end
+
+  if GMR.IsExecuting() then
+    Movement.stopMoving()
+  end
 end
 
 function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
@@ -37,14 +41,9 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   end
 
   if GMR.IsExecuting() then
-    GMR.Questing.InteractWith(
-      point.x,
-      point.y,
-      point.z,
-      objectID,
-      delay or nil,
-      distance
-    )
+    local pointer = GMR.FindObject(objectID)
+    GMR.Interact(pointer)
+    Events.waitForOneOfEvents({'GOSSIP_SHOW', 'QUEST_GREETING'}, 1)
   end
 end
 

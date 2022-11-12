@@ -856,6 +856,15 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
       return (
         a.shouldStop() or
           not GMR.IsExecuting() or
+          GMR.InCombat() or
+          GMR.IsCasting() or
+          GMR.IsDrinking() or
+          GMR.IsEating() or
+          GMR.IsFishing() or
+          GMR.IsLooting() or
+          GMR.IsMailing() or
+          GMR.IsUnstuckEnabled() or
+          GMR.IsPreparing() or
           GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
       )
     end,
@@ -1424,6 +1433,16 @@ end
 
 function Movement.havePointsSameCoordinates(a, b)
   return a.x == b.x and a.y == b.y and a.z == b.z
+end
+
+function Movement.stopMoving()
+  -- local playerPosition = Movement.retrievePlayerPosition()
+  -- GMR.Questing.MoveTo(playerPosition.x, playerPosition.y, playerPosition.z)
+  -- GMR.StopMoving()
+  if pathMover then
+    pathMover.stop()
+    pathMover = nil
+  end
 end
 
 local ticker

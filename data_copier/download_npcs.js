@@ -1,6 +1,7 @@
+import { request } from '@sanjo/request'
 import { writeFile } from '@sanjo/write-file'
 import { readdir } from 'node:fs/promises'
-import { request } from '@sanjo/request'
+import { extractNPCIds } from './lib.js'
 
 async function downloadAllNPCs(baseURL, from = 1) {
   const totalNumberOfNPCs = await determineTotalNumberOfNPCs(baseURL)
@@ -50,32 +51,20 @@ async function determineTotalNumberOfNPCs(baseURL) {
   return numberOfNPCs
 }
 
-const npcsRegExp = /new Listview.+/
-
 async function downloadNPCs(baseURL, from, to) {
   let numberOfNPCsThatHaveBeenDownloaded = 0
 
   const response = await request(baseURL + '?filter=37:37;2:4;' + from + ':' + to)
   const content = response.body
 
-  const match2 = npcsRegExp.exec(content)
-  if (match2) {
-    const content2 = match2[0]
-    const idRegExp = /"id":(\d+)/g
-    let match
-    const IDs = []
-    while (match = idRegExp.exec(content2)) {
-      const ID = Number(match[1])
-      IDs.push(ID)
-    }
+  const IDs = extractNPCIds(content)
 
-    await Promise.all(IDs.map(async ID => {
-      const hasBeenDownloaded = await downloadNPC(ID)
-      if (hasBeenDownloaded) {
-        numberOfNPCsThatHaveBeenDownloaded++
-      }
-    }))
-  }
+  await Promise.all(IDs.map(async ID => {
+    const hasBeenDownloaded = await downloadNPC(ID)
+    if (hasBeenDownloaded) {
+      numberOfNPCsThatHaveBeenDownloaded++
+    }
+  }))
 
   return numberOfNPCsThatHaveBeenDownloaded
 }

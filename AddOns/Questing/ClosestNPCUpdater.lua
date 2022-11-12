@@ -1,7 +1,14 @@
 goodsVendorNPCs = {}
+unavailableGoodsVendorNPCs = Set.create()
+
 sellVendors = {}
+unavailableSellVendors = Set.create()
+
 canRepairNPCs = {}
+unavailableRepairNPCs = Set.create()
+
 gryphonMasters = {}
+unavailableGryphonMasters = Set.create()
 
 doWhenGMRIsFullyLoaded(function()
   function a()
@@ -9,7 +16,7 @@ doWhenGMRIsFullyLoaded(function()
 
     for NPC in Questing.Database.createNPCsIterator() do
       local continentID, x, y, z = retrieveNPCPosition(NPC)
-      if x and y and z then
+      if continentID and x and y and z then
         if NPC.isGoodsVendor or NPC.isVendor or NPC.canRepair then
           local entry = { continentID, x, y, z, NPC.id }
           if NPC.isGoodsVendor then
@@ -21,9 +28,6 @@ doWhenGMRIsFullyLoaded(function()
           if NPC.canRepair then
             table.insert(canRepairNPCs, entry)
           end
-          if NPC.isGryphonMaster then
-            table.insert(gryphonMasters, entry)
-          end
         end
       end
 
@@ -32,7 +36,43 @@ doWhenGMRIsFullyLoaded(function()
       end
     end
 
+    Array.forEach(flightMasterNPCIDs, function(id)
+      local NPC = Questing.Database.retrieveNPC(id)
+      if NPC then
+        local continentID, x, y, z = retrieveNPCPosition(NPC)
+        if continentID and x and y and z then
+          local entry = { continentID, x, y, z, NPC.id }
+          table.insert(gryphonMasters, entry)
+        end
+      end
+    end)
+
+    if yielder.hasRanOutOfTime() then
+      yielder.yield()
+    end
+
     while true do
+      local npcID = GMR.ObjectId('npc')
+      if npcID then
+        if GossipFrame:IsShown() then
+          local options = C_GossipInfo.GetOptions()
+          if #options == 0 then
+            local npc = Questing.Database.retrieveNPC(npcID)
+            if npc then
+              if npc.isVendor then
+                unavailableSellVendors[npcID] = true
+              end
+              if npc.isGoodsVendor then
+                unavailableGoodsVendorNPCs[npcID] = true
+              end
+              if npc.canRepair then
+                unavailableRepairNPCs[npcID] = true
+              end
+            end
+          end
+        end
+      end
+
       updateNPCPositionsToClosest()
 
       yielder.yield()
@@ -40,19 +80,10 @@ doWhenGMRIsFullyLoaded(function()
   end
 
   function updateNPCPositionsToClosest()
-    local npc = findClosestSellVendor()
-    if npc then
-      local position = determineObjectPosition(
-        npc[5],
-        createPoint(npc[2], npc[3], npc[4])
-      )
-      GMR.LibDraw.SetColorRaw(1, 0, 0, 1)
-      GMR.LibDraw.Circle(position.x, position.y, position.z, 0.75)
-    end
     updateGoodsVendorToClosest()
     updateSellVendorToClosest()
     updateRepairerToClosest()
-    updateGryphonMasterToClosest()
+    -- updateGryphonMasterToClosest()
   end
 
   function updateGoodsVendorToClosest()
@@ -83,25 +114,25 @@ doWhenGMRIsFullyLoaded(function()
   end
 
   function findClosestGoodsVendor()
-    return findClosestNPC(goodsVendorNPCs)
+    return findClosestNPC(goodsVendorNPCs, unavailableGoodsVendorNPCs)
   end
 
   function findClosestSellVendor()
-    return findClosestNPC(sellVendors)
+    return findClosestNPC(sellVendors, unavailableSellVendors)
   end
 
   function findClosestCanRepairNPC()
-    return findClosestNPC(canRepairNPCs)
+    return findClosestNPC(canRepairNPCs, unavailableRepairNPCs)
   end
 
   function findClosestGryphonMaster()
-    return findClosestNPC(gryphonMasters)
+    return findClosestNPC(gryphonMasters, unavailableGryphonMasters)
   end
 
-  function findClosestNPC(NPCs)
+  function findClosestNPC(NPCs, npcIdsFromWhichTheFunctionIsUnavailable)
     local continentID = select(8, GetInstanceInfo())
     return Array.min(Array.filter(NPCs, function(npc)
-      return npc[1] == continentID
+      return npc[1] == continentID and not Set.contains(npcIdsFromWhichTheFunctionIsUnavailable, npc[5])
     end), function(value)
       return GMR.GetDistanceToPosition(value[2], value[3], value[4])
     end)
