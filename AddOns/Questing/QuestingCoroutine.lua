@@ -30,7 +30,9 @@ function Questing.Coroutine.moveTo(point, distance)
   while GMR.IsExecuting() and not hasArrived() do
     if isIdle() then
       -- print('isIdle', true)
+      print(1)
       moveTo(point)
+      print(2)
       waitFor(function()
         return hasArrived() or isIdle()
       end)
@@ -96,10 +98,14 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
     Questing.Coroutine.moveTo(point, distance)
   end
 
+  print('test')
   if GMR.IsExecuting() then
     local pointer = GMR.FindObject(objectID)
+    print('GMR.Interact', pointer)
     GMR.Interact(pointer)
-    Events.waitForOneOfEvents({ 'GOSSIP_SHOW', 'QUEST_GREETING' }, 1)
+    waitFor(function ()
+      return GMR.ObjectExists('npc')
+    end, 2)
   end
 end
 

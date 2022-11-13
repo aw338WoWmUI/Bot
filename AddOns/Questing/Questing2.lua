@@ -8,7 +8,7 @@ local objectBlacklist = {
 }
 
 local objectBlacklistLookup = {}
-Array.forEach(objectBlacklist, function (entry)
+Array.forEach(objectBlacklist, function(entry)
   objectBlacklistLookup[entry.id] = entry
 end)
 
@@ -18,10 +18,10 @@ end
 
 local hasObjectBeenBlacklisted = Set.create()
 
-doRegularlyWhenGMRIsFullyLoaded(function ()
+doRegularlyWhenGMRIsFullyLoaded(function()
   local objects = retrieveObjects()
 
-  Array.forEach(objects, function (object)
+  Array.forEach(objects, function(object)
     if not hasObjectBeenBlacklisted[object.pointer] then
       local entry = objectBlacklistLookup[object.ID]
       if entry then
@@ -185,6 +185,53 @@ function canPickUpQuest()
   return not isQuestLogFull()
 end
 
+local function generateQuestStartPointsFromStarterIDs(quest)
+  if quest.starterIDs then
+    local yielder = createYielderWithTimeTracking(1 / 60)
+
+    return Array.selectTrue(Array.map(quest.starterIDs, function(starterID)
+      local npc = Questing.Database.retrieveNPC(starterID)
+      if npc then
+        local continentID, x, y, z = retrieveNPCPosition(npc)
+        local npcPointer = GMR.FindObject(npc.id)
+        if npcPointer then
+          x, y, z = GMR.ObjectPosition(npcPointer)
+        end
+        if continentID and x and y and z then
+          if not npcPointer and GMR.GetDistanceToPosition(x, y, z) <= GMR.GetScanRadius() then
+            return nil
+          else
+            local point = {
+              objectID = npc.id,
+              continentID = continentID,
+              x = x,
+              y = y,
+              z = z,
+              type = 'acceptQuest',
+              questIDs = {
+                quest.id
+              },
+              questName = QuestUtils_GetQuestName(quest.id)
+            }
+            return point
+          end
+        else
+          -- print('Missing NPC coordinates for NPC with ID "' .. npc.id .. '".')
+        end
+      else
+        -- print('Missing NPC for ID "' .. starterID .. '" for quest "' .. quest.id .. '".')
+      end
+
+      if yielder.hasRanOutOfTime() then
+        yielder.yield()
+      end
+    end))
+  else
+    -- print('Missing quest starter IDs for quest "' .. quest.id .. '".')
+    return {}
+  end
+end
+
 function retrieveQuestStartPoints()
   if isQuestLogFull() then
     return {}
@@ -192,53 +239,9 @@ function retrieveQuestStartPoints()
 
   local quests2 = Questing.Database.retrieveQuestsThatShouldBeAvailable()
 
-  local yielder = createYielderWithTimeTracking(1 / 60)
-
   local points1 = Array.selectTrue(Array.flatMap(quests2, function(quest)
     if not unavailableQuestIDs[quest.id] then
-      if quest.starterIDs and next(quest.starterIDs) then
-        local points4 = {}
-        Array.forEach(quest.starterIDs, function(starterID)
-          local npc = Questing.Database.retrieveNPC(starterID)
-          if npc then
-            local continentID, x, y, z = retrieveNPCPosition(npc)
-            local npcPointer = GMR.FindObject(npc.id)
-            if npcPointer then
-              x, y, z = GMR.ObjectPosition(npcPointer)
-            end
-            if continentID and x and y and z then
-              if not npcPointer and GMR.GetDistanceToPosition(x, y, z) <= GMR.GetScanRadius() then
-                return nil
-              else
-                local point = {
-                  objectID = npc.id,
-                  continentID = continentID,
-                  x = x,
-                  y = y,
-                  z = z,
-                  type = 'acceptQuest',
-                  questIDs = {
-                    quest.id
-                  },
-                  questName = QuestUtils_GetQuestName(quest.id)
-                }
-                table.insert(points4, point)
-              end
-            else
-              -- print('Missing NPC coordinates for NPC with ID "' .. npc.id .. '".')
-            end
-          else
-            -- print('Missing NPC for ID "' .. starterID .. '" for quest "' .. quest.id .. '".')
-          end
-
-          if yielder.hasRanOutOfTime() then
-            yielder.yield()
-          end
-        end)
-        return points4
-      else
-        -- print('Missing quest starter IDs for quest "' .. quest.id .. '".')
-      end
+      return generateQuestStartPointsFromStarterIDs(quest)
     end
   end))
 
@@ -269,7 +272,7 @@ function retrieveQuestStartPoints()
       questLines = retrieveAvailableQuestLines(mapID)
     end
 
-    local points3 = Array.selectTrue(Array.map(questLines, function(questLine)
+    local points3 = Array.selectTrue(Array.flatMap(questLines, function(questLine)
       if (
         Set.contains(questIDs, questLine.questID) or
           GMR.IsQuestActive(questLine.questID) or
@@ -277,19 +280,24 @@ function retrieveQuestStartPoints()
       ) then
         return nil
       else
-        local x, y, z = GMR.GetWorldPositionFromMap(mapID, questLine.x, questLine.y)
-        return {
-          objectID = nil,
-          continentID = continentID,
-          x = x,
-          y = y,
-          z = z,
-          type = 'acceptQuest',
-          questIDs = {
-            questLine.questID
-          },
-          questName = questLine.questName
-        }
+        local quest = Questing.Database.retrieveQuest(questLine.questID)
+        if quest then
+          return generateQuestStartPointsFromStarterIDs(quest)
+        else
+          local x, y, z = GMR.GetWorldPositionFromMap(mapID, questLine.x, questLine.y)
+          return {
+            objectID = nil,
+            continentID = continentID,
+            x = x,
+            y = y,
+            z = z,
+            type = 'acceptQuest',
+            questIDs = {
+              questLine.questID
+            },
+            questName = questLine.questName
+          }
+        end
       end
     end))
 
@@ -638,6 +646,62 @@ function retrieveObjectPoints()
           end
         end
       end
+
+      local objectiveData = retrieveQuestObjectivesInfo(questID)
+      if objectiveData then
+        local objectives = C_QuestLog.GetQuestObjectives(questID)
+        for index, objective in ipairs(objectives) do
+          if not objective.finished then
+            local objectIDs = objectiveData[index]
+            if objectIDs then
+              Array.forEach(objectIDs, function(objectID)
+                local objects = Array.filter(retrieveObjects(), function(object)
+                  return object.ID == objectID
+                end)
+
+                Array.forEach(
+                  objects,
+                  function(object)
+                    local point = {
+                      continentID = continentID,
+                      x = object.x,
+                      y = object.y,
+                      z = object.z,
+                      type = 'object',
+                      objectID = objectID,
+                      pointer = object.pointer
+                    }
+                    table.insert(objectPoints, point)
+                  end
+                )
+
+                local object = Questing.Database.retrieveNPC(objectID)
+                if object then
+                  local coordinates = object.coordinates
+                  if coordinates then
+                    Array.forEach(coordinates, function(coordinates)
+                      local continentID, position = retrieveWorldPositionFromMapPosition(
+                        coordinates[1],
+                        coordinates[2],
+                        coordinates[3]
+                      )
+                      local point = {
+                        continentID = continentID,
+                        x = position.x,
+                        y = position.y,
+                        z = position.z,
+                        type = 'object',
+                        objectID = objectID
+                      }
+                      table.insert(objectPoints, point)
+                    end)
+                  end
+                end
+              end)
+            end
+          end
+        end
+      end
     end
   end
 
@@ -704,43 +768,6 @@ function retrieveExplorationPoints()
   end)
 
   local points = convertObjectPointersToObjectPoints(objectPointers, 'exploration')
-
-  local quests, mapID = retrieveQuestsOnMap()
-  Array.forEach(quests, function(quest)
-    local questID = quest.questID
-    local objectives = retrieveQuestObjectivesInfo(questID)
-    if objectives then
-      for index, objective in ipairs(objectives) do
-        if not GMR.Questing.IsObjectiveCompleted(questID, index) then
-          local objectIDs = objective
-          Array.forEach(objectIDs, function(objectID)
-            local object = Questing.Database.retrieveNPC(objectID)
-            if object then
-              local coordinates = object.coordinates
-              if coordinates then
-                Array.forEach(coordinates, function(coordinates)
-                  local continentID, position = retrieveWorldPositionFromMapPosition(
-                    coordinates[1],
-                    coordinates[2],
-                    coordinates[3]
-                  )
-                  local point = {
-                    continentID = continentID,
-                    x = position.x,
-                    y = position.y,
-                    z = position.z,
-                    type = 'exploration',
-                    objectID = objectID
-                  }
-                  table.insert(points, point)
-                end)
-              end
-            end
-          end)
-        end
-      end
-    end
-  end)
 
   return points
 end
@@ -1000,7 +1027,7 @@ function acceptQuest(point)
     print('aaa', npcID ~= questGiverPoint.objectID, npcID, questGiverPoint.objectID)
     if npcID == questGiverPoint.objectID then
       local availableQuests = C_GossipInfo.GetAvailableQuests()
-      local quest = Array.find(availableQuests, function (quest)
+      local quest = Array.find(availableQuests, function(quest)
         return quest.questID == point.questID
       end)
       if quest then
@@ -1016,8 +1043,11 @@ function acceptQuest(point)
       registerUnavailableQuests(questGiverPoint.objectID)
     end
   else
+    -- GMR.GetDistanceToPosition(savedPosition.x, savedPosition.y, savedPosition.z)
     print('A2')
     local TOLERANCE_RADIUS = 10
+    print('d', GMR.GetDistanceToPosition(point.x, point.y, point.z) > GMR.GetScanRadius() - TOLERANCE_RADIUS)
+    savedPosition = point
     if GMR.GetDistanceToPosition(point.x, point.y, point.z) > GMR.GetScanRadius() - TOLERANCE_RADIUS then
       moveToPoint2(point)
       acceptQuest(point)

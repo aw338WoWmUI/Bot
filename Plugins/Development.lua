@@ -396,6 +396,8 @@ function logAllAPICalls()
   end
 end
 
+-- logAPICalls2('GMR.GetVendorPath')
+-- logAPICalls2('GMR.VendorPathHandler')
 --logAPICalls2('GMR.GetObject')
 --logAPICalls2('GMR.LibDraw.Array')
 --logAPICalls2('GMR.OffMeshHandler')
