@@ -10,6 +10,17 @@ unavailableRepairNPCs = Set.create()
 gryphonMasters = {}
 unavailableGryphonMasters = Set.create()
 
+function resetSelling()
+  if GMR.IsExecuting() and GMR_SavedVariablesPerCharacter.Sell then
+    GMR.Stop()
+    GMR.DefineSetting('Disable', 'Sell')
+    GMR.Execute()
+    C_Timer.After(1, function ()
+      GMR.DefineSetting('Enable', 'Sell')
+    end)
+  end
+end
+
 doWhenGMRIsFullyLoaded(function()
   function a()
     local yielder = createYielderWithTimeTracking(1 / 60)
@@ -59,8 +70,9 @@ doWhenGMRIsFullyLoaded(function()
           if #options == 0 then
             local npc = Questing.Database.retrieveNPC(npcID)
             if npc then
-              if npc.isVendor then
+              if npc.isVendor and not unavailableSellVendors[npcID] then
                 unavailableSellVendors[npcID] = true
+                resetSelling()
               end
               if npc.isGoodsVendor then
                 unavailableGoodsVendorNPCs[npcID] = true

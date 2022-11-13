@@ -33,6 +33,48 @@ function Questing.Coroutine.moveTo(point, distance)
   end
 end
 
+function Questing.Coroutine.moveToObject(pointer, distance)
+  distance = distance or INTERACT_DISTANCE
+
+  local function retrievePosition()
+    local position = createPoint(GMR.ObjectPosition(pointer))
+
+    if Movement.isPositionInTheAir(position) and not Movement.canCharacterFly() then
+      position = createPoint(
+        position.x,
+        position.y,
+        Movement.retrieveGroundZ(position) or position.z
+      )
+    end
+
+    return position
+  end
+
+  local function hasArrived(position)
+    return GMR.IsPlayerPosition(position.x, position.y, position.z, distance)
+  end
+
+  local position = retrievePosition()
+
+  while GMR.IsExecuting() and not hasArrived(position) do
+    if isIdle() then
+      -- print('isIdle', true)
+      position = retrievePosition()
+
+      GMR.Questing.MoveTo(position.x, position.y, position.z)
+      waitFor(function()
+        return hasArrived(position) or isIdle()
+      end)
+    else
+      yieldAndResume()
+    end
+  end
+
+  if GMR.IsExecuting() then
+    Movement.stopMoving()
+  end
+end
+
 function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   distance = distance or INTERACT_DISTANCE
 
@@ -43,7 +85,21 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   if GMR.IsExecuting() then
     local pointer = GMR.FindObject(objectID)
     GMR.Interact(pointer)
-    Events.waitForOneOfEvents({'GOSSIP_SHOW', 'QUEST_GREETING'}, 1)
+    Events.waitForOneOfEvents({ 'GOSSIP_SHOW', 'QUEST_GREETING' }, 1)
+  end
+end
+
+function Questing.Coroutine.interactWithObject(pointer, distance, delay)
+  distance = distance or INTERACT_DISTANCE
+
+  local position = createPoint(GMR.ObjectPosition(pointer))
+  if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
+    Questing.Coroutine.moveToObject(pointer, distance)
+  end
+
+  if GMR.IsExecuting() then
+    GMR.Interact(pointer)
+    Events.waitForOneOfEvents({ 'GOSSIP_SHOW', 'QUEST_GREETING' }, 1)
   end
 end
 

@@ -923,6 +923,9 @@ local function doSomethingWithObject(point)
     elseif pointer and (GMR.ObjectHasGossip(pointer) or next(C_GossipInfo.GetOptions())) then
       print('gossipWithAt')
       Questing.Coroutine.gossipWithAt(point, point.objectID)
+    elseif pointer then
+      print('interactWithObject')
+      Questing.Coroutine.interactWithObject(pointer)
     elseif objectID then
       print('interactWithAt')
       Questing.Coroutine.interactWithAt(point, objectID)

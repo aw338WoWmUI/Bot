@@ -1,30 +1,31 @@
+local run = nil
+local pathFinder = nil
+local pathMover = nil
+
+function stopPathFinding()
+  if pathFinder then
+    pathFinder.stop()
+    pathFinder = nil
+    run = nil
+    aStarPoints = nil
+    Movement.path = nil
+  end
+end
+
+local function stopPathMoving()
+  if pathMover then
+    pathMover.stop()
+    pathMover = nil
+  end
+end
+
 local ticker
 ticker = C_Timer.NewTicker(0, function()
   if _G.GMR and GMR.IsFullyLoaded and GMR.IsFullyLoaded() then
     ticker:Cancel()
 
-    local run = nil
-    local pathFinder = nil
-
     function isPathFinding()
       return toBoolean(pathFinder)
-    end
-
-    local function stopPathFinding()
-      if pathFinder then
-        pathFinder.stop()
-        pathFinder = nil
-        run = nil
-        aStarPoints = nil
-        Movement.path = nil
-      end
-    end
-
-    local function stopPathMoving()
-      if pathMover then
-        pathMover.stop()
-        pathMover = nil
-      end
     end
 
     local function stopPathFindingAndMoving()
