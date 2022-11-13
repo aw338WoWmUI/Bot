@@ -67,6 +67,7 @@ function createActionSequenceDoer2(actions)
 
             yielder.yield()
           else
+            actionSequenceDoer.stop()
             return true
           end
         end

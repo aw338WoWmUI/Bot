@@ -71,19 +71,7 @@ ticker = C_Timer.NewTicker(0, function()
     end
 
     local meshTo = GMR.MeshTo
-    GMR.MeshTo = function(x, y, z)
-      if x and y and z then
-        if pathMover then
-          Movement.path = nil
-        end
-        local from = Movement.retrievePlayerPosition()
-        local to = createPoint(x, y, z)
-        if run and isDifferentPathFindingRequestThanRun(from, to) then
-          stopPathFindingAndMoving()
-        end
-      end
-      return meshTo(x, y, z)
-    end
+    GMR.MeshTo = GMR.OffMeshHandler
 
     hooksecurefunc(GMR, 'MoveTo', function(x, y, z)
       if x and y and z then
