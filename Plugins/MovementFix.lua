@@ -22,7 +22,7 @@ GMR.FaceSmoothly = function(x, y, z)
       GMR.FaceDirection(x, y, z)
     end
 
-    if distance < 0.5 then
+    if distance <= 0.5 then
       if z < playerPosition.z then
         GMR.SetPitch(-0.5 * PI)
       elseif z > playerPosition.z then
