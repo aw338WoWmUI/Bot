@@ -339,10 +339,10 @@ local function addIndexToQuestObjectives(questObjectives)
   end
 end
 
-function includeGUIDInObject(objects)
+function includePointerInObject(objects)
   local result = {}
-  for GUID, object in pairs(objects) do
-    object.GUID = GUID
+  for pointer, object in pairs(objects) do
+    object.pointer = pointer
     table.insert(result, object)
   end
   return result
@@ -453,19 +453,19 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
         )
       )
     )
-    local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
+    local objects = retrieveObjects()
     objects = Array.filter(objects, function(object)
       return (
-        not GMR.IsBlacklistedGUID(object.GUID) and
+        not GMR.IsBlacklistedGUID(object.pointer) and
           not GMR.IsBlacklistedId(object.ID) and
           (Array.includes(objectIDs, object.ID) or
-            seemsToBeQuestObject(object.GUID)
+            seemsToBeQuestObject(object.pointer)
           )
-      ) and not GMR.UnitIsDead(object.GUID)
+      ) and not GMR.UnitIsDead(object.pointer)
     end)
     local playerPosition = GMR.GetPlayerPosition()
     local object = Array.min(objects, function(object)
-      local x, y, z = GMR.ObjectPosition(object.GUID)
+      local x, y, z = GMR.ObjectPosition(object.pointer)
       local objectPosition = {
         x = x,
         y = y,
@@ -473,13 +473,13 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
       }
       return calculateDistance(playerPosition, objectPosition)
     end)
-    local objectGUID
+    local objectPointer
     print('object')
     printTable(object)
     if object then
-      objectGUID = object.GUID
+      objectPointer = object.pointer
     else
-      objectGUID = nil
+      objectPointer = nil
     end
 
     local function findObjectsThatCanBeChargedWith()
@@ -489,12 +489,12 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
         local range = 20
         local objects = GMR.GetNearbyObjects(range)
         local objectsThatPotentiallyCanBeChargedWith = Array.filter(
-          includeGUIDInObject(objects),
+          includePointerInObject(objects),
           function(object)
             return (
               questObjectiveToObjectIDs[2][object.ID] and
-                GMR.IsDead(object.GUID) and
-                not objectsThatHasBeenChargedWith[object.GUID]
+                GMR.IsDead(object.pointer) and
+                not objectsThatHasBeenChargedWith[object.pointer]
             )
           end
         )
@@ -511,7 +511,7 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
 
     local function addObjectsThatHasBeenChargedWith(objectsThatPotentiallyCanBeChargedWith)
       for _, object in ipairs(objectsThatPotentiallyCanBeChargedWith) do
-        objectsThatHasBeenChargedWith[object.GUID] = true
+        objectsThatHasBeenChargedWith[object.pointer] = true
       end
     end
 
@@ -545,7 +545,7 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
     end
 
     local function convertObjectLookupToList(objects)
-      return includeGUIDInObject(objects)
+      return includePointerInObject(objects)
     end
 
     local function findExtraActionTarget()
@@ -557,7 +557,7 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
           return string.match(object.Name, targetNamePart)
         end)
         if target then
-          return target.GUID
+          return target.pointer
         end
       end
       return nil
@@ -602,17 +602,17 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
       local itemID = GetItemInfoInstant(itemLink)
       GMR.Questing.UseItemOnPosition(playerPosition.x, playerPosition.y, playerPosition.z, itemID)
       addObjectsThatHasBeenChargedWith(objectsThatPotentiallyCanBeChargedWith)
-      elseif objectGUID and GMR.ObjectHasGossip(objectGUID) then
+      elseif objectPointer and GMR.ObjectHasGossip(objectPointer) then
         -- FIXME: GMR.ObjectHasGossip seems to also return true for normal mobs.
         print('GMR.Questing.GossipWith')
-        local x, y, z = GMR.ObjectPosition(objectGUID)
-        local objectID = GMR.ObjectId(objectGUID)
+        local x, y, z = GMR.ObjectPosition(objectPointer)
+        local objectID = GMR.ObjectId(objectPointer)
         GMR.Questing.GossipWith(x, y, z, objectID, nil, 4)
-    elseif objectGUID and GMR.UnitCanAttack('player', objectGUID) then
+    elseif objectPointer and GMR.UnitCanAttack('player', objectPointer) then
       -- FIXME: Only kill mobs which contribute to quest progress (non-gray, not attacked by a character of the other faction)
       print('GMR.Questing.KillEnemy')
-      local x, y, z = GMR.ObjectPosition(objectGUID)
-      local objectID = GMR.ObjectId(objectGUID)
+      local x, y, z = GMR.ObjectPosition(objectPointer)
+      local objectID = GMR.ObjectId(objectPointer)
       GMR.Questing.KillEnemy(x, y, z, objectID)
     elseif (
       ExtraActionBarFrame:IsShown() and
@@ -660,13 +660,13 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
         end
       end
     elseif (
-      objectGUID and
-        (GMR.IsObjectInteractable(objectGUID) or
-          not GMR.UnitCanAttack('player', objectGUID))
+      objectPointer and
+        (GMR.IsObjectInteractable(objectPointer) or
+          not GMR.UnitCanAttack('player', objectPointer))
     ) then
       -- FIXME: GMR.IsObjectInteractable might be bugged.
       print('GMR.Questing.InteractWith')
-      interactWith(objectGUID, 4)
+      interactWith(objectPointer, 4)
     elseif questPosition and not GMR.IsPlayerPosition(questPosition.x, questPosition.y, questPosition.z, 5) then
       print('GMR.Questing.MoveTo', questPosition.x, questPosition.y, questPosition.z)
       GMR.Questing.MoveTo(questPosition.x, questPosition.y, questPosition.z)

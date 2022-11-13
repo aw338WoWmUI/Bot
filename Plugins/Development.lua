@@ -523,10 +523,10 @@ function logNearbyObjects()
   logToFile(tableToString(objects))
 end
 
-function includeGUIDInObject(objects)
+function includePointerInObject(objects)
   local result = {}
-  for GUID, object in pairs(objects) do
-    object.GUID = GUID
+  for pointer, object in pairs(objects) do
+    object.pointer = pointer
     table.insert(result, object)
   end
   return result
@@ -534,7 +534,7 @@ end
 
 function logObjectInfo(name)
   name = name or GameTooltipTextLeft1:GetText()
-  local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
+  local objects = retrieveObjects()
   local object = Array.min(
     Array.filter(
       objects,
@@ -543,7 +543,7 @@ function logObjectInfo(name)
       end
     ),
     function(object)
-      return GMR.GetDistanceBetweenObjects('player', object.GUID)
+      return GMR.GetDistanceBetweenObjects('player', object.pointer)
     end
   )
   if object then
@@ -749,12 +749,12 @@ end
 
 function logDistanceToObject(name)
   name = name or GameTooltipTextLeft1:GetText()
-  local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
+  local objects = retrieveObjects()
   local object = Array.find(objects, function(object)
     return object.Name == name
   end)
   if object then
-    local distance = GMR.GetDistanceBetweenObjects('player', object.GUID)
+    local distance = GMR.GetDistanceBetweenObjects('player', object.pointer)
     logToFile('distance = ' .. distance)
   end
 end

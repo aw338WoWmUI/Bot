@@ -572,14 +572,14 @@ function d()
     --local objects = includeGUIDInObject(GMR.GetNearbyObjects(MAXIMUM_AGGRO_RADIUS + DELTA))
     --objects = Array.filter(objects, function(object)
     --  local playerLevel = GMR.UnitLevel('player')
-    --  local objectLevel = GMR.UnitLevel(object.GUID)
-    --  return GMR.UnitCanAttack(object.GUID, 'player') and objectLevel > playerLevel
+    --  local objectLevel = GMR.UnitLevel(object.pointer)
+    --  return GMR.UnitCanAttack(object.pointer, 'player') and objectLevel > playerLevel
     --end)
     --for _, object in ipairs(objects) do
-    --  -- GMR.AvoidUnit(object.GUID)
-    --  local x, y, z = GMR.ObjectPosition(object.GUID)
+    --  -- GMR.AvoidUnit(object.pointer)
+    --  local x, y, z = GMR.ObjectPosition(object.pointer)
     --  local playerLevel = GMR.UnitLevel('player')
-    --  local objectLevel = GMR.UnitLevel(object.GUID)
+    --  local objectLevel = GMR.UnitLevel(object.pointer)
     --  GMR.DefineMeshAreaBlacklist(x, y, z, SAME_LEVEL_AGGRO_RADIUS + (objectLevel - playerLevel))
     --end
 

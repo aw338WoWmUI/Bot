@@ -986,6 +986,10 @@ function Movement.moveToSavedPosition()
   return resumeWithShowingError(thread)
 end
 
+function Movement.moveToSavedPosition2()
+  GMR.MeshTo(savedPosition.x, savedPosition.y, savedPosition.z)
+end
+
 function Movement.moveCloserTo(x, y, z)
   local playerPosition = GMR.GetPlayerPosition()
   local px = playerPosition.x

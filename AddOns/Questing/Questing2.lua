@@ -1,5 +1,39 @@
 local addOnName, AddOn = ...
 
+local objectBlacklist = {
+  {
+    id = 138341,
+    radius = 10
+  }
+}
+
+local objectBlacklistLookup = {}
+Array.forEach(objectBlacklist, function (entry)
+  objectBlacklistLookup[entry.id] = entry
+end)
+
+function retrieveObjects()
+  return includePointerInObject(GMR.GetNearbyObjects(250))
+end
+
+local hasObjectBeenBlacklisted = Set.create()
+
+doRegularlyWhenGMRIsFullyLoaded(function ()
+  local objects = retrieveObjects()
+
+  Array.forEach(objects, function (object)
+    if not hasObjectBeenBlacklisted[object.pointer] then
+      local entry = objectBlacklistLookup[object.ID]
+      if entry then
+        local position = createPoint(GMR.ObjectPosition(object.pointer))
+        GMR.DefineAreaBlacklist(position.x, position.y, position.z, entry.radius)
+        GMR.DefineMeshAreaBlacklist(position.x, position.y, position.z, entry.radius)
+        hasObjectBeenBlacklisted[object.pointer] = true
+      end
+    end
+  end)
+end)
+
 local questIDs = Set.create({
 
 })
@@ -465,7 +499,7 @@ end
 
 function convertObjectsToPointers(objects)
   return Array.map(objects, function(object)
-    return object.GUID
+    return object.pointer
   end)
 end
 
@@ -486,13 +520,13 @@ end
 function doesPassObjectFilter(object)
   return (
     (
-      (isObjectRelatedToAnyActiveQuest(object.GUID) or seemsToBeQuestObject(object.GUID)) and isAlive(object.GUID)
+      (isObjectRelatedToAnyActiveQuest(object.pointer) or seemsToBeQuestObject(object.pointer)) and isAlive(object.pointer)
     )
   )
 end
 
 function retrieveObjectPoints()
-  local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
+  local objects = retrieveObjects()
   local filteredObjects = Array.filter(objects, doesPassObjectFilter)
   local objectPointers = convertObjectsToPointers(filteredObjects)
 
@@ -517,7 +551,7 @@ function retrieveObjectPoints()
           42391
         })
         local matchingObjects = Array.filter(objects, function(object)
-          return Set.contains(objectIDs, object.ID) and GMR.IsAlive(object.GUID)
+          return Set.contains(objectIDs, object.ID) and GMR.IsAlive(object.pointer)
         end)
         Array.append(
           objectPoints,
@@ -562,7 +596,7 @@ function retrieveObjectPoints()
                 if name then
                   local nameLower = string.lower(name)
                   local matchingObjects = Array.filter(objects, function(object)
-                    return isUnitAlive(object.GUID) and string.lower(object.Name) == nameLower
+                    return isUnitAlive(object.pointer) and string.lower(object.Name) == nameLower
                   end)
                   Array.append(
                     objectPoints,
@@ -581,7 +615,7 @@ function retrieveObjectPoints()
                   if name then
                     local nameLower = string.lower(name)
                     local matchingObjects = Array.filter(objects, function(object)
-                      return isUnitAlive(object.GUID) and string.lower(object.Name) == nameLower
+                      return isUnitAlive(object.pointer) and string.lower(object.Name) == nameLower
                     end)
                     Array.append(
                       objectPoints,
@@ -626,7 +660,7 @@ local explorationObjectNameBlacklist = Set.create({
 })
 
 function findClosestQuestGiver(point)
-  local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
+  local objects = retrieveObjects()
   local object = Array.min(Array.filter(objects, function(object)
     return Questing.Database.isQuestGiver(object.ID)
   end), function(object)
@@ -653,18 +687,18 @@ function retrieveQuestObjectiveInfo(questID, objectiveIndex)
 end
 
 function retrieveExplorationPoints()
-  local objects = includeGUIDInObject(GMR.GetNearbyObjects(250))
+  local objects = retrieveObjects()
   objects = Array.filter(objects, function(object)
     return (
       Questing.Database.isQuestGiver(object.ID) and
-        isAlive(object.GUID) and
-        -- (isInteractable(object.GUID) or GMR.ObjectHasGossip(object.GUID) or isFriendly(object.GUID)) and
+        isAlive(object.pointer) and
+        -- (isInteractable(object.pointer) or GMR.ObjectHasGossip(object.pointer) or isFriendly(object.pointer)) and
         not Set.contains(explorationObjectBlacklist, object.ID) and
-        not Set.contains(explorationObjectNameBlacklist, GMR.ObjectName(object.GUID))
+        not Set.contains(explorationObjectNameBlacklist, GMR.ObjectName(object.pointer))
     )
   end)
   local objectPointers = Array.map(objects, function(object)
-    return object.GUID
+    return object.pointer
   end)
 
   local points = convertObjectPointersToObjectPoints(objectPointers, 'exploration')

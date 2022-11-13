@@ -8,3 +8,15 @@ function doWhenGMRIsFullyLoaded(fn)
     end
   end)
 end
+
+function doRegularlyWhenGMRIsFullyLoaded(fn)
+  doWhenGMRIsFullyLoaded(function ()
+    local thread = coroutine.create(function()
+      while true do
+        fn()
+        yieldAndResume()
+      end
+    end)
+    resumeWithShowingError(thread)
+  end)
+end
