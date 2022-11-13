@@ -26,10 +26,11 @@ end
 function createActionSequenceDoer2(actions)
   local isRunning = false
   local isActionRunning = false
-  local hasStopped = false
+  local _hasStopped = false
   local index = 1
 
-  return {
+  local actionSequenceDoer
+  actionSequenceDoer = {
     run = function()
       if not isRunning then
         isRunning = true
@@ -49,6 +50,7 @@ function createActionSequenceDoer2(actions)
               if isActionRunning and action.shouldCancel and action.shouldCancel() then
                 if action.onCancel then
                   action.onCancel()
+                  actionSequenceDoer.stop()
                 end
                 return false
               else
@@ -72,7 +74,13 @@ function createActionSequenceDoer2(actions)
     end,
 
     stop = function()
-      hasStopped = true
+      _hasStopped = true
+    end,
+
+    hasStopped = function()
+      return _hasStopped
     end
   }
+
+  return actionSequenceDoer
 end

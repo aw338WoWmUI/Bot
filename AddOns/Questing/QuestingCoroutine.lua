@@ -1,6 +1,17 @@
 Questing = Questing or {}
 Questing.Coroutine = {}
 
+local function moveTo(to)
+  local from = Movement.retrievePlayerPosition()
+  local pathFinder = Movement.createPathFinder()
+  local path = pathFinder.start(from, to)
+  Movement.path = path
+  local pathMover = Movement.movePath(path)
+  waitFor(function ()
+    return pathMover.hasStopped()
+  end)
+end
+
 function Questing.Coroutine.moveTo(point, distance)
   distance = distance or INTERACT_DISTANCE
 
@@ -19,7 +30,7 @@ function Questing.Coroutine.moveTo(point, distance)
   while GMR.IsExecuting() and not hasArrived() do
     if isIdle() then
       -- print('isIdle', true)
-      GMR.Questing.MoveTo(point.x, point.y, point.z)
+      moveTo(point)
       waitFor(function()
         return hasArrived() or isIdle()
       end)
@@ -54,6 +65,9 @@ function Questing.Coroutine.moveToObject(pointer, distance)
     return not GMR.ObjectExists(pointer) or GMR.IsPlayerPosition(position.x, position.y, position.z, distance)
   end
 
+  -- GMR.GetVendorPath()
+  -- GMR.VendorPathHandler()
+
   local position = retrievePosition()
 
   while GMR.IsExecuting() and not isJobDone(position) do
@@ -61,7 +75,7 @@ function Questing.Coroutine.moveToObject(pointer, distance)
       -- print('isIdle', true)
       position = retrievePosition()
 
-      GMR.Questing.MoveTo(position.x, position.y, position.z)
+      moveTo(position)
       waitFor(function()
         return isJobDone(position) or isIdle()
       end)
