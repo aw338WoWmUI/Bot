@@ -19,7 +19,7 @@ GMR.FaceSmoothly = function(x, y, z)
     local distance = calculateDistance(playerPosition, { x = x, y = y })
 
     if distance > 0.5 then
-      GMR.FaceDirection(x, y, z)
+      faceSmoothly(x, y, z)
     end
 
     if distance <= 0.5 then
