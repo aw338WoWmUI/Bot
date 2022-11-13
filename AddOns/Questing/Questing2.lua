@@ -65,9 +65,46 @@ local objectIDsOfObjectsWhichCurrentlySeemAbsent = Set.create()
 
 local questHandlers = {}
 
-function defineQuest2(questID, questHandler)
+function defineQuest3(questID, questHandler)
   questHandlers[questID] = questHandler
 end
+
+local function waitForGossipOptionToBeAvailable(gossipOptionID, timeout)
+  waitFor(function()
+    local options = C_GossipInfo.GetOptions()
+    local option = Array.find(options, function(option)
+      return option.gossipOptionID == gossipOptionID
+    end)
+    return toBoolean(option)
+  end, timeout)
+end
+
+local function waitForGossipClosed(timeout)
+  Events.waitForEvent('GOSSIP_CLOSED', timeout)
+end
+
+defineQuest3(
+  30082,
+  function(self)
+    print('quest handler for 30082')
+    if self:isObjectiveOpen(1) then
+      print(1)
+      Questing.Coroutine.gossipWith(58376, 40644)
+      print(2)
+      waitForGossipOptionToBeAvailable(40648)
+      print(3)
+      C_GossipInfo.SelectOption(40648)
+      print(4)
+      waitForGossipClosed()
+      print(5)
+      while self:isObjectiveOpen(2) do
+        Questing.Coroutine.interactWithObjectWithObjectID(57310)
+        print(6)
+        yieldAndResume()
+      end
+    end
+  end
+)
 
 local lastLogMessage = nil
 
@@ -150,29 +187,45 @@ function isValidMapCoordinate(coordinate)
   return coordinate >= 0 and coordinate <= 1
 end
 
-function retrieveNPCPosition(npc)
-  local npcMapPosition = npc.coordinates[1]
+local Position = {}
+
+function Position:new(continentID, point)
+  local position = {
+    continentID = continentID,
+    x = point.x,
+    y = point.y,
+    z = point.z
+  }
+  return position
+end
+
+local function convertMapPositionToWorldPosition(mapPosition)
   if (
-    npcMapPosition and
-      npcMapPosition[1] ~= nil and
-      isValidMapCoordinate(npcMapPosition[2]) and
-      isValidMapCoordinate(npcMapPosition[3])
+    mapPosition and
+      mapPosition[1] ~= nil and
+      isValidMapCoordinate(mapPosition[2]) and
+      isValidMapCoordinate(mapPosition[3])
   ) then
     local point = {
-      zoneID = npcMapPosition[1],
-      x = npcMapPosition[2],
-      y = npcMapPosition[3]
+      zoneID = mapPosition[1],
+      x = mapPosition[2],
+      y = mapPosition[3]
     }
-    local continentID = C_Map.GetWorldPosFromMapPos(npcMapPosition[1], point)
-    local x, y, z = GMR.GetWorldPositionFromMap(
-      npcMapPosition[1],
-      npcMapPosition[2],
-      npcMapPosition[3]
-    )
-    return continentID, x, y, z
+    local continentID = C_Map.GetWorldPosFromMapPos(mapPosition[1], point)
+    local point = createPoint(GMR.GetWorldPositionFromMap(
+      mapPosition[1],
+      mapPosition[2],
+      mapPosition[3]
+    ))
+    return Point:new(continentID, point)
   else
     return nil
   end
+end
+
+function retrieveNPCPosition(npc)
+  local npcMapPosition = npc.coordinates[1]
+  return convertMapPositionToWorldPosition(npcMapPosition)
 end
 
 function isQuestLogFull()
@@ -192,12 +245,16 @@ local function generateQuestStartPointsFromStarterIDs(quest)
     return Array.selectTrue(Array.map(quest.starterIDs, function(starterID)
       local npc = Questing.Database.retrieveNPC(starterID)
       if npc then
-        local continentID, x, y, z = retrieveNPCPosition(npc)
+        local position = retrieveNPCPosition(npc)
+        local continentID = position.continentID
+        local x, y, z
         local npcPointer = GMR.FindObject(npc.id)
         if npcPointer then
           x, y, z = GMR.ObjectPosition(npcPointer)
+        else
+          x, y, z = position.x, position.y, position.z
         end
-        if continentID and x and y and z then
+        if position then
           if not npcPointer and GMR.GetDistanceToPosition(x, y, z) <= GMR.GetScanRadius() then
             return nil
           else
@@ -669,7 +726,8 @@ function retrieveObjectPoints()
                       z = object.z,
                       type = 'object',
                       objectID = objectID,
-                      pointer = object.pointer
+                      pointer = object.pointer,
+                      questID = questID
                     }
                     table.insert(objectPoints, point)
                   end
@@ -691,7 +749,8 @@ function retrieveObjectPoints()
                         y = position.y,
                         z = position.z,
                         type = 'object',
-                        objectID = objectID
+                        objectID = objectID,
+                        questID = questID
                       }
                       table.insert(objectPoints, point)
                     end)
@@ -989,7 +1048,7 @@ local function doSomethingWithObject(point)
       Questing.Coroutine.doMob(point, pointer)
     elseif pointer and (GMR.ObjectHasGossip(pointer) or next(C_GossipInfo.GetOptions())) then
       print('gossipWithAt')
-      Questing.Coroutine.gossipWithAt(point, point.objectID)
+      Questing.Coroutine.gossipWithAt(point, point.objectID, 1)
     elseif pointer then
       print('interactWithObject')
       Questing.Coroutine.interactWithObject(pointer)
@@ -1021,10 +1080,8 @@ function acceptQuest(point)
     end
   end
   if questGiverPoint then
-    print('A1')
     Questing.Coroutine.interactWithAt(questGiverPoint, questGiverPoint.objectID)
     local npcID = GMR.ObjectId('npc')
-    print('aaa', npcID ~= questGiverPoint.objectID, npcID, questGiverPoint.objectID)
     if npcID == questGiverPoint.objectID then
       local availableQuests = C_GossipInfo.GetAvailableQuests()
       local quest = Array.find(availableQuests, function(quest)
@@ -1035,8 +1092,6 @@ function acceptQuest(point)
         local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
         if wasSuccessful then
           AcceptQuest()
-        else
-          print('dasjlkjklasd QUEST_DETAIL')
         end
       end
     else
@@ -1044,9 +1099,7 @@ function acceptQuest(point)
     end
   else
     -- GMR.GetDistanceToPosition(savedPosition.x, savedPosition.y, savedPosition.z)
-    print('A2')
     local TOLERANCE_RADIUS = 10
-    print('d', GMR.GetDistanceToPosition(point.x, point.y, point.z) > GMR.GetScanRadius() - TOLERANCE_RADIUS)
     savedPosition = point
     if GMR.GetDistanceToPosition(point.x, point.y, point.z) > GMR.GetScanRadius() - TOLERANCE_RADIUS then
       moveToPoint2(point)
@@ -1055,16 +1108,38 @@ function acceptQuest(point)
   end
 end
 
+local function retrieveQuestHandler(questID)
+  return questHandlers[questID]
+end
+
+local function runQuestHandler(questHandler, questID)
+  local object
+  object = {
+    questID = questID,
+    isObjectiveOpen = function(objectiveIndex)
+      return not GMR.Questing.IsObjectiveCompleted(object.questID, objectiveIndex)
+    end,
+    isObjectiveCompleted = function(objectiveIndex)
+      return GMR.Questing.IsObjectiveCompleted(object.questID, objectiveIndex)
+    end
+  }
+  questHandler(object)
+end
+
 local function moveToPoint(point)
-  print('point')
-  DevTools_Dump(point)
+  print('point.type', point.type)
   -- print(tableToString(point, 1))
   if point.type == 'acceptQuest' then
     print('acceptQuest', point.x, point.y, point.z, point.objectID, point.questName, point.questIDs[1])
     acceptQuest(point)
-    print('--------')
   elseif point.type == 'object' then
-    doSomethingWithObject(point)
+    local questHandler = retrieveQuestHandler(point.questID)
+    print('questHandler', questHandler)
+    if questHandler then
+      runQuestHandler(questHandler, point.questID)
+    else
+      doSomethingWithObject(point)
+    end
   elseif point.type == 'endQuest' then
     print('end quest')
     Questing.Coroutine.interactWithAt(point, point.objectID)
@@ -1107,9 +1182,9 @@ local function moveToPoint(point)
     print('gossip with')
     Questing.Coroutine.gossipWithAt(point, point.objectID, point.optionToSelect)
   elseif point.type == 'objective' then
-    local questHandler = questHandlers[point.questID]
+    local questHandler = retrieveQuestHandler(point.questID)
     if questHandler then
-      questHandler()
+      runQuestHandler(questHandler, point.questID)
     else
       doSomethingWithObject(point)
     end
@@ -1164,8 +1239,6 @@ function moveToClosestPoint()
     end)
   end
   local pointToGo = determinePointToGo(points)
-  print('pointToGo')
-  DevTools_Dump(pointToGo)
   if pointToGo then
     if previousPointsToGo[1] == nil or not seemToBeSamePoints(pointToGo, previousPointsToGo[1]) then
       previousPointsToGo[2] = previousPointsToGo[1]
@@ -1599,7 +1672,6 @@ function run (once)
       elseif QuestFrameRewardPanel:IsShown() and hasEnoughFreeSlotsToCompleteQuest() then
         GetQuestReward(1)
       elseif QuestFrameDetailPanel:IsShown() then
-        print('AcceptQuest')
         AcceptQuest()
         waitForQuestHasBeenAccepted()
         -- if
@@ -1649,7 +1721,6 @@ function run (once)
           end
         end)
 
-        print(1)
         updateIsObjectRelatedToActiveQuestLookup()
         moveToClosestPoint()
       end
@@ -1739,10 +1810,6 @@ local function onEvent(self, event, ...)
     onQuestlineUpdate(...)
   elseif event == 'QUEST_TURNED_IN' then
     onQuestTurnedIn(...)
-  elseif event == 'QUEST_DETAIL' then
-    print('QUEST_DETAIL')
-  elseif event == 'GOSSIP_SHOW' then
-    print('GOSSIP_SHOW')
   end
 end
 
@@ -1752,6 +1819,6 @@ if Compatibility.isRetail() then
   frame:RegisterEvent('QUESTLINE_UPDATE')
 end
 frame:RegisterEvent('QUEST_TURNED_IN')
-frame:RegisterEvent('QUEST_DETAIL')
-frame:RegisterEvent('GOSSIP_SHOW')
 frame:SetScript('OnEvent', onEvent)
+
+Questing.convertMapPositionToWorldPosition = convertMapPositionToWorldPosition

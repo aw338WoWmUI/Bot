@@ -940,3 +940,11 @@ end
 -- GMR.MeshHandler(1135.46484375, 62.296180725098, 13.241092681885, nil)
 -- GMR.CustomPathHandler()
 -- GMR.MeshMovementHandler()
+
+function toggleGMR()
+  if GMR.IsExecuting() then
+    GMR.Stop()
+  else
+    GMR.Execute()
+  end
+end

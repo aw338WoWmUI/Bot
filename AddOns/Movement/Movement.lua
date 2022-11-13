@@ -915,18 +915,6 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
       return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, TOLERANCE_RANGE)
     end,
     shouldCancel = function()
-      print(a.shouldStop(),
-          not GMR.IsExecuting(),
-          GMR.InCombat(),
-          GMR.IsCasting(),
-          GMR.IsDrinking(),
-          GMR.IsEating(),
-          GMR.IsFishing(),
-          GMR.IsLooting(),
-          GMR.IsMailing(),
-          GMR.IsUnstuckEnabled(),
-          GMR.IsPreparing(),
-          GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5)
       return (
         a.shouldStop() or
           not GMR.IsExecuting() or

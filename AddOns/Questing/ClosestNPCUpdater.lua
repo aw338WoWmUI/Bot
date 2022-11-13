@@ -26,10 +26,10 @@ doWhenGMRIsFullyLoaded(function()
     local yielder = createYielderWithTimeTracking(1 / 60)
 
     for NPC in Questing.Database.createNPCsIterator() do
-      local continentID, x, y, z = retrieveNPCPosition(NPC)
-      if continentID and x and y and z then
+      local position = retrieveNPCPosition(NPC)
+      if position then
         if NPC.isGoodsVendor or NPC.isVendor or NPC.canRepair then
-          local entry = { continentID, x, y, z, NPC.id }
+          local entry = { position.continentID, position.x, position.y, position.z, NPC.id }
           if NPC.isGoodsVendor then
             table.insert(goodsVendorNPCs, entry)
           end
@@ -50,9 +50,9 @@ doWhenGMRIsFullyLoaded(function()
     Array.forEach(flightMasterNPCIDs, function(id)
       local NPC = Questing.Database.retrieveNPC(id)
       if NPC then
-        local continentID, x, y, z = retrieveNPCPosition(NPC)
-        if continentID and x and y and z then
-          local entry = { continentID, x, y, z, NPC.id }
+        local position = retrieveNPCPosition(NPC)
+        if position then
+          local entry = { position.continentID, position.x, position.y, position.z, NPC.id }
           table.insert(gryphonMasters, entry)
         end
       end

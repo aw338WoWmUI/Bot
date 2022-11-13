@@ -46,6 +46,13 @@ ticker = C_Timer.NewTicker(0, function()
       end
       if not run or isDifferentPathFindingRequestThanRun(from, to) then
         local thread = coroutine.create(function()
+          if not from.x or not to.x then
+            print('GMR.OffMeshHandler')
+            print('from')
+            DevTools_Dump(from)
+            print('to')
+            DevTools_Dump(to)
+          end
           run = {
             from = from,
             to = to

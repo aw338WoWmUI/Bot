@@ -7,7 +7,7 @@ local function moveTo(to)
   local path = pathFinder.start(from, to)
   Movement.path = path
   local pathMover = Movement.movePath(path)
-  waitFor(function ()
+  waitFor(function()
     return pathMover.hasStopped()
   end)
 end
@@ -29,10 +29,7 @@ function Questing.Coroutine.moveTo(point, distance)
 
   while GMR.IsExecuting() and not hasArrived() do
     if isIdle() then
-      -- print('isIdle', true)
-      print(1)
       moveTo(point)
-      print(2)
       waitFor(function()
         return hasArrived() or isIdle()
       end)
@@ -74,7 +71,6 @@ function Questing.Coroutine.moveToObject(pointer, distance)
 
   while GMR.IsExecuting() and not isJobDone(position) do
     if isIdle() then
-      -- print('isIdle', true)
       position = retrievePosition()
 
       moveTo(position)
@@ -98,14 +94,20 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
     Questing.Coroutine.moveTo(point, distance)
   end
 
-  print('test')
   if GMR.IsExecuting() then
     local pointer = GMR.FindObject(objectID)
-    print('GMR.Interact', pointer)
     GMR.Interact(pointer)
-    waitFor(function ()
+    waitFor(function()
       return GMR.ObjectExists('npc')
     end, 2)
+  end
+end
+
+function Questing.Coroutine.interactWithObjectWithObjectID(objectID, distance, delay)
+  local pointer = GMR.FindObject(objectID)
+  print('pointer', pointer)
+  if pointer then
+    Questing.Coroutine.interactWithObject(pointer, distance, delay)
   end
 end
 
@@ -118,18 +120,10 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
   end
 
   if GMR.IsExecuting() and GMR.ObjectExists(pointer) then
-    local ticker
-    ticker = C_Timer.NewTicker(0.1, function ()
-      print('GMR.ObjectDynamicFlags(pointer)', GMR.ObjectDynamicFlags(pointer))
-      log('GMR.ObjectDynamicFlags(pointer)', GMR.ObjectDynamicFlags(pointer))
-    end)
-    C_Timer.After(3, function ()
-      ticker:Cancel()
-    end)
-    print('before GMR.Interact(pointer)')
     GMR.Interact(pointer)
-    print('after GMR.Interact(pointer)')
-    Events.waitForOneOfEvents({ 'GOSSIP_SHOW', 'QUEST_GREETING' }, 1)
+    waitFor(function()
+      return GMR.ObjectExists('npc')
+    end, 2)
   end
 end
 
@@ -157,16 +151,87 @@ function Questing.Coroutine.useItemOnGround(point, itemID, distance)
   end
 end
 
-function Questing.Coroutine.gossipWithAt(point, objectID, optionToSelect)
-  distance = distance or INTERACT_DISTANCE
-
-  if not GMR.IsPlayerPosition(point.x, point.y, point.z, distance) then
-    Questing.Coroutine.moveTo(point, distance)
-  end
-
+local function selectOption(optionToSelect)
   if GMR.IsExecuting() then
-    gossipWithAt(point.x, point.y, point.z, objectID, optionToSelect)
+    C_GossipInfo.SelectOption(optionToSelect)
   end
+end
+
+local function gossipWithObject(pointer, chooseOption)
+  print(GMR.ObjectName(objectPointer))
+  Questing.Coroutine.interactWithObject(objectPointer)
+  local gossipOptionID = chooseOption()
+  if gossipOptionID then
+    selectOption(gossipOptionID)
+  end
+end
+
+local function gossipWithObjectWithObjectID(objectID, chooseOption)
+  local objectPointer = GMR.FindObject(objectID)
+
+  print('objectPointer', objectPointer)
+
+  if objectPointer then
+    gossipWithObject(objectPointer, chooseOption)
+  else
+    local npc = Questing.Database.retrieveNPC(objectID)
+    if npc and npc.coordinates and next(npc.coordinates) then
+      local positions = Array.map(npc.coordinates, function(coordinates)
+        return Questing.convertMapPositionToWorldPosition(coordinates)
+      end)
+      local continentID = select(8, GetInstanceInfo())
+      local positionsOnContinent = Array.filter(positions, function(position)
+        return position.continentID == continentID
+      end)
+      local visitedPositions = Set.create()
+
+      local function findClosestPositionThatCanStillBeVisited()
+        local positionsThatCanStillBeVisited = Array.filter(positionsOnContinent, function (position)
+          return not visitedPositions[position]
+        end)
+        return Array.min(positionsThatCanStillBeVisited, function(position)
+          return GMR.GetDistanceToPosition(position.x, position.y, position.z)
+        end)
+      end
+
+      local closestPosition = findClosestPositionThatCanStillBeVisited()
+      while closestPosition do
+        Questing.Coroutine.moveTo(closestPosition)
+        visitedPositions:add(closestPosition)
+        local objectPointer = GMR.FindObject(objectID)
+        if objectPointer then
+          gossipWithObject(objectPointer)
+          break
+        else
+          closestPosition = findClosestPositionThatCanStillBeVisited()
+        end
+      end
+    end
+  end
+end
+
+function Questing.Coroutine.gossipWith(objectID, optionToSelect)
+  gossipWithObjectWithObjectID(objectID, Function.returnValue(optionToSelect))
+end
+
+function Questing.Coroutine.gossipWithAndSelectOneOfOptions(objectID, options)
+  options = Set.create(options)
+  gossipWithObjectWithObjectID(objectID, function()
+    local availableOptions = C_GossipInfo.GetOptions()
+    local option = Array.find(availableOptions, function(option)
+      return options[option.gossipOptionID]
+    end)
+    if option then
+      return option.gossipOptionID
+    else
+      return nil
+    end
+  end)
+end
+
+function Questing.Coroutine.gossipWithAt(point, objectID, optionToSelect)
+  Questing.Coroutine.interactWithAt(point, objectID)
+  selectOption(optionToSelect)
 end
 
 function Questing.Coroutine.doMob(point, pointer)
