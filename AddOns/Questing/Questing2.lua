@@ -592,26 +592,8 @@ function retrieveObjectPoints()
               if startTime == 0 and enable == 1 then
                 local itemDescription = retrieveItemDescription(itemID)
 
-                local name = string.match(itemDescription, 'corpse of a ([%a %d]+)')
-                if name then
-                  local nameLower = string.lower(name)
-                  local matchingObjects = Array.filter(objects, function(object)
-                    return isUnitAlive(object.pointer) and string.lower(object.Name) == nameLower
-                  end)
-                  Array.append(
-                    objectPoints,
-                    convertObjectPointersToObjectPoints(
-                      convertObjectsToPointers(matchingObjects),
-                      'objectToUseItemOnWhenDead',
-                      function(point)
-                        point.itemID = itemID
-                        point.questLogIndex = logIndex
-                        return point
-                      end
-                    )
-                  )
-                else
-                  local name = string.match(itemDescription, 'of a ([%a %d]+)')
+                if itemDescription then
+                  local name = string.match(itemDescription, 'corpse of a ([%a %d]+)')
                   if name then
                     local nameLower = string.lower(name)
                     local matchingObjects = Array.filter(objects, function(object)
@@ -621,7 +603,7 @@ function retrieveObjectPoints()
                       objectPoints,
                       convertObjectPointersToObjectPoints(
                         convertObjectsToPointers(matchingObjects),
-                        'objectToUseItemOn',
+                        'objectToUseItemOnWhenDead',
                         function(point)
                           point.itemID = itemID
                           point.questLogIndex = logIndex
@@ -629,6 +611,26 @@ function retrieveObjectPoints()
                         end
                       )
                     )
+                  else
+                    local name = string.match(itemDescription, 'of a ([%a %d]+)')
+                    if name then
+                      local nameLower = string.lower(name)
+                      local matchingObjects = Array.filter(objects, function(object)
+                        return isUnitAlive(object.pointer) and string.lower(object.Name) == nameLower
+                      end)
+                      Array.append(
+                        objectPoints,
+                        convertObjectPointersToObjectPoints(
+                          convertObjectsToPointers(matchingObjects),
+                          'objectToUseItemOn',
+                          function(point)
+                            point.itemID = itemID
+                            point.questLogIndex = logIndex
+                            return point
+                          end
+                        )
+                      )
+                    end
                   end
                 end
               end
