@@ -50,20 +50,20 @@ function Questing.Coroutine.moveToObject(pointer, distance)
     return position
   end
 
-  local function hasArrived(position)
-    return GMR.IsPlayerPosition(position.x, position.y, position.z, distance)
+  local function isJobDone(position)
+    return not GMR.ObjectExists(pointer) or GMR.IsPlayerPosition(position.x, position.y, position.z, distance)
   end
 
   local position = retrievePosition()
 
-  while GMR.IsExecuting() and not hasArrived(position) do
+  while GMR.IsExecuting() and not isJobDone(position) do
     if isIdle() then
       -- print('isIdle', true)
       position = retrievePosition()
 
       GMR.Questing.MoveTo(position.x, position.y, position.z)
       waitFor(function()
-        return hasArrived(position) or isIdle()
+        return isJobDone(position) or isIdle()
       end)
     else
       yieldAndResume()
@@ -97,8 +97,18 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
     Questing.Coroutine.moveToObject(pointer, distance)
   end
 
-  if GMR.IsExecuting() then
+  if GMR.IsExecuting() and GMR.ObjectExists(pointer) then
+    local ticker
+    ticker = C_Timer.NewTicker(0.1, function ()
+      print('GMR.ObjectDynamicFlags(pointer)', GMR.ObjectDynamicFlags(pointer))
+      log('GMR.ObjectDynamicFlags(pointer)', GMR.ObjectDynamicFlags(pointer))
+    end)
+    C_Timer.After(3, function ()
+      ticker:Cancel()
+    end)
+    print('before GMR.Interact(pointer)')
     GMR.Interact(pointer)
+    print('after GMR.Interact(pointer)')
     Events.waitForOneOfEvents({ 'GOSSIP_SHOW', 'QUEST_GREETING' }, 1)
   end
 end

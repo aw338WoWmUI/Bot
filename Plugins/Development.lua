@@ -876,13 +876,13 @@ end
 
 function toBinary(value)
   local result = ''
-  for index = 1, 16 do
+  for index = 1, 32 do
     if bit.band(bit.rshift(value, index - 1), 1) == 1 then
       result = '1' .. result
     else
       result = '0' .. result
     end
-    if index == 8 then
+    if index == 8 or index == 16 then
       result = ' ' .. result
     end
   end

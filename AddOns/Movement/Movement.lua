@@ -257,9 +257,28 @@ ticker = C_Timer.NewTicker(0, function()
       --          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
       --        end)
       --      end
+
+      -- Visualization for maximum steepness
+      --GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+      --local distance = CHARACTER_RADIUS
+      --local point = Movement.positionInFrontOfPlayer(distance, 2)
+      --local point2 = Movement.positionInFrontOfPlayer(distance, 0)
+      --local collisionPoint = Movement.traceLineCollision(point, point2)
+      --if collisionPoint then
+      --  drawLine(point, collisionPoint)
+      --  local playerPosition = Movement.retrievePlayerPosition()
+      --  local height = collisionPoint.z - playerPosition.z
+      --  print(height)
+      --else
+      --  drawLine(point, point2)
+      --end
     end)
   end
 end)
+
+function drawLine(from, to)
+  GMR.LibDraw.Line(from.x, from.y, from.z, to.x, to.y, to.z)
+end
 
 function Movement.savePosition1()
   position1 = GMR.GetPlayerPosition()
@@ -360,11 +379,9 @@ Movement.JUMP_DETECTION_HEIGHT = 1.5
 Movement.MAXIMUM_JUMP_HEIGHT = 1.675
 
 function Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
-  local b = Movement.canPlayerStandOnPoint(to)
-  local c = Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   return (
-    b and
-      c
+    (Movement.isPointInWater(to) or Movement.canPlayerStandOnPoint(to)) and
+      Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   )
 end
 
@@ -428,13 +445,12 @@ end
 function Movement.canBeJumpedFromPointToPoint(from, to)
   return (
     Movement.isPointOnGround(from) and
-      Movement.isPointOnGround(to) and
+      (Movement.isPointInWater(to) or (Movement.isPointOnGround(to) and Movement.canPlayerStandOnPoint(to))) and
       to.z - from.z <= Movement.MAXIMUM_JUMP_HEIGHT and
       Movement.thereAreZeroCollisions(
         Movement.createPointWithZOffset(from, Movement.MAXIMUM_JUMP_HEIGHT),
         Movement.createPointWithZOffset(to, Movement.MAXIMUM_JUMP_HEIGHT)
-      ) and
-      Movement.canPlayerStandOnPoint(to)
+      )
   )
 end
 
@@ -461,8 +477,42 @@ function Movement.canBeFlownFromPointToPoint(from, to)
   end
   local a = Movement.isFlyingAvailableInZone() and Movement.canCharacterFly()
   local b = Movement.isEnoughSpaceOnTop(from, to)
-  local c = Movement.canPlayerStandOnPoint(to, { withMount = true })
+  local c = Movement.canPlayerBeOnPoint(to, { withMount = true })
   return a and b and c
+end
+
+function Movement.canPlayerBeOnPoint(point, options)
+  options = options or {}
+
+  local height
+  if options.withMount then
+    height = MOUNTED_CHARACTER_HEIGHT
+  else
+    height = CHARACTER_HEIGHT
+  end
+
+  local pointALittleBitOver = Movement.createPointWithZOffset(point, 0.1)
+  local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(
+    point,
+    Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+  )
+  local pointALittleBitOverMaximumWalkUpToHeight = Movement.createPointWithZOffset(pointOnMaximumWalkUpToHeight, 0.1)
+  local pointOnCharacterHeight = Movement.createPointWithZOffset(point, height)
+
+  local function areThereCollisionsAround()
+    local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight, CHARACTER_RADIUS, 8)
+    return Array.all(points, function(point)
+      return Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, point)
+    end)
+  end
+
+  local result = (
+    Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) and
+      Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) and
+      areThereCollisionsAround()
+  )
+
+  return result
 end
 
 function Movement.canPlayerStandOnPoint(point, options)
@@ -480,35 +530,40 @@ function Movement.canPlayerStandOnPoint(point, options)
     end
   end
 
-  local height
-  if options.withMount then
-    height = MOUNTED_CHARACTER_HEIGHT
-  else
-    height = CHARACTER_HEIGHT
-  end
-
-  local point2 = Movement.createPointWithZOffset(
+  local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(
     point,
     Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   )
+  local pointALittleBitOverMaximumWalkUpToHeight = Movement.createPointWithZOffset(pointOnMaximumWalkUpToHeight, 0.1)
 
-  local point3 = Movement.createPointWithZOffset(point2, 0.1)
-
-  local a = Movement.thereAreZeroCollisions(point2, Movement.createPointWithZOffset(point, 0.1))
-  local b = Movement.thereAreZeroCollisions(point3, Movement.createPointWithZOffset(point, height))
-  local result
-  if (
-    a and
-      b
-  ) then
-    local points = Movement.generatePointsAround(point3, CHARACTER_RADIUS, 8)
-    result = Array.all(points, function(point)
-      local a = Movement.thereAreZeroCollisions(point3, point)
-      return a
-    end)
-  else
-    result = false
+  local function canFallOff()
+    local pointALittleBitUnderPoint = Movement.createPointWithZOffset(point, -0.1)
+    local standOnPoint = Movement.traceLineCollision(
+      pointALittleBitOverMaximumWalkUpToHeight,
+      pointALittleBitUnderPoint
+    )
+    if standOnPoint then
+      local MAXIMUM_STEEPNESS_HEIGHT = 0.55436325073242
+      local points = Movement.generatePointsAround(standOnPoint, CHARACTER_RADIUS, 8)
+      return not Array.all(points, function(point)
+        local point1 = Movement.createPointWithZOffset(point, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
+        return Movement.thereAreCollisions(
+          point1,
+          Movement.createPointWithZOffset(
+            point1,
+            -(MAXIMUM_STEEPNESS_HEIGHT + 0.00000000000001 + Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
+          )
+        )
+      end)
+    else
+      return false
+    end
   end
+
+  local result = (
+    Movement.canPlayerBeOnPoint(point, options) and
+      not canFallOff()
+  )
 
   if options.withMount then
     canBeStoodWithMountOnPointCache:setValue(point, result)

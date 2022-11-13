@@ -15,7 +15,7 @@ function resetSelling()
     GMR.Stop()
     GMR.DefineSetting('Disable', 'Sell')
     GMR.Execute()
-    C_Timer.After(1, function ()
+    C_Timer.After(1, function()
       GMR.DefineSetting('Enable', 'Sell')
     end)
   end
@@ -92,6 +92,17 @@ doWhenGMRIsFullyLoaded(function()
   end
 
   function updateNPCPositionsToClosest()
+    if GMR.IsSelling() or GMR.IsVendoring() then
+      local npc = updateSellVendorToClosest()
+      if npc then
+        local position = determineObjectPosition(
+          npc[5],
+          createPoint(npc[2], npc[3], npc[4])
+        )
+        GMR.LibDraw.SetColorRaw(1, 0, 0, 1)
+        GMR.LibDraw.Circle(position.x, position.y, position.z, 0.75)
+      end
+    end
     updateGoodsVendorToClosest()
     updateSellVendorToClosest()
     updateRepairerToClosest()

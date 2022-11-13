@@ -1,5 +1,9 @@
 local addOnName, AddOn = ...
 
+local questIDs = Set.create({
+
+})
+
 local frame2 = CreateFrame('Frame')
 frame2:SetWidth(1)
 frame2:SetHeight(10)
@@ -279,7 +283,7 @@ function retrieveWorldPositionFromMapPosition(mapID, mapX, mapY)
   }
   local continentID = C_Map.GetWorldPosFromMapPos(mapID, point)
   local x, y, z = GMR.GetWorldPositionFromMap(mapID, mapX, mapY)
-  if not Movement.canPlayerStandOnPoint(createPoint(x, y, z)) or not GMR.IsOnMeshPoint(x, y, z) then
+  if not Movement.canPlayerBeOnPoint(createPoint(x, y, z)) or not GMR.IsOnMeshPoint(x, y, z) then
     local x2, y2, z2 = GMR.TraceLine(x, y, z, x, y, z + 1000, Movement.TraceLineHitFlags.COLLISION)
     if x2 then
       x, y, z = x2, y2, z2
@@ -1405,6 +1409,7 @@ function isIdle()
       not GMR.IsQuesting() and
       not GMR.IsCasting() and
       not GMR.IsSelling() and
+      not GMR.IsVendoring() and
       not GMR.IsAttacking() and
       (not GMR.IsClassTrainerNeeded or not GMR.IsClassTrainerNeeded()) and
       not GMR.IsDead() and
