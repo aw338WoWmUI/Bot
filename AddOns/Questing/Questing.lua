@@ -562,58 +562,6 @@ function seemsThatIsGoingToCreateHealthstone()
   )
 end
 
-function d()
-  local run = function()
-    --local MAXIMUM_AGGRO_RADIUS = 45
-    --local SAME_LEVEL_AGGRO_RADIUS = 20
-    --local AGGRO_RADIUS_INCREASE_PER_LEVEL_HIGHER = 1
-    --local DELTA = 10
-    --
-    --local objects = includeGUIDInObject(GMR.GetNearbyObjects(MAXIMUM_AGGRO_RADIUS + DELTA))
-    --objects = Array.filter(objects, function(object)
-    --  local playerLevel = GMR.UnitLevel('player')
-    --  local objectLevel = GMR.UnitLevel(object.pointer)
-    --  return GMR.UnitCanAttack(object.pointer, 'player') and objectLevel > playerLevel
-    --end)
-    --for _, object in ipairs(objects) do
-    --  -- GMR.AvoidUnit(object.pointer)
-    --  local x, y, z = GMR.ObjectPosition(object.pointer)
-    --  local playerLevel = GMR.UnitLevel('player')
-    --  local objectLevel = GMR.UnitLevel(object.pointer)
-    --  GMR.DefineMeshAreaBlacklist(x, y, z, SAME_LEVEL_AGGRO_RADIUS + (objectLevel - playerLevel))
-    --end
-
-    local questID = GMR.GetQuestId()
-    if (
-      GMR.IsExecuting() and
-        not GMR.InCombat() and
-        not (questID and GMR.IsQuestActive(questID) and not GMR.IsQuestCompletable(questID)) and
-        not GMR.IsQuesting() and
-        not GMR.IsCasting() and
-        not GMR.IsSelling() and
-        not GMR.IsAttacking() and
-        not GMR.IsClassTrainerNeeded() and
-        not GMR.IsDead() and
-        not GMR.IsDrinking() and
-        not GMR.IsEating() and
-        not GMR.IsFishing() and
-        not GMR.IsLooting() and
-        not GMR.IsMailing() and
-        not seemsThatIsGoingToCreateHealthstone() and
-        not GMR.IsUnstuckEnabled() and
-        not GMR.IsPreparing()
-    ) then
-      -- GMR.StopMoving = function () end
-      c()
-    else
-      -- GMR.StopMoving = stopMoving
-    end
-  end
-
-  -- run()
-  C_Timer.NewTicker(0, run)
-end
-
 function e()
   GMR.DefineQuester('Questing', function()
     GMR.DefineQuest(

@@ -39,42 +39,44 @@ ticker = C_Timer.NewTicker(0, function()
 
     GMR.OffMeshHandler = function(x, y, z)
       -- print('GMR.OffMeshHandler', x, y, z)
-      local from = Movement.retrievePlayerPosition()
-      local to = createPoint(x, y, z)
-      if run and isDifferentPathFindingRequestThanRun(from, to) then
-        stopPathFindingAndMoving()
-      end
-      if not run or isDifferentPathFindingRequestThanRun(from, to) then
-        local thread = coroutine.create(function()
-          if not from.x or not to.x then
-            print('GMR.OffMeshHandler')
-            print('from')
-            DevTools_Dump(from)
-            print('to')
-            DevTools_Dump(to)
-          end
-          run = {
-            from = from,
-            to = to
-          }
-          pathFinder = Movement.createPathFinder()
-          -- print('start pathfinder')
-          local path = pathFinder.start(from, to)
-          stopPathFinding()
-          Movement.path = path
-          -- print('path')
-          -- DevTools_Dump(path)
-          if path then
-            pathMover = Movement.movePath(path)
+      if x and y and z then
+        local from = Movement.retrievePlayerPosition()
+        local to = createPoint(x, y, z)
+        if run and isDifferentPathFindingRequestThanRun(from, to) then
+          stopPathFindingAndMoving()
+        end
+        if not run or isDifferentPathFindingRequestThanRun(from, to) then
+          local thread = coroutine.create(function()
+            if not from.x or not to.x then
+              print('GMR.OffMeshHandler')
+              print('from')
+              DevTools_Dump(from)
+              print('to')
+              DevTools_Dump(to)
+            end
+            run = {
+              from = from,
+              to = to
+            }
+            pathFinder = Movement.createPathFinder()
+            -- print('start pathfinder')
+            local path = pathFinder.start(from, to)
+            stopPathFinding()
+            Movement.path = path
+            -- print('path')
+            -- DevTools_Dump(path)
+            if path then
+              pathMover = Movement.movePath(path)
 
-            run = nil
-            pathFinder = nil
-          end
-        end)
-        return resumeWithShowingError(thread)
-      end
+              run = nil
+              pathFinder = nil
+            end
+          end)
+          return resumeWithShowingError(thread)
+        end
 
-      return true
+        return true
+      end
     end
 
     local meshTo = GMR.MeshTo

@@ -120,10 +120,8 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
   end
 
   if GMR.IsExecuting() and GMR.ObjectExists(pointer) then
+    print('GMR.Interact', pointer)
     GMR.Interact(pointer)
-    waitFor(function()
-      return GMR.ObjectExists('npc')
-    end, 2)
   end
 end
 
@@ -158,18 +156,27 @@ local function selectOption(optionToSelect)
 end
 
 local function gossipWithObject(pointer, chooseOption)
-  print(GMR.ObjectName(objectPointer))
-  Questing.Coroutine.interactWithObject(objectPointer)
-  local gossipOptionID = chooseOption()
-  if gossipOptionID then
-    selectOption(gossipOptionID)
+  local name = GMR.ObjectName(pointer)
+  print(name)
+  while GMR.IsExecuting() and GMR.ObjectExists(pointer) and GMR.ObjectPointer('npc') ~= pointer do
+    Questing.Coroutine.interactWithObject(pointer)
+    waitFor(function()
+      return GMR.ObjectPointer('npc') == pointer
+    end, 2)
+  end
+  print('aa')
+  if GMR.IsExecuting() then
+    local gossipOptionID = chooseOption()
+    if gossipOptionID then
+      selectOption(gossipOptionID)
+    end
   end
 end
 
 local function gossipWithObjectWithObjectID(objectID, chooseOption)
   local objectPointer = GMR.FindObject(objectID)
 
-  print('objectPointer', objectPointer)
+  print('objectPointer', objectPointer, objectID)
 
   if objectPointer then
     gossipWithObject(objectPointer, chooseOption)
@@ -200,7 +207,7 @@ local function gossipWithObjectWithObjectID(objectID, chooseOption)
         visitedPositions:add(closestPosition)
         local objectPointer = GMR.FindObject(objectID)
         if objectPointer then
-          gossipWithObject(objectPointer)
+          gossipWithObject(objectPointer, chooseOption)
           break
         else
           closestPosition = findClosestPositionThatCanStillBeVisited()

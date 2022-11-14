@@ -651,7 +651,8 @@ function Movement.generateAbovePointsAround(fromPosition, distance)
   local points = {}
   local abovePoint = Movement.closestPointOnGrid(Movement.createPointWithZOffset(fromPosition, distance))
   table.insert(points, abovePoint)
-  Array.append(points, Array.selectTrue(Movement.generatePointsAroundOnGrid(abovePoint, distance, Movement.generateAbovePoint)))
+  Array.append(points,
+    Array.selectTrue(Movement.generatePointsAroundOnGrid(abovePoint, distance, Movement.generateAbovePoint)))
   return points
 end
 
@@ -659,7 +660,8 @@ function Movement.generateBelowPointsAround(fromPosition, distance)
   local points = {}
   local belowPoint = Movement.closestPointOnGrid(Movement.createPointWithZOffset(fromPosition, -distance))
   table.insert(points, belowPoint)
-  Array.append(points, Array.selectTrue(Movement.generatePointsAroundOnGrid(belowPoint, distance, Movement.generateBelowPoint)))
+  Array.append(points,
+    Array.selectTrue(Movement.generatePointsAroundOnGrid(belowPoint, distance, Movement.generateBelowPoint)))
   return points
 end
 
@@ -881,21 +883,29 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
       end
 
       local playerPosition = Movement.retrievePlayerPosition()
-      if Movement.isPositionInTheAir(waypoint) and Movement.canBeFlown() then
+      if (
+        Movement.canBeFlown() and
+          (GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > 10 or Movement.isPositionInTheAir(waypoint))
+      ) then
         if not Movement.isMountedOnFlyingMount() then
           GMR.MoveForwardStop()
           Movement.waitForPlayerStandingStill()
           Movement.mountOnFlyingMount()
         end
-        local playerPosition = Movement.retrievePlayerPosition()
-        if playerPosition.z < waypoint.z and GMR.IsGroundPosition(playerPosition.x, playerPosition.y,
-          playerPosition.z) then
-          Movement.liftUp()
+        if Movement.isMountedOnFlyingMount() then
+          local playerPosition = Movement.retrievePlayerPosition()
+          if playerPosition.z < waypoint.z and GMR.IsGroundPosition(playerPosition.x, playerPosition.y,
+            playerPosition.z) then
+            Movement.liftUp()
+          end
         end
       end
 
       if not Movement.canReachWaypointWithCurrentMovementDirection(waypoint) then
-        GMR.MoveForwardStop()
+        if GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) <= 5 then
+          GMR.MoveForwardStop()
+        end
+        print('Movement.faceDirection')
         Movement.faceDirection(waypoint)
       end
       if not GMR.IsMoving() then
@@ -1053,13 +1063,17 @@ function Movement.waitForMounted()
 end
 
 function Movement.mountOnFlyingMount()
+  print('Movement.mountOnFlyingMount()')
   if not Movement.isMountedOnFlyingMount() then
-    if IsMounted() then
-      GMR.Dismount()
+    local spellName = GMR.GetFlyingMount()
+    if spellName then
+      if IsMounted() then
+        GMR.Dismount()
+      end
+      Movement.waitForDismounted()
+      GMR.CastSpellByName(spellName)
+      Movement.waitForMounted()
     end
-    Movement.waitForDismounted()
-    GMR.CastSpellByName(GMR.GetFlyingMount())
-    Movement.waitForMounted()
   end
 end
 
@@ -1354,28 +1368,42 @@ function Movement.waitForPlayerToBeOnPosition(position, radius)
   end)
 end
 
+function Movement.faceSmoothly(point)
+  local playerPosition = GMR.GetPlayerPosition()
+  if (
+    GMR.IsPositionUnderwater(playerPosition.x, playerPosition.y, playerPosition.z) or
+      GMR.IsPointInTheAir(playerPosition.x, playerPosition.y, playerPosition.z)
+  ) then
+    local distance = euclideanDistance2D(playerPosition, point)
+
+    if distance > 0.5 then
+      GMR.FaceSmoothly(point.x, point.y, point.z)
+    end
+
+    if distance <= 0.5 then
+      if point.z < playerPosition.z then
+        GMR.SetPitch(-0.5 * PI)
+      elseif point.z > playerPosition.z then
+        GMR.SetPitch(0.5 * PI)
+      end
+    end
+  else
+    GMR.FaceSmoothly(point.x, point.y, point.z)
+  end
+end
+
 function Movement.faceDirection(point)
   local yielder = createYielder()
-  while not GMR.IsFacingXYZ(point.x, point.y, point.z) and euclideanDistance2D(Movement.retrievePlayerPosition(),
-    point) > 1 do
+  while not GMR.IsFacingXYZ(point.x, point.y, point.z) do
     local previousPlayerFacingAngle = GMR.ObjectRawFacing('player')
-    GMR.FaceSmoothly(point.x, point.y, point.z)
+    Movement.faceSmoothly(point)
     yielder.yield()
     if GMR.ObjectRawFacing('player') == previousPlayerFacingAngle then
       break
     end
   end
 
-  if euclideanDistance2D(Movement.retrievePlayerPosition(), point) > 1 then
-    GMR.FaceDirection(point.x, point.y, point.z)
-  else
-    local playerPosition = Movement.retrievePlayerPosition()
-    if point.z < playerPosition.z then
-      GMR.SetPitch(-0.5 * PI)
-    elseif point.z > playerPosition.z then
-      GMR.SetPitch(0.5 * PI)
-    end
-  end
+  GMR.FaceDirection(point.x, point.y, point.z)
 end
 
 function Movement.closestPointOnGrid(point)

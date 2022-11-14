@@ -69,3 +69,24 @@ end
 function Questing.Database.retrieveNPCLocation(npcID)
   return npcLocations[npcID]
 end
+
+Array.forEach(quests, function (quest)
+  local objectives = quest.objectives
+  if objectives then
+    Array.forEach(objectives, function (objectIDs, index)
+      Array.forEach(objectIDs, function (objectID)
+        local npc = Questing.Database.retrieveNPC(objectID)
+        if npc then
+          if not npc.objectiveOf then
+            npc.objectiveOf = {}
+          end
+          local questID = quest.id
+          if not npc.objectiveOf[questID] then
+            npc.objectiveOf[questID] = Set.create()
+          end
+          npc.objectiveOf[questID]:add(index)
+        end
+      end)
+    end)
+  end
+end)

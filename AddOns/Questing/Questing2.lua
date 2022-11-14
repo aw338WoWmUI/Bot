@@ -65,8 +65,11 @@ local objectIDsOfObjectsWhichCurrentlySeemAbsent = Set.create()
 
 local questHandlers = {}
 
-function defineQuest3(questID, questHandler)
-  questHandlers[questID] = questHandler
+function defineQuest3(questID, handler)
+  questHandlers[questID] = {
+    questID = questID,
+    handler = handler
+  }
 end
 
 local function waitForGossipOptionToBeAvailable(gossipOptionID, timeout)
@@ -86,20 +89,40 @@ end
 defineQuest3(
   30082,
   function(self)
-    print('quest handler for 30082')
+    local targetLocation = createPoint(
+      -354.69952392578,
+      -632.87860107422,
+      118.35806274414
+    )
+
     if self:isObjectiveOpen(1) then
-      print(1)
-      Questing.Coroutine.gossipWith(58376, 40644)
-      print(2)
-      waitForGossipOptionToBeAvailable(40648)
-      print(3)
-      C_GossipInfo.SelectOption(40648)
-      print(4)
-      waitForGossipClosed()
-      print(5)
-      while self:isObjectiveOpen(2) do
-        Questing.Coroutine.interactWithObjectWithObjectID(57310)
-        print(6)
+      if not GMR.FindObject(57310) then
+        if GMR.IsExecuting() then
+          Questing.Coroutine.gossipWith(58376, 40644)
+        end
+        local gossipOptionID = 40648
+        if GMR.IsExecuting() then
+          waitForGossipOptionToBeAvailable(gossipOptionID, 2)
+        end
+        if GMR.IsExecuting() then
+          C_GossipInfo.SelectOption(gossipOptionID)
+        end
+        if GMR.IsExecuting() then
+          waitForGossipClosed(2)
+        end
+      end
+      while GMR.IsExecuting() and self:isObjectiveOpen(1) do
+        local npcID = 57310
+        local pointer = GMR.FindObject(npcID)
+        if pointer then
+          local npcPosition = createPoint(GMR.ObjectPosition(pointer))
+          local angle = GMR.GetAnglesBetweenPositions(targetLocation.x, targetLocation.y, targetLocation.z,
+            npcPosition.x, npcPosition.y, npcPosition.z)
+          local distance = 2
+          local pushFromPosition = Movement.generatePoint(npcPosition, distance, angle)
+          Questing.Coroutine.moveTo(pushFromPosition, distance)
+          Questing.Coroutine.interactWithObjectWithObjectID(npcID)
+        end
         yieldAndResume()
       end
     end
@@ -217,7 +240,7 @@ local function convertMapPositionToWorldPosition(mapPosition)
       mapPosition[2],
       mapPosition[3]
     ))
-    return Point:new(continentID, point)
+    return Position:new(continentID, point)
   else
     return nil
   end
@@ -246,31 +269,33 @@ local function generateQuestStartPointsFromStarterIDs(quest)
       local npc = Questing.Database.retrieveNPC(starterID)
       if npc then
         local position = retrieveNPCPosition(npc)
-        local continentID = position.continentID
-        local x, y, z
-        local npcPointer = GMR.FindObject(npc.id)
-        if npcPointer then
-          x, y, z = GMR.ObjectPosition(npcPointer)
-        else
-          x, y, z = position.x, position.y, position.z
-        end
         if position then
-          if not npcPointer and GMR.GetDistanceToPosition(x, y, z) <= GMR.GetScanRadius() then
-            return nil
+          local continentID = position.continentID
+          local x, y, z
+          local npcPointer = GMR.FindObject(npc.id)
+          if npcPointer then
+            x, y, z = GMR.ObjectPosition(npcPointer)
           else
-            local point = {
-              objectID = npc.id,
-              continentID = continentID,
-              x = x,
-              y = y,
-              z = z,
-              type = 'acceptQuest',
-              questIDs = {
-                quest.id
-              },
-              questName = QuestUtils_GetQuestName(quest.id)
-            }
-            return point
+            x, y, z = position.x, position.y, position.z
+          end
+          if position then
+            if not npcPointer and GMR.GetDistanceToPosition(x, y, z) <= GMR.GetScanRadius() then
+              return nil
+            else
+              local point = {
+                objectID = npc.id,
+                continentID = continentID,
+                x = x,
+                y = y,
+                z = z,
+                type = 'acceptQuests',
+                questIDs = {
+                  quest.id
+                },
+                questName = QuestUtils_GetQuestName(quest.id)
+              }
+              return point
+            end
           end
         else
           -- print('Missing NPC coordinates for NPC with ID "' .. npc.id .. '".')
@@ -310,7 +335,7 @@ function retrieveQuestStartPoints()
     end),
     function(questGiver)
       local point = Object.copy(questGiver)
-      point.type = 'acceptQuest'
+      point.type = 'acceptQuests'
     end
   )
 
@@ -348,7 +373,7 @@ function retrieveQuestStartPoints()
             x = x,
             y = y,
             z = z,
-            type = 'acceptQuest',
+            type = 'acceptQuests',
             questIDs = {
               questLine.questID
             },
@@ -452,7 +477,9 @@ function retrieveObjectivePoints()
         z = z,
         objectID = objectID,
         type = 'objective',
-        questID = questID
+        questIDs = {
+          questID
+        }
       }
     end)
   )
@@ -471,41 +498,68 @@ end
 
 local isObjectRelatedToActiveQuestLookup = {}
 
+local function retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
+  local questIDs = Set.create()
+  local objectID = GMR.ObjectId(object)
+
+  local relations
+  if (
+    GMR.ObjectPointer(object) == GMR.ObjectPointer('softinteract') and
+      UnitName('softinteract') == GameTooltipTextLeft1:GetText()
+  ) then
+    relations = findRelationsToQuests('GameTooltip', 'softinteract')
+    -- TODO: Merge new quest relationship information into explored object. Also consider the case when the explored object doesn't exist (regarding exploring other info for the object).
+    if exploredObjects[GMR.ObjectId(object)] and not exploredObjects[GMR.ObjectId(object)].questRelationships then
+      exploredObjects[GMR.ObjectId(object)].questRelationships = relations
+    end
+  elseif exploredObjects[GMR.ObjectId(object)] then
+    relations = exploredObjects[GMR.ObjectId(object)].questRelationships
+  end
+
+  if relations then
+    Array.forEach(Object.entries(relations), function(entry)
+      local questID = entry.key
+      local objectiveIndexesThatObjectIsRelatedTo = entry.value
+      if (
+        GMR.IsQuestActive(questID) and
+          not GMR.IsQuestCompletable(questID) and
+          Set.containsWhichFulfillsCondition(objectiveIndexesThatObjectIsRelatedTo, function(objectiveIndex)
+            return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
+          end)
+      ) then
+        questIDs:add(questID)
+      end
+    end)
+  end
+
+  local npc = Questing.Database.retrieveNPC(objectID)
+  if npc then
+    local objectiveOf = npc.objectiveOf
+    if objectiveOf then
+      for questID, objectiveIndexes in pairs(objectiveOf) do
+        if (
+          GMR.IsQuestActive(questID) and
+            not GMR.IsQuestCompletable(questID) and
+            Set.containsWhichFulfillsCondition(objectiveIndexes, function(objectiveIndex)
+              return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
+            end)
+        ) then
+          questIDs:add(questID)
+        end
+      end
+    end
+  end
+
+  return questIDs:toList()
+end
+
 function isObjectRelatedToAnyActiveQuest(object)
   local objectID = GMR.ObjectId(object)
   if isObjectRelatedToActiveQuestLookup[objectID] then
     return toBoolean(isObjectRelatedToActiveQuestLookup[objectID])
   else
-    local relations
-    if (
-      GMR.ObjectPointer(object) == GMR.ObjectPointer('softinteract') and
-        UnitName('softinteract') == GameTooltipTextLeft1:GetText()
-    ) then
-      relations = findRelationsToQuests('GameTooltip', 'softinteract')
-      -- TODO: Merge new quest relationship information into explored object. Also consider the case when the explored object doesn't exist (regarding exploring other info for the object).
-      if exploredObjects[GMR.ObjectId(object)] and not exploredObjects[GMR.ObjectId(object)].questRelationships then
-        exploredObjects[GMR.ObjectId(object)].questRelationships = relations
-      end
-    elseif exploredObjects[GMR.ObjectId(object)] then
-      relations = exploredObjects[GMR.ObjectId(object)].questRelationships
-    end
-
-    if relations then
-      return Array.any(Object.entries(relations), function(entry)
-        local questID = entry.key
-        local objectiveIndexesThatObjectIsRelatedTo = entry.value
-        return (
-          GMR.IsQuestActive(questID) and
-            not GMR.IsQuestCompletable(questID) and
-            Set.containsWhichFulfillsCondition(objectiveIndexesThatObjectIsRelatedTo, function(objectiveIndex)
-              return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
-            end)
-        )
-      end)
-    end
+    return #retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object) >= 1
   end
-
-  return false
 end
 
 function updateIsObjectRelatedToActiveQuestLookup()
@@ -546,6 +600,7 @@ end
 function convertObjectPointerToObjectPoint(pointer, type, adjustPoint)
   local continentID = select(8, GetInstanceInfo())
   local x, y, z = GMR.ObjectPosition(pointer)
+  local objectID = GMR.ObjectId(pointer)
   local point = {
     name = GMR.ObjectName(pointer),
     continentID = continentID,
@@ -554,7 +609,8 @@ function convertObjectPointerToObjectPoint(pointer, type, adjustPoint)
     z = z,
     type = type,
     pointer = pointer,
-    objectID = GMR.ObjectId(pointer)
+    objectID = objectID,
+    questIDs = retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(objectID)
   }
   if adjustPoint then
     point = adjustPoint(point)
@@ -727,7 +783,9 @@ function retrieveObjectPoints()
                       type = 'object',
                       objectID = objectID,
                       pointer = object.pointer,
-                      questID = questID
+                      questIDs = {
+                        questID
+                      }
                     }
                     table.insert(objectPoints, point)
                   end
@@ -750,7 +808,9 @@ function retrieveObjectPoints()
                         z = position.z,
                         type = 'object',
                         objectID = objectID,
-                        questID = questID
+                        questIDs = {
+                          questID
+                        }
                       }
                       table.insert(objectPoints, point)
                     end)
@@ -763,6 +823,10 @@ function retrieveObjectPoints()
       end
     end
   end
+
+  objectPoints = Array.filter(objectPoints, function(point)
+    return point.questIDs and next(point.questIDs)
+  end)
 
   return objectPoints
 end
@@ -1062,7 +1126,7 @@ local function doSomethingWithObject(point)
   end
 end
 
-function acceptQuest(point)
+function acceptQuests(point)
   local questGiverPoint
   if point.objectID then
     questGiverPoint = point
@@ -1084,16 +1148,17 @@ function acceptQuest(point)
     local npcID = GMR.ObjectId('npc')
     if npcID == questGiverPoint.objectID then
       local availableQuests = C_GossipInfo.GetAvailableQuests()
-      local quest = Array.find(availableQuests, function(quest)
-        return quest.questID == point.questID
+      local questIDs = Set.create(point.questIDs)
+      local quests = Array.filter(availableQuests, function(quest)
+        return questIDs:contains(quest.questID)
       end)
-      if quest then
+      Array.forEach(quests, function(quest)
         C_GossipInfo.SelectAvailableQuest(quest.questID)
         local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
         if wasSuccessful then
           AcceptQuest()
         end
-      end
+      end)
     else
       registerUnavailableQuests(questGiverPoint.objectID)
     end
@@ -1103,7 +1168,7 @@ function acceptQuest(point)
     savedPosition = point
     if GMR.GetDistanceToPosition(point.x, point.y, point.z) > GMR.GetScanRadius() - TOLERANCE_RADIUS then
       moveToPoint2(point)
-      acceptQuest(point)
+      acceptQuests(point)
     end
   end
 end
@@ -1112,10 +1177,21 @@ local function retrieveQuestHandler(questID)
   return questHandlers[questID]
 end
 
-local function runQuestHandler(questHandler, questID)
+local function retrieveQuestHandlerForOneOfQuests(questIDs)
+  local questID = Array.find(questIDs, function(questID)
+    return questHandlers[questID]
+  end)
+  if questID then
+    return questHandlers[questID]
+  else
+    return nil
+  end
+end
+
+local function runQuestHandler(questHandler)
   local object
   object = {
-    questID = questID,
+    questID = questHandler.questID,
     isObjectiveOpen = function(objectiveIndex)
       return not GMR.Questing.IsObjectiveCompleted(object.questID, objectiveIndex)
     end,
@@ -1123,20 +1199,38 @@ local function runQuestHandler(questHandler, questID)
       return GMR.Questing.IsObjectiveCompleted(object.questID, objectiveIndex)
     end
   }
-  questHandler(object)
+  questHandler.handler(object)
+end
+
+local function retrieveQuestName(questID)
+  return QuestUtils_GetQuestName(questID)
+end
+
+local function retrieveQuestNames(questIDs)
+  return Array.map(questIDs, retrieveQuestName)
+end
+
+local function convertQuestIDsToQuestNamesString(questIDs)
+  local questNames = retrieveQuestNames(questIDs)
+  return strjoin(', ', unpack(questNames))
+end
+
+local function convertQuestIDsToString(questIDs)
+  return strjoin(', ', unpack(questIDs))
 end
 
 local function moveToPoint(point)
   print('point.type', point.type)
-  -- print(tableToString(point, 1))
-  if point.type == 'acceptQuest' then
-    print('acceptQuest', point.x, point.y, point.z, point.objectID, point.questName, point.questIDs[1])
-    acceptQuest(point)
+  DevTools_Dump(point)
+  if point.type == 'acceptQuests' then
+    print('acceptQuests', point.x, point.y, point.z, point.objectID, convertQuestIDsToString(point.questIDs),
+      convertQuestIDsToString(point.questIDs))
+    acceptQuests(point)
   elseif point.type == 'object' then
-    local questHandler = retrieveQuestHandler(point.questID)
+    local questHandler = retrieveQuestHandlerForOneOfQuests(point.questIDs)
     print('questHandler', questHandler)
     if questHandler then
-      runQuestHandler(questHandler, point.questID)
+      runQuestHandler(questHandler)
     else
       doSomethingWithObject(point)
     end
@@ -1182,9 +1276,9 @@ local function moveToPoint(point)
     print('gossip with')
     Questing.Coroutine.gossipWithAt(point, point.objectID, point.optionToSelect)
   elseif point.type == 'objective' then
-    local questHandler = retrieveQuestHandler(point.questID)
+    local questHandler = retrieveQuestHandlerForOneOfQuests(point.questIDs)
     if questHandler then
-      runQuestHandler(questHandler, point.questID)
+      runQuestHandler(questHandler)
     else
       doSomethingWithObject(point)
     end
@@ -1547,7 +1641,6 @@ function isIdle()
       not (questID and GMR.IsQuestActive(questID) and not GMR.IsQuestCompletable(questID)) and
       not GMR.IsQuesting() and
       not GMR.IsCasting() and
-      not GMR.IsSelling() and
       not GMR.IsVendoring() and
       not GMR.IsAttacking() and
       (not GMR.IsClassTrainerNeeded or not GMR.IsClassTrainerNeeded()) and
