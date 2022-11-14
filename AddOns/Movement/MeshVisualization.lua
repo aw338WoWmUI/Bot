@@ -1,3 +1,5 @@
+local RANGE = 50
+
 local function visualizePolygons()
   if not GMR.IsMeshLoaded() then
     GMR.LoadMeshFiles()
@@ -12,7 +14,7 @@ local function visualizePolygons()
   local position = Movement.retrievePlayerPosition()
   local polygon = HWT.GetClosestMeshPolygon(continentID, position.x, position.y, position.z, 1000, 1000, 1000)
 
-  local polygons = HWT.GetMeshPolygons(continentID, polygon, position.x, position.y, position.z, 50)
+  local polygons = HWT.GetMeshPolygons(continentID, polygon, position.x, position.y, position.z, RANGE)
 
   Array.forEach(polygons, function(polygon)
     local vertices = HWT.GetMeshPolygonVertices(continentID, polygon)
@@ -45,12 +47,19 @@ local function visualizeOffMeshConnections()
   local connections = HWT.GetOffmeshConnections(continentID)
   GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
   local radius = 0.5
-  DevTools_Dump(connections)
   Array.forEach(connections, function(connection)
     local x1, y1, z1, x2, y2, z2 = select(4, HWT.GetOffmeshConnectionDetails(connection))
-    GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
-    GMR.LibDraw.Circle(x1, y1, z1, radius)
-    GMR.LibDraw.Circle(x2, y2, z2, radius)
+    local isPoint1InRange = GMR.GetDistanceToPosition(x1, y1, z1) <= RANGE
+    local isPoint2InRange = GMR.GetDistanceToPosition(x2, y2, z2) <= RANGE
+    if isPoint1InRange or isPoint2InRange then
+      GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
+      if isPoint1InRange then
+        GMR.LibDraw.Circle(x1, y1, z1, radius)
+      end
+      if isPoint2InRange then
+        GMR.LibDraw.Circle(x2, y2, z2, radius)
+      end
+    end
   end)
 end
 
