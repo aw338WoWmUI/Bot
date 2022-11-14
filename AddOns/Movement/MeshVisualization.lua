@@ -63,9 +63,17 @@ local function visualizeOffMeshConnections()
   end)
 end
 
+local isMeshVisualizationEnabled = false
+
 doWhenGMRIsFullyLoaded(function()
   hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
-    visualizePolygons()
-    visualizeOffMeshConnections()
+    if isMeshVisualizationEnabled then
+      visualizePolygons()
+      visualizeOffMeshConnections()
+    end
   end)
 end)
+
+function toggleMeshVisualization()
+  isMeshVisualizationEnabled = not isMeshVisualizationEnabled
+end
