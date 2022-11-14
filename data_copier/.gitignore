@@ -1,4 +1,5 @@
 node_modules
 *.lua
-npcs
-quests
+npcs/*.html
+quests/*.html
+quest_items/*.html

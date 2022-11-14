@@ -83,3 +83,12 @@ export function extractNPCIds(content) {
   }
   return IDs
 }
+
+export function sortIDs(IDs) {
+  IDs.sort(compareIDs)
+}
+
+function compareIDs(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+

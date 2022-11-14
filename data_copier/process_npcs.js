@@ -1,7 +1,7 @@
 import { readFile } from '@sanjo/read-file'
 import { writeFile } from '@sanjo/write-file'
 import { readdir } from 'node:fs/promises'
-import { concurrent, convertToLua } from './lib.js'
+import { concurrent, convertToLua, sortIDs } from './lib.js'
 
 async function processNPC(id) {
   const content = await readFile('npcs/' + id + '.html')
@@ -76,6 +76,7 @@ for (const file of files) {
     IDs.push(id)
   }
 }
+sortIDs(IDs)
 
 const NPCs = []
 await concurrent(IDs, 1000, async function (ID) {

@@ -584,9 +584,22 @@ function Movement.canCharacterFly()
   return toBoolean(GMR.IsSpellKnown(EXPERT_RIDING) and Movement.isAFlyingMountAvailable())
 end
 
-function Movement.isAFlyingMountAvailable()
+function Movement.receiveAvailableMountIDs()
   local mountIDs = C_MountJournal.GetMountIDs()
+  return Array.filter(mountIDs, function (mountID)
+    local isUsable = select(5, C_MountJournal.GetMountInfoByID(mountID))
+    return isUsable
+  end)
+end
+
+function Movement.isAFlyingMountAvailable()
+  local mountIDs = Movement.receiveAvailableMountIDs()
   return Array.any(mountIDs, Movement.isFlyingMount)
+end
+
+function Movement.receiveAnAvailableFlyingMount()
+  local mountIDs = Movement.receiveAvailableMountIDs()
+  return Array.find(mountIDs, Movement.isFlyingMount)
 end
 
 function Movement.isFlyingMount(mountID)
@@ -1062,10 +1075,39 @@ function Movement.waitForMounted()
   end)
 end
 
+function Movement.isSpellNameForFlyingMount(spellName)
+  if spellName then
+    local spellID = select(7, GetSpellInfo(spellName))
+    if spellID then
+      local mountID = C_MountJournal.GetMountFromSpell(spellID)
+      if mountID then
+        return Movement.isFlyingMount(mountID)
+      end
+    end
+  end
+
+  return false
+end
+
+function Movement.receiveFlyingMountSpellName()
+  local spellName = GMR.GetFlyingMount()
+  if not Movement.isSpellNameForFlyingMount(spellName) then
+    spellName = nil
+    local mountID = Movement.receiveAnAvailableFlyingMount()
+    print('mountID', mountID)
+    if mountID then
+      spellName = C_MountJournal.GetMountInfoByID(mountID)
+    end
+  end
+
+  return spellName
+end
+
 function Movement.mountOnFlyingMount()
   print('Movement.mountOnFlyingMount()')
   if not Movement.isMountedOnFlyingMount() then
-    local spellName = GMR.GetFlyingMount()
+    local spellName = Movement.receiveFlyingMountSpellName()
+    print('spellName', spellName)
     if spellName then
       if IsMounted() then
         GMR.Dismount()

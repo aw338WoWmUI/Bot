@@ -14,11 +14,19 @@ function findIn(table, searchTerm)
   end
 end
 
-function logToFile(content)
-  GMR.WriteFile('C:/log.txt', tostring(content) .. '\n', true)
+local IS_LOGGING_ENABLED = true
+
+local function writeToLogFile(content)
+  if IS_LOGGING_ENABLED then
+    GMR.WriteFile('C:/log.txt', content, true)
+  end
 end
 
-local IS_LOGGING_ENABLED = true
+function logToFile(content)
+  if IS_LOGGING_ENABLED then
+    writeToLogFile(tostring(content) .. '\n')
+  end
+end
 
 function log(...)
   if IS_LOGGING_ENABLED then
@@ -368,7 +376,7 @@ function logAPICalls(apiName)
     else
       output = output .. ' with 0 arguments.\n'
     end
-    log(output)
+    writeToLogFile(output)
   end)
 end
 
@@ -401,7 +409,7 @@ function logAPICalls2(apiName)
     output = output .. '\n'
 
     -- output = output .. 'Stack trace:\n' .. debugstack() .. '\n'
-    log(output)
+    writeToLogFile(output)
 
     if coroutine.running() then
       yieldAndResume()
@@ -421,6 +429,7 @@ function logAllAPICalls()
   end
 end
 
+-- logAPICalls2('GMR.MapMove')
 -- logAPICalls2('GMR.EngageMeshTo')
 -- logAPICalls2('GMR.GetVendorPath')
 -- logAPICalls2('GMR.VendorPathHandler')

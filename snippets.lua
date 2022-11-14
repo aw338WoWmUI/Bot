@@ -123,8 +123,6 @@ GMR.GetObjectWithXYZ()
 
 GMR.ScanObjects()
 
-GMR.Object
-
 getmetatable(GMR.GetObject(GMR.ObjectPointer('target')))
 
 GMR.GetObject(GMR.ObjectPointer('target'))

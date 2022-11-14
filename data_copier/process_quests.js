@@ -2,7 +2,7 @@ import { readFile } from '@sanjo/read-file'
 import { writeFile } from '@sanjo/write-file'
 import { escapeForRegExp } from '@sanjo/escape-for-reg-exp'
 import { readdir } from 'node:fs/promises'
-import { concurrent, convertToLua } from './lib.js'
+import { concurrent, convertToLua, sortIDs } from './lib.js'
 import { parse } from 'node-html-parser'
 
 const infoBoxContentRegExp = /WH\.markup\.printHtml.+?;/s
@@ -136,7 +136,7 @@ function extractStorylinePreQuestIDs(content) {
   return storylinePreQuestIDs
 }
 
-const npcIDRegExp = /(?:npc|object)=(\d+)/
+const objectiveIDRegExp = /(?:npc|object|item)=(\d+)/
 
 function extractObjectives(content) {
   const objectives = []
@@ -150,7 +150,7 @@ function extractObjectives(content) {
       const As = TR.querySelectorAll('a')
       const objective = []
       for (const A of As) {
-        const match2 = npcIDRegExp.exec(A.getAttribute('href'))
+        const match2 = objectiveIDRegExp.exec(A.getAttribute('href'))
         if (match2) {
           const id = parseInt(match2[1], 10)
           objective.push(id)
@@ -172,6 +172,7 @@ for (const file of files) {
     IDs.push(id)
   }
 }
+sortIDs(IDs)
 
 const quests = []
 await concurrent(IDs, 1000, async function (ID) {

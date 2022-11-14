@@ -5,6 +5,7 @@
       <excludeFolder url="file://$MODULE_DIR$/data_copier/npcs" />
       <excludeFolder url="file://$MODULE_DIR$/data_copier/quests" />
       <excludeFolder url="file://$MODULE_DIR$/AddOns/Questing/data" />
+      <excludeFolder url="file://$MODULE_DIR$/data_copier/quest_items" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
