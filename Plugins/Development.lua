@@ -194,7 +194,12 @@ local a
 a = function(variable, variableName)
   local output = ''
   output = output .. variableName .. ' = {}\n'
-  for name, value in pairs(variable) do
+  local keys = Object.keys(variable)
+  table.sort(keys, function (a, b)
+    return strcmputf8i(tostring(a), tostring(b)) < 0
+  end)
+  for _, name in ipairs(keys) do
+    local value = variable[name]
     local b = variableName
     if isValidName(name) then
       b = b .. '.' .. name
@@ -385,6 +390,9 @@ function logAPICalls2(apiName)
     end
 
     local result = { originalFunction(...) }
+    if coroutine.running() then
+      yieldAndResume()
+    end
 
     output = output .. 'Result:\n'
     local packedResult = tablePack(unpack(result))
@@ -394,6 +402,10 @@ function logAPICalls2(apiName)
 
     -- output = output .. 'Stack trace:\n' .. debugstack() .. '\n'
     log(output)
+
+    if coroutine.running() then
+      yieldAndResume()
+    end
 
     return unpack(result)
   end
