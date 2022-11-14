@@ -1,0 +1,12 @@
+doWhenGMRIsFullyLoaded(function()
+  HWT.AddOffmeshConnection(
+    0,
+    -8437.087890625,
+    376.62121582031,
+    135.7060546875,
+    -8435.947265625,
+    366.25323486328,
+    135.45243835449,
+    true
+  )
+end)

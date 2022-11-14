@@ -1,4 +1,5 @@
 ## Title: GMR
 ## Interface: 11403
+## Dependencies: Function, Array, Yielder, Coroutine
 
 GMR.lua
