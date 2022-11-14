@@ -995,3 +995,15 @@ end
 doWhenGMRIsFullyLoaded(function()
   GMR.RunEncryptedScript(GMR.Encrypt('_G.__A = ({...})[1]'))
 end)
+
+function printQuestGiverStatus()
+  local targetQuestGiverStatusNumber = __A.ObjectQuestGiverStatus('target')
+  local status = Array.find(Object.entries(__A.GetObjectQuestGiverStatusesTable()), function (keyAndValue)
+    local statusNumber = keyAndValue.value
+    return statusNumber == targetQuestGiverStatusNumber
+  end)
+  if status then
+    local statusName = status.key
+    print(status.key)
+  end
+end

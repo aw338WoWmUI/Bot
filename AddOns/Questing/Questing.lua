@@ -1,6 +1,5 @@
-
 local ALLIANCE = 'Alliance'
-INTERACT_DISTANCE = 4
+INTERACT_DISTANCE = 7
 
 function defineQuest(questID, questName, pickUpX, pickUpY, pickUpZ, pickUpObjectID, turnInX,
   turnInY, turnInZ, turnInObjectID, questInfo, profileInfo, ...)

@@ -167,3 +167,10 @@ GMR_SavedVariablesPerCharacter.SelectedMount = GetSpellInfo(470)
 
 --GMR.RunEncryptedScript(GMR.Encrypt('print("test"); DevTools_Dump({...})'))
 GMR.RunEncryptedScript(GMR.Encrypt('_G.__A = ({...})[1]'))
+
+__A.ObjectQuests(GMR.ObjectPointer('target'))
+
+-- __A.ObjectIsQuestObjective()
+-- __A.ObjectQuestGiverStatus()
+ __A.ObjectQuestGiverStatus('target')
+-- __A.GetObjectQuestGiverStatusesTable()

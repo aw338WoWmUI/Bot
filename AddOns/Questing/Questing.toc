@@ -1,10 +1,9 @@
 ## Title: Questing
 ## Interface: 100000
-## Dependencies: Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility
+## Dependencies: Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, GMR, HWT, Unlocker
 ## SavedVariables: exploredObjects
 
 namespace.lua
-doWhenGMRIsFullyLoaded.lua
 VendoringFix.lua
 data/retail/quests.lua
 data/retail/quest_giver_npc_ids.lua

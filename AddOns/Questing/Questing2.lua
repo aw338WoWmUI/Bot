@@ -319,6 +319,25 @@ function retrieveQuestStartPoints()
     return {}
   end
 
+  local points4 = {}
+  local objects = retrieveObjects()
+  local continentID = select(8, GetInstanceInfo())
+  Array.forEach(objects, function(object)
+    if Unlocker.retrieveQuestGiverStatus(object.pointer) == Unlocker.QuestGiverStatuses.Quest then
+      local point = {
+        objectID = object.ID,
+        continentID = continentID,
+        x = object.x,
+        y = object.y,
+        z = object.z,
+        type = 'acceptQuests',
+        questIDs = nil,
+        questName = nil
+      }
+      table.insert(points4, point)
+    end
+  end)
+
   local quests2 = Questing.Database.retrieveQuestsThatShouldBeAvailable()
 
   local points1 = Array.selectTrue(Array.flatMap(quests2, function(quest)
@@ -339,7 +358,7 @@ function retrieveQuestStartPoints()
     end
   )
 
-  local points = Array.concat(points1, points2)
+  local points = Array.concat(points1, points2, points4)
 
   if Compatibility.isRetail() then
     local questIDs = Set.create(Array.flatMap(points, function(point)
@@ -400,26 +419,30 @@ function retrieveQuestsOnMap()
 end
 
 function retrieveWorldPositionFromMapPosition(mapID, mapX, mapY)
-  local point = {
-    zoneID = mapID,
-    x = mapX / 100,
-    y = mapY / 100
-  }
-  local continentID = C_Map.GetWorldPosFromMapPos(mapID, point)
-  local x, y, z = GMR.GetWorldPositionFromMap(mapID, mapX, mapY)
-  if not Movement.canPlayerBeOnPoint(createPoint(x, y, z)) or not GMR.IsOnMeshPoint(x, y, z) then
-    local x2, y2, z2 = GMR.TraceLine(x, y, z, x, y, z + 1000, Movement.TraceLineHitFlags.COLLISION)
-    if x2 then
-      x, y, z = x2, y2, z2
-      if GMR.IsOnMeshPoint(x, y, z) then
-        local x3, y3, z3 = GMR.GetClosestPointOnMesh(continentID, x, y, z)
-        if x3 and y3 and z3 then
-          x, y, z = x3, y3, z3
+  if mapID and mapX and mapY then
+    local point = {
+      zoneID = mapID,
+      x = mapX / 100,
+      y = mapY / 100
+    }
+    local continentID = C_Map.GetWorldPosFromMapPos(mapID, point)
+    local x, y, z = GMR.GetWorldPositionFromMap(mapID, mapX, mapY)
+    if not Movement.canPlayerBeOnPoint(createPoint(x, y, z)) or not GMR.IsOnMeshPoint(x, y, z) then
+      local x2, y2, z2 = GMR.TraceLine(x, y, z, x, y, z + 1000, Movement.TraceLineHitFlags.COLLISION)
+      if x2 then
+        x, y, z = x2, y2, z2
+        if GMR.IsOnMeshPoint(x, y, z) then
+          local x3, y3, z3 = GMR.GetClosestPointOnMesh(continentID, x, y, z)
+          if x3 and y3 and z3 then
+            x, y, z = x3, y3, z3
+          end
         end
       end
     end
+    return continentID, createPoint(x, y, z)
+  else
+    return nil, nil
   end
-  return continentID, createPoint(x, y, z)
 end
 
 function determineFirstOpenObjectiveIndex(questID)
@@ -445,47 +468,51 @@ function retrieveObjectivePoints()
       local questID = quest.questID
 
       local continentID, position = retrieveWorldPositionFromMapPosition(mapID, quest.x, quest.y)
-      local x, y, z = position.x, position.y, position.z
+      if continentID and position then
+        local x, y, z = position.x, position.y, position.z
 
-      local firstOpenObjectiveIndex = determineFirstOpenObjectiveIndex(questID)
-      local objectIDs
-      if canQuestBeTurnedIn(questID) then
-        local quest2 = Questing.Database.retrieveQuest(questID)
-        objectIDs = quest2.enderIDs
-      else
-        objectIDs = Array.map(
-          retrieveQuestObjectiveInfo(questID, firstOpenObjectiveIndex),
-          function (object)
-            return object.id
-          end
-        )
-      end
-      local objectID
-      if objectIDs then
-        objectID = objectIDs[1]
-        if objectID then
-          local objectPointer = GMR.FindObject(objectID) -- FIXME: Object with objectID which is the closest to position
-          if objectPointer then
-            x, y, z = GMR.ObjectPosition(objectPointer)
-          elseif objectIDsOfObjectsWhichCurrentlySeemAbsent[objectID] then
-            return nil
-          end
+        local firstOpenObjectiveIndex = determineFirstOpenObjectiveIndex(questID)
+        local objectIDs
+        if canQuestBeTurnedIn(questID) then
+          local quest2 = Questing.Database.retrieveQuest(questID)
+          objectIDs = quest2.enderIDs
+        else
+          objectIDs = Array.map(
+            retrieveQuestObjectiveInfo(questID, firstOpenObjectiveIndex),
+            function(object)
+              return object.id
+            end
+          )
         end
-      else
-        objectID = nil
-      end
+        local objectID
+        if objectIDs then
+          objectID = objectIDs[1]
+          if objectID then
+            local objectPointer = GMR.FindObject(objectID) -- FIXME: Object with objectID which is the closest to position
+            if objectPointer then
+              x, y, z = GMR.ObjectPosition(objectPointer)
+            elseif objectIDsOfObjectsWhichCurrentlySeemAbsent[objectID] then
+              return nil
+            end
+          end
+        else
+          objectID = nil
+        end
 
-      return {
-        continentID = continentID,
-        x = x,
-        y = y,
-        z = z,
-        objectID = objectID,
-        type = 'objective',
-        questIDs = {
-          questID
+        return {
+          continentID = continentID,
+          x = x,
+          y = y,
+          z = z,
+          objectID = objectID,
+          type = 'objective',
+          questIDs = {
+            questID
+          }
         }
-      }
+      else
+        return nil
+      end
     end)
   )
 end
@@ -644,11 +671,7 @@ end
 -- /dump GMR.PathExists(savedPosition)
 
 function doesPassObjectFilter(object)
-  return (
-    (
-      (isObjectRelatedToAnyActiveQuest(object.pointer) or seemsToBeQuestObject(object.pointer)) and isAlive(object.pointer)
-    )
-  )
+  return HWT.ObjectIsQuestObjective(object.pointer, false) and isAlive(object.pointer)
 end
 
 function retrieveObjectPoints()
@@ -807,18 +830,20 @@ function retrieveObjectPoints()
                         coordinates[2],
                         coordinates[3]
                       )
-                      local point = {
-                        continentID = continentID,
-                        x = position.x,
-                        y = position.y,
-                        z = position.z,
-                        type = 'object',
-                        objectID = objectID,
-                        questIDs = {
-                          questID
+                      if continentID and position then
+                        local point = {
+                          continentID = continentID,
+                          x = position.x,
+                          y = position.y,
+                          z = position.z,
+                          type = 'object',
+                          objectID = objectID,
+                          questIDs = {
+                            questID
+                          }
                         }
-                      }
-                      table.insert(objectPoints, point)
+                        table.insert(objectPoints, point)
+                      end
                     end)
                   end
                 end
@@ -830,9 +855,9 @@ function retrieveObjectPoints()
     end
   end
 
-  objectPoints = Array.filter(objectPoints, function(point)
-    return point.questIDs and next(point.questIDs)
-  end)
+  --objectPoints = Array.filter(objectPoints, function(point)
+  --  return point.questIDs and next(point.questIDs)
+  --end)
 
   return objectPoints
 end
@@ -871,9 +896,13 @@ function findClosestQuestGiver(point)
 end
 
 function retrieveQuestObjectivesInfo(questID)
-  local questInfo = Questing.Database.retrieveQuest(questID)
-  local objectives = questInfo.objectives
-  return objectives
+  local quest = Questing.Database.retrieveQuest(questID)
+  if quest then
+    local objectives = quest.objectives
+    return objectives
+  else
+    return nil
+  end
 end
 
 function retrieveQuestObjectiveInfo(questID, objectiveIndex)
@@ -1155,15 +1184,24 @@ function acceptQuests(point)
     local npcID = GMR.ObjectId('npc')
     if npcID == questGiverPoint.objectID then
       local availableQuests = C_GossipInfo.GetAvailableQuests()
-      local questIDs = Set.create(point.questIDs)
-      local quests = Array.filter(availableQuests, function(quest)
-        return questIDs:contains(quest.questID)
-      end)
-      Array.forEach(quests, function(quest)
+      local quests
+      if point.questIDs then
+        local questIDs = Set.create(point.questIDs)
+        quests = Array.filter(availableQuests, function(quest)
+          return questIDs:contains(quest.questID)
+        end)
+      else
+        quests = availableQuests
+      end
+      local numberOfQuests = #quests
+      Array.forEach(quests, function(quest, index)
         C_GossipInfo.SelectAvailableQuest(quest.questID)
         local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
         if wasSuccessful then
           AcceptQuest()
+          if index < numberOfQuests then
+            Events.waitForEvent('GOSSIP_SHOW')
+          end
         end
       end)
     else
@@ -1230,8 +1268,17 @@ local function moveToPoint(point)
   print('point.type', point.type)
   DevTools_Dump(point)
   if point.type == 'acceptQuests' then
-    print('acceptQuests', point.x, point.y, point.z, point.objectID, convertQuestIDsToString(point.questIDs),
-      convertQuestIDsToString(point.questIDs))
+    local questNamesString
+    local questIDsString
+    if point.questIDs then
+      questNamesString = convertQuestIDsToQuestNamesString(point.questIDs)
+      questIDsString = convertQuestIDsToString(point.questIDs)
+    else
+      questNamesString = ''
+      questIDsString = ''
+    end
+    local questIDsString
+    print('acceptQuests', point.x, point.y, point.z, point.objectID, questIDsString, questNamesString)
     acceptQuests(point)
   elseif point.type == 'object' then
     local questHandler = retrieveQuestHandlerForOneOfQuests(point.questIDs)
@@ -1910,6 +1957,8 @@ local function onEvent(self, event, ...)
     onQuestlineUpdate(...)
   elseif event == 'QUEST_TURNED_IN' then
     onQuestTurnedIn(...)
+  elseif event == 'GOSSIP_SHOW' then
+    print('GOSSIP_SHOW')
   end
 end
 
@@ -1919,6 +1968,7 @@ if Compatibility.isRetail() then
   frame:RegisterEvent('QUESTLINE_UPDATE')
 end
 frame:RegisterEvent('QUEST_TURNED_IN')
+frame:RegisterEvent('GOSSIP_SHOW')
 frame:SetScript('OnEvent', onEvent)
 
 Questing.convertMapPositionToWorldPosition = convertMapPositionToWorldPosition

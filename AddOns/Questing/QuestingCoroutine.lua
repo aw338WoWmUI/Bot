@@ -60,22 +60,21 @@ function Questing.Coroutine.moveToObject(pointer, distance)
     return position
   end
 
-  local function isJobDone(position)
-    return not GMR.ObjectExists(pointer) or GMR.IsPlayerPosition(position.x, position.y, position.z, distance)
+  local function isJobDone()
+    if not GMR.ObjectExists(pointer) then
+      return true
+    else
+      local position = retrievePosition()
+      return GMR.IsPlayerPosition(position.x, position.y, position.z, distance)
+    end
   end
 
-  -- GMR.GetVendorPath()
-  -- GMR.VendorPathHandler()
-
-  local position = retrievePosition()
-
-  while GMR.IsExecuting() and not isJobDone(position) do
+  while GMR.IsExecuting() and not isJobDone() do
     if isIdle() then
-      position = retrievePosition()
-
+      local position = retrievePosition()
       moveTo(position)
       waitFor(function()
-        return isJobDone(position) or isIdle()
+        return isJobDone() or isIdle()
       end)
     else
       yieldAndResume()
@@ -193,7 +192,7 @@ local function gossipWithObjectWithObjectID(objectID, chooseOption)
       local visitedPositions = Set.create()
 
       local function findClosestPositionThatCanStillBeVisited()
-        local positionsThatCanStillBeVisited = Array.filter(positionsOnContinent, function (position)
+        local positionsThatCanStillBeVisited = Array.filter(positionsOnContinent, function(position)
           return not visitedPositions[position]
         end)
         return Array.min(positionsThatCanStillBeVisited, function(position)
