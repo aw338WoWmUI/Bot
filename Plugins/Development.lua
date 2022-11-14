@@ -14,6 +14,19 @@ function findIn(table, searchTerm)
   end
 end
 
+function logToFile(content)
+  GMR.WriteFile('C:/log.txt', tostring(content) .. '\n', true)
+end
+
+local IS_LOGGING_ENABLED = true
+
+function log(...)
+  if IS_LOGGING_ENABLED then
+    local string = strjoin(' ', unpack(Array.map({ ... }, valueToString)))
+    logToFile(string)
+  end
+end
+
 function findInGMR(searchTerm)
   findIn(GMR, searchTerm)
 end
@@ -350,7 +363,7 @@ function logAPICalls(apiName)
     else
       output = output .. ' with 0 arguments.\n'
     end
-    GMR.WriteFile('C:/log.txt', output, true)
+    log(output)
   end)
 end
 
@@ -380,7 +393,7 @@ function logAPICalls2(apiName)
     output = output .. '\n'
 
     -- output = output .. 'Stack trace:\n' .. debugstack() .. '\n'
-    GMR.WriteFile('C:/log.txt', output, true)
+    log(output)
 
     return unpack(result)
   end
@@ -396,6 +409,7 @@ function logAllAPICalls()
   end
 end
 
+-- logAPICalls2('GMR.EngageMeshTo')
 -- logAPICalls2('GMR.GetVendorPath')
 -- logAPICalls2('GMR.VendorPathHandler')
 --logAPICalls2('GMR.GetObject')
@@ -484,19 +498,6 @@ end
 --end)
 
 -- local playerPosition = GMR.GetPlayerPosition(); local x1, y1, z1 = playerPosition.x, playerPosition.y, playerPosition.z; local x2, y2, z2 = GMR.ObjectPosition('target'); GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
-
-function logToFile(content)
-  GMR.WriteFile('C:/log.txt', tostring(content) .. '\n', true)
-end
-
-local IS_LOGGING_ENABLED = true
-
-function log(...)
-  if IS_LOGGING_ENABLED then
-    local string = strjoin(' ', unpack(Array.map({...}, valueToString)))
-    logToFile(string)
-  end
-end
 
 function logTargetPosition()
   local x, y, z = GMR.ObjectPosition('target')
@@ -829,7 +830,7 @@ end
 
 function enableLogging()
   local gmrLog = GMR.Log
-  GMR.Log = function (...)
+  GMR.Log = function(...)
     log(...)
     return gmrLog(...)
   end

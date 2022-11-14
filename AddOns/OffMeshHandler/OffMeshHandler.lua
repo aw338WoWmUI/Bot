@@ -79,8 +79,9 @@ ticker = C_Timer.NewTicker(0, function()
       end
     end
 
-    local meshTo = GMR.MeshTo
     GMR.MeshTo = GMR.OffMeshHandler
+    GMR.Mesh = GMR.OffMeshHandler
+    -- GMR.EngageMeshTo = GMR.OffMeshHandler
 
     hooksecurefunc(GMR, 'MoveTo', function(x, y, z)
       if x and y and z then

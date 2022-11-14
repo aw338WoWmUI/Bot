@@ -1100,6 +1100,7 @@ end
 local function doSomethingWithObject(point)
   local objectID = point.objectID
   local pointer = point.pointer
+  print('pointer', pointer)
   if not pointer and objectID then
     pointer = GMR.FindObject(objectID) -- FIXME: Object closest to point position which matches objectID
   end
