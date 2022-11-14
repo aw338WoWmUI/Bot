@@ -82,11 +82,14 @@ function extractObjectIDs(content, label) {
   const startsWithRegExp = new RegExp('\\[li\\]' + escapeForRegExp(label) + ': .*?\\[\\\\\\/li\\]')
   const match = startsWithRegExp.exec(content)
   if (match) {
-    const npcIDRegExp = /(?:npc|object)=(\d+)/g
+    const npcIDRegExp = /(npc|object|item)=(\d+)/g
     let match2
     while (match2 = npcIDRegExp.exec(match[0])) {
-      const starterID = parseInt(match2[1], 10)
-      IDs.push(starterID)
+      const starterID = parseInt(match2[2], 10)
+      IDs.push({
+        type: match2[1],
+        id: starterID
+      })
     }
   }
   return IDs
@@ -136,7 +139,7 @@ function extractStorylinePreQuestIDs(content) {
   return storylinePreQuestIDs
 }
 
-const objectiveIDRegExp = /(?:npc|object|item)=(\d+)/
+const objectiveIDRegExp = /(npc|object|item)=(\d+)/
 
 function extractObjectives(content) {
   const objectives = []
@@ -152,8 +155,11 @@ function extractObjectives(content) {
       for (const A of As) {
         const match2 = objectiveIDRegExp.exec(A.getAttribute('href'))
         if (match2) {
-          const id = parseInt(match2[1], 10)
-          objective.push(id)
+          const id = parseInt(match2[2], 10)
+          objective.push({
+            type: match2[1],
+            id
+          })
         }
       }
       objectives.push(objective)

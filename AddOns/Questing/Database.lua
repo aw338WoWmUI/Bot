@@ -6,7 +6,7 @@ for _, quest in ipairs(quests) do
   questLookup[quest.id] = quest
 end
 
-quests = Array.filter(quests, function (quest)
+quests = Array.filter(quests, function(quest)
   return (not quest.sides or quest.sides[1] ~= 'None') and next(quest.starterIDs)
 end)
 
@@ -31,7 +31,7 @@ end
 
 function Questing.Database.createNPCsIterator()
   local index = nil
-  return function ()
+  return function()
     index = next(NPCs, index)
     return NPCs[index]
   end
@@ -39,7 +39,15 @@ end
 
 function Questing.Database.retrieveQuestsThatShouldBeAvailableFromNPC(npcID)
   return Array.filter(quests, function(quest)
-    return Array.includes(quest.starterIDs, npcID) and shouldQuestBeAvailable(quest)
+    return (
+      Array.any(
+        quest.starterIDs,
+        function(object)
+          return object.type == 'npc' and object.id == npcID
+        end
+      ) and
+        shouldQuestBeAvailable(quest)
+    )
   end)
 end
 
@@ -49,7 +57,7 @@ function Questing.Database.isQuestGiver(npcID)
   return toBoolean(questGiverIDsSet[npcID])
 end
 
-local turnInNPCIDs = Set.create(Array.map(quests, function (quest)
+local turnInNPCIDs = Set.create(Array.map(quests, function(quest)
   return quest.enderID
 end))
 
@@ -70,21 +78,24 @@ function Questing.Database.retrieveNPCLocation(npcID)
   return npcLocations[npcID]
 end
 
-Array.forEach(quests, function (quest)
+Array.forEach(quests, function(quest)
   local objectives = quest.objectives
   if objectives then
-    Array.forEach(objectives, function (objectIDs, index)
-      Array.forEach(objectIDs, function (objectID)
-        local npc = Questing.Database.retrieveNPC(objectID)
-        if npc then
-          if not npc.objectiveOf then
-            npc.objectiveOf = {}
+    Array.forEach(objectives, function(objective, index)
+      Array.forEach(objective, function(object)
+        if object.type == 'npc' then
+          local objectID = object.id
+          local npc = Questing.Database.retrieveNPC(objectID)
+          if npc then
+            if not npc.objectiveOf then
+              npc.objectiveOf = {}
+            end
+            local questID = quest.id
+            if not npc.objectiveOf[questID] then
+              npc.objectiveOf[questID] = Set.create()
+            end
+            npc.objectiveOf[questID]:add(index)
           end
-          local questID = quest.id
-          if not npc.objectiveOf[questID] then
-            npc.objectiveOf[questID] = Set.create()
-          end
-          npc.objectiveOf[questID]:add(index)
         end
       end)
     end)

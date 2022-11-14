@@ -164,3 +164,6 @@ GMR.Questing.GetQuestInfo(C_SuperTrack.GetSuperTrackedQuestID())
 coroutine.wrap(function () DevTools_Dump(retrieveNavigationPosition()) end)()
 
 GMR_SavedVariablesPerCharacter.SelectedMount = GetSpellInfo(470)
+
+--GMR.RunEncryptedScript(GMR.Encrypt('print("test"); DevTools_Dump({...})'))
+GMR.RunEncryptedScript(GMR.Encrypt('_G.__A = ({...})[1]'))

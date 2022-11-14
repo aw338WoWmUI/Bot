@@ -453,7 +453,12 @@ function retrieveObjectivePoints()
         local quest2 = Questing.Database.retrieveQuest(questID)
         objectIDs = quest2.enderIDs
       else
-        objectIDs = retrieveQuestObjectiveInfo(questID, firstOpenObjectiveIndex)
+        objectIDs = Array.map(
+          retrieveQuestObjectiveInfo(questID, firstOpenObjectiveIndex),
+          function (object)
+            return object.id
+          end
+        )
       end
       local objectID
       if objectIDs then
@@ -765,15 +770,16 @@ function retrieveObjectPoints()
         local objectives = C_QuestLog.GetQuestObjectives(questID)
         for index, objective in ipairs(objectives) do
           if not objective.finished then
-            local objectIDs = objectiveData[index]
-            if objectIDs then
-              Array.forEach(objectIDs, function(objectID)
-                local objects = Array.filter(retrieveObjects(), function(object)
+            local objects = objectiveData[index]
+            if objects then
+              Array.forEach(objects, function(object)
+                local objectID = object.id
+                local closeByObjects = Array.filter(retrieveObjects(), function(object)
                   return object.ID == objectID
                 end)
 
                 Array.forEach(
-                  objects,
+                  closeByObjects,
                   function(object)
                     local point = {
                       continentID = continentID,

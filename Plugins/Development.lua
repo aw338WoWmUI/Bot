@@ -203,7 +203,7 @@ a = function(variable, variableName)
   local output = ''
   output = output .. variableName .. ' = {}\n'
   local keys = Object.keys(variable)
-  table.sort(keys, function (a, b)
+  table.sort(keys, function(a, b)
     return strcmputf8i(tostring(a), tostring(b)) < 0
   end)
   for _, name in ipairs(keys) do
@@ -269,6 +269,12 @@ end
 function dumpAPI()
   local output = a(GMR, 'GMR')
   GMR.WriteFile('C:/documentation/documentation.lua', output)
+end
+
+function dumpAPI2()
+  GMR.RunEncryptedScript(GMR.Encrypt('_G.__A = ({...})[1]'))
+  local output = a(__A, '__A')
+  GMR.WriteFile('C:/documentation/documentation2.lua', output)
 end
 
 function splitString(text, splitString)
@@ -429,6 +435,7 @@ function logAllAPICalls()
   end
 end
 
+logAPICalls2('GMR.RunEncryptedScript')
 -- logAPICalls2('GMR.MapMove')
 -- logAPICalls2('GMR.EngageMeshTo')
 -- logAPICalls2('GMR.GetVendorPath')
@@ -728,6 +735,20 @@ function bbbb3()
     position.z + 10)
 end
 
+function bbbb2223()
+  if not GMR.IsMeshLoaded() then
+    GMR.LoadMeshFiles()
+  end
+    local mapID = 1429
+  local position = {
+    x = -9462.2880859375,
+    y = 98.464942932129,
+    z = 58.34167098999
+  }
+  return __A.GetClosestMeshPolygon(mapID, position.x, position.y, position.z - 10, position.x, position.y,
+    position.z + 10)
+end
+
 function bbbb4()
   local position = {
     x = -9462.2880859375,
@@ -970,3 +991,7 @@ function toggleGMR()
     GMR.Execute()
   end
 end
+
+doWhenGMRIsFullyLoaded(function()
+  GMR.RunEncryptedScript(GMR.Encrypt('_G.__A = ({...})[1]'))
+end)
