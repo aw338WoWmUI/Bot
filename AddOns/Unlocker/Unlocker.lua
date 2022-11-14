@@ -5,5 +5,8 @@ Unlocker.QuestGiverStatuses = {
 }
 
 function Unlocker.retrieveQuestGiverStatus(object)
-  return HWT.ObjectQuestGiverStatus(object)
+  print('object', object, GMR.ObjectExists(object))
+  local result = HWT.ObjectQuestGiverStatus(object)
+  print(2)
+  return result
 end

@@ -134,146 +134,141 @@ function Movement.findClosestDifferentPolygonTowardsPosition(x, y, z, x5, y5, z5
   return nil
 end
 
-local ticker
-ticker = C_Timer.NewTicker(0, function()
-  if _G.GMR and _G.GMR.LibDraw and _G.GMR.LibDraw.clearCanvas then
-    ticker:Cancel()
+doWhenGMRIsFullyLoaded(function ()
+  hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
+    --if DEVELOPMENT then
+    --  if not GMR.IsMeshLoaded() then
+    --    GMR.LoadMeshFiles()
+    --  end
+    --
+    --  local continentID = select(8, GetInstanceInfo())
+    --
+    --  local playerPosition = Movement.retrievePlayerPosition()
+    --  if playerPosition then
+    --    GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
+    --    for y = playerPosition.y - 4, playerPosition.y + 4 do
+    --      for x = playerPosition.x - 4, playerPosition.x + 4 do
+    --        local x2, y2, z2 = Movement.retrievePointFromCache(x, y, playerPosition.z)
+    --        if not x2 then
+    --          local z3 = GMR.GetGroundZ(x, y, playerPosition.z) or playerPosition.z
+    --          x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, x, y, z3)
+    --          if x2 then
+    --            Movement.addPointToCache(x, y, playerPosition.z, x2, y2, z2)
+    --          end
+    --        end
+    --        if x2 then
+    --          GMR.LibDraw.Circle(x2, y2, z2, 0.1)
+    --        end
+    --      end
+    --    end
+    --  end
+    --end
 
-    hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
-      --if DEVELOPMENT then
-      --  if not GMR.IsMeshLoaded() then
-      --    GMR.LoadMeshFiles()
-      --  end
-      --
-      --  local continentID = select(8, GetInstanceInfo())
-      --
-      --  local playerPosition = Movement.retrievePlayerPosition()
-      --  if playerPosition then
-      --    GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
-      --    for y = playerPosition.y - 4, playerPosition.y + 4 do
-      --      for x = playerPosition.x - 4, playerPosition.x + 4 do
-      --        local x2, y2, z2 = Movement.retrievePointFromCache(x, y, playerPosition.z)
-      --        if not x2 then
-      --          local z3 = GMR.GetGroundZ(x, y, playerPosition.z) or playerPosition.z
-      --          x2, y2, z2 = GMR.GetClosestPointOnMesh(continentID, x, y, z3)
-      --          if x2 then
-      --            Movement.addPointToCache(x, y, playerPosition.z, x2, y2, z2)
-      --          end
-      --        end
-      --        if x2 then
-      --          GMR.LibDraw.Circle(x2, y2, z2, 0.1)
-      --        end
-      --      end
-      --    end
-      --  end
-      --end
-
-      --
-      --      local playerPosition = retrievePlayerPosition()
-      --      if playerPosition then
-      --        local x2, y2, z2 = GMR.ObjectPosition('target')
-      --        if x2 then
-      --          local id, x, y, z, d = Movement.findClosestDifferentPolygonTowardsPosition(playerPosition.x, playerPosition.y,
-      --            playerPosition.z, x2, y2, z2)
-      --          if x then
-      --            GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-      --            GMR.LibDraw.Circle(x, y, z, 4)
-      --          end
-      --        end
-      --      end
-      --
-      if DEVELOPMENT then
-        if savedPosition then
-          GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
-          GMR.LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
-        end
+    --
+    --      local playerPosition = retrievePlayerPosition()
+    --      if playerPosition then
+    --        local x2, y2, z2 = GMR.ObjectPosition('target')
+    --        if x2 then
+    --          local id, x, y, z, d = Movement.findClosestDifferentPolygonTowardsPosition(playerPosition.x, playerPosition.y,
+    --            playerPosition.z, x2, y2, z2)
+    --          if x then
+    --            GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+    --            GMR.LibDraw.Circle(x, y, z, 4)
+    --          end
+    --        end
+    --      end
+    --
+    if DEVELOPMENT then
+      if savedPosition then
+        GMR.LibDraw.SetColorRaw(1, 1, 0, 1)
+        GMR.LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
       end
-      --      --if walkToPoint then
-      --      --  GMR.LibDraw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
-      --      --end
-      --if position1 and position2 then
-      --  GMR.LibDraw.Line(
-      --    position1.x,
-      --    position1.y,
-      --    position1.z,
-      --    position2.x,
-      --    position2.y,
-      --    position2.z
-      --  )
-      --end
+    end
+    --      --if walkToPoint then
+    --      --  GMR.LibDraw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
+    --      --end
+    --if position1 and position2 then
+    --  GMR.LibDraw.Line(
+    --    position1.x,
+    --    position1.y,
+    --    position1.z,
+    --    position2.x,
+    --    position2.y,
+    --    position2.z
+    --  )
+    --end
 
-      local path = Movement.path
-      if GMR.IsChecked('DisplayMovement') and path then
+    local path = Movement.path
+    if GMR.IsChecked('DisplayMovement') and path then
+      GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+      local previousPoint = path[1]
+      for index = 2, #path do
+        local point = path[index]
+        GMR.LibDraw.Line(
+          previousPoint.x,
+          previousPoint.y,
+          previousPoint.z,
+          point.x,
+          point.y,
+          point.z
+        )
+        GMR.LibDraw.Circle(point.x, point.y, point.z, CHARACTER_RADIUS)
+        previousPoint = point
+      end
+      local firstPoint = path[1]
+      local lastPoint = path[#path]
+      GMR.LibDraw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, CHARACTER_RADIUS)
+      GMR.LibDraw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, CHARACTER_RADIUS)
+    end
+
+    if DEVELOPMENT then
+      if aStarPoints then
         GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-        local previousPoint = path[1]
-        for index = 2, #path do
-          local point = path[index]
-          GMR.LibDraw.Line(
-            previousPoint.x,
-            previousPoint.y,
-            previousPoint.z,
-            point.x,
-            point.y,
-            point.z
-          )
-          GMR.LibDraw.Circle(point.x, point.y, point.z, CHARACTER_RADIUS)
-          previousPoint = point
-        end
-        local firstPoint = path[1]
-        local lastPoint = path[#path]
-        GMR.LibDraw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, CHARACTER_RADIUS)
-        GMR.LibDraw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, CHARACTER_RADIUS)
+        local radius = GRID_LENGTH / 2
+        Array.forEach(aStarPoints, function(point)
+          GMR.LibDraw.Circle(point.x, point.y, point.z, radius)
+        end)
       end
+    end
 
-      if DEVELOPMENT then
-        if aStarPoints then
-          GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-          local radius = GRID_LENGTH / 2
-          Array.forEach(aStarPoints, function(point)
-            GMR.LibDraw.Circle(point.x, point.y, point.z, radius)
-          end)
-        end
-      end
+    --if DEVELOPMENT then
+    --  if sellVendors then
+    --    GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+    --    local radius = 0.75
+    --    Array.forEach(sellVendors, function(point)
+    --      local pointer = GMR.FindObject(point[4])
+    --      if pointer then
+    --        local x, y, z = GMR.ObjectPosition(pointer)
+    --        GMR.LibDraw.Circle(x, y, z, radius)
+    --      else
+    --        GMR.LibDraw.Circle(point[1], point[2], point[3], radius)
+    --      end
+    --    end)
+    --  end
+    --end
+    --
+    --      if aStarPoints2 then
+    --        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+    --        Array.forEach(aStarPoints2, function(point)
+    --          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
+    --        end)
+    --      end
 
-      --if DEVELOPMENT then
-      --  if sellVendors then
-      --    GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-      --    local radius = 0.75
-      --    Array.forEach(sellVendors, function(point)
-      --      local pointer = GMR.FindObject(point[4])
-      --      if pointer then
-      --        local x, y, z = GMR.ObjectPosition(pointer)
-      --        GMR.LibDraw.Circle(x, y, z, radius)
-      --      else
-      --        GMR.LibDraw.Circle(point[1], point[2], point[3], radius)
-      --      end
-      --    end)
-      --  end
-      --end
-      --
-      --      if aStarPoints2 then
-      --        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-      --        Array.forEach(aStarPoints2, function(point)
-      --          GMR.LibDraw.Circle(point.x, point.y, point.z, 0.1)
-      --        end)
-      --      end
-
-      -- Visualization for maximum steepness
-      --GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-      --local distance = CHARACTER_RADIUS
-      --local point = Movement.positionInFrontOfPlayer(distance, 2)
-      --local point2 = Movement.positionInFrontOfPlayer(distance, 0)
-      --local collisionPoint = Movement.traceLineCollision(point, point2)
-      --if collisionPoint then
-      --  drawLine(point, collisionPoint)
-      --  local playerPosition = Movement.retrievePlayerPosition()
-      --  local height = collisionPoint.z - playerPosition.z
-      --  print(height)
-      --else
-      --  drawLine(point, point2)
-      --end
-    end)
-  end
+    -- Visualization for maximum steepness
+    --GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+    --local distance = CHARACTER_RADIUS
+    --local point = Movement.positionInFrontOfPlayer(distance, 2)
+    --local point2 = Movement.positionInFrontOfPlayer(distance, 0)
+    --local collisionPoint = Movement.traceLineCollision(point, point2)
+    --if collisionPoint then
+    --  drawLine(point, collisionPoint)
+    --  local playerPosition = Movement.retrievePlayerPosition()
+    --  local height = collisionPoint.z - playerPosition.z
+    --  print(height)
+    --else
+    --  drawLine(point, point2)
+    --end
+  end)
 end)
 
 function drawLine(from, to)
@@ -941,15 +936,6 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
       return (
         a.shouldStop() or
           not GMR.IsExecuting() or
-          GMR.InCombat() or
-          GMR.IsCasting() or
-          GMR.IsDrinking() or
-          GMR.IsEating() or
-          GMR.IsFishing() or
-          GMR.IsLooting() or
-          GMR.IsMailing() or
-          GMR.IsUnstuckEnabled() or
-          GMR.IsPreparing() or
           GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
       )
     end,
@@ -1383,13 +1369,13 @@ function Movement.receiveNeighborPoints(point, distance)
   return neighborPoints
 end
 
-function Movement.movePath(path)
+function Movement.movePath(path, hasArrived)
   if pathMover then
     pathMover.stop()
   end
   local a = {
     shouldStop = function()
-      return false
+      return hasArrived and hasArrived()
     end
   }
   local pathLength = #path

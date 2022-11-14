@@ -642,7 +642,7 @@ function convertObjectPointerToObjectPoint(pointer, type, adjustPoint)
     type = type,
     pointer = pointer,
     objectID = objectID,
-    questIDs = retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(objectID)
+    questIDs = { HWT.ObjectQuests(pointer) }
   }
   if adjustPoint then
     point = adjustPoint(point)
@@ -678,186 +678,20 @@ function retrieveObjectPoints()
   local objects = retrieveObjects()
   local filteredObjects = Array.filter(objects, doesPassObjectFilter)
   local objectPointers = convertObjectsToPointers(filteredObjects)
-
   local objectPoints = convertObjectPointersToObjectPoints(objectPointers, 'object')
 
-  local questIDs = retrieveQuestLogQuestIDs()
-  for _, questID in ipairs(questIDs) do
-    if GMR.IsQuestCompletable(questID) then
-      local quest = Questing.Database.retrieveQuest(questID)
-      if quest and quest.enderIDs then
-        local objectPointer = GMR.FindObject(quest.enderIDs)
-        if objectPointer then
-          local point = convertObjectPointerToObjectPoint(objectPointer, 'endQuest')
-          table.insert(objectPoints, point)
-        end
-      end
-    else
-      if questID == 26209 and not GMR.IsQuestCompletable(questID) then
-        local objectIDs = Set.create({
-          42383,
-          42386,
-          42391
-        })
-        local matchingObjects = Array.filter(objects, function(object)
-          return Set.contains(objectIDs, object.ID) and GMR.IsAlive(object.pointer)
-        end)
-        Array.append(
-          objectPoints,
-          convertObjectPointersToObjectPoints(
-            convertObjectsToPointers(matchingObjects),
-            'gossipWith',
-            function(point)
-              point.optionToSelect = 38009
-              return point
-            end
-          )
-        )
-      else
-        local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
-        if logIndex then
-          local itemLink = GetQuestLogSpecialItemInfo(logIndex)
-          if itemLink then
-            local itemID = GetItemInfoInstant(itemLink)
+  return objectPoints
+end
 
-            if questID == 26391 and not GMR.IsQuestCompletable(questID) then
-              local matchingObjects = Array.filter(objects, function(object)
-                return object.ID == 42940
-              end)
-              Array.append(
-                objectPoints,
-                convertObjectPointersToObjectPoints(
-                  convertObjectsToPointers(matchingObjects),
-                  'objectToUseItemAtPosition',
-                  function(point)
-                    point.itemID = itemID
-                    point.questLogIndex = logIndex
-                    return point
-                  end
-                )
-              )
-            else
-              local startTime, _, enable = GetItemCooldown(itemID)
-              if startTime == 0 and enable == 1 then
-                local itemDescription = retrieveItemDescription(itemID)
+local function isLootable(object)
+  return GMR.IsObjectLootable(object.pointer)
+end
 
-                if itemDescription then
-                  local name = string.match(itemDescription, 'corpse of a ([%a %d]+)')
-                  if name then
-                    local nameLower = string.lower(name)
-                    local matchingObjects = Array.filter(objects, function(object)
-                      return isUnitAlive(object.pointer) and string.lower(object.Name) == nameLower
-                    end)
-                    Array.append(
-                      objectPoints,
-                      convertObjectPointersToObjectPoints(
-                        convertObjectsToPointers(matchingObjects),
-                        'objectToUseItemOnWhenDead',
-                        function(point)
-                          point.itemID = itemID
-                          point.questLogIndex = logIndex
-                          return point
-                        end
-                      )
-                    )
-                  else
-                    local name = string.match(itemDescription, 'of a ([%a %d]+)')
-                    if name then
-                      local nameLower = string.lower(name)
-                      local matchingObjects = Array.filter(objects, function(object)
-                        return isUnitAlive(object.pointer) and string.lower(object.Name) == nameLower
-                      end)
-                      Array.append(
-                        objectPoints,
-                        convertObjectPointersToObjectPoints(
-                          convertObjectsToPointers(matchingObjects),
-                          'objectToUseItemOn',
-                          function(point)
-                            point.itemID = itemID
-                            point.questLogIndex = logIndex
-                            return point
-                          end
-                        )
-                      )
-                    end
-                  end
-                end
-              end
-            end
-          end
-        end
-      end
-
-      local objectiveData = retrieveQuestObjectivesInfo(questID)
-      if objectiveData then
-        local objectives = C_QuestLog.GetQuestObjectives(questID)
-        for index, objective in ipairs(objectives) do
-          if not objective.finished then
-            local objects = objectiveData[index]
-            if objects then
-              Array.forEach(objects, function(object)
-                local objectID = object.id
-                local closeByObjects = Array.filter(retrieveObjects(), function(object)
-                  return object.ID == objectID
-                end)
-
-                Array.forEach(
-                  closeByObjects,
-                  function(object)
-                    local point = {
-                      continentID = continentID,
-                      x = object.x,
-                      y = object.y,
-                      z = object.z,
-                      type = 'object',
-                      objectID = objectID,
-                      pointer = object.pointer,
-                      questIDs = {
-                        questID
-                      }
-                    }
-                    table.insert(objectPoints, point)
-                  end
-                )
-
-                local object = Questing.Database.retrieveNPC(objectID)
-                if object then
-                  local coordinates = object.coordinates
-                  if coordinates then
-                    Array.forEach(coordinates, function(coordinates)
-                      local continentID, position = retrieveWorldPositionFromMapPosition(
-                        coordinates[1],
-                        coordinates[2],
-                        coordinates[3]
-                      )
-                      if continentID and position then
-                        local point = {
-                          continentID = continentID,
-                          x = position.x,
-                          y = position.y,
-                          z = position.z,
-                          type = 'object',
-                          objectID = objectID,
-                          questIDs = {
-                            questID
-                          }
-                        }
-                        table.insert(objectPoints, point)
-                      end
-                    end)
-                  end
-                end
-              end)
-            end
-          end
-        end
-      end
-    end
-  end
-
-  --objectPoints = Array.filter(objectPoints, function(point)
-  --  return point.questIDs and next(point.questIDs)
-  --end)
+function retrieveLootPoints()
+  local objects = retrieveObjects()
+  local filteredObjects = Array.filter(objects, isLootable)
+  local objectPointers = convertObjectsToPointers(filteredObjects)
+  local objectPoints = convertObjectPointersToObjectPoints(objectPointers, 'loot')
 
   return objectPoints
 end
@@ -945,6 +779,10 @@ local function retrievePoints()
   if yielder.hasRanOutOfTime() then
     yielder.yield()
   end
+  local lootPoints = retrieveLootPoints()
+  if yielder.hasRanOutOfTime() then
+    yielder.yield()
+  end
   -- local explorationPoints = {} -- retrieveExplorationPoints()
   --if yielder.hasRanOutOfTime() then
   --  yielder.yield()
@@ -953,7 +791,8 @@ local function retrievePoints()
     questStartPoints = questStartPoints,
     objectivePoints = objectivePoints,
     objectPoints = objectPoints,
-    explorationPoints = {} -- explorationPoints
+    explorationPoints = {}, -- explorationPoints
+    lootPoints = lootPoints,
   }
 end
 
@@ -1049,10 +888,6 @@ local function isPlayerOnMeshPoint()
   return GMR.IsOnMeshPoint(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
-local function moveToPoint2(point)
-  Questing.Coroutine.moveTo(point)
-end
-
 function retrieveNavigationPosition()
   frame2:Show()
   frame3:Show()
@@ -1132,6 +967,37 @@ function waitForPlayerHasArrivedAt(position)
   Movement.waitForPlayerToBeOnPosition(position, INTERACT_DISTANCE)
 end
 
+local function retrieveQuestSpecialItem(questID)
+  local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
+  if logIndex then
+    local itemLink = GetQuestLogSpecialItemInfo(logIndex)
+    if itemLink then
+      local itemID = GetItemInfoInstant(itemLink)
+      return itemID
+    end
+  end
+
+  return nil
+end
+
+local function hasQuestSpecialItem(questID)
+  return toBoolean(retrieveQuestSpecialItem(questID))
+end
+
+local function hasSomeQuestASpecialItem(questIDs)
+  return Array.any(questIDs, hasQuestSpecialItem)
+end
+
+local function retrieveFirstSpecialItem(questIDs)
+  for _, questID in ipairs(questIDs) do
+    local specialItem = retrieveQuestSpecialItem(questID)
+    if specialItem then
+      return specialItem
+    end
+  end
+  return nil
+end
+
 local function doSomethingWithObject(point)
   local objectID = point.objectID
   local pointer = point.pointer
@@ -1149,6 +1015,9 @@ local function doSomethingWithObject(point)
     elseif pointer and (GMR.ObjectHasGossip(pointer) or next(C_GossipInfo.GetOptions())) then
       print('gossipWithAt')
       Questing.Coroutine.gossipWithAt(point, point.objectID, 1)
+    elseif pointer and hasSomeQuestASpecialItem(point.questIDs) then
+      local specialItem = retrieveFirstSpecialItem(point.questIDs)
+      Questing.Coroutine.useItemOnPosition(point, specialItem)
     elseif pointer then
       print('interactWithObject')
       Questing.Coroutine.interactWithObject(pointer)
@@ -1157,7 +1026,7 @@ local function doSomethingWithObject(point)
       Questing.Coroutine.interactWithAt(point, objectID)
     else
       print('moveToPoint2')
-      moveToPoint2(point)
+      Questing.Coroutine.moveTo(point)
     end
   end
 end
@@ -1212,7 +1081,7 @@ function acceptQuests(point)
     local TOLERANCE_RADIUS = 10
     savedPosition = point
     if GMR.GetDistanceToPosition(point.x, point.y, point.z) > GMR.GetScanRadius() - TOLERANCE_RADIUS then
-      moveToPoint2(point)
+      Questing.Coroutine.moveTo(point)
       acceptQuests(point)
     end
   end
@@ -1334,11 +1203,13 @@ local function moveToPoint(point)
     if questHandler then
       runQuestHandler(questHandler)
     else
-      doSomethingWithObject(point)
+      Questing.Coroutine.moveTo(point)
     end
+  elseif point.type == 'loot' then
+    Questing.Coroutine.interactWithObject(point.pointer)
   else
     print('moveToPoint', point.x, point.y, point.z)
-    moveToPoint2(point)
+    Questing.Coroutine.moveTo(point)
   end
 end
 
@@ -1593,11 +1464,11 @@ function exploreObject(object)
           if icon:IsShown() then
             local texture = icon:GetTexture()
             if texture == 'Cursor UnableInnkeeper' then
-              moveToPoint2({ x = x, y = y, z = z })
+              Questing.Coroutine.moveTo({ x = x, y = y, z = z })
               skipSaving = true
             elseif texture == 'Cursor Quest' or texture == 'Cursor UnableQuest' then
               exploredObject.isQuestGiver = true
-              moveToPoint2({ x = x, y = y, z = z })
+              Questing.Coroutine.moveTo({ x = x, y = y, z = z })
               skipSaving = true
             elseif texture == 4675702 or -- Inactive hand
               texture == 4675650 then
@@ -1672,11 +1543,11 @@ function exploreObject(object)
         }
         exploredObjects[objectID] = exploredObject
       else
-        moveToPoint2({ x = x, y = y, z = z })
+        Questing.Coroutine.moveTo({ x = x, y = y, z = z })
       end
     end
   else
-    moveToPoint2({ x = x, y = y, z = z })
+    Questing.Coroutine.moveTo({ x = x, y = y, z = z })
   end
 
   print('-- explore object')
@@ -1709,7 +1580,7 @@ function isIdle()
       not GMR.IsPreparing() and
       not GMR.IsGhost('player') and
       not GMR.IsRepairing() and
-      not isPathFinding()
+      (not _G.isPathFinding or not isPathFinding())
   )
 end
 
@@ -1770,6 +1641,20 @@ end
 function run (once)
   hooksecurefunc(GMR, 'Log', function(message)
     lastLogMessage = message
+  end)
+
+  C_Timer.NewTicker(0, function()
+    if GMR.InCombat() then
+      if _G.stopPathMoving then
+        stopPathMoving()
+      end
+    end
+
+    if not GMR.IsExecuting() then
+      if _G.stopPathFindingAndMoving then
+        stopPathFindingAndMoving()
+      end
+    end
   end)
 
   local yielder = createYielder()

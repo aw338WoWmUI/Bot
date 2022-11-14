@@ -1,15 +1,12 @@
 Questing = Questing or {}
 Questing.Coroutine = {}
 
-local function moveTo(to)
+local function moveTo(to, hasArrived)
   local from = Movement.retrievePlayerPosition()
   local pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
   Movement.path = path
-  local pathMover = Movement.movePath(path)
-  waitFor(function()
-    return pathMover.hasStopped()
-  end)
+  local pathMover = Movement.movePath(path, hasArrived)
 end
 
 function Questing.Coroutine.moveTo(point, distance)
@@ -24,12 +21,13 @@ function Questing.Coroutine.moveTo(point, distance)
   end
 
   local function hasArrived()
+    print('hasArrived')
     return GMR.IsPlayerPosition(point.x, point.y, point.z, distance)
   end
 
   while GMR.IsExecuting() and not hasArrived() do
     if isIdle() then
-      moveTo(point)
+      moveTo(point, hasArrived)
       waitFor(function()
         return hasArrived() or isIdle()
       end)
@@ -145,6 +143,23 @@ function Questing.Coroutine.useItemOnGround(point, itemID, distance)
 
   if GMR.IsExecuting() then
     GMR.Questing.UseItemOnGround(point.x, point.y, point.z, itemID, distance)
+  end
+end
+
+function Questing.Coroutine.useItemOnPosition(position, itemID, distance)
+  distance = distance or INTERACT_DISTANCE
+
+  if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
+    Questing.Coroutine.moveTo(position, distance)
+  end
+
+  Questing.Coroutine.useItem(itemID)
+end
+
+function Questing.Coroutine.useItem(itemID)
+  if GMR.IsExecuting() then
+    local playerPosition = Movement.retrievePlayerPosition()
+    GMR.Questing.UseItemOnPosition(playerPosition.x, playerPosition.y, playerPosition.z, itemID)
   end
 end
 

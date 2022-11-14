@@ -749,6 +749,15 @@ function bbbb2223()
     position.z + 10)
 end
 
+function bbbb22234()
+  if not GMR.IsMeshLoaded() then
+    GMR.LoadMeshFiles()
+  end
+  local continentID = select(8, GetInstanceInfo())
+  local position = Movement.retrievePlayerPosition()
+  return HWT.GetClosestMeshPolygon(continentID, position.x, position.y, position.z, 1000, 1000, 1000)
+end
+
 function bbbb4()
   local position = {
     x = -9462.2880859375,
@@ -1006,4 +1015,39 @@ function printQuestGiverStatus()
     local statusName = status.key
     print(status.key)
   end
+end
+
+local function areFlagsSet(bitMap, flags)
+  return bit.band(bitMap, flags) == flags
+end
+
+function retrieveObjectNPCFlags(object)
+  return HWT.ObjectDescriptor(object, HWT.GetObjectDescriptorsTable().CGUnitData__npcFlags, HWT.GetValueTypesTable().UInt)
+end
+
+local NpcFlags = {
+  FoodVendor = 0x200,
+  Repair = 0x1000,
+  Innkeeper = 0x10000,
+  Banker = 0x20000,
+}
+
+function isFoodVendor(object)
+  local npcFlags = retrieveObjectNPCFlags(object)
+  return areFlagsSet(npcFlags, NpcFlags.FoodVendor)
+end
+
+function isInnkeeper(object)
+  local npcFlags = retrieveObjectNPCFlags(object)
+  return areFlagsSet(npcFlags, NpcFlags.Innkeeper)
+end
+
+function isBanker(object)
+  local npcFlags = retrieveObjectNPCFlags(object)
+  return areFlagsSet(npcFlags, NpcFlags.Banker)
+end
+
+function isRepair(object)
+  local npcFlags = retrieveObjectNPCFlags(object)
+  return areFlagsSet(npcFlags, NpcFlags.Repair)
 end

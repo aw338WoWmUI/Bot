@@ -12,7 +12,7 @@ GMR.SetScanRadius(250)
 
 -- Grinding
 GMR.DefineSetting('Disable', 'Grinding')
-GMR.DefineSetting('Enable', 'Looting')
+GMR.DefineSetting('Disable', 'Looting')
 GMR.DefineSetting('Disable', 'MassLooting')
 
 -- Mounting

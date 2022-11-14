@@ -12,11 +12,16 @@ function stopPathFinding()
   end
 end
 
-local function stopPathMoving()
+function stopPathMoving()
   if pathMover then
     pathMover.stop()
     pathMover = nil
   end
+end
+
+function stopPathFindingAndMoving()
+  stopPathFinding()
+  stopPathMoving()
 end
 
 local ticker
@@ -26,11 +31,6 @@ ticker = C_Timer.NewTicker(0, function()
 
     function isPathFinding()
       return toBoolean(pathFinder)
-    end
-
-    local function stopPathFindingAndMoving()
-      stopPathFinding()
-      stopPathMoving()
     end
 
     local function isDifferentPathFindingRequestThanRun(from, to)
