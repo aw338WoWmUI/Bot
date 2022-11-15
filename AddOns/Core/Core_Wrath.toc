@@ -1,0 +1,5 @@
+## Title: Core
+## Interface: 30400
+## Dependencies: HWT, GMR
+
+Core.lua

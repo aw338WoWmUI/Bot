@@ -696,6 +696,17 @@ function retrieveLootPoints()
   return objectPoints
 end
 
+function retrieveFlightMasterDiscoveryPoints()
+  local objects = retrieveObjects()
+  local filteredObjects = Array.filter(objects, function (object)
+    return Core.isDiscoverableFlightMaster(object.pointer)
+  end)
+  local objectPointers = convertObjectsToPointers(filteredObjects)
+  local objectPoints = convertObjectPointersToObjectPoints(objectPointers, 'discoverFlightMaster')
+
+  return objectPoints
+end
+
 function isAlive(objectPointer)
   return not GMR.IsDead(objectPointer)
 end
@@ -793,6 +804,7 @@ local function retrievePoints()
     objectPoints = objectPoints,
     explorationPoints = {}, -- explorationPoints
     lootPoints = lootPoints,
+    discoverFlightMasterPoints = retrieveFlightMasterDiscoveryPoints()
   }
 end
 
@@ -842,18 +854,25 @@ local function determineClosestPoint(points)
 end
 
 local function determinePointToGo(points)
-  local closeQuestStartPoints = Array.filter(points.questStartPoints, function(point)
-    return GMR.GetDistanceToPosition(point.x, point.y, point.z) <= 50
-  end)
-  if next(closeQuestStartPoints) then
-    return determineClosestPoint(closeQuestStartPoints)
+  local maxCloseDistance = 50
+
+  local function isPointClose(point)
+    return GMR.GetDistanceToPosition(point.x, point.y, point.z) <= maxCloseDistance
+  end
+
+  local closeQuestStartPoints = Array.filter(points.questStartPoints, isPointClose)
+  local closeDiscoverFlightMasterPoints = Array.filter(points.discoverFlightMasterPoints, isPointClose)
+  local closeLootPoints = Array.filter(points.lootPoints, isPointClose)
+  local doFirstPoints = Array.concat(closeQuestStartPoints, closeDiscoverFlightMasterPoints, closeLootPoints)
+  if next(doFirstPoints) then
+    return determineClosestPoint(doFirstPoints)
   elseif next(points.objectPoints) then
     return determineClosestPoint(points.objectPoints)
   else
     if next(points.explorationPoints) then
       return determineClosestPoint(points.explorationPoints)
     else
-      local points2 = Array.concat(points.questStartPoints, points.objectivePoints)
+      local points2 = Array.concat(points.questStartPoints, points.objectivePoints, points.discoverFlightMasterPoints, points.lootPoints)
       if next(points2) then
         return determineClosestPoint(points2)
       else

@@ -21,7 +21,6 @@ function Questing.Coroutine.moveTo(point, distance)
   end
 
   local function hasArrived()
-    print('hasArrived')
     return GMR.IsPlayerPosition(point.x, point.y, point.z, distance)
   end
 

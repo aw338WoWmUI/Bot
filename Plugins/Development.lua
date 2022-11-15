@@ -28,6 +28,25 @@ function logToFile(content)
   end
 end
 
+local function writeToLogFile2(filePath, content)
+  if IS_LOGGING_ENABLED then
+    GMR.WriteFile(filePath, content, true)
+  end
+end
+
+function logToFile2(filePath, content)
+  if IS_LOGGING_ENABLED then
+    writeToLogFile2(filePath, tostring(content) .. '\n')
+  end
+end
+
+function log2(filePath, ...)
+  if IS_LOGGING_ENABLED then
+    local string = strjoin(' ', unpack(Array.map({ ... }, valueToString)))
+    logToFile2(filePath, string)
+  end
+end
+
 function log(...)
   if IS_LOGGING_ENABLED then
     local string = strjoin(' ', unpack(Array.map({ ... }, valueToString)))
@@ -930,13 +949,14 @@ end
 
 function toBinary(value)
   local result = ''
-  for index = 1, 32 do
+  local width = 64
+  for index = 1, width do
     if bit.band(bit.rshift(value, index - 1), 1) == 1 then
       result = '1' .. result
     else
       result = '0' .. result
     end
-    if index == 8 or index == 16 then
+    if index < width and index % 8 == 0 then
       result = ' ' .. result
     end
   end
@@ -1022,32 +1042,48 @@ local function areFlagsSet(bitMap, flags)
 end
 
 function retrieveObjectNPCFlags(object)
-  return HWT.ObjectDescriptor(object, HWT.GetObjectDescriptorsTable().CGUnitData__npcFlags, HWT.GetValueTypesTable().UInt)
+  return HWT.ObjectDescriptor(object, HWT.GetObjectDescriptorsTable().CGUnitData__npcFlags, HWT.GetValueTypesTable().ULong)
 end
 
-local NpcFlags = {
-  FoodVendor = 0x200,
-  Repair = 0x1000,
-  Innkeeper = 0x10000,
-  Banker = 0x20000,
-}
-
-function isFoodVendor(object)
-  local npcFlags = retrieveObjectNPCFlags(object)
-  return areFlagsSet(npcFlags, NpcFlags.FoodVendor)
+function retrieveObjectFlags(object)
+  return HWT.ObjectDescriptor(object, HWT.GetObjectDescriptorsTable().CGUnitData__flags, HWT.GetValueTypesTable().ULong)
 end
 
-function isInnkeeper(object)
-  local npcFlags = retrieveObjectNPCFlags(object)
-  return areFlagsSet(npcFlags, NpcFlags.Innkeeper)
+function retrieveObjectFlags3(object)
+  return HWT.ObjectDescriptor(object, HWT.GetObjectDescriptorsTable().CGUnitData__flags3, HWT.GetValueTypesTable().ULong)
 end
 
-function isBanker(object)
-  local npcFlags = retrieveObjectNPCFlags(object)
-  return areFlagsSet(npcFlags, NpcFlags.Banker)
+---- /dump log(toBinary(retrieveObjectNPCFlags('target')))
+--GMR.ObjectDynamicFlags()
+---- /dump log(toBinary(GMR.ObjectDynamicFlags('target')))
+--
+--log(toBinary(HWT.UnitFlags('target')))
+--
+--log(toBinary(GMR.ObjectFlags2('target')))
+--
+--log(toBinary(retrieveObjectFlags3('target')))
+--
+--log(toBinary(retrieveObjectFlags('target')))
+--
+--log(toBinary(HWT.ObjectDynamicFlags('target')))
+--GMR.IsFlightmasterDiscoverable()
+--GMR.Flight
+
+function logDescriptors(filePath, object)
+  for descriptorNumber = 0, 10000 do
+    local value = toBinary(HWT.ObjectDescriptor(object, descriptorNumber, HWT.GetValueTypesTable().ULong))
+    log2(filePath, descriptorNumber, value)
+  end
 end
 
-function isRepair(object)
-  local npcFlags = retrieveObjectNPCFlags(object)
-  return areFlagsSet(npcFlags, NpcFlags.Repair)
+function dsjkaasdjkdasjkl1()
+  logDescriptors('C:/npc1.txt', 'target')
+end
+
+function dsjkaasdjkdasjkl2()
+  logDescriptors('C:/npc2.txt', 'target')
+end
+
+function dsjkaasdjkdasjkl3()
+  logDescriptors('C:/npc3.txt', 'target')
 end

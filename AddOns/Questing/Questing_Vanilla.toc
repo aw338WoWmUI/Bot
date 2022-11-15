@@ -1,6 +1,6 @@
 ## Title: Questing
 ## Interface: 11403
-## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, GMR, HWT, Unlocker
+## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, GMR, HWT, Unlocker, Core
 ## SavedVariables: exploredObjects
 
 namespace.lua
