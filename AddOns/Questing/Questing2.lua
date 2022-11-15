@@ -320,23 +320,26 @@ function retrieveQuestStartPoints()
   end
 
   local points4 = {}
-  local objects = retrieveObjects()
-  local continentID = select(8, GetInstanceInfo())
-  Array.forEach(objects, function(object)
-    if Unlocker.retrieveQuestGiverStatus(object.pointer) == Unlocker.QuestGiverStatuses.Quest then
-      local point = {
-        objectID = object.ID,
-        continentID = continentID,
-        x = object.x,
-        y = object.y,
-        z = object.z,
-        type = 'acceptQuests',
-        questIDs = nil,
-        questName = nil
-      }
-      table.insert(points4, point)
-    end
-  end)
+  --local points4 = {}
+  --local objects = retrieveObjects()
+  --local continentID = select(8, GetInstanceInfo())
+  --Array.forEach(objects, function(object)
+  --  if Unlocker.retrieveQuestGiverStatus(object.pointer) == Unlocker.QuestGiverStatuses.Quest then
+  --    local point = {
+  --      objectID = object.ID,
+  --      continentID = continentID,
+  --      x = object.x,
+  --      y = object.y,
+  --      z = object.z,
+  --      type = 'acceptQuests',
+  --      questIDs = nil,
+  --      questName = nil
+  --    }
+  --    table.insert(points4, point)
+  --  end
+  --end)
+
+
 
   local quests2 = Questing.Database.retrieveQuestsThatShouldBeAvailable()
 
@@ -633,6 +636,7 @@ function convertObjectPointerToObjectPoint(pointer, type, adjustPoint)
   local continentID = select(8, GetInstanceInfo())
   local x, y, z = GMR.ObjectPosition(pointer)
   local objectID = GMR.ObjectId(pointer)
+  print('pointer 222', pointer, GMR.ObjectName(pointer))
   local point = {
     name = GMR.ObjectName(pointer),
     continentID = continentID,
@@ -642,7 +646,7 @@ function convertObjectPointerToObjectPoint(pointer, type, adjustPoint)
     type = type,
     pointer = pointer,
     objectID = objectID,
-    questIDs = { HWT.ObjectQuests(pointer) }
+    questIDs = Unlocker.ObjectQuests(pointer)
   }
   if adjustPoint then
     point = adjustPoint(point)
@@ -1031,7 +1035,7 @@ local function doSomethingWithObject(point)
     if pointer and GMR.UnitCanAttack('player', pointer) then
       print('doMob')
       Questing.Coroutine.doMob(point, pointer)
-    elseif pointer and (GMR.ObjectHasGossip(pointer) or next(C_GossipInfo.GetOptions())) then
+    elseif pointer and (GMR.ObjectHasGossip(pointer) or next(C_GossipInfo.GetOptions())) and next(point.questIDs) then
       print('gossipWithAt')
       Questing.Coroutine.gossipWithAt(point, point.objectID, 1)
     elseif pointer and hasSomeQuestASpecialItem(point.questIDs) then

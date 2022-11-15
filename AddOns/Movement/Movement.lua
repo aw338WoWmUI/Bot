@@ -830,7 +830,7 @@ function Movement.canBeFlown()
   return Movement.isFlyingAvailableInZone() and GMR.IsOutdoors() and Movement.canCharacterFly()
 end
 
-local TOLERANCE_RANGE = 1
+local TOLERANCE_RANGE = 3
 
 function Movement.distanceOfPointToLine(point, line)
   local A = line[1]
@@ -866,6 +866,15 @@ function Movement.canReachWaypointWithCurrentMovementDirection(waypoint)
     z = playerPosition.z + movementVector.z
   }
   return Movement.distanceOfPointToLine(waypoint, { playerPosition, positionB }) <= TOLERANCE_RANGE
+end
+
+function Movement.isCharacterFlying()
+  return Movement.isMountedOnFlyingMount() and Movement.isCharacterInTheAir()
+end
+
+function Movement.isCharacterInTheAir()
+  local playerPosition = Movement.retrievePlayerPosition()
+  return Movement.isPositionInTheAir(playerPosition)
 end
 
 function Movement.createMoveToAction3(waypoint, continueMoving, a)
@@ -914,7 +923,13 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
           GMR.MoveForwardStop()
         end
         print('Movement.faceDirection')
-        Movement.faceDirection(waypoint)
+        local facingPoint
+        if Movement.isPointOnGround(waypoint) and Movement.isCharacterFlying() then
+          facingPoint = Movement.createPointWithZOffset(waypoint, MINIMUM_LIFT_HEIGHT)
+        else
+          facingPoint = waypoint
+        end
+        Movement.faceDirection(facingPoint)
       end
       if not GMR.IsMoving() then
         GMR.MoveForwardStart()

@@ -174,3 +174,7 @@ __A.ObjectQuests(GMR.ObjectPointer('target'))
 -- __A.ObjectQuestGiverStatus()
  __A.ObjectQuestGiverStatus('target')
 -- __A.GetObjectQuestGiverStatusesTable()
+
+HWT.ObjectQuests(GMR.FindObject(209436))
+
+HWT.GameObjectType(GMR.FindObject(209436))

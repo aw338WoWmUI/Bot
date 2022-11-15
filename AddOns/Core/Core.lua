@@ -47,5 +47,6 @@ function Core.isFlightMasterDiscoverable(object)
 end
 
 function Core.isDiscoverableFlightMaster(object)
-  return Core.isFlightMaster(object) and GMR.UnitReaction('player', object) >= 4 and Core.isFlightMasterDiscoverable(object)
+  return false
+  -- return Core.isFlightMaster(object) and GMR.UnitReaction('player', object) >= 4 and Core.isFlightMasterDiscoverable(object)
 end

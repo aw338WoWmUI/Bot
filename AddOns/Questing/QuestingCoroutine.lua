@@ -118,6 +118,7 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
   if GMR.IsExecuting() and GMR.ObjectExists(pointer) then
     print('GMR.Interact', pointer)
     GMR.Interact(pointer)
+    waitForDuration(2)
   end
 end
 
