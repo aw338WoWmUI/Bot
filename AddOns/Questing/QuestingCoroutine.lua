@@ -92,10 +92,10 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
 
   if GMR.IsExecuting() then
     local pointer = GMR.FindObject(objectID)
-    GMR.Interact(pointer)
-    waitFor(function()
-      return GMR.ObjectExists('npc')
-    end, 2)
+    if pointer then
+      GMR.Interact(pointer)
+      waitForDuration(2)
+    end
   end
 end
 
@@ -255,13 +255,9 @@ function Questing.Coroutine.gossipWithAt(point, objectID, optionToSelect)
   selectOption(optionToSelect)
 end
 
-function Questing.Coroutine.doMob(point, pointer)
+function Questing.Coroutine.doMob(pointer)
   local distance = GMR.GetCombatRange()
   local objectID = GMR.ObjectId(pointer)
-
-  if not GMR.IsPlayerPosition(point.x, point.y, point.z, distance) then
-    Questing.Coroutine.moveTo(point, distance)
-  end
 
   local function isJobDone()
     return not GMR.ObjectExists(pointer) or GMR.IsDead(pointer)
@@ -269,7 +265,18 @@ function Questing.Coroutine.doMob(point, pointer)
 
   while GMR.IsExecuting() and not isJobDone() do
     if isIdle() then
-      GMR.Questing.KillEnemy(point.x, point.y, point.z, objectID)
+      local position = createPoint(GMR.ObjectPosition(pointer))
+      if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
+        print('move to 1')
+        Questing.Coroutine.moveTo(position, distance)
+        print('move to 2')
+      end
+
+      if IsMounted then
+        GMR.Dismount()
+      end
+      GMR.TargetObject(pointer)
+      GMR.StartAttack()
       waitFor(function()
         return isJobDone() or isIdle()
       end)
@@ -277,5 +284,6 @@ function Questing.Coroutine.doMob(point, pointer)
       yieldAndResume()
     end
   end
-end
 
+  print('--- Questing.Coroutine.doMob')
+end

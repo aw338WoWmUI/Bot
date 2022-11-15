@@ -12,6 +12,8 @@ local CHARACTER_RADIUS = 0.55 -- the radius might vary race by race
 local MAXIMUM_WATER_DEPTH = 1000
 local GRID_LENGTH = 2
 local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.25 yards.
+local TOLERANCE_RANGE = 1
+local TARGET_LIFT_HEIGHT = TOLERANCE_RANGE
 local MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
 local CHARACTER_HEIGHT = 2 -- ~ for human
@@ -134,7 +136,7 @@ function Movement.findClosestDifferentPolygonTowardsPosition(x, y, z, x5, y5, z5
   return nil
 end
 
-doWhenGMRIsFullyLoaded(function ()
+doWhenGMRIsFullyLoaded(function()
   hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
     --if DEVELOPMENT then
     --  if not GMR.IsMeshLoaded() then
@@ -187,16 +189,19 @@ doWhenGMRIsFullyLoaded(function ()
     --      --if walkToPoint then
     --      --  GMR.LibDraw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
     --      --end
-    --if position1 and position2 then
-    --  GMR.LibDraw.Line(
-    --    position1.x,
-    --    position1.y,
-    --    position1.z,
-    --    position2.x,
-    --    position2.y,
-    --    position2.z
-    --  )
-    --end
+    if DEVELOPMENT then
+      if position1 and position2 then
+        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+        GMR.LibDraw.Line(
+          position1.x,
+          position1.y,
+          position1.z,
+          position2.x,
+          position2.y,
+          position2.z
+        )
+      end
+    end
 
     local path = Movement.path
     if GMR.IsChecked('DisplayMovement') and path then
@@ -303,7 +308,7 @@ function Movement.positionInFrontOfPlayer(distance, deltaZ)
       playerPosition.z + (deltaZ or 0),
       distance,
       GMR.ObjectRawFacing('player'),
-      0
+      GMR.GetPitch('player')
     )
   )
 end
@@ -581,7 +586,7 @@ end
 
 function Movement.receiveAvailableMountIDs()
   local mountIDs = C_MountJournal.GetMountIDs()
-  return Array.filter(mountIDs, function (mountID)
+  return Array.filter(mountIDs, function(mountID)
     local isUsable = select(5, C_MountJournal.GetMountInfoByID(mountID))
     return isUsable
   end)
@@ -599,7 +604,7 @@ end
 
 function Movement.isFlyingMount(mountID)
   local mountTypeID = select(5, C_MountJournal.GetMountInfoExtraByID(mountID))
-  return mountTypeID == 247 or mountTypeID == 248
+  return mountTypeID == 247 or mountTypeID == 248 or mountTypeID == 242
 end
 
 function Movement.retrieveGroundZ(position)
@@ -823,7 +828,11 @@ end
 
 function Movement.isPointOnGround(point)
   local z = Movement.retrieveGroundZ(Movement.createPointWithZOffset(point, 0.25))
-  return z == point.z
+  if z then
+    return math.abs(z - point.z) <= 0.0002
+  else
+    return false
+  end
 end
 
 function Movement.canBeFlown()
@@ -831,10 +840,12 @@ function Movement.canBeFlown()
 end
 
 function Movement.canMountOnFlyingMount()
-  return Movement.canBeFlown() and Movement.canPlayerStandOnPoint(Movement.retrievePlayerPosition(), {withMount = true})
+  return (
+    GMR.IsAlive('player') and
+      Movement.canBeFlown() and
+      Movement.canPlayerStandOnPoint(Movement.retrievePlayerPosition(), { withMount = true })
+  )
 end
-
-local TOLERANCE_RANGE = 3
 
 function Movement.distanceOfPointToLine(point, line)
   local A = line[1]
@@ -881,26 +892,15 @@ function Movement.isCharacterInTheAir()
   return Movement.isPositionInTheAir(playerPosition)
 end
 
-function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance)
-  local stopMoving = nil
+function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance, isLastWaypoint)
   local firstRun = true
   local initialDistance = nil
   local lastJumpTime = nil
 
-  local function cleanUp()
-    if stopMoving then
-      GMR.StopMoving = stopMoving
-    end
-  end
-
   return {
-    run = function(action)
+    run = function(action, actionSequenceDoer)
       if firstRun then
-        print(1)
         -- log('waypoint', waypoint.x, waypoint.y, waypoint.z)
-        stopMoving = GMR.StopMoving
-        GMR.StopMoving = function()
-        end
         initialDistance = GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z)
       end
 
@@ -911,38 +911,40 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       ) then
         if not Movement.isMountedOnFlyingMount() and Movement.canMountOnFlyingMount() then
           GMR.MoveForwardStop()
-          print(2)
           Movement.waitForPlayerStandingStill()
-          print(3)
           Movement.mountOnFlyingMount()
-          print(4)
         end
         if Movement.isMountedOnFlyingMount() then
           local playerPosition = Movement.retrievePlayerPosition()
-          if playerPosition.z < waypoint.z and GMR.IsGroundPosition(playerPosition.x, playerPosition.y,
-            playerPosition.z) then
-            print(5)
+          if (
+            (Movement.isPointOnGround(playerPosition) or (Movement.isPointInWater(playerPosition) and not Movement.isPointInWater(waypoint))) and
+              (not isLastWaypoint or Movement.isPositionInTheAir(waypoint))
+          ) then
             Movement.liftUp()
-            print(6)
           end
         end
       end
 
       if not Movement.canReachWaypointWithCurrentMovementDirection(waypoint) then
         if GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) <= 5 then
+          print('GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) <= 5')
           GMR.MoveForwardStop()
         end
         local facingPoint
-        if Movement.isPointOnGround(waypoint) and Movement.isCharacterFlying() then
-          facingPoint = Movement.createPointWithZOffset(waypoint, MINIMUM_LIFT_HEIGHT)
+        if Movement.isPointOnGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
+          facingPoint = Movement.createPointWithZOffset(waypoint, TARGET_LIFT_HEIGHT)
         else
           facingPoint = waypoint
         end
-        print(7)
-        Movement.faceDirection(facingPoint, function ()
+        if Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
+          local pointInAir = Movement.determinePointHeighEnoughToStayInAir(waypoint)
+          if pointInAir and GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > 5 then
+            facingPoint = pointInAir
+          end
+        end
+        Movement.faceDirection(facingPoint, function()
           return action.isDone() or action.shouldCancel()
         end)
-        print(8)
       end
       if not GMR.IsMoving() then
         GMR.MoveForwardStart()
@@ -967,18 +969,28 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
           GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
       )
     end,
-    whenIsDone = function()
-      cleanUp()
+    whenIsDone = function(action, actionSequenceDoer)
       if not continueMoving then
         GMR.MoveForwardStop()
       end
     end,
-    onCancel = function()
+    onCancel = function(action, actionSequenceDoer)
       print('Cancel')
-      cleanUp()
       GMR.MoveForwardStop()
     end
   }
+end
+
+function Movement.determinePointHeighEnoughToStayInAir(waypoint)
+  local playerPosition = Movement.retrievePlayerPosition()
+  local length = euclideanDistance(playerPosition, waypoint)
+  local traceLineTargetPoint = Movement.positionInFrontOfPlayer(length, 0)
+  local point = Movement.traceLineCollision(playerPosition, traceLineTargetPoint)
+  if point then
+    return Movement.createPointWithZOffset(point, TARGET_LIFT_HEIGHT)
+  else
+    return nil
+  end
 end
 
 function Movement.isJumpSituation(to)
@@ -990,8 +1002,8 @@ function Movement.isJumpSituation(to)
   if to.z - playerPosition.z > Movement.MAXIMUM_WALK_UP_TO_HEIGHT then
     local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + Movement.JUMP_DETECTION_HEIGHT)
     local positionB = Movement.positionInFrontOfPlayer(3, Movement.JUMP_DETECTION_HEIGHT)
-    position1 = positionA
-    position2 = positionB
+    --position1 = positionA
+    --position2 = positionB
     return Movement.thereAreCollisions(
       positionA,
       positionB
@@ -1145,11 +1157,10 @@ function Movement.waitForIsInAirOrDismounted(timeout)
 end
 
 function Movement.liftUp()
-  GMR.MoveForwardStop()
+  print('Movement.liftUp()')
   GMR.JumpOrAscendStart()
   Movement.waitForIsInAirOrDismounted(3)
   GMR.AscendStop()
-  Movement.waitForPlayerStandingStill()
 end
 
 function Movement.createPathFinder()
@@ -1410,6 +1421,7 @@ function Movement.calculateTotalPathDistance(path)
 end
 
 function Movement.movePath(path, hasArrived)
+  print('Movement.movePath')
   Movement.stopMoving()
   local a = {
     shouldStop = function()
@@ -1418,24 +1430,128 @@ function Movement.movePath(path, hasArrived)
   }
   local pathLength = #path
   local totalDistance = Movement.calculateTotalPathDistance(path)
-  pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint, index)
-    return Movement.createMoveToAction3(waypoint, index < pathLength, a, totalDistance)
-  end))
+  local stopMoving = GMR.StopMoving
+  GMR.StopMoving = function()
+  end
+  pathMover = createActionSequenceDoer2(
+    Array.map(path, function(waypoint, index)
+      return Movement.createMoveToAction3(waypoint, index < pathLength, a, totalDistance, index == pathLength)
+    end),
+    {
+      onStop = function()
+        GMR.StopMoving = stopMoving
+        GMR.MoveForwardStop()
+      end
+    }
+  )
   pathMover.run()
   return pathMover
 end
 
-doWhenGMRIsFullyLoaded(function ()
-  hooksecurefunc(GMR, 'MeshTo', Movement.stopMoving)
-  hooksecurefunc(GMR, 'Mesh', Movement.stopMoving)
-  hooksecurefunc(GMR, 'EngageMeshTo', Movement.stopMoving)
-  hooksecurefunc(GMR.Questing, 'MoveTo', Movement.stopMoving)
-  hooksecurefunc(GMR.Questing, 'KillEnemy', Movement.stopMoving)
-  hooksecurefunc(GMR, 'MoveTo', Movement.stopMoving)
-  hooksecurefunc(GMR, 'MapMove', Movement.stopMoving)
+local run = nil
+local pathFinder = nil
+
+local function cleanUpPathFinding()
+  pathFinder = nil
+  run = nil
+  aStarPoints = nil
+  Movement.path = nil
+end
+
+local function cleanUpPathMoving()
+  pathMover = nil
+  if not pathFinder then
+    run = nil
+  end
+end
+
+local function cleanUpPathFindingAndMoving()
+  cleanUpPathFinding()
+  cleanUpPathMoving()
+end
+
+local function stopPathFinding()
+  if pathFinder then
+    pathFinder.stop()
+    cleanUpPathFinding()
+  end
+end
+
+function Movement.stopPathMoving()
+  if pathMover then
+    pathMover.stop()
+    cleanUpPathMoving()
+  end
+end
+
+function Movement.stopPathFindingAndMoving()
+  stopPathFinding()
+  Movement.stopPathMoving()
+end
+
+local function isPathFinding()
+  return toBoolean(pathFinder)
+end
+
+local function isDifferentPathFindingRequestThanRun(to)
+  return not run or to ~= run.to
+end
+
+local function moveTo(x, y, z)
+  if x and y and z then
+    local from = Movement.retrievePlayerPosition()
+    local to = createPoint(x, y, z)
+
+    if isDifferentPathFindingRequestThanRun(to) then
+      Movement.stopPathFindingAndMoving()
+      run = {
+        from = from,
+        to = to
+      }
+      pathFinder = Movement.createPathFinder()
+      local path = pathFinder.start(from, to)
+      pathFinder = nil
+      Movement.path = path
+      if path then
+        pathMover = Movement.movePath(path)
+        cleanUpPathFindingAndMoving()
+      end
+    end
+  end
+end
+
+local function moveToFromNonCoroutine(x, y, z)
+  coroutine.wrap(function()
+    moveTo(x, y, z)
+  end)()
+end
+
+doWhenGMRIsFullyLoaded(function()
+  GMR.Mesh = moveToFromNonCoroutine
+  GMR.MeshTo = moveToFromNonCoroutine
+  --GMR.Mesh = hooksecurefunc(GMR, 'MeshTo', function()
+  --  print('GMR.MeshTo')
+  --  Movement.stopMoving()
+  --end)
+  --hooksecurefunc(GMR, 'Mesh', function()
+  --  print('GMR.Mesh')
+  --  Movement.stopMoving()
+  --end)
+  hooksecurefunc(GMR, 'EngageMeshTo', function()
+    print('GMR.EngageMeshTo')
+    Movement.stopMoving()
+  end)
+  hooksecurefunc(GMR.Questing, 'MoveTo', function()
+    print('GMR.Questing.MoveTo')
+    Movement.stopMoving()
+  end)
+  hooksecurefunc(GMR, 'MoveTo', function()
+    print('GMR.MoveTo')
+    Movement.stopMoving()
+  end)
 end)
 
-doRegularlyWhenGMRIsFullyLoaded(function ()
+doRegularlyWhenGMRIsFullyLoaded(function()
   if GMR.InCombat('player') then
     Movement.stopMoving()
   end
@@ -1633,6 +1749,7 @@ function Movement.stopMoving()
     pathMover.stop()
     pathMover = nil
     Movement.path = nil
+    print('Movement.path = nil')
   end
 end
 

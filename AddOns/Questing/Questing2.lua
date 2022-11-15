@@ -301,7 +301,7 @@ end
 
 function isQuestLogFull()
   local currentNumberOfQuests = select(2, C_QuestLog.GetNumQuestLogEntries())
-  local maximumNumberOfQuests = C_QuestLog.GetMaxNumQuests()
+  local maximumNumberOfQuests = C_QuestLog.GetMaxNumQuestsCanAccept()
   return currentNumberOfQuests >= maximumNumberOfQuests
 end
 
@@ -318,11 +318,15 @@ local function generateQuestStartPointsFromStarters(quest)
       if starter.type == 'npc' then
         local npc = Questing.Database.retrieveNPC(starter.id)
         if npc then
+          local npcPointer = GMR.FindObject(npc.id)
+          if npcPointer and Unlocker.retrieveQuestGiverStatus(npcPointer) ~= Unlocker.QuestGiverStatuses.Quest then
+            return nil
+          end
+
           local position = retrieveNPCPosition(npc)
           if position then
             local continentID = position.continentID
             local x, y, z
-            local npcPointer = GMR.FindObject(npc.id)
             if npcPointer then
               x, y, z = GMR.ObjectPosition(npcPointer)
             else
@@ -927,15 +931,6 @@ function waitForSpecialItemUsable(point)
   end, 10)
 end
 
-local pathMover = nil
-
-local function stopPathMover()
-  if pathMover then
-    pathMover.stop()
-    pathMover = nil
-  end
-end
-
 local function isPlayerOnMeshPoint()
   local playerPosition = GMR.GetPlayerPosition()
   return GMR.IsOnMeshPoint(playerPosition.x, playerPosition.y, playerPosition.z)
@@ -1064,8 +1059,8 @@ local function doSomethingWithObject(point)
   else
     if pointer and GMR.UnitCanAttack('player', pointer) then
       print('doMob')
-      Questing.Coroutine.doMob(point, pointer)
-    elseif pointer and (GMR.ObjectHasGossip(pointer) or Array.hasElements(C_GossipInfo.GetOptions())) and Array.hasElements(point.questIDs) then
+      Questing.Coroutine.doMob(pointer)
+    elseif pointer and (GMR.ObjectHasGossip(pointer) or Array.hasElements(C_GossipInfo.GetOptions())) then
       print('gossipWithAt')
       Questing.Coroutine.gossipWithAt(point, point.objectID, 1)
     elseif pointer and hasSomeQuestASpecialItem(point.questIDs) then
@@ -1201,7 +1196,6 @@ local function moveToPoint(point)
       questNamesString = ''
       questIDsString = ''
     end
-    local questIDsString
     print('acceptQuests', point.x, point.y, point.z, point.objectID, questIDsString, questNamesString)
     acceptQuests(point)
   elseif point.type == 'object' then
@@ -1238,7 +1232,7 @@ local function moveToPoint(point)
   elseif point.type == 'objectToUseItemOnWhenDead' then
     print('objectToUseItemOnWhenDead')
     if GMR.IsAlive(point.pointer) then
-      Questing.Coroutine.doMob(point, point.pointer)
+      Questing.Coroutine.doMob(point.pointer)
     end
     GMR.TargetObject(point.pointer)
     if isSpecialItemUsable(point) then
@@ -1750,16 +1744,12 @@ function run (once)
 
   C_Timer.NewTicker(0, function()
     if GMR.InCombat() then
-      if _G.stopPathMoving then
-        stopPathMoving()
-      end
+      Movement.stopPathMoving()
     end
 
-    if not GMR.IsExecuting() then
-      if _G.stopPathFindingAndMoving then
-        stopPathFindingAndMoving()
-      end
-    end
+    --if not GMR.IsExecuting() then
+    --  Movement.stopPathFindingAndMoving()
+    --end
   end)
 
   local yielder = createYielder()
@@ -1776,7 +1766,7 @@ function run (once)
       local pointer = GMR.GetAttackingEnemy()
       if pointer then
         local point = createPoint(GMR.ObjectPosition(pointer))
-        Questing.Coroutine.doMob(point, pointer)
+        Questing.Coroutine.doMob(pointer)
       end
     end
     if GMR.IsExecuting() and isIdle() then
