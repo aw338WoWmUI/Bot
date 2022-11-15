@@ -830,6 +830,10 @@ function Movement.canBeFlown()
   return Movement.isFlyingAvailableInZone() and GMR.IsOutdoors() and Movement.canCharacterFly()
 end
 
+function Movement.canMountOnFlyingMount()
+  return Movement.canBeFlown() and Movement.canPlayerStandOnPoint(Movement.retrievePlayerPosition(), {withMount = true})
+end
+
 local TOLERANCE_RANGE = 3
 
 function Movement.distanceOfPointToLine(point, line)
@@ -877,7 +881,7 @@ function Movement.isCharacterInTheAir()
   return Movement.isPositionInTheAir(playerPosition)
 end
 
-function Movement.createMoveToAction3(waypoint, continueMoving, a)
+function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance)
   local stopMoving = nil
   local firstRun = true
   local initialDistance = nil
@@ -890,8 +894,9 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
   end
 
   return {
-    run = function()
+    run = function(action)
       if firstRun then
+        print(1)
         -- log('waypoint', waypoint.x, waypoint.y, waypoint.z)
         stopMoving = GMR.StopMoving
         GMR.StopMoving = function()
@@ -902,18 +907,23 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
       local playerPosition = Movement.retrievePlayerPosition()
       if (
         Movement.canBeFlown() and
-          (GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > 10 or Movement.isPositionInTheAir(waypoint))
+          (totalDistance > 10 or Movement.isPositionInTheAir(waypoint))
       ) then
-        if not Movement.isMountedOnFlyingMount() then
+        if not Movement.isMountedOnFlyingMount() and Movement.canMountOnFlyingMount() then
           GMR.MoveForwardStop()
+          print(2)
           Movement.waitForPlayerStandingStill()
+          print(3)
           Movement.mountOnFlyingMount()
+          print(4)
         end
         if Movement.isMountedOnFlyingMount() then
           local playerPosition = Movement.retrievePlayerPosition()
           if playerPosition.z < waypoint.z and GMR.IsGroundPosition(playerPosition.x, playerPosition.y,
             playerPosition.z) then
+            print(5)
             Movement.liftUp()
+            print(6)
           end
         end
       end
@@ -922,14 +932,17 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a)
         if GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) <= 5 then
           GMR.MoveForwardStop()
         end
-        print('Movement.faceDirection')
         local facingPoint
         if Movement.isPointOnGround(waypoint) and Movement.isCharacterFlying() then
           facingPoint = Movement.createPointWithZOffset(waypoint, MINIMUM_LIFT_HEIGHT)
         else
           facingPoint = waypoint
         end
-        Movement.faceDirection(facingPoint)
+        print(7)
+        Movement.faceDirection(facingPoint, function ()
+          return action.isDone() or action.shouldCancel()
+        end)
+        print(8)
       end
       if not GMR.IsMoving() then
         GMR.MoveForwardStart()
@@ -1064,10 +1077,12 @@ function Movement.isMountedOnFlyingMount()
   return false
 end
 
+function Movement.isDismounted()
+  return not IsMounted()
+end
+
 function Movement.waitForDismounted()
-  return waitFor(function()
-    return not IsMounted()
-  end)
+  return waitFor(Movement.isDismounted)
 end
 
 function Movement.waitForMounted()
@@ -1108,7 +1123,6 @@ function Movement.mountOnFlyingMount()
   print('Movement.mountOnFlyingMount()')
   if not Movement.isMountedOnFlyingMount() then
     local spellName = Movement.receiveFlyingMountSpellName()
-    print('spellName', spellName)
     if spellName then
       if IsMounted() then
         GMR.Dismount()
@@ -1121,16 +1135,19 @@ function Movement.mountOnFlyingMount()
 end
 
 function Movement.waitForIsInAir()
+  return waitFor(Movement.isCharacterInTheAir)
+end
+
+function Movement.waitForIsInAirOrDismounted(timeout)
   return waitFor(function()
-    local playerPosition = Movement.retrievePlayerPosition()
-    return Movement.isPositionInTheAir(playerPosition)
-  end)
+    return Movement.isCharacterInTheAir() or Movement.isDismounted()
+  end, timeout)
 end
 
 function Movement.liftUp()
   GMR.MoveForwardStop()
   GMR.JumpOrAscendStart()
-  Movement.waitForIsInAir()
+  Movement.waitForIsInAirOrDismounted(3)
   GMR.AscendStop()
   Movement.waitForPlayerStandingStill()
 end
@@ -1384,22 +1401,45 @@ function Movement.receiveNeighborPoints(point, distance)
   return neighborPoints
 end
 
-function Movement.movePath(path, hasArrived)
-  if pathMover then
-    pathMover.stop()
+function Movement.calculateTotalPathDistance(path)
+  local totalDistance = 0
+  for index = 2, #path do
+    totalDistance = totalDistance + euclideanDistance2D(path[index - 1], path[index])
   end
+  return totalDistance
+end
+
+function Movement.movePath(path, hasArrived)
+  Movement.stopMoving()
   local a = {
     shouldStop = function()
       return hasArrived and hasArrived()
     end
   }
   local pathLength = #path
+  local totalDistance = Movement.calculateTotalPathDistance(path)
   pathMover = createActionSequenceDoer2(Array.map(path, function(waypoint, index)
-    return Movement.createMoveToAction3(waypoint, index < pathLength, a)
+    return Movement.createMoveToAction3(waypoint, index < pathLength, a, totalDistance)
   end))
   pathMover.run()
   return pathMover
 end
+
+doWhenGMRIsFullyLoaded(function ()
+  hooksecurefunc(GMR, 'MeshTo', Movement.stopMoving)
+  hooksecurefunc(GMR, 'Mesh', Movement.stopMoving)
+  hooksecurefunc(GMR, 'EngageMeshTo', Movement.stopMoving)
+  hooksecurefunc(GMR.Questing, 'MoveTo', Movement.stopMoving)
+  hooksecurefunc(GMR.Questing, 'KillEnemy', Movement.stopMoving)
+  hooksecurefunc(GMR, 'MoveTo', Movement.stopMoving)
+  hooksecurefunc(GMR, 'MapMove', Movement.stopMoving)
+end)
+
+doRegularlyWhenGMRIsFullyLoaded(function ()
+  if GMR.InCombat('player') then
+    Movement.stopMoving()
+  end
+end)
 
 -- view distance = 5: 625
 -- view distance = 10: 975
@@ -1435,9 +1475,9 @@ function Movement.faceSmoothly(point)
   end
 end
 
-function Movement.faceDirection(point)
+function Movement.faceDirection(point, stop)
   local yielder = createYielder()
-  while not GMR.IsFacingXYZ(point.x, point.y, point.z) do
+  while not GMR.IsFacingXYZ(point.x, point.y, point.z) and (not stop or not stop()) do
     local previousPlayerFacingAngle = GMR.ObjectRawFacing('player')
     Movement.faceSmoothly(point)
     yielder.yield()
@@ -1446,7 +1486,9 @@ function Movement.faceDirection(point)
     end
   end
 
-  GMR.FaceDirection(point.x, point.y, point.z)
+  if not stop or not stop() then
+    GMR.FaceDirection(point.x, point.y, point.z)
+  end
 end
 
 function Movement.closestPointOnGrid(point)
@@ -1590,6 +1632,7 @@ function Movement.stopMoving()
   if pathMover then
     pathMover.stop()
     pathMover = nil
+    Movement.path = nil
   end
 end
 

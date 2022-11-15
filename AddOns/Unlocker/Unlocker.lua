@@ -5,17 +5,7 @@ Unlocker.QuestGiverStatuses = {
 }
 
 function Unlocker.retrieveQuestGiverStatus(object)
-  print('HWT.ObjectQuestGiverStatus A')
-  local result = { pcall(HWT.ObjectQuestGiverStatus, object) }
-  print('HWT.ObjectQuestGiverStatus B')
-  local wasSuccessful = result[1]
-  if wasSuccessful then
-    return result[2]
-  else
-    print('error with HWT.ObjectQuestGiverStatus')
-    DevTools_Dump(result)
-    return 0
-  end
+  return HWT.ObjectQuestGiverStatus(object)
 end
 
 function Unlocker.ObjectQuests(object)
@@ -35,15 +25,6 @@ function Unlocker.ObjectQuests(object)
       return {}
     end
   else
-    print('HWT.ObjectQuests A')
-    local result = { pcall(HWT.ObjectQuests, object) }
-    print('HWT.ObjectQuests B')
-    local wasSuccessful = result[1]
-    if wasSuccessful then
-      return Array.slice(result, 2)
-    else
-      print('error with HWT.ObjectQuests')
-      DevTools_Dump(result)
-    end
+    return HWT.ObjectQuests(object)
   end
 end

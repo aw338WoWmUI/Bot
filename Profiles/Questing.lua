@@ -20,7 +20,7 @@ GMR.DefineSetting('Enable', 'Mount')
 GMR.DefineSetting('Enable', 'FlyingMount')
 
 -- Vendoring
-GMR.DefineSetting('Disable', 'Sell')
+GMR.DefineSetting('Enable', 'Sell')
 GMR.DefineSetting('Disable', 'Repair')
 GMR.DefineSetting('Disable', 'FoodDrink')
 GMR.DefineSetting('Disable', 'MountVendoring')

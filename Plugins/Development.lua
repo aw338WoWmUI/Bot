@@ -423,9 +423,6 @@ function logAPICalls2(apiName)
     end
 
     local result = { originalFunction(...) }
-    if coroutine.running() then
-      yieldAndResume()
-    end
 
     output = output .. 'Result:\n'
     local packedResult = tablePack(unpack(result))
@@ -435,10 +432,6 @@ function logAPICalls2(apiName)
 
     -- output = output .. 'Stack trace:\n' .. debugstack() .. '\n'
     writeToLogFile(output)
-
-    if coroutine.running() then
-      yieldAndResume()
-    end
 
     return unpack(result)
   end
@@ -454,7 +447,20 @@ function logAllAPICalls()
   end
 end
 
-logAPICalls2('GMR.RunEncryptedScript')
+function logAPICallsOfAPIsWhichMatch(doesMatch)
+  for key in pairs(GMR) do
+    local apiName = 'GMR.' .. key
+    if type(GMR[key]) == 'function' and doesMatch(apiName) then
+      print('Logging API calls to: ' .. apiName)
+      logAPICalls2(apiName)
+    end
+  end
+end
+
+-- logAPICalls2('GMR.EnemyMovement')
+--logAPICallsOfAPIsWhichMatch(function (apiName)
+--  return string.match(apiName, 'Move') or string.match(apiName, 'Mesh')
+--end)
 -- logAPICalls2('GMR.MapMove')
 -- logAPICalls2('GMR.EngageMeshTo')
 -- logAPICalls2('GMR.GetVendorPath')

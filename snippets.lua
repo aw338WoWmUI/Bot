@@ -190,3 +190,7 @@ HWT.ObjectIsQuestObjective(GMR.FindObject(209463))
 HWT.ObjectIsQuestObjective(GMR.FindObject(209550), false)
 isObjectRelatedToAnyActiveQuest(GMR.FindObject(209550))
 seemsToBeQuestObject(GMR.FindObject(209550))
+
+coroutine.wrap(function () DevTools_Dump(retrieveFlightMasterDiscoveryPoints()) end)()
+
+coroutine.wrap(function () DevTools_Dump(retrievePoints()) end)()

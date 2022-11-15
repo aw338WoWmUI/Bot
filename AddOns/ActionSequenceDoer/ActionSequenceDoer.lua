@@ -40,16 +40,16 @@ function createActionSequenceDoer2(actions)
         while not hasStopped do
           while index <= #actions do
             local action = actions[index]
-            if action.isDone() then
+            if action:isDone() then
               isActionRunning = false
               if action.whenIsDone then
-                action.whenIsDone()
+                action:whenIsDone()
               end
               index = index + 1
             else
-              if isActionRunning and action.shouldCancel and action.shouldCancel() then
+              if isActionRunning and action.shouldCancel and action:shouldCancel() then
                 if action.onCancel then
-                  action.onCancel()
+                  action:onCancel()
                   actionSequenceDoer.stop()
                 end
                 return false
@@ -63,7 +63,7 @@ function createActionSequenceDoer2(actions)
             local action = actions[index]
             isActionRunning = true
             -- print('run action', index)
-            action.run()
+            action:run()
 
             yielder.yield()
           else

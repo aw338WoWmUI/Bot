@@ -8,8 +8,21 @@ Core.NpcFlags = {
   Banker = 0x20000,
 }
 
+function Core.isUnit(object)
+  return HWT.ObjectIsType(object, HWT.GetObjectTypeFlagsTable().Unit)
+end
+
 function Core.areFlagsSet(bitMap, flags)
   return bit.band(bitMap, flags) == flags
+end
+
+function Core.areUnitNPCFlagsSet(object, flags)
+  local npcFlags = Core.retrieveObjectNPCFlags(object)
+  return Core.areFlagsSet(npcFlags, flags)
+end
+
+function Core.isUnitNPCType(object, flags)
+  return Core.isUnit(object) and Core.areUnitNPCFlagsSet(object, flags)
 end
 
 function Core.retrieveObjectNPCFlags(object)
@@ -17,28 +30,23 @@ function Core.retrieveObjectNPCFlags(object)
 end
 
 function Core.isFoodVendor(object)
-  local npcFlags = Core.retrieveObjectNPCFlags(object)
-  return Core.areFlagsSet(npcFlags, Core.NpcFlags.FoodVendor)
+  return Core.isUnitNPCType(object, Core.NpcFlags.FoodVendor)
 end
 
 function Core.isInnkeeper(object)
-  local npcFlags = Core.retrieveObjectNPCFlags(object)
-  return Core.areFlagsSet(npcFlags, Core.NpcFlags.Innkeeper)
+  return Core.isUnitNPCType(object, Core.NpcFlags.Innkeeper)
 end
 
 function Core.isBanker(object)
-  local npcFlags = Core.retrieveObjectNPCFlags(object)
-  return Core.areFlagsSet(npcFlags, Core.NpcFlags.Banker)
+  return Core.isUnitNPCType(object, Core.NpcFlags.Banker)
 end
 
 function Core.isRepair(object)
-  local npcFlags = Core.retrieveObjectNPCFlags(object)
-  return Core.areFlagsSet(npcFlags, Core.NpcFlags.Repair)
+  return Core.isUnitNPCType(object, Core.NpcFlags.Repair)
 end
 
 function Core.isFlightMaster(object)
-  local npcFlags = Core.retrieveObjectNPCFlags(object)
-  return Core.areFlagsSet(npcFlags, Core.NpcFlags.FlightMaster)
+  return Core.isUnitNPCType(object, Core.NpcFlags.FlightMaster)
 end
 
 function Core.isFlightMasterDiscoverable(object)
@@ -47,6 +55,5 @@ function Core.isFlightMasterDiscoverable(object)
 end
 
 function Core.isDiscoverableFlightMaster(object)
-  return false
-  -- return Core.isFlightMaster(object) and GMR.UnitReaction('player', object) >= 4 and Core.isFlightMasterDiscoverable(object)
+  return Core.isFlightMaster(object) and GMR.UnitReaction('player', object) >= 4 and Core.isFlightMasterDiscoverable(object)
 end

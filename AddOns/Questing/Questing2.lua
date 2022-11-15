@@ -1,4 +1,9 @@
+Questing = Questing or {}
+
 local addOnName, AddOn = ...
+
+local lootedObjects = Set.create()
+local recentlyVisitedObjectivePoints = {}
 
 local EXPLORE_QUESTS = true
 
@@ -8,14 +13,14 @@ local questsThatFailedToWork = Set.create()
 local function isQuestThatWorked(questID)
   return (
     Set.contains(questsThatWorked, questID) or
-    Set.contains(GMR_SavedVariablesPerCharacter.questsThatWorked or Set.create(), questID)
+      Set.contains(GMR_SavedVariablesPerCharacter.questsThatWorked or Set.create(), questID)
   )
 end
 
 local function isQuestThatFailedToWork(questID)
   return (
     Set.contains(questsThatFailedToWork, questID) or
-    Set.contains(GMR_SavedVariablesPerCharacter.questsThatFailedToWork or Set.create(), questID)
+      Set.contains(GMR_SavedVariablesPerCharacter.questsThatFailedToWork or Set.create(), questID)
   )
 end
 
@@ -309,19 +314,21 @@ local function generateQuestStartPointsFromStarters(quest)
     local yielder = createYielderWithTimeTracking(1 / 60)
 
     return Array.selectTrue(Array.map(quest.starters, function(starter)
-      local npc = Questing.Database.retrieveNPC(starter)
-      if npc then
-        local position = retrieveNPCPosition(npc)
-        if position then
-          local continentID = position.continentID
-          local x, y, z
-          local npcPointer = GMR.FindObject(npc.id)
-          if npcPointer then
-            x, y, z = GMR.ObjectPosition(npcPointer)
-          else
-            x, y, z = position.x, position.y, position.z
-          end
+      -- TODO: Seems to make sense to also include other types.
+      if starter.type == 'npc' then
+        local npc = Questing.Database.retrieveNPC(starter.id)
+        if npc then
+          local position = retrieveNPCPosition(npc)
           if position then
+            local continentID = position.continentID
+            local x, y, z
+            local npcPointer = GMR.FindObject(npc.id)
+            if npcPointer then
+              x, y, z = GMR.ObjectPosition(npcPointer)
+            else
+              x, y, z = position.x, position.y, position.z
+            end
+
             if not npcPointer and GMR.GetDistanceToPosition(x, y, z) <= GMR.GetScanRadius() then
               return nil
             else
@@ -339,16 +346,16 @@ local function generateQuestStartPointsFromStarters(quest)
               }
               return point
             end
+          else
+            -- print('Missing NPC coordinates for NPC with ID "' .. npc.id .. '".')
           end
         else
-          -- print('Missing NPC coordinates for NPC with ID "' .. npc.id .. '".')
+          -- print('Missing NPC for ID "' .. starterID .. '" for quest "' .. quest.id .. '".')
         end
-      else
-        -- print('Missing NPC for ID "' .. starterID .. '" for quest "' .. quest.id .. '".')
-      end
 
-      if yielder.hasRanOutOfTime() then
-        yielder.yield()
+        if yielder.hasRanOutOfTime() then
+          yielder.yield()
+        end
       end
     end))
   else
@@ -419,8 +426,7 @@ function retrieveQuestStartPoints()
     local points3 = Array.selectTrue(Array.flatMap(questLines, function(questLine)
       if (
         Set.contains(questIDs, questLine.questID) or
-          GMR.IsQuestActive(questLine.questID) or
-          questIDsInDatabase[questLine.questID]
+          GMR.IsQuestActive(questLine.questID)
       ) then
         return nil
       else
@@ -500,14 +506,13 @@ function determineFirstOpenObjectiveIndex(questID)
   end
 end
 
-
 function canQuestBeTurnedIn(questID)
   return GMR.IsQuestCompletable(questID)
 end
 
 function retrieveObjectivePoints()
   local quests, mapID = retrieveQuestsOnMap()
-  return Array.selectTrue(
+  local points = Array.selectTrue(
     Array.map(quests, function(quest)
       local questID = quest.questID
 
@@ -519,7 +524,7 @@ function retrieveObjectivePoints()
         local objectIDs
         if canQuestBeTurnedIn(questID) then
           local quest2 = Questing.Database.retrieveQuest(questID)
-          objectIDs = Array.map(quest2.enders, function (ender)
+          objectIDs = Array.map(quest2.enders, function(ender)
             return ender.id
           end)
         else
@@ -561,6 +566,12 @@ function retrieveObjectivePoints()
       end
     end)
   )
+
+  points = Array.filter(points, function (point)
+    return not recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)]
+  end)
+
+  return points
 end
 
 --C_AreaPoiInfo.GetAreaPOIForMap(GMR.GetMapId())
@@ -742,7 +753,9 @@ end
 
 function retrieveLootPoints()
   local objects = retrieveObjects()
-  local filteredObjects = Array.filter(objects, isLootable)
+  local filteredObjects = Array.filter(objects, function (object)
+    return not Set.contains(lootedObjects, object.pointer) and isLootable(object)
+  end)
   local objectPointers = convertObjectsToPointers(filteredObjects)
   local objectPoints = convertObjectPointersToObjectPoints(objectPointers, 'loot')
 
@@ -826,39 +839,6 @@ function retrieveExplorationPoints()
   local points = convertObjectPointersToObjectPoints(objectPointers, 'exploration')
 
   return points
-end
-
-local function retrievePoints()
-  local yielder = createYielderWithTimeTracking(1 / 60)
-
-  local questStartPoints = retrieveQuestStartPoints()
-  if yielder.hasRanOutOfTime() then
-    yielder.yield()
-  end
-  local objectivePoints = retrieveObjectivePoints()
-  if yielder.hasRanOutOfTime() then
-    yielder.yield()
-  end
-  local objectPoints = retrieveObjectPoints()
-  if yielder.hasRanOutOfTime() then
-    yielder.yield()
-  end
-  local lootPoints = retrieveLootPoints()
-  if yielder.hasRanOutOfTime() then
-    yielder.yield()
-  end
-  -- local explorationPoints = {} -- retrieveExplorationPoints()
-  --if yielder.hasRanOutOfTime() then
-  --  yielder.yield()
-  --end
-  return {
-    questStartPoints = questStartPoints,
-    objectivePoints = objectivePoints,
-    objectPoints = objectPoints,
-    explorationPoints = {}, -- explorationPoints
-    lootPoints = lootPoints,
-    discoverFlightMasterPoints = retrieveFlightMasterDiscoveryPoints()
-  }
 end
 
 function calculatePathLength(path)
@@ -1279,8 +1259,16 @@ local function moveToPoint(point)
       runQuestHandler(questHandler)
     else
       Questing.Coroutine.moveTo(point)
+      if GMR.IsPlayerPosition(point.x, point.y, point.z, INTERACT_DISTANCE) then
+        recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)] ={
+          time = GetTime()
+        }
+      end
     end
   elseif point.type == 'loot' then
+    Questing.Coroutine.interactWithObject(point.pointer)
+    Set.add(lootedObjects, point.pointer)
+  elseif point.type == 'discoverFlightMaster' then
     Questing.Coroutine.interactWithObject(point.pointer)
   else
     print('moveToPoint', point.x, point.y, point.z)
@@ -1320,8 +1308,38 @@ function seemToBeSamePoints(a, b)
   end
 end
 
-function moveToClosestPoint()
-  local points = retrievePoints()
+function retrievePoints()
+  local yielder = createYielderWithTimeTracking(1 / 60)
+
+  local questStartPoints = retrieveQuestStartPoints()
+  if yielder.hasRanOutOfTime() then
+    yielder.yield()
+  end
+  local objectivePoints = retrieveObjectivePoints()
+  if yielder.hasRanOutOfTime() then
+    yielder.yield()
+  end
+  local objectPoints = retrieveObjectPoints()
+  if yielder.hasRanOutOfTime() then
+    yielder.yield()
+  end
+  local lootPoints = retrieveLootPoints()
+  if yielder.hasRanOutOfTime() then
+    yielder.yield()
+  end
+  -- local explorationPoints = {} -- retrieveExplorationPoints()
+  --if yielder.hasRanOutOfTime() then
+  --  yielder.yield()
+  --end
+  local points = {
+    questStartPoints = questStartPoints,
+    objectivePoints = objectivePoints,
+    objectPoints = objectPoints,
+    explorationPoints = {}, -- explorationPoints
+    lootPoints = lootPoints,
+    discoverFlightMasterPoints = retrieveFlightMasterDiscoveryPoints()
+  }
+
   local continentID = select(8, GetInstanceInfo())
   for key, value in pairs(points) do
     points[key] = Array.filter(value, function(point)
@@ -1333,6 +1351,12 @@ function moveToClosestPoint()
       )
     end)
   end
+
+  return points
+end
+
+function moveToClosestPoint()
+  local points = retrievePoints()
   local pointToGo = determinePointToGo(points)
   if pointToGo then
     if previousPointsToGo[1] == nil or not seemToBeSamePoints(pointToGo, previousPointsToGo[1]) then
@@ -1642,6 +1666,7 @@ function isIdle()
       not (questID and GMR.IsQuestActive(questID) and not GMR.IsQuestCompletable(questID)) and
       not GMR.IsQuesting() and
       not GMR.IsCasting() and
+      (not GMR_SavedVariablesPerCharacter.Sell or not GMR.IsSelling()) and
       not GMR.IsVendoring() and
       not GMR.IsAttacking() and
       (not GMR.IsClassTrainerNeeded or not GMR.IsClassTrainerNeeded()) and
@@ -1655,7 +1680,7 @@ function isIdle()
       not GMR.IsUnstuckEnabled() and
       not GMR.IsPreparing() and
       not GMR.IsGhost('player') and
-      not GMR.IsRepairing() and
+      (not GMR_SavedVariablesPerCharacter.Repair or not GMR.IsRepairing()) and
       (not _G.isPathFinding or not isPathFinding())
   )
 end
@@ -1679,6 +1704,10 @@ function hasEnoughFreeSlotsToCompleteQuest()
   end
   local numberOfFreeInventorySlots = determineNumberOfFreeInventorySlots()
   return numberOfItemsAddedToBag <= numberOfFreeInventorySlots
+end
+
+function Questing.areBagsFull()
+  return determineNumberOfFreeInventorySlots() == 0
 end
 
 function waitForQuestHasBeenAccepted()
@@ -1736,6 +1765,13 @@ function run (once)
   local yielder = createYielder()
 
   while true do
+    local time = GetTime()
+    for key, value in pairs(recentlyVisitedObjectivePoints) do
+      if time - value.time > 60 then
+        recentlyVisitedObjectivePoints[key] = nil
+      end
+    end
+
     if GMR.IsExecuting() and GMR.InCombat() and not GMR.IsAttacking() then
       local pointer = GMR.GetAttackingEnemy()
       if pointer then
