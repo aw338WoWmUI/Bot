@@ -108,16 +108,17 @@ end
 
 function Questing.Database.convertQuestieQuestToQuestingQuest(quest)
   local sidesAndRaces = Questing.Database.convertQuestieRacesToQuestingSidesAndRaces(quest.requiredRaces)
-  -- FIXME: Same structure for starterIDs and enderIDs as in Database ({type, id})
-  local starterIDs = select(2, next(quest.startedBy))
-  local enderIDs = select(2, next(quest.finishedBy))
+  -- FIXME: Same structure for starters and enders as in Database ({type, id})
+  local starters = select(2, next(quest.startedBy))
+  local enders = select(2, next(quest.finishedBy))
   return {
     id = quest.Id,
     requiredLevel = quest.requiredLevel,
     sides = sidesAndRaces.sides,
     races = sidesAndRaces.races,
     classes = Questing.Database.convertQuestieClassesToQuestingClasses(quest.requiredClasses),
-    enderIDs = enderIDs,
+    starters = starters,
+    enders = enders,
     preQuestIDs = Array.concat(quest.preQuestGroup, quest.preQuestSingle),
     storylinePreQuestIDs = {}
   }

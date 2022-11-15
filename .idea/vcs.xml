@@ -5,6 +5,7 @@
     <mapping directory="$PROJECT_DIR$/AddOns/AStar" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Array" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/BinaryHeap/libs/BinaryHeap" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/AddOns/Boolean" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Coroutine" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Events" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Function" vcs="Git" />

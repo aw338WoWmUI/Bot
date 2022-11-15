@@ -7,7 +7,7 @@ for _, quest in ipairs(quests) do
 end
 
 quests = Array.filter(quests, function(quest)
-  return (not quest.sides or quest.sides[1] ~= 'None') and next(quest.starterIDs)
+  return (not quest.sides or quest.sides[1] ~= 'None') and quest.starters and next(quest.starters)
 end)
 
 table.insert(questLookup[49402].preQuestIDs, 49239)
@@ -41,7 +41,7 @@ function Questing.Database.retrieveQuestsThatShouldBeAvailableFromNPC(npcID)
   return Array.filter(quests, function(quest)
     return (
       Array.any(
-        quest.starterIDs,
+        quest.starters,
         function(object)
           return object.type == 'npc' and object.id == npcID
         end
@@ -98,6 +98,23 @@ Array.forEach(quests, function(quest)
           end
         end
       end)
+    end)
+  end
+
+  local starters = quest.starters
+  if starters then
+    Array.forEach(starters, function(object)
+      if object.type == 'npc' then
+        local objectID = object.id
+        local npc = Questing.Database.retrieveNPC(objectID)
+        if npc then
+          if not npc.startsQuests then
+            npc.startsQuests = Set.create()
+          end
+          local questID = quest.id
+          npc.startsQuests:add(questID)
+        end
+      end
     end)
   end
 end)

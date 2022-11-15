@@ -1,5 +1,5 @@
 GMR.DefineProfileName('Questing')
-GMR.DefineProfileType('Questing')
+GMR.DefineProfileType('Custom')
 
 -- General
 GMR.DefineSetting('Disable', 'GryphonMaster')
@@ -16,8 +16,8 @@ GMR.DefineSetting('Disable', 'Looting')
 GMR.DefineSetting('Disable', 'MassLooting')
 
 -- Mounting
-GMR.DefineSetting('Disable', 'Mount')
-GMR.DefineSetting('Disable', 'FlyingMount')
+GMR.DefineSetting('Enable', 'Mount')
+GMR.DefineSetting('Enable', 'FlyingMount')
 
 -- Vendoring
 GMR.DefineSetting('Disable', 'Sell')

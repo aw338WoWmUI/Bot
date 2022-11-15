@@ -1,12 +1,16 @@
 Questing = Questing or {}
 Questing.Coroutine = {}
 
+--local function moveTo(to, hasArrived)
+--  local from = Movement.retrievePlayerPosition()
+--  local pathFinder = Movement.createPathFinder()
+--  local path = pathFinder.start(from, to)
+--  Movement.path = path
+--  local pathMover = Movement.movePath(path, hasArrived)
+--end
+
 local function moveTo(to, hasArrived)
-  local from = Movement.retrievePlayerPosition()
-  local pathFinder = Movement.createPathFinder()
-  local path = pathFinder.start(from, to)
-  Movement.path = path
-  local pathMover = Movement.movePath(path, hasArrived)
+  GMR.Questing.MoveTo(to.x, to.y, to.z)
 end
 
 function Questing.Coroutine.moveTo(point, distance)
@@ -278,3 +282,4 @@ function Questing.Coroutine.doMob(point, pointer)
     end
   end
 end
+

@@ -1,5 +1,48 @@
 local addOnName, AddOn = ...
 
+local EXPLORE_QUESTS = true
+
+local questsThatWorked = Set.create()
+local questsThatFailedToWork = Set.create()
+
+local function isQuestThatWorked(questID)
+  return (
+    Set.contains(questsThatWorked, questID) or
+    Set.contains(GMR_SavedVariablesPerCharacter.questsThatWorked or Set.create(), questID)
+  )
+end
+
+local function isQuestThatFailedToWork(questID)
+  return (
+    Set.contains(questsThatFailedToWork, questID) or
+    Set.contains(GMR_SavedVariablesPerCharacter.questsThatFailedToWork or Set.create(), questID)
+  )
+end
+
+local function isQuestToBeDone(questID)
+  if EXPLORE_QUESTS then
+    return not isQuestThatFailedToWork(questID)
+  else
+    return isQuestThatWorked(questID)
+  end
+end
+
+function addQuestToQuestsThatWorked()
+  local questID = C_SuperTrack.GetSuperTrackedQuestID()
+  if not GMR_SavedVariablesPerCharacter.questsThatWorked then
+    GMR_SavedVariablesPerCharacter.questsThatWorked = Set.create()
+  end
+  Set.add(GMR_SavedVariablesPerCharacter.questsThatWorked, questID)
+end
+
+function addQuestToQuestsThatFailedToWork()
+  local questID = C_SuperTrack.GetSuperTrackedQuestID()
+  if not GMR_SavedVariablesPerCharacter.questsThatFailedToWork then
+    GMR_SavedVariablesPerCharacter.questsThatFailedToWork = Set.create()
+  end
+  Set.add(GMR_SavedVariablesPerCharacter.questsThatFailedToWork, questID)
+end
+
 local objectBlacklist = {
   {
     id = 138341,
@@ -261,12 +304,12 @@ function canPickUpQuest()
   return not isQuestLogFull()
 end
 
-local function generateQuestStartPointsFromStarterIDs(quest)
-  if quest.starterIDs then
+local function generateQuestStartPointsFromStarters(quest)
+  if quest.starters then
     local yielder = createYielderWithTimeTracking(1 / 60)
 
-    return Array.selectTrue(Array.map(quest.starterIDs, function(starterID)
-      local npc = Questing.Database.retrieveNPC(starterID)
+    return Array.selectTrue(Array.map(quest.starters, function(starter)
+      local npc = Questing.Database.retrieveNPC(starter)
       if npc then
         local position = retrieveNPCPosition(npc)
         if position then
@@ -320,32 +363,29 @@ function retrieveQuestStartPoints()
   end
 
   local points4 = {}
-  --local points4 = {}
-  --local objects = retrieveObjects()
-  --local continentID = select(8, GetInstanceInfo())
-  --Array.forEach(objects, function(object)
-  --  if Unlocker.retrieveQuestGiverStatus(object.pointer) == Unlocker.QuestGiverStatuses.Quest then
-  --    local point = {
-  --      objectID = object.ID,
-  --      continentID = continentID,
-  --      x = object.x,
-  --      y = object.y,
-  --      z = object.z,
-  --      type = 'acceptQuests',
-  --      questIDs = nil,
-  --      questName = nil
-  --    }
-  --    table.insert(points4, point)
-  --  end
-  --end)
-
-
+  local objects = retrieveObjects()
+  local continentID = select(8, GetInstanceInfo())
+  Array.forEach(objects, function(object)
+    if Unlocker.retrieveQuestGiverStatus(object.pointer) == Unlocker.QuestGiverStatuses.Quest then
+      local point = {
+        objectID = object.ID,
+        continentID = continentID,
+        x = object.x,
+        y = object.y,
+        z = object.z,
+        type = 'acceptQuests',
+        questIDs = nil,
+        questName = nil
+      }
+      table.insert(points4, point)
+    end
+  end)
 
   local quests2 = Questing.Database.retrieveQuestsThatShouldBeAvailable()
 
   local points1 = Array.selectTrue(Array.flatMap(quests2, function(quest)
     if not unavailableQuestIDs[quest.id] then
-      return generateQuestStartPointsFromStarterIDs(quest)
+      return generateQuestStartPointsFromStarters(quest)
     end
   end))
 
@@ -386,7 +426,7 @@ function retrieveQuestStartPoints()
       else
         local quest = Questing.Database.retrieveQuest(questLine.questID)
         if quest then
-          return generateQuestStartPointsFromStarterIDs(quest)
+          return generateQuestStartPointsFromStarters(quest)
         else
           local x, y, z = GMR.GetWorldPositionFromMap(mapID, questLine.x, questLine.y)
           return {
@@ -460,6 +500,7 @@ function determineFirstOpenObjectiveIndex(questID)
   end
 end
 
+
 function canQuestBeTurnedIn(questID)
   return GMR.IsQuestCompletable(questID)
 end
@@ -478,7 +519,9 @@ function retrieveObjectivePoints()
         local objectIDs
         if canQuestBeTurnedIn(questID) then
           local quest2 = Questing.Database.retrieveQuest(questID)
-          objectIDs = quest2.enderIDs
+          objectIDs = Array.map(quest2.enders, function (ender)
+            return ender.id
+          end)
         else
           objectIDs = Array.map(
             retrieveQuestObjectiveInfo(questID, firstOpenObjectiveIndex),
@@ -646,7 +689,7 @@ function convertObjectPointerToObjectPoint(pointer, type, adjustPoint)
     type = type,
     pointer = pointer,
     objectID = objectID,
-    questIDs = Unlocker.ObjectQuests(pointer)
+    questIDs = retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(objectID)
   }
   if adjustPoint then
     point = adjustPoint(point)
@@ -675,7 +718,13 @@ end
 -- /dump GMR.PathExists(savedPosition)
 
 function doesPassObjectFilter(object)
-  return HWT.ObjectIsQuestObjective(object.pointer, false) and isAlive(object.pointer)
+  return (
+    isAlive(object.pointer) and
+      (
+        HWT.ObjectIsQuestObjective(object.pointer, false) or
+          seemsToBeQuestObject(object.pointer)
+      )
+  )
 end
 
 function retrieveObjectPoints()
@@ -702,7 +751,7 @@ end
 
 function retrieveFlightMasterDiscoveryPoints()
   local objects = retrieveObjects()
-  local filteredObjects = Array.filter(objects, function (object)
+  local filteredObjects = Array.filter(objects, function(object)
     return Core.isDiscoverableFlightMaster(object.pointer)
   end)
   local objectPointers = convertObjectsToPointers(filteredObjects)
@@ -876,7 +925,8 @@ local function determinePointToGo(points)
     if next(points.explorationPoints) then
       return determineClosestPoint(points.explorationPoints)
     else
-      local points2 = Array.concat(points.questStartPoints, points.objectivePoints, points.discoverFlightMasterPoints, points.lootPoints)
+      local points2 = Array.concat(points.questStartPoints, points.objectivePoints, points.discoverFlightMasterPoints,
+        points.lootPoints)
       if next(points2) then
         return determineClosestPoint(points2)
       else
@@ -1035,7 +1085,7 @@ local function doSomethingWithObject(point)
     if pointer and GMR.UnitCanAttack('player', pointer) then
       print('doMob')
       Questing.Coroutine.doMob(point, pointer)
-    elseif pointer and (GMR.ObjectHasGossip(pointer) or next(C_GossipInfo.GetOptions())) and next(point.questIDs) then
+    elseif pointer and (GMR.ObjectHasGossip(pointer) or Array.hasElements(C_GossipInfo.GetOptions())) and Array.hasElements(point.questIDs) then
       print('gossipWithAt')
       Questing.Coroutine.gossipWithAt(point, point.objectID, 1)
     elseif pointer and hasSomeQuestASpecialItem(point.questIDs) then
@@ -1087,12 +1137,14 @@ function acceptQuests(point)
       end
       local numberOfQuests = #quests
       Array.forEach(quests, function(quest, index)
-        C_GossipInfo.SelectAvailableQuest(quest.questID)
-        local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
-        if wasSuccessful then
-          AcceptQuest()
-          if index < numberOfQuests then
-            Events.waitForEvent('GOSSIP_SHOW')
+        if isQuestToBeDone(quest.questID) then
+          C_GossipInfo.SelectAvailableQuest(quest.questID)
+          local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
+          if wasSuccessful then
+            AcceptQuest()
+            if index < numberOfQuests then
+              Events.waitForEvent('GOSSIP_SHOW')
+            end
           end
         end
       end)
@@ -1276,7 +1328,8 @@ function moveToClosestPoint()
       return (
         point.continentID == continentID and
           -- A B A
-          (not previousPointsToGo[2] or not seemToBeSamePoints(point, previousPointsToGo[2]))
+          (not previousPointsToGo[2] or not seemToBeSamePoints(point, previousPointsToGo[2])) and
+          (not point.questIDs or not Array.hasElements(point.questIDs) or Array.any(point.questIDs, isQuestToBeDone))
       )
     end)
   end

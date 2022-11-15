@@ -34,8 +34,8 @@ async function processQuest(id) {
     }
   }
 
-  quest.starterIDs = extractObjectIDs(infoBoxContent, '[icon name=quest-start]Start')
-  quest.enderIDs = extractObjectIDs(infoBoxContent, '[icon name=quest-end]End')
+  quest.starters = extractObjects(infoBoxContent, '[icon name=quest-start]Start')
+  quest.enders = extractObjects(infoBoxContent, '[icon name=quest-end]End')
 
   {
     const match = sideRegExp.exec(infoBoxContent)
@@ -77,7 +77,7 @@ async function processQuest(id) {
   return quest
 }
 
-function extractObjectIDs(content, label) {
+function extractObjects(content, label) {
   const IDs = []
   const startsWithRegExp = new RegExp('\\[li\\]' + escapeForRegExp(label) + ': .*?\\[\\\\\\/li\\]')
   const match = startsWithRegExp.exec(content)
@@ -85,10 +85,10 @@ function extractObjectIDs(content, label) {
     const npcIDRegExp = /(npc|object|item)=(\d+)/g
     let match2
     while (match2 = npcIDRegExp.exec(match[0])) {
-      const starterID = parseInt(match2[2], 10)
+      const id = parseInt(match2[2], 10)
       IDs.push({
         type: match2[1],
-        id: starterID
+        id
       })
     }
   }
