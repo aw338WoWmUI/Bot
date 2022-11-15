@@ -25,3 +25,6 @@
 [submodule "AddOns/Function"]
 	path = AddOns/Function
 	url = https://github.com/SanjoSolutions/LuaFunction.git
+[submodule "AddOns/Boolean"]
+	path = AddOns/Boolean
+	url = https://github.com/SanjoSolutions/LuaBoolean.git
