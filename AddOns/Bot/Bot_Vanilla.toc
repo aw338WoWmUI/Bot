@@ -1,5 +1,6 @@
 ## Title: Bot
 ## Interface: 11403
-## Dependencies: Questing
+## Dependencies: Boolean
 
 Bot.lua
+Warrior.lua

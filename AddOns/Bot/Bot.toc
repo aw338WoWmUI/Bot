@@ -1,5 +1,6 @@
 ## Title: Bot
 ## Interface: 100002
-## Dependencies: Questing
+## Dependencies: Boolean
 
 Bot.lua
+Warrior.lua
