@@ -194,3 +194,6 @@ seemsToBeQuestObject(GMR.FindObject(209550))
 coroutine.wrap(function () DevTools_Dump(retrieveFlightMasterDiscoveryPoints()) end)()
 
 coroutine.wrap(function () DevTools_Dump(retrievePoints()) end)()
+
+GMR.RunString('_G.HWT = ({...})[1]')
+GMR.RunString('_G.TEST = {...}')
