@@ -174,7 +174,7 @@ function moveToWhileFacing(moveToPosition, positionToFace)
   moveToWithCurrentFacingDirection(moveToPosition)
   local handler
   handler = C_Timer.NewTicker(1 / 60, function()
-    if hasStopped or not GMR.IsExecuting() then
+    if hasStopped then
       handler:Cancel()
     elseif (
       hasArrivedAt(moveToPosition, moveToWhileFacingDistanceProximityTolerance) and

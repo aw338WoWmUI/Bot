@@ -145,21 +145,21 @@ defineQuest3(
 
     if self:isObjectiveOpen(1) then
       if not GMR.FindObject(57310) then
-        if GMR.IsExecuting() then
+        if Questing.isRunning() then
           Questing.Coroutine.gossipWith(58376, 40644)
         end
         local gossipOptionID = 40648
-        if GMR.IsExecuting() then
+        if Questing.isRunning() then
           waitForGossipOptionToBeAvailable(gossipOptionID, 2)
         end
-        if GMR.IsExecuting() then
+        if Questing.isRunning() then
           C_GossipInfo.SelectOption(gossipOptionID)
         end
-        if GMR.IsExecuting() then
+        if Questing.isRunning() then
           waitForGossipClosed(2)
         end
       end
-      while GMR.IsExecuting() and self:isObjectiveOpen(1) do
+      while Questing.isRunning() and self:isObjectiveOpen(1) do
         local npcID = 57310
         local pointer = GMR.FindObject(npcID)
         if pointer then
@@ -1654,6 +1654,10 @@ function Questing.isRunning()
   return isRunning
 end
 
+function Questing.toggle()
+  isRunning = not isRunning
+end
+
 function isIdle()
   local questID = GMR.GetQuestId()
   return (
@@ -1748,7 +1752,7 @@ function run (once)
       Movement.stopPathMoving()
     end
 
-    --if not GMR.IsExecuting() then
+    --if not Questing.isRunning() then
     --  Movement.stopPathFindingAndMoving()
     --end
   end)
@@ -1763,14 +1767,14 @@ function run (once)
       end
     end
 
-    if GMR.IsExecuting() and GMR.InCombat() and not GMR.IsAttacking() then
+    if Questing.isRunning() and GMR.InCombat() and not GMR.IsAttacking() then
       local pointer = GMR.GetAttackingEnemy()
       if pointer then
         local point = createPoint(GMR.ObjectPosition(pointer))
         Questing.Coroutine.doMob(pointer)
       end
     end
-    if GMR.IsExecuting() and isIdle() then
+    if Questing.isRunning() and isIdle() then
       pointToMove = nil
 
       local quests = retrieveQuestLogQuests()

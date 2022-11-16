@@ -965,7 +965,6 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
     shouldCancel = function()
       return (
         a.shouldStop() or
-          not GMR.IsExecuting() or
           GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
       )
     end,
@@ -1420,12 +1419,12 @@ function Movement.calculateTotalPathDistance(path)
   return totalDistance
 end
 
-function Movement.movePath(path, hasArrived)
+function Movement.movePath(path, stop)
   print('Movement.movePath')
   Movement.stopMoving()
   local a = {
-    shouldStop = function()
-      return hasArrived and hasArrived()
+    shouldStop = stop or function()
+      return false
     end
   }
   local pathLength = #path
@@ -1529,8 +1528,10 @@ end
 doWhenGMRIsFullyLoaded(function()
   GMR.Mesh = moveToFromNonCoroutine
   GMR.MeshTo = moveToFromNonCoroutine
-  GMR.UnstuckHandler = function () end
-  GMR.UnstuckPathHandler = function () end
+  GMR.UnstuckHandler = function()
+  end
+  GMR.UnstuckPathHandler = function()
+  end
   --GMR.Mesh = hooksecurefunc(GMR, 'MeshTo', function()
   --  print('GMR.MeshTo')
   --  Movement.stopMoving()

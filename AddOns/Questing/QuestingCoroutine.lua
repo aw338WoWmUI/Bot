@@ -6,7 +6,9 @@ local function moveTo(to, hasArrived)
   local pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
   Movement.path = path
-  local pathMover = Movement.movePath(path, hasArrived)
+  local pathMover = Movement.movePath(path, function ()
+    return not Questing.isRunning() or (hasArrived and hasArrived())
+  end)
 end
 
 function Questing.Coroutine.moveTo(point, distance)
@@ -24,7 +26,7 @@ function Questing.Coroutine.moveTo(point, distance)
     return GMR.IsPlayerPosition(point.x, point.y, point.z, distance)
   end
 
-  while GMR.IsExecuting() and not hasArrived() do
+  while Questing.isRunning() and not hasArrived() do
     if isIdle() then
       moveTo(point, hasArrived)
       waitFor(function()
@@ -35,7 +37,7 @@ function Questing.Coroutine.moveTo(point, distance)
     end
   end
 
-  if GMR.IsExecuting() then
+  if Questing.isRunning() then
     Movement.stopMoving()
   end
 end
@@ -66,7 +68,7 @@ function Questing.Coroutine.moveToObject(pointer, distance)
     end
   end
 
-  while GMR.IsExecuting() and not isJobDone() do
+  while Questing.isRunning() and not isJobDone() do
     if isIdle() then
       local position = retrievePosition()
       moveTo(position)
@@ -78,7 +80,7 @@ function Questing.Coroutine.moveToObject(pointer, distance)
     end
   end
 
-  if GMR.IsExecuting() then
+  if Questing.isRunning() then
     Movement.stopMoving()
   end
 end
@@ -90,7 +92,7 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
     Questing.Coroutine.moveTo(point, distance)
   end
 
-  if GMR.IsExecuting() then
+  if Questing.isRunning() then
     local pointer = GMR.FindObject(objectID)
     if pointer then
       if IsMounted() then
@@ -118,7 +120,7 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
     Questing.Coroutine.moveToObject(pointer, distance)
   end
 
-  if GMR.IsExecuting() and GMR.ObjectExists(pointer) then
+  if Questing.isRunning() and GMR.ObjectExists(pointer) then
     if IsMounted() then
       GMR.Dismount()
     end
@@ -134,7 +136,7 @@ function Questing.Coroutine.useItemOnNPC(point, objectID, itemID, distance)
     Questing.Coroutine.moveTo(point, distance)
   end
 
-  if GMR.IsExecuting() then
+  if Questing.isRunning() then
     GMR.Questing.UseItemOnNpc(point.x, point.y, point.z, objectID, itemID, distance)
   end
 end
@@ -146,7 +148,7 @@ function Questing.Coroutine.useItemOnGround(point, itemID, distance)
     Questing.Coroutine.moveTo(point, distance)
   end
 
-  if GMR.IsExecuting() then
+  if Questing.isRunning() then
     GMR.Questing.UseItemOnGround(point.x, point.y, point.z, itemID, distance)
   end
 end
@@ -162,14 +164,14 @@ function Questing.Coroutine.useItemOnPosition(position, itemID, distance)
 end
 
 function Questing.Coroutine.useItem(itemID)
-  if GMR.IsExecuting() then
+  if Questing.isRunning() then
     local playerPosition = Movement.retrievePlayerPosition()
     GMR.Questing.UseItemOnPosition(playerPosition.x, playerPosition.y, playerPosition.z, itemID)
   end
 end
 
 local function selectOption(optionToSelect)
-  if GMR.IsExecuting() then
+  if Questing.isRunning() then
     C_GossipInfo.SelectOption(optionToSelect)
   end
 end
@@ -177,14 +179,14 @@ end
 local function gossipWithObject(pointer, chooseOption)
   local name = GMR.ObjectName(pointer)
   print(name)
-  while GMR.IsExecuting() and GMR.ObjectExists(pointer) and GMR.ObjectPointer('npc') ~= pointer do
+  while Questing.isRunning() and GMR.ObjectExists(pointer) and GMR.ObjectPointer('npc') ~= pointer do
     Questing.Coroutine.interactWithObject(pointer)
     waitFor(function()
       return GMR.ObjectPointer('npc') == pointer
     end, 2)
   end
   print('aa')
-  if GMR.IsExecuting() then
+  if Questing.isRunning() then
     local gossipOptionID = chooseOption()
     if gossipOptionID then
       selectOption(gossipOptionID)
@@ -268,7 +270,7 @@ function Questing.Coroutine.doMob(pointer)
     return not GMR.ObjectExists(pointer) or GMR.IsDead(pointer)
   end
 
-  while GMR.IsExecuting() and not isJobDone() do
+  while Questing.isRunning() and not isJobDone() do
     if isIdle() then
       local position = createPoint(GMR.ObjectPosition(pointer))
       if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
