@@ -177,12 +177,6 @@ defineQuest3(
   end
 )
 
-local lastLogMessage = nil
-
-function isLastLogMessage(message)
-  return lastLogMessage == message
-end
-
 local questGivers = {
   {
     objectID = 128229,
@@ -1743,10 +1737,6 @@ function registerUnavailableQuests(npcID)
 end
 
 function run (once)
-  hooksecurefunc(GMR, 'Log', function(message)
-    lastLogMessage = message
-  end)
-
   C_Timer.NewTicker(0, function()
     if GMR.InCombat() then
       Movement.stopPathMoving()

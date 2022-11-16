@@ -1,0 +1,5 @@
+## Title: Bot
+## Interface: 30400
+## Dependencies: Questing
+
+Bot.lua

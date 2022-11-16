@@ -1,0 +1,5 @@
+## Title: Bot
+## Interface: 100002
+## Dependencies: Questing
+
+Bot.lua
