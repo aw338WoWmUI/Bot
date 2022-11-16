@@ -571,7 +571,7 @@ function retrieveObjectivePoints()
     end)
   )
 
-  points = Array.filter(points, function (point)
+  points = Array.filter(points, function(point)
     return not recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)]
   end)
 
@@ -734,11 +734,8 @@ end
 
 function doesPassObjectFilter(object)
   return (
-    isAlive(object.pointer) and
-      (
-        HWT.ObjectIsQuestObjective(object.pointer, false) or
-          seemsToBeQuestObject(object.pointer)
-      )
+    HWT.ObjectIsQuestObjective(object.pointer, false) or
+      seemsToBeQuestObject(object.pointer)
   )
 end
 
@@ -757,7 +754,7 @@ end
 
 function retrieveLootPoints()
   local objects = retrieveObjects()
-  local filteredObjects = Array.filter(objects, function (object)
+  local filteredObjects = Array.filter(objects, function(object)
     return not Set.contains(lootedObjects, object.pointer) and isLootable(object)
   end)
   local objectPointers = convertObjectsToPointers(filteredObjects)
@@ -1254,7 +1251,7 @@ local function moveToPoint(point)
     else
       Questing.Coroutine.moveTo(point)
       if GMR.IsPlayerPosition(point.x, point.y, point.z, INTERACT_DISTANCE) then
-        recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)] ={
+        recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)] = {
           time = GetTime()
         }
       end
@@ -1652,6 +1649,10 @@ function exploreSoftInteractObject()
 end
 
 local isRunning = false
+
+function Questing.isRunning()
+  return isRunning
+end
 
 function isIdle()
   local questID = GMR.GetQuestId()

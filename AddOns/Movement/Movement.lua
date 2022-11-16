@@ -1529,6 +1529,8 @@ end
 doWhenGMRIsFullyLoaded(function()
   GMR.Mesh = moveToFromNonCoroutine
   GMR.MeshTo = moveToFromNonCoroutine
+  GMR.UnstuckHandler = function () end
+  GMR.UnstuckPathHandler = function () end
   --GMR.Mesh = hooksecurefunc(GMR, 'MeshTo', function()
   --  print('GMR.MeshTo')
   --  Movement.stopMoving()

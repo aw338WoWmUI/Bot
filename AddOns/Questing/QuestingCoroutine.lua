@@ -93,6 +93,9 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   if GMR.IsExecuting() then
     local pointer = GMR.FindObject(objectID)
     if pointer then
+      if IsMounted() then
+        GMR.Dismount()
+      end
       GMR.Interact(pointer)
       waitForDuration(2)
     end
@@ -116,7 +119,9 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
   end
 
   if GMR.IsExecuting() and GMR.ObjectExists(pointer) then
-    print('GMR.Interact', pointer)
+    if IsMounted() then
+      GMR.Dismount()
+    end
     GMR.Interact(pointer)
     waitForDuration(2)
   end
