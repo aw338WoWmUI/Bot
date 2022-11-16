@@ -1,5 +1,5 @@
 ## Title: Questing
-## Interface: 100000
+## Interface: 100002
 ## Dependencies: Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, GMR, HWT, Unlocker, Core
 ## SavedVariables: exploredObjects
 

@@ -1,5 +1,5 @@
 ## Title: Movement
-## Interface: 100000
+## Interface: 100002
 ## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, Questing, HWT
 ## SavedVariables: savedPosition, position1, position2, from, to
 

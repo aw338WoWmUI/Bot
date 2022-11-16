@@ -1,4 +1,4 @@
 ## Title: Action Sequence Doer
-## Interface: 100000
+## Interface: 100002
 
 ActionSequenceDoer.lua

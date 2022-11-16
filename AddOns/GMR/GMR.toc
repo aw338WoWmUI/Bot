@@ -1,5 +1,5 @@
 ## Title: GMR
-## Interface: 100000
+## Interface: 100002
 ## Dependencies: Function, Array, Yielder, Coroutine
 
 GMR.lua

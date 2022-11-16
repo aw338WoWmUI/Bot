@@ -1,5 +1,5 @@
 ## Title: Core
-## Interface: 100000
+## Interface: 100002
 ## Dependencies: HWT, GMR
 
 Core.lua
