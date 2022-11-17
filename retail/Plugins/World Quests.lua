@@ -1,4 +1,4 @@
--- Dependencies: Set, Array, Object, Movement
+-- Dependencies: Set, Array, Object, Movement, Core
 
 local Quester = {}
 
@@ -489,7 +489,7 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
         local range = 20
         local objects = GMR.GetNearbyObjects(range)
         local objectsThatPotentiallyCanBeChargedWith = Array.filter(
-          includePointerInObject(objects),
+          Core.includePointerInObject(objects),
           function(object)
             return (
               questObjectiveToObjectIDs[2][object.ID] and
@@ -545,7 +545,7 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
     end
 
     local function convertObjectLookupToList(objects)
-      return includePointerInObject(objects)
+      return Core.includePointerInObject(objects)
     end
 
     local function findExtraActionTarget()

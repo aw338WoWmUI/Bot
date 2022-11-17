@@ -318,15 +318,6 @@ function logNearbyObjects()
   logToFile(tableToString(objects))
 end
 
-function includePointerInObject(objects)
-  local result = {}
-  for pointer, object in pairs(objects) do
-    object.pointer = pointer
-    table.insert(result, object)
-  end
-  return result
-end
-
 function logObjectInfo(name)
   name = name or GameTooltipTextLeft1:GetText()
   local objects = retrieveObjects()

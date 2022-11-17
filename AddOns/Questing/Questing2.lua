@@ -61,7 +61,7 @@ Array.forEach(objectBlacklist, function(entry)
 end)
 
 function retrieveObjects()
-  return includePointerInObject(GMR.GetNearbyObjects(250))
+  return Core.includePointerInObject(GMR.GetNearbyObjects(250))
 end
 
 local hasObjectBeenBlacklisted = Set.create()

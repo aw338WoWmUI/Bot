@@ -107,3 +107,12 @@ end
 function Core.isDiscoverableFlightMaster(object)
   return Core.isFlightMaster(object) and GMR.UnitReaction('player', object) >= 4 and Core.isFlightMasterDiscoverable(object)
 end
+
+function Core.includePointerInObject(objects)
+  local result = {}
+  for pointer, object in pairs(objects) do
+    object.pointer = pointer
+    table.insert(result, object)
+  end
+  return result
+end
