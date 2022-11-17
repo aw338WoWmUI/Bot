@@ -1533,9 +1533,9 @@ local function moveTo(x, y, z)
 end
 
 local function moveToFromNonCoroutine(x, y, z)
-  coroutine.wrap(function()
+  runAsCoroutine(function()
     moveTo(x, y, z)
-  end)()
+  end)
 end
 
 doWhenGMRIsFullyLoaded(function()

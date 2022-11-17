@@ -1,13 +1,13 @@
 local function waitForItemToLoad(item)
-    if not item:IsItemDataCached() then
-        local thread = coroutine.running()
+  if not item:IsItemDataCached() then
+    local thread = coroutine.running()
 
-        item:ContinueOnItemLoad(function()
-            coroutine.resume(thread)
-        end)
+    item:ContinueOnItemLoad(function()
+      coroutine.resume(thread)
+    end)
 
-        coroutine.yield()
-    end
+    coroutine.yield()
+  end
 end
 
 local function retrieveTotalRegenerateValue(containerIndex, slotIndex)
@@ -44,7 +44,7 @@ local function adjustDrinkingValue()
 end
 
 local function adjustValues()
-  coroutine.wrap(function ()
+  coroutine.wrap(function()
     adjustEatingValue()
     adjustDrinkingValue()
   end)()
