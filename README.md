@@ -7,7 +7,7 @@ AddOns that work with GMR, GMR plugins and GMR profiles.
 ### Cloning the respository
 
 ```sh
-git clone --recurse-submodules https://github.com/AkiKonani/GMRPluginsAndProfiles.git
+git clone --recurse-submodules https://github.com/AkiKonani/GMRAddOns.git
 ```
 
 ### Installation of the add-ons
