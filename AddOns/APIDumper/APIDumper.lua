@@ -1,36 +1,40 @@
 local _ = {}
 
+local directory = 'C:/documentation'
+
 function dumpGMRAPIRetail()
-  local output = _.dump(GMR, 'GMR')
-  GMR.WriteFile('C:/documentation/documentation_gmr_retail.lua', output)
+  _.dumpForVersion(GMR, 'GMR', 'documentation_gmr_retail.lua')
 end
 
 function dumpGMRAPIWotLK()
-  local output = _.dump(GMR, 'GMR')
-  GMR.WriteFile('C:/documentation/documentation_gmr_wotlk.lua', output)
+  _.dumpForVersion(GMR, 'GMR', 'documentation_gmr_wotlk.lua')
 end
 
 function dumpGMRAPIVanilla()
-  local output = _.dump(GMR, 'GMR')
-  GMR.WriteFile('C:/documentation/documentation_gmr_vanilla.lua', output)
+  _.dumpForVersion(GMR, 'GMR', 'documentation_gmr_vanilla.lua')
 end
 
 function dumpHWTAPIRetail()
   GMR.RunString('_G.HWT = ({...})[1]')
-  local output = _.dump(__A, '__A')
-  GMR.WriteFile('C:/documentation/documentation_hwt_retail.lua', output)
+  _.dumpForVersion(HWT, 'HWT', 'documentation_hwt_retail.lua')
 end
 
 function dumpHWTAPIWotLK()
   GMR.RunString('_G.HWT = ({...})[1]')
-  local output = _.dump(HWT, 'HWT')
-  GMR.WriteFile('C:/documentation/documentation_hwt_wotlk.lua', output)
+  _.dumpForVersion(HWT, 'HWT', 'documentation_hwt_wotlk.lua')
 end
 
 function dumpHWTAPIVanilla()
   GMR.RunString('_G.HWT = ({...})[1]')
-  local output = _.dump(HWT, 'HWT')
-  GMR.WriteFile('C:/documentation/documentation_hwt_vanilla.lua', output)
+   _.dumpForVersion(HWT, 'HWT', 'documentation_hwt_vanilla.lua')
+end
+
+function _.dumpForVersion(variable, variableName, outputFileName)
+  local output = _.dump(variable, variableName)
+  if not GMR.DirectoryExists(directory) then
+    GMR.CreateDirectory(directory)
+  end
+  GMR.WriteFile(directory .. '/' .. outputFileName, output)
 end
 
 function _.dump(variable, variableName)
