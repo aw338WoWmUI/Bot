@@ -1,6 +1,6 @@
 ## Title: Movement
 ## Interface: 100002
-## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, Questing, HWT
+## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT
 ## SavedVariables: savedPosition, position1, position2, from, to
 
 ObjectToValueLookup.lua
