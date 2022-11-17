@@ -42,14 +42,14 @@ end
 
 function log2(filePath, ...)
   if IS_LOGGING_ENABLED then
-    local string = strjoin(' ', unpack(Array.map({ ... }, valueToString)))
+    local string = strjoin(' ', unpack(Array.map({ ... }, Serialization.valueToString)))
     logToFile2(filePath, string)
   end
 end
 
 function log(...)
   if IS_LOGGING_ENABLED then
-    local string = strjoin(' ', unpack(Array.map({ ... }, valueToString)))
+    local string = strjoin(' ', unpack(Array.map({ ... }, Serialization.valueToString)))
     logToFile(string)
   end
 end
@@ -117,7 +117,7 @@ local function outputList(list)
     else
       output = output .. ' '
     end
-    output = output .. valueToString(value) .. '\n'
+    output = output .. Serialization.valueToString(value) .. '\n'
   end
   return output
 end
@@ -197,9 +197,9 @@ end
 --logAPICallsOfAPIsWhichMatch(function (apiName)
 --  return string.match(apiName, 'Move') or string.match(apiName, 'Mesh')
 --end)
-logAPICallsOfAPIsWhichMatch(function (apiName)
-  return string.match(apiName, 'Handler')
-end)
+--logAPICallsOfAPIsWhichMatch(function (apiName)
+--  return string.match(apiName, 'Handler')
+--end)
 -- logAPICalls2('GMR.MapMove')
 -- logAPICalls2('GMR.EngageMeshTo')
 -- logAPICalls2('GMR.GetVendorPath')
@@ -664,10 +664,6 @@ function logQuestID()
   local questID = GetQuestID()
   logToFile(questID)
 end
-
-hooksecurefunc(C_GossipInfo, 'SelectActiveQuest', function(...)
-  print('C_GossipInfo.SelectActiveQuest', ...)
-end)
 
 enableLogging()
 
