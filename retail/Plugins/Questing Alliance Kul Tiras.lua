@@ -2,7 +2,7 @@
 -- Dependencies: Questing
 
 GMR.DefineQuester(
-  'Questing Alliance 10 to 50',
+  'Questing Alliance Kul Tiras',
   function()
     --defineQuest(
     --  55991,
