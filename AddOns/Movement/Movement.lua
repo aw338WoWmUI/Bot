@@ -599,7 +599,8 @@ end
 
 function Movement.receiveAnAvailableFlyingMount()
   local mountIDs = Movement.receiveAvailableMountIDs()
-  return Array.find(mountIDs, Movement.isFlyingMount)
+  local mountID = Array.find(mountIDs, Movement.isFlyingMount)
+  return mountID
 end
 
 function Movement.isFlyingMount(mountID)
@@ -909,10 +910,13 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
         Movement.canBeFlown() and
           (totalDistance > 10 or Movement.isPositionInTheAir(waypoint))
       ) then
-        if not Movement.isMountedOnFlyingMount() and Movement.canMountOnFlyingMount() then
+        if not actionSequenceDoer.stopTryingToMount and not Movement.isMountedOnFlyingMount() and Movement.canMountOnFlyingMount() then
           GMR.MoveForwardStop()
           Movement.waitForPlayerStandingStill()
-          Movement.mountOnFlyingMount()
+          local wasAbleToMount = Movement.mountOnFlyingMount()
+          if not wasAbleToMount then
+            actionSequenceDoer.stopTryingToMount = true
+          end
         end
         if Movement.isMountedOnFlyingMount() then
           local playerPosition = Movement.retrievePlayerPosition()
@@ -1140,7 +1144,16 @@ function Movement.mountOnFlyingMount()
       end
       Movement.waitForDismounted()
       GMR.CastSpellByName(spellName)
-      Movement.waitForMounted()
+      -- There seems to be some buildings where `IsOutdoors()` returns `true` and there cannot be flown (one found in Bastion).
+      waitForDuration(0.1)
+      -- With this check we check if the casting works.
+      local isCasting = toBoolean(UnitCastingInfo('player'))
+      if isCasting then
+        Movement.waitForMounted()
+        return IsMounted()
+      else
+        return false
+      end
     end
   end
 end
