@@ -1,5 +1,5 @@
 ## Title: Fixes
 ## Interface: 100002
-## Dependencies: Array
+## Dependencies: Array, GMR
 
 Fixes.lua

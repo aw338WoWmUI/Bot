@@ -95,3 +95,26 @@ end
 function GetContainerItemInfo(containerIndex, slotIndex)
   return C_Container.GetContainerItemInfo(containerIndex, slotIndex)
 end
+
+local function selectFirstGossipOption()
+  local options = C_GossipInfo.GetOptions()
+  local option = options[1]
+  if option then
+    C_GossipInfo.SelectOption(option.gossipOptionID)
+  end
+end
+
+doWhenGMRIsFullyLoaded(function ()
+  local gossipWith = GMR.Questing.GossipWith
+  GMR.Questing.GossipWith = function (...)
+    local result = {gossipWith(...)}
+    local args = {...}
+    if (
+      Array.length(args) == 1 or -- call with just an NPC reference
+        not args[6] -- call with gossip option omitted
+    ) then
+      selectFirstGossipOption()
+    end
+    return unpack(result)
+  end
+end)
