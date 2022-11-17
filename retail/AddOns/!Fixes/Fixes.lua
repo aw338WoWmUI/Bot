@@ -80,3 +80,6 @@ function AbandonQuest()
   return C_QuestLog.AbandonQuest()
 end
 
+function GetContainerNumSlots(containerIndex)
+  return C_Container.GetContainerNumSlots(containerIndex)
+end
