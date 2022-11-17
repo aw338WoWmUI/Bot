@@ -1538,7 +1538,7 @@ local function moveToFromNonCoroutine(x, y, z)
   end)
 end
 
-doWhenGMRIsFullyLoaded(function()
+function Movement.replaceGMRMovementSystem()
   GMR.Mesh = moveToFromNonCoroutine
   GMR.MeshTo = moveToFromNonCoroutine
   GMR.UnstuckHandler = function()
@@ -1565,13 +1565,13 @@ doWhenGMRIsFullyLoaded(function()
     print('GMR.MoveTo')
     Movement.stopMoving()
   end)
-end)
 
-doRegularlyWhenGMRIsFullyLoaded(function()
-  if GMR.InCombat('player') then
-    Movement.stopMoving()
-  end
-end)
+  doRegularlyWhenGMRIsFullyLoaded(function()
+    if GMR.InCombat('player') then
+      Movement.stopMoving()
+    end
+  end)
+end
 
 -- view distance = 5: 625
 -- view distance = 10: 975
