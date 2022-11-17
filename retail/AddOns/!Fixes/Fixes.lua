@@ -1,9 +1,11 @@
-C_GossipInfo.GetNumOptions = function ()
+C_GossipInfo.GetNumOptions = function()
   return #C_GossipInfo.GetOptions()
 end
 
+GetNumGossipOptions = C_GossipInfo.GetNumOptions
+
 local selectOption = C_GossipInfo.SelectOption
-C_GossipInfo.SelectOption = function (value, ...)
+C_GossipInfo.SelectOption = function(value, ...)
   local options = C_GossipInfo.GetOptions()
   if value >= 1 and value <= #options then
     local option = options[value]
@@ -13,8 +15,10 @@ C_GossipInfo.SelectOption = function (value, ...)
   end
 end
 
+SelectGossipOption = C_GossipInfo.SelectOption
+
 local function isMassQuestId(questID)
-  local thread = coroutine.create(function ()
+  local thread = coroutine.create(function()
     return GMR.IsMassQuestId(questID)
   end)
   local wasSuccessful, result = coroutine.resume(thread)
@@ -82,4 +86,8 @@ end
 
 function GetContainerNumSlots(containerIndex)
   return C_Container.GetContainerNumSlots(containerIndex)
+end
+
+function GetContainerNumFreeSlots(containerIndex)
+  return C_Container.GetContainerNumFreeSlots(containerIndex)
 end
