@@ -1,5 +1,8 @@
 :: It seems required to run this script as administrator because that seems required from symlinking.
 
+:: * For retail: `<game installation directory>\_retail_`
+:: * For WotLK: `<game installation directory>\_classic_`
+:: * For vanilla: `<game installation directory>\_classic_era_`
 set "path=C:\Program Files (x86)\World of Warcraft\_retail_"
 
 mklink /D "%path%\Interface\AddOns\ActionSequenceDoer" "%~dp0\AddOns\ActionSequenceDoer"
