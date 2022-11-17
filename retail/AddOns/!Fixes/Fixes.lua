@@ -111,7 +111,7 @@ doWhenGMRIsFullyLoaded(function ()
     local args = {...}
     if (
       Array.length(args) == 1 or -- call with just an NPC reference
-        not args[6] -- call with gossip option omitted
+        not args[7] -- call with gossip option omitted
     ) then
       selectFirstGossipOption()
     end
