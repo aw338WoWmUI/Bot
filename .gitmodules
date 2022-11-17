@@ -28,3 +28,6 @@
 [submodule "AddOns/Boolean"]
 	path = AddOns/Boolean
 	url = https://github.com/SanjoSolutions/LuaBoolean.git
+[submodule "AddOns/Tooltips"]
+	path = AddOns/Tooltips
+	url = https://github.com/SanjoSolutions/Tooltips.git
