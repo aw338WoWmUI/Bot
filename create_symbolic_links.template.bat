@@ -30,6 +30,7 @@ if exist "%path%\_retail_" (
 	mklink /D "%path%\_retail_\Interface\AddOns\AutoGear" "%~dp0\AddOns\AutoGear"
 	mklink /D "%path%\_retail_\Interface\AddOns\Tooltips" "%~dp0\AddOns\Tooltips"
 	mklink /D "%path%\_retail_\Interface\AddOns\Questing" "%~dp0\AddOns\Questing"
+	mklink /D "%path%\_retail_\Interface\AddOns\!Fixes" "%~dp0\retail\AddOns\!Fixes"
 )
 
 if exist "%path%\_classic_" (
