@@ -5,6 +5,9 @@
 :: * For vanilla: `<game installation directory>\_classic_era_`
 set "path=C:\Program Files (x86)\World of Warcraft\_retail_"
 
+if not exist "%path%\Interface" mkdir "%path%\Interface"
+if not exist "%path%\Interface\AddOns" mkdir "%path%\Interface\AddOns"
+
 mklink /D "%path%\Interface\AddOns\ActionSequenceDoer" "%~dp0\AddOns\ActionSequenceDoer"
 mklink /D "%path%\Interface\AddOns\Array" "%~dp0\AddOns\Array"
 mklink /D "%path%\Interface\AddOns\AStar" "%~dp0\AddOns\AStar"
