@@ -2,4 +2,5 @@
 ## Interface: 11403
 ## Dependencies: Serialization, Object
 
+APIDocumentation.lua
 APIDumper.lua

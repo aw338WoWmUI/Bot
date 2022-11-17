@@ -2,4 +2,5 @@
 ## Interface: 100002
 ## Dependencies: Serialization, Object
 
+APIDocumentation.lua
 APIDumper.lua
