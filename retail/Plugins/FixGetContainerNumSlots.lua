@@ -1,3 +1,0 @@
-function GetContainerNumSlots(containerIndex)
-  return C_Container.GetContainerNumSlots(containerIndex)
-end
