@@ -10,19 +10,21 @@ AddOns that work with GMR, GMR plugins and GMR profiles.
 git clone --recurse-submodules https://github.com/AkiKonani/GMRPluginsAndProfiles.git
 ```
 
-### Via symlinking
+### Installation of the add-ons
+
+#### Via symlinking
 
 The add-ons can be symlinked with the `create_symbolic_links.template.bat` script.
 
 With that, the add-ons can be updated via `git pull`.
 
-#### Steps
+##### Steps
 
 1. Copy the `create_symbolic_links.template.bat` script to `create_symbolic_links.bat`
 2. In the script: modify the path in line 3 to match the directory of the game installation (including "_retail_", "_classic_" or "_classic_era_").
 3. Run the script as administrator (right click on the script and select "Run as administrator")
 
-### Via copying
+#### Via copying
 
 Copy all add-ons from `AddOns/` into the folder:
 
