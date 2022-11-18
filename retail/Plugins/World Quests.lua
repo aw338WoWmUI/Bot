@@ -1,4 +1,4 @@
--- Dependencies: Set, Array, Object, Movement, Core
+-- Dependencies: Set, Array, Object, Movement, Core, Questing
 
 local Quester = {}
 
@@ -696,7 +696,7 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
         print('handler: Spriggan Size Me!')
         local SPRIGGANIZE = 347565
         if not GMR.HasBuffId('player', SPRIGGANIZE) then
-          useExtraActionButton1()
+          Questing.useExtraActionButton1()
         else
           defaultDuring()
         end

@@ -734,7 +734,7 @@ GMR.DefineQuester(
         121239,
         function()
           if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
-            useExtraActionButton1()
+            Questing.useExtraActionButton1()
           end
         end
       )
