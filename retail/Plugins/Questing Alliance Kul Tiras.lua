@@ -31,64 +31,89 @@ GMR.DefineQuester(
     )
 
     do
-      local questID = 58908
-      local gossiper = createGossiper(
-        -8964.1318359375,
-        501.609375,
-        96.589340209961,
-        186180,
-        { 15, 1 }
-      )
+      local wasSettingEnabled = {}
+
+      do
+        local questID = 58908
+        local gossiper = createGossiper(
+          -8964.1318359375,
+          501.609375,
+          96.589340209961,
+          186180,
+          { 15, 1 }
+        )
+        defineQuest(
+          questID,
+          'Finding Your Way',
+          -8983.95703125,
+          504.03472900391,
+          96.677909851074,
+          163095,
+          -8771.3544921875,
+          380.14758300781,
+          101.12975311279,
+          163007,
+          function()
+            if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+              gossiper.gossip()
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+              gossipWithAt(
+                -8966.716796875,
+                510.30557250976,
+                96.353286743164,
+                163095
+              )
+            elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
+              followNPC(165548)
+            end
+          end,
+          function ()
+            wasSettingEnabled.Sell = GMR_SavedVariablesPerCharacter.Sell
+            wasSettingEnabled.Repair = GMR_SavedVariablesPerCharacter.Repair
+            wasSettingEnabled.Goods = GMR_SavedVariablesPerCharacter.Goods
+            GMR.DefineSettings('Disable', {
+              'Sell',
+              'Repair',
+              'FoodDrink'
+            })
+          end
+        )
+      end
+
       defineQuest(
-        questID,
-        'Finding Your Way',
-        -8983.95703125,
-        504.03472900391,
-        96.677909851074,
-        163095,
+        58909,
+        'License to Ride',
         -8771.3544921875,
         380.14758300781,
         101.12975311279,
         163007,
+        -8771.3544921875,
+        380.14758300781,
+        101.12973022461,
+        163007,
         function()
-          if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
-            gossiper.gossip()
-          elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
-            gossipWithAt(
-              -8966.716796875,
-              510.30557250976,
-              96.353286743164,
-              163095
-            )
-          elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
-            followNPC(165548)
+          if not GMR.IsTrainerFrameShown() then
+            local npcID = 43693
+            local objectGUID = GMR.FindObject(npcID)
+            local x, y, z = GMR.ObjectPosition(objectGUID)
+            interactWithAt(x, y, z, npcID)
+          elseif GMR.IsTrainerFrameShown() then
+            BuyTrainerService(1)
+          end
+        end,
+        function ()
+          if wasSettingEnabled.Sell then
+            GMR.DefineSetting('Enable', 'Sell')
+          end
+          if wasSettingEnabled.Repair then
+            GMR.DefineSetting('Enable', 'Repair')
+          end
+          if wasSettingEnabled.Goods then
+            GMR.DefineSetting('Enable', 'FoodDrink')
           end
         end
       )
     end
-
-    defineQuest(
-      58909,
-      'License to Ride',
-      -8771.3544921875,
-      380.14758300781,
-      101.12975311279,
-      163007,
-      -8771.3544921875,
-      380.14758300781,
-      101.12973022461,
-      163007,
-      function()
-        if not GMR.IsTrainerFrameShown() then
-          local npcID = 43693
-          local objectGUID = GMR.FindObject(npcID)
-          local x, y, z = GMR.ObjectPosition(objectGUID)
-          interactWithAt(x, y, z, npcID)
-        elseif GMR.IsTrainerFrameShown() then
-          BuyTrainerService(1)
-        end
-      end
-    )
 
     do
       local questID = 59594
@@ -114,6 +139,7 @@ GMR.DefineQuester(
           elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
             setSpecializationToPreferredOrFirstDamagerSpecialization()
           end
+          -- FIXME: When the specialization has already been selected before the quest it seems required to close the gossip dialog before the quest can be completed.
         end,
         function()
           local BLACK_STALLION = 470

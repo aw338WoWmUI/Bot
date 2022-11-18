@@ -104,6 +104,12 @@ local function selectFirstGossipOption()
   end
 end
 
+MerchantNameText = {
+  GetText = function ()
+    return GMR.ObjectName('npc')
+  end
+}
+
 doWhenGMRIsFullyLoaded(function ()
   local gossipWith = GMR.Questing.GossipWith
   GMR.Questing.GossipWith = function (...)

@@ -1924,7 +1924,8 @@ end
 
 local function onQuestlineUpdate(requestRequired)
   if requestRequired then
-    C_QuestLine.RequestQuestLinesForMap(GMR.GetMapId())
+    local mapID = C_Map.GetBestMapForUnit('player')
+    C_QuestLine.RequestQuestLinesForMap(mapID)
   end
 end
 
