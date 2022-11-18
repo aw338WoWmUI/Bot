@@ -4,411 +4,411 @@
 GMR.DefineQuester(
   'Questing Alliance Kul Tiras',
   function()
-    --defineQuest(
-    --  55991,
-    --  'An End to Beginnings',
-    --  nil,
-    --  nil,
-    --  nil,
-    --  nil,
-    --  -9053.4150390625,
-    --  442.52258300781,
-    --  93.058059692383,
-    --  154169
-    --)
-    --
-    --defineQuest(
-    --  59583,
-    --  'Welcome to Stormwind',
-    --  -9053.4150390625,
-    --  442.52258300781,
-    --  93.058059692383,
-    --  154169,
-    --  -8983.95703125,
-    --  504.03472900391,
-    --  96.677909851074,
-    --  163095
-    --)
-    --
-    --do
-    --  local questID = 58908
-    --  local gossiper = createGossiper(
-    --    -8964.1318359375,
-    --    501.609375,
-    --    96.589340209961,
-    --    186180,
-    --    { 15, 1 }
-    --  )
-    --  defineQuest(
-    --    questID,
-    --    'Finding Your Way',
-    --    -8983.95703125,
-    --    504.03472900391,
-    --    96.677909851074,
-    --    163095,
-    --    -8771.3544921875,
-    --    380.14758300781,
-    --    101.12975311279,
-    --    163007,
-    --    function()
-    --      if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
-    --        gossiper.gossip()
-    --      elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
-    --        gossipWithAt(
-    --          -8966.716796875,
-    --          510.30557250976,
-    --          96.353286743164,
-    --          163095
-    --        )
-    --      elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
-    --        followNPC(165548)
-    --      end
-    --    end
-    --  )
-    --end
-    --
-    --defineQuest(
-    --  58909,
-    --  'License to Ride',
-    --  -8771.3544921875,
-    --  380.14758300781,
-    --  101.12975311279,
-    --  163007,
-    --  -8771.3544921875,
-    --  380.14758300781,
-    --  101.12973022461,
-    --  163007,
-    --  function()
-    --    if not GMR.IsTrainerFrameShown() then
-    --      local npcID = 43693
-    --      local objectGUID = GMR.FindObject(npcID)
-    --      local x, y, z = GMR.ObjectPosition(objectGUID)
-    --      interactWithAt(x, y, z, npcID)
-    --    elseif GMR.IsTrainerFrameShown() then
-    --      BuyTrainerService(1)
-    --    end
-    --  end
-    --)
-    --
-    --do
-    --  local questID = 59594
-    --  defineQuest(
-    --    questID,
-    --    "What's Your Speciality?",
-    --    nil,
-    --    nil,
-    --    nil,
-    --    163097,
-    --    -8814.6806640625,
-    --    332.64584350586,
-    --    107.04860687256,
-    --    164940,
-    --    function()
-    --      if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
-    --        gossipWithAt(
-    --          -8814.6806640625,
-    --          332.64584350586,
-    --          107.04860687256,
-    --          164940
-    --        )
-    --      elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
-    --        setSpecializationToPreferredOrFirstDamagerSpecialization()
-    --      end
-    --    end,
-    --    function()
-    --      local BLACK_STALLION = 470
-    --      GMR_SavedVariablesPerCharacter.SelectedMount = GetSpellInfo(BLACK_STALLION)
-    --      GMR.DefineSetting('Enable', 'Mount')
-    --    end
-    --  )
-    --end
-    --
-    --do
-    --  local questID = 58911
-    --  defineQuest(
-    --    questID,
-    --    'Home Is Where the Hearth Is',
-    --    nil,
-    --    nil,
-    --    nil,
-    --    163097,
-    --    -8622.4697265625,
-    --    407.78298950195,
-    --    102.92445373535,
-    --    44237,
-    --    function()
-    --      if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
-    --        gossipWithAt(
-    --          -8622.4697265625,
-    --          407.78298950195,
-    --          102.92445373535,
-    --          44237,
-    --          1
-    --        )
-    --      end
-    --    end
-    --  )
-    --end
-    --
-    --do
-    --  local questID = 58912
-    --  defineQuest(
-    --    questID,
-    --    'An Urgent Meeting',
-    --    -8625,
-    --    415.61633300781,
-    --    103.7035369873,
-    --    163211,
-    --    -8367.1630859375,
-    --    242.25,
-    --    155.31031799316,
-    --    163219,
-    --    function()
-    --      if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
-    --        GMR.Questing.MoveTo(
-    --          -8367.1630859375,
-    --          242.25,
-    --          155.31031799316
-    --        )
-    --      end
-    --    end,
-    --    function()
-    --      if StaticPopup1Button1:IsShown() then
-    --        StaticPopup1Button1:Click()
-    --      end
-    --    end
-    --  )
-    --end
-    --
-    --defineQuest(
-    --  58983,
-    --  'Battle for Azeroth: Tides of War',
-    --  -8367.1630859375,
-    --  242.25,
-    --  155.30989074707,
-    --  163219,
-    --  -8361.392578125,
-    --  230.06423950195,
-    --  157.9143371582,
-    --  165395,
-    --  function()
-    --  end
-    --)
-    --
-    --do
-    --  local questID = 59641
-    --  defineQuest(
-    --    questID,
-    --    'The Nation of Kul Tiras',
-    --    -8361.392578125,
-    --    230.06423950195,
-    --    157.9143371582,
-    --    165395,
-    --    726.54864501953,
-    --    -442.84375,
-    --    14.917701721191,
-    --    120922,
-    --    function()
-    --      if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
-    --        gossipWithAt(
-    --          -8367.1630859375,
-    --          242.25,
-    --          155.30989074707,
-    --          163219
-    --        )
-    --      elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
-    --        gossipWithAt(
-    --          -8450.576171875,
-    --          372.78994750976,
-    --          135.70956420898,
-    --          165505
-    --        )
-    --      elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
-    --        gossipWithAt(
-    --          -8281.763671875,
-    --          1326.8629150391,
-    --          5.2397694587708,
-    --          120590
-    --        )
-    --      end
-    --    end
-    --  )
-    --end
-    --
-    --local function goToFlynn()
-    --  local x = 139.42579650879
-    --  local y = -2712.1262207031
-    --  local z = 29.187238693237
-    --  local ticker
-    --  ticker = C_Timer.NewTicker(0,
-    --    function()
-    --      if GMR.IsPlayerPosition(x, y, z, 1) then
-    --        ticker:Cancel()
-    --      else
-    --        GMR.MoveTo(
-    --          x,
-    --          y,
-    --          z
-    --        )
-    --      end
-    --    end)
-    --end
-    --
-    --do
-    --  local questID = 51341
-    --  defineQuest(
-    --    51341,
-    --    'Daughter of the Sea',
-    --    726.54864501953,
-    --    -442.84375,
-    --    14.917701721191,
-    --    120922,
-    --    140.93229675293,
-    --    -2716.5383300781,
-    --    30.350156784058,
-    --    121239,
-    --    function()
-    --    end,
-    --    function()
-    --      if not C_QuestLog.IsOnQuest(questID) then
-    --        goToFlynn()
-    --      end
-    --    end
-    --  )
-    --end
-    --
-    --do
-    --  local questID = 47098
-    --
-    --  local toBoatWalker = createActionSequenceDoer(
-    --    {
-    --      createMoveToAction(
-    --        194.88122558594,
-    --        -2691.7739257812,
-    --        29.18949508667
-    --      ),
-    --      createMoveToAction(
-    --        165.09448242188,
-    --        -2733.3508300781,
-    --        18.963714599609
-    --      ),
-    --      createMoveToAction(
-    --        149.28617858887,
-    --        -2722.3767089844,
-    --        13.921509742737
-    --
-    --      ),
-    --      createMoveToAction(
-    --        171.12617492676,
-    --        -2694.65625,
-    --        13.646925926208
-    --      ),
-    --      createMoveToAction(
-    --        103.12325286865,
-    --        -2647.0852050781,
-    --        11.633148193359
-    --      ),
-    --      createMoveToAction(
-    --        78.815528869629,
-    --        -2680.2758789062,
-    --        5.6769328117371
-    --
-    --      ),
-    --      createMoveToAction(
-    --        146.943359375,
-    --        -2726.9682617188,
-    --        4.9246678352356
-    --
-    --      ),
-    --      createMoveToAction(
-    --        131.62480163574,
-    --        -2748.419921875,
-    --        3.2554287910461
-    --      ),
-    --      {
-    --        run = function()
-    --          interactWithAt(
-    --            240.65104675293,
-    --            -2812.9497070312,
-    --            -0.052746556699276,
-    --            124030
-    --          )
-    --        end,
-    --        isDone = function()
-    --          return GMR.Questing.IsObjectiveCompleted(questID, 8)
-    --        end
-    --      }
-    --    }
-    --  )
-    --
-    --  defineQuest(
-    --    questID,
-    --    'Out Like Flynn',
-    --    140.93229675293,
-    --    -2716.5383300781,
-    --    30.350156784058,
-    --    121239,
-    --    1051.3264160156,
-    --    -624.94616699219,
-    --    0.52023792266846,
-    --    121235,
-    --    function()
-    --      if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
-    --        interactWithAt(
-    --          144.60417175293,
-    --          -2710.9965820312,
-    --          29.188508987427,
-    --          121239
-    --        )
-    --      elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
-    --        interactWithAt(
-    --          167.07118225098,
-    --          -2711.5400390625,
-    --          31.387538909912,
-    --          271938
-    --        )
-    --      elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
-    --        interactWithAt(
-    --          148.67881774902,
-    --          -2712.6198730469,
-    --          28.123090744019,
-    --          290827
-    --        )
-    --      elseif not GMR.Questing.IsObjectiveCompleted(questID, 4) then
-    --        GMR.Questing.KillEnemy(
-    --          99.831596374512,
-    --          -2664.7465820312,
-    --          29.18962097168,
-    --          124024
-    --        )
-    --      elseif not GMR.Questing.IsObjectiveCompleted(questID, 5) then
-    --        interactWithAt(
-    --          103.07290649414,
-    --          -2688.7846679688,
-    --          30.037179946899,
-    --          290126
-    --        )
-    --      elseif not GMR.Questing.IsObjectiveCompleted(questID, 6) then
-    --        interactWithAt(
-    --          186.55381774902,
-    --          -2685.7221679688,
-    --          28.867448806763,
-    --          281902
-    --        )
-    --      elseif (
-    --        not GMR.Questing.IsObjectiveCompleted(questID, 7) or
-    --          not GMR.Questing.IsObjectiveCompleted(questID, 8)
-    --      ) then
-    --        toBoatWalker.run()
-    --      end
-    --    end,
-    --    function()
-    --      if not C_QuestLog.IsOnQuest(questID) then
-    --        goToFlynn()
-    --      end
-    --    end
-    --  )
-    --end
+    defineQuest(
+      55991,
+      'An End to Beginnings',
+      nil,
+      nil,
+      nil,
+      nil,
+      -9053.4150390625,
+      442.52258300781,
+      93.058059692383,
+      154169
+    )
+
+    defineQuest(
+      59583,
+      'Welcome to Stormwind',
+      -9053.4150390625,
+      442.52258300781,
+      93.058059692383,
+      154169,
+      -8983.95703125,
+      504.03472900391,
+      96.677909851074,
+      163095
+    )
+
+    do
+      local questID = 58908
+      local gossiper = createGossiper(
+        -8964.1318359375,
+        501.609375,
+        96.589340209961,
+        186180,
+        { 15, 1 }
+      )
+      defineQuest(
+        questID,
+        'Finding Your Way',
+        -8983.95703125,
+        504.03472900391,
+        96.677909851074,
+        163095,
+        -8771.3544921875,
+        380.14758300781,
+        101.12975311279,
+        163007,
+        function()
+          if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+            gossiper.gossip()
+          elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+            gossipWithAt(
+              -8966.716796875,
+              510.30557250976,
+              96.353286743164,
+              163095
+            )
+          elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
+            followNPC(165548)
+          end
+        end
+      )
+    end
+
+    defineQuest(
+      58909,
+      'License to Ride',
+      -8771.3544921875,
+      380.14758300781,
+      101.12975311279,
+      163007,
+      -8771.3544921875,
+      380.14758300781,
+      101.12973022461,
+      163007,
+      function()
+        if not GMR.IsTrainerFrameShown() then
+          local npcID = 43693
+          local objectGUID = GMR.FindObject(npcID)
+          local x, y, z = GMR.ObjectPosition(objectGUID)
+          interactWithAt(x, y, z, npcID)
+        elseif GMR.IsTrainerFrameShown() then
+          BuyTrainerService(1)
+        end
+      end
+    )
+
+    do
+      local questID = 59594
+      defineQuest(
+        questID,
+        "What's Your Speciality?",
+        nil,
+        nil,
+        nil,
+        163097,
+        -8814.6806640625,
+        332.64584350586,
+        107.04860687256,
+        164940,
+        function()
+          if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+            gossipWithAt(
+              -8814.6806640625,
+              332.64584350586,
+              107.04860687256,
+              164940
+            )
+          elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+            setSpecializationToPreferredOrFirstDamagerSpecialization()
+          end
+        end,
+        function()
+          local BLACK_STALLION = 470
+          GMR_SavedVariablesPerCharacter.SelectedMount = GetSpellInfo(BLACK_STALLION)
+          GMR.DefineSetting('Enable', 'Mount')
+        end
+      )
+    end
+
+    do
+      local questID = 58911
+      defineQuest(
+        questID,
+        'Home Is Where the Hearth Is',
+        nil,
+        nil,
+        nil,
+        163097,
+        -8622.4697265625,
+        407.78298950195,
+        102.92445373535,
+        44237,
+        function()
+          if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+            gossipWithAt(
+              -8622.4697265625,
+              407.78298950195,
+              102.92445373535,
+              44237,
+              1
+            )
+          end
+        end
+      )
+    end
+
+    do
+      local questID = 58912
+      defineQuest(
+        questID,
+        'An Urgent Meeting',
+        -8625,
+        415.61633300781,
+        103.7035369873,
+        163211,
+        -8367.1630859375,
+        242.25,
+        155.31031799316,
+        163219,
+        function()
+          if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+            GMR.Questing.MoveTo(
+              -8367.1630859375,
+              242.25,
+              155.31031799316
+            )
+          end
+        end,
+        function()
+          if StaticPopup1Button1:IsShown() then
+            StaticPopup1Button1:Click()
+          end
+        end
+      )
+    end
+
+    defineQuest(
+      58983,
+      'Battle for Azeroth: Tides of War',
+      -8367.1630859375,
+      242.25,
+      155.30989074707,
+      163219,
+      -8361.392578125,
+      230.06423950195,
+      157.9143371582,
+      165395,
+      function()
+      end
+    )
+
+    do
+      local questID = 59641
+      defineQuest(
+        questID,
+        'The Nation of Kul Tiras',
+        -8361.392578125,
+        230.06423950195,
+        157.9143371582,
+        165395,
+        726.54864501953,
+        -442.84375,
+        14.917701721191,
+        120922,
+        function()
+          if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+            gossipWithAt(
+              -8367.1630859375,
+              242.25,
+              155.30989074707,
+              163219
+            )
+          elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+            gossipWithAt(
+              -8450.576171875,
+              372.78994750976,
+              135.70956420898,
+              165505
+            )
+          elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
+            gossipWithAt(
+              -8281.763671875,
+              1326.8629150391,
+              5.2397694587708,
+              120590
+            )
+          end
+        end
+      )
+    end
+
+    local function goToFlynn()
+      local x = 139.42579650879
+      local y = -2712.1262207031
+      local z = 29.187238693237
+      local ticker
+      ticker = C_Timer.NewTicker(0,
+        function()
+          if GMR.IsPlayerPosition(x, y, z, 1) then
+            ticker:Cancel()
+          else
+            GMR.MoveTo(
+              x,
+              y,
+              z
+            )
+          end
+        end)
+    end
+
+    do
+      local questID = 51341
+      defineQuest(
+        51341,
+        'Daughter of the Sea',
+        726.54864501953,
+        -442.84375,
+        14.917701721191,
+        120922,
+        140.93229675293,
+        -2716.5383300781,
+        30.350156784058,
+        121239,
+        function()
+        end,
+        function()
+          if not C_QuestLog.IsOnQuest(questID) then
+            goToFlynn()
+          end
+        end
+      )
+    end
+
+    do
+      local questID = 47098
+
+      local toBoatWalker = createActionSequenceDoer(
+        {
+          createMoveToAction(
+            194.88122558594,
+            -2691.7739257812,
+            29.18949508667
+          ),
+          createMoveToAction(
+            165.09448242188,
+            -2733.3508300781,
+            18.963714599609
+          ),
+          createMoveToAction(
+            149.28617858887,
+            -2722.3767089844,
+            13.921509742737
+
+          ),
+          createMoveToAction(
+            171.12617492676,
+            -2694.65625,
+            13.646925926208
+          ),
+          createMoveToAction(
+            103.12325286865,
+            -2647.0852050781,
+            11.633148193359
+          ),
+          createMoveToAction(
+            78.815528869629,
+            -2680.2758789062,
+            5.6769328117371
+
+          ),
+          createMoveToAction(
+            146.943359375,
+            -2726.9682617188,
+            4.9246678352356
+
+          ),
+          createMoveToAction(
+            131.62480163574,
+            -2748.419921875,
+            3.2554287910461
+          ),
+          {
+            run = function()
+              interactWithAt(
+                240.65104675293,
+                -2812.9497070312,
+                -0.052746556699276,
+                124030
+              )
+            end,
+            isDone = function()
+              return GMR.Questing.IsObjectiveCompleted(questID, 8)
+            end
+          }
+        }
+      )
+
+      defineQuest(
+        questID,
+        'Out Like Flynn',
+        140.93229675293,
+        -2716.5383300781,
+        30.350156784058,
+        121239,
+        1051.3264160156,
+        -624.94616699219,
+        0.52023792266846,
+        121235,
+        function()
+          if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
+            interactWithAt(
+              144.60417175293,
+              -2710.9965820312,
+              29.188508987427,
+              121239
+            )
+          elseif not GMR.Questing.IsObjectiveCompleted(questID, 2) then
+            interactWithAt(
+              167.07118225098,
+              -2711.5400390625,
+              31.387538909912,
+              271938
+            )
+          elseif not GMR.Questing.IsObjectiveCompleted(questID, 3) then
+            interactWithAt(
+              148.67881774902,
+              -2712.6198730469,
+              28.123090744019,
+              290827
+            )
+          elseif not GMR.Questing.IsObjectiveCompleted(questID, 4) then
+            GMR.Questing.KillEnemy(
+              99.831596374512,
+              -2664.7465820312,
+              29.18962097168,
+              124024
+            )
+          elseif not GMR.Questing.IsObjectiveCompleted(questID, 5) then
+            interactWithAt(
+              103.07290649414,
+              -2688.7846679688,
+              30.037179946899,
+              290126
+            )
+          elseif not GMR.Questing.IsObjectiveCompleted(questID, 6) then
+            interactWithAt(
+              186.55381774902,
+              -2685.7221679688,
+              28.867448806763,
+              281902
+            )
+          elseif (
+            not GMR.Questing.IsObjectiveCompleted(questID, 7) or
+              not GMR.Questing.IsObjectiveCompleted(questID, 8)
+          ) then
+            toBoatWalker.run()
+          end
+        end,
+        function()
+          if not C_QuestLog.IsOnQuest(questID) then
+            goToFlynn()
+          end
+        end
+      )
+    end
 
     do
       local questID = 47099
