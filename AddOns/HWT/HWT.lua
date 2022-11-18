@@ -1,5 +1,6 @@
-HWT = nil
-
-doWhenGMRIsFullyLoaded(function ()
-  GMR.RunEncryptedScript(GMR.Encrypt('_G.HWT = ({...})[1]'))
-end)
+Conditionals.doOnceWhen(
+  function ()
+    return _G.GMR and GMR.RunString
+  end,
+  HWTRetriever.putHWTOnTheGlobalScope
+)

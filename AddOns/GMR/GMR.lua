@@ -1,21 +1,41 @@
+local functionsToRunWhenGMRIsLoaded = {}
 local functionsToRunWhenGMRIsFullyLoaded = {}
 
-local runFunctionsWhenGMRIsFullyLoaded = Function.once(function()
-  local ticker
-  ticker = C_Timer.NewTicker(0, function()
-    if _G.GMR and GMR.IsFullyLoaded and GMR.IsFullyLoaded() then
-      ticker:Cancel()
-
-      local thread = coroutine.create(function()
-        Array.forEach(functionsToRunWhenGMRIsFullyLoaded, function(fn)
-          fn()
-          yieldAndResume()
-        end)
-      end)
-      resumeWithShowingError(thread)
-    end
+local function runFunctions(functions)
+  runAsCoroutine(function()
+    Array.forEach(functions, function(fn)
+      fn()
+      yieldAndResume()
+    end)
   end)
+end
+
+local runFunctionsWhenGMRIsFullyLoaded = Function.once(function()
+  Conditionals.doOnceWhen(
+    function()
+      return _G.GMR and GMR.IsFullyLoaded and GMR.IsFullyLoaded()
+    end,
+    function()
+      runFunctions(functionsToRunWhenGMRIsFullyLoaded)
+    end
+  )
 end)
+
+local runFunctionsWhenGMRIsLoaded = Function.once(function()
+  Conditionals.doOnceWhen(
+    function()
+      return _G.GMR
+    end,
+    function()
+      runFunctions(functionsToRunWhenGMRIsLoaded)
+    end
+  )
+end)
+
+function doWhenGMRIsLoaded(fn)
+  table.insert(functionsToRunWhenGMRIsLoaded, fn)
+  runFunctionsWhenGMRIsLoaded()
+end
 
 function doWhenGMRIsFullyLoaded(fn)
   table.insert(functionsToRunWhenGMRIsFullyLoaded, fn)

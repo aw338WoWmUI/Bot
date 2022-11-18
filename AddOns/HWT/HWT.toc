@@ -1,5 +1,5 @@
 ## Title: HWT
 ## Interface: 100002
-## Dependencies: GMR
+## Dependencies: Conditionals, HWTRetriever
 
 HWT.lua

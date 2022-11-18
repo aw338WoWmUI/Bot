@@ -17,17 +17,17 @@ function dumpGMRAPIVanilla()
 end
 
 function dumpHWTAPIRetail()
-  _.putHWTOnTheGlobalScope()
+  HWTRetriever.putHWTOnTheGlobalScope()
   _.dumpForVersion(HWT, 'HWT', 'documentation_hwt_retail.lua')
 end
 
 function dumpHWTAPIWotLK()
-  _.putHWTOnTheGlobalScope()
+  HWTRetriever.putHWTOnTheGlobalScope()
   _.dumpForVersion(HWT, 'HWT', 'documentation_hwt_wotlk.lua')
 end
 
 function dumpHWTAPIVanilla()
-  _.putHWTOnTheGlobalScope()
+  HWTRetriever.putHWTOnTheGlobalScope()
    _.dumpForVersion(HWT, 'HWT', 'documentation_hwt_vanilla.lua')
 end
 
@@ -37,15 +37,6 @@ function _.dumpForVersion(variable, variableName, outputFileName)
     GMR.CreateDirectory(directory)
   end
   GMR.WriteFile(directory .. '/' .. outputFileName, output)
-end
-
-function _.putHWTOnTheGlobalScope()
-  local string = '_G.HWT = ({...})[1]'
-  if GMR.RunEncryptedScript then
-    GMR.RunEncryptedScript(GMR.Encrypt(string))
-  else
-    GMR.RunString(string)
-  end
 end
 
 function _.dump(variable, variableName)

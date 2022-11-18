@@ -67,7 +67,7 @@ GMR.DefineQuester(
               followNPC(165548)
             end
           end,
-          function ()
+          function()
             wasSettingEnabled.Sell = GMR_SavedVariablesPerCharacter.Sell
             wasSettingEnabled.Repair = GMR_SavedVariablesPerCharacter.Repair
             wasSettingEnabled.Goods = GMR_SavedVariablesPerCharacter.Goods
@@ -101,7 +101,7 @@ GMR.DefineQuester(
             BuyTrainerService(1)
           end
         end,
-        function ()
+        function()
           if wasSettingEnabled.Sell then
             GMR.DefineSetting('Enable', 'Sell')
           end
@@ -171,6 +171,11 @@ GMR.DefineQuester(
               44237,
               1
             )
+            C_Timer.NewTimer(1, function()
+              if StaticPopup1Button1:IsShown() then
+                StaticPopup1Button1:Click()
+              end
+            end)
           end
         end
       )
@@ -196,11 +201,6 @@ GMR.DefineQuester(
               242.25,
               155.31031799316
             )
-          end
-        end,
-        function()
-          if StaticPopup1Button1:IsShown() then
-            StaticPopup1Button1:Click()
           end
         end
       )

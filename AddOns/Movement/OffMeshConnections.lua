@@ -1,3 +1,7 @@
+local addOnName, AddOn = ...
+
+local _ = {}
+
 local offMeshConnections = {
   {
     0,
@@ -90,4 +94,32 @@ function saveOffMeshConnection(isBidirectional, polygonFlags)
   addOffMeshConnection(offMeshConnection)
   firstOffMeshConnectionPoint = nil
   secondOffMeshConnectionPoint = nil
+end
+
+function removeClosestOffMeshConnection()
+  local closestOffMeshConnection = AddOn.findClosestOffMeshConnection()
+  if closestOffMeshConnection then
+    _.removeOffMeshConnection(closestOffMeshConnection)
+  end
+end
+
+function AddOn.findClosestOffMeshConnection()
+  local continentID = select(8, GetInstanceInfo())
+  local connections = HWT.GetOffmeshConnections(continentID)
+
+  if connections and Array.hasElements(connections) then
+    return Array.min(connections, function(connection)
+      local x1, y1, z1, x2, y2, z2 = select(4, HWT.GetOffmeshConnectionDetails(connection))
+      return math.min(
+        GMR.GetDistanceToPosition(x1, y1, z1),
+        GMR.GetDistanceToPosition(x2, y2, z2)
+      )
+    end)
+  else
+    return nil
+  end
+end
+
+function _.removeOffMeshConnection(connection)
+  HWT.RemoveOffmeshConnection(connection)
 end

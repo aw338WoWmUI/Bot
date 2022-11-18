@@ -1,5 +1,5 @@
 ## Title: Warrior
 ## Interface: 11403
-## Dependencies: Questing, Yielder
+## Dependencies: Questing, Yielder, GMR
 
 Warrior.lua

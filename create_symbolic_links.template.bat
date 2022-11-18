@@ -32,6 +32,8 @@ if exist "%path%\_retail_" (
 	mklink /D "%path%\_retail_\Interface\AddOns\Questing" "%~dp0\AddOns\Questing"
 	mklink /D "%path%\_retail_\Interface\AddOns\APICallLogging" "%~dp0\AddOns\APICallLogging"
 	mklink /D "%path%\_retail_\Interface\AddOns\Hooking" "%~dp0\AddOns\Hooking"
+	mklink /D "%path%\_retail_\Interface\AddOns\Conditionals" "%~dp0\AddOns\Conditionals"
+	mklink /D "%path%\_retail_\Interface\AddOns\HWTRetriever" "%~dp0\AddOns\HWTRetriever"
 	mklink /D "%path%\_retail_\Interface\AddOns\!Fixes" "%~dp0\retail\AddOns\!Fixes"
 )
 
@@ -64,6 +66,8 @@ if exist "%path%\_classic_" (
 	mklink /D "%path%\_classic_\Interface\AddOns\Questing" "%~dp0\AddOns\Questing"
 	mklink /D "%path%\_classic_\Interface\AddOns\APICallLogging" "%~dp0\AddOns\APICallLogging"
 	mklink /D "%path%\_classic_\Interface\AddOns\Hooking" "%~dp0\AddOns\Hooking"
+	mklink /D "%path%\_classic_\Interface\AddOns\Conditionals" "%~dp0\AddOns\Conditionals"
+	mklink /D "%path%\_classic_\Interface\AddOns\HWTRetriever" "%~dp0\AddOns\HWTRetriever"
 )
 
 if exist "%path%\_classic_era_" (
@@ -95,4 +99,6 @@ if exist "%path%\_classic_era_" (
 	mklink /D "%path%\_classic_era_\Interface\AddOns\Questing" "%~dp0\AddOns\Questing"
 	mklink /D "%path%\_classic_era_\Interface\AddOns\APICallLogging" "%~dp0\AddOns\APICallLogging"
 	mklink /D "%path%\_classic_era_\Interface\AddOns\Hooking" "%~dp0\AddOns\Hooking"
+	mklink /D "%path%\_classic_era_\Interface\AddOns\Conditionals" "%~dp0\AddOns\Conditionals"
+	mklink /D "%path%\_classic_era_\Interface\AddOns\HWTRetriever" "%~dp0\AddOns\HWTRetriever"
 )
