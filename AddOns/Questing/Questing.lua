@@ -713,49 +713,10 @@ function findObjectiveWhichMatchesAndAddItToTheLookup(questObjectiveToObjectIDs,
 end
 
 
-function retrieveQuestInfo(index)
-  if C_QuestLog.GetInfo then
-    return C_QuestLog.GetInfo(index)
-  else
-    local title, level, suggestedGroup, isHeader, isCollapsed, isComplete, frequency, questID, startEvent, displayQuestID, isOnMap, hasLocalPOI, isTask, isBounty, isStory, isHidden, isScaling = GetQuestLogTitle(index)
-    return {
-      title = title,
-      questLogIndex = nil,
-      questID = questID,
-      campaignID = nil,
-      level = level,
-      difficultyLevel = nil,
-      suggestedGroup = suggestedGroup,
-      frequency = frequency,
-      isHeader = isHeader,
-      isCollapsed = isCollapsed,
-      startEvent = startEvent,
-      isTask = isTask,
-      isBounty = isBounty,
-      isStory = isStory,
-      isScaling = isScaling,
-      isOnMap = isOnMap,
-      hasLocalPOI = hasLocalPOI,
-      isHidden = isHidden,
-      isAutoComplete = nil,
-      overrideSortOrder = nil,
-      readyForTranslation = nil
-    }
-  end
-end
-
-function retrieveNumberOfQuestLogEntries()
-  if C_QuestLog.GetNumQuestLogEntries then
-    return C_QuestLog.GetNumQuestLogEntries()
-  else
-    return GetNumQuestLogEntries()
-  end
-end
-
 function retrieveQuestLogQuests()
   local quests = {}
-  for index = 1, retrieveNumberOfQuestLogEntries() do
-    local info = retrieveQuestInfo(index) -- isComplete seems to be a 1 or nil
+  for index = 1, Compatibility.QuestLog.retrieveNumberOfQuestLogEntries() do
+    local info = Compatibility.QuestLog.retrieveInfo(index) -- isComplete seems to be a 1 or nil
     if not info.isHeader then
       table.insert(quests, info)
     end
@@ -765,8 +726,8 @@ end
 
 function retrieveQuestLogQuests2()
   local quests = {}
-  for index = 1, retrieveNumberOfQuestLogEntries() do
-    local info = retrieveQuestInfo(index) -- isComplete seems to be a 1 or nil
+  for index = 1, Compatibility.QuestLog.retrieveNumberOfQuestLogEntries() do
+    local info = Compatibility.QuestLog.retrieveInfo(index) -- isComplete seems to be a 1 or nil
     if not info.isHeader then
       local quest = {
         id = info.questID,

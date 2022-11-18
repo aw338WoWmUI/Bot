@@ -3,3 +3,4 @@
 ## Dependencies: Boolean, Caching
 
 Compatibility.lua
+QuestLog.lua

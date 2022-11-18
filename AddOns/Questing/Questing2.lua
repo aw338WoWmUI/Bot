@@ -296,7 +296,7 @@ function retrieveNPCPosition(npc)
 end
 
 function isQuestLogFull()
-  local currentNumberOfQuests = select(2, C_QuestLog.GetNumQuestLogEntries())
+  local currentNumberOfQuests = select(2, Compatibility.QuestLog.retrieveNumberOfQuestLogEntries())
   local maximumNumberOfQuests = C_QuestLog.GetMaxNumQuestsCanAccept()
   return currentNumberOfQuests >= maximumNumberOfQuests
 end
@@ -1865,7 +1865,7 @@ function _.run ()
       else
         local questIDs = retrieveQuestLogQuestIDs()
         Array.forEach(questIDs, function(questID)
-          if C_QuestLog.IsFailed(questID) then
+          if Compatibility.QuestLog.isFailed(questID) then
             GMR.AbandonQuest(questID)
           end
         end)
