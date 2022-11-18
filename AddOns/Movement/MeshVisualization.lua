@@ -24,8 +24,6 @@ local function visualizePolygons()
         local vertices = HWT.GetMeshPolygonVertices(continentID, polygon)
         if vertices then
           local points = Array.map(vertices, convertVertexToScreenPoint)
-          print('points')
-          DevTools_Dump(points)
           Draw.drawPolygon(points, color)
         end
       end)
