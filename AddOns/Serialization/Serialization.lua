@@ -13,11 +13,7 @@ end
 
 function Serialization.tableToString(table, maxDepth)
   local references = {}
-  local result = ''
-  result = result .. '{' .. '\n'
-  result = result .. Serialization.tableToStringWithIndention(table, 0, 1, maxDepth, references)
-  result = result .. '}' .. '\n'
-  return result
+  return Serialization.tableToStringWithIndention(table, 1, maxDepth, references)
 end
 
 function Serialization.makeString(text)
@@ -42,12 +38,54 @@ function Serialization.makeString(text)
   end
 end
 
-function Serialization.tableToStringWithIndention(table, indention, depth, maxDepth, references)
+function Serialization.tableToStringWithIndention(table, depth, maxDepth, references)
+  local result
+  if Array.isArrayWithSubsequentIndexes(table) then
+    result = Serialization.arrayToStringWithIndention(table, depth, maxDepth, references)
+  else
+    result = Serialization.keyValueTableToStringWithIndention(table, depth, maxDepth, references)
+  end
+  return result
+end
+
+function Serialization.arrayToStringWithIndention(table, depth, maxDepth, references)
   local result = ''
   if table == nil then
     result = 'nil'
   else
+    result = result .. '{' .. '\n'
     local nextDepth = depth + 1
+    local inside = ''
+    for key, value in pairs(table) do
+      if type(value) == 'table' then
+        if (not maxDepth or depth <= maxDepth) and not references[value] then
+          inside = inside .. Serialization.tableToStringWithIndention(value, nextDepth, maxDepth, references)
+        else
+          inside = inside .. tostring(value)
+        end
+        -- references[value] = true
+      else
+        inside = inside .. Serialization.valueToString(value)
+      end
+      if next(table, key) then
+        inside = inside .. ',\n'
+      end
+    end
+    inside = Serialization.indent(inside, 1)
+    result = result .. inside .. '\n'
+    result = result .. '}'
+  end
+  return result
+end
+
+function Serialization.keyValueTableToStringWithIndention(table, depth, maxDepth, references)
+  local result = ''
+  if table == nil then
+    result = 'nil'
+  else
+    result = result .. '{' .. '\n'
+    local nextDepth = depth + 1
+    local inside = ''
     for key, value in pairs(table) do
       local outputtedKey
       if type(key) == 'number' then
@@ -63,17 +101,22 @@ function Serialization.tableToStringWithIndention(table, indention, depth, maxDe
       end
       if type(value) == 'table' then
         if (not maxDepth or depth <= maxDepth) and not references[value] then
-          result = result .. string.rep('  ', indention + 1) .. outputtedKey .. '={' .. '\n'
-          result = result .. Serialization.tableToStringWithIndention(value, indention + 1, nextDepth, maxDepth, references)
-          result = result .. string.rep('  ', indention + 1) .. '}' .. '\n'
+          inside = inside .. outputtedKey .. '=' .. '\n'
+          inside = inside .. Serialization.tableToStringWithIndention(value, nextDepth, maxDepth, references)
         else
-          result = result .. string.rep('  ', indention + 1) .. outputtedKey .. '=' .. tostring(value) .. '\n'
+          inside = inside .. outputtedKey .. '=' .. tostring(value)
         end
         -- references[value] = true
       else
-        result = result .. string.rep('  ', indention + 1) .. outputtedKey .. '=' .. Serialization.valueToString(value) .. '\n'
+        inside = inside .. outputtedKey .. '=' .. Serialization.valueToString(value)
+      end
+      if next(table, key) then
+        inside = inside .. ',\n'
       end
     end
+    inside = Serialization.indent(inside, 1)
+    result = result .. inside .. '\n'
+    result = result .. '}'
   end
   return result
 end
@@ -103,4 +146,16 @@ end
 
 function Serialization.createOpeningBracketOfLevel(level)
   return '[' .. string.rep('=', level) .. '['
+end
+
+function Serialization.indent(string, numberOfIndentions)
+  local lines = { strsplit('\n', string) }
+  local indentedLines = Array.map(lines, function(line)
+    return Serialization.indentLine(line, numberOfIndentions)
+  end)
+  return strjoin('\n', unpack(indentedLines))
+end
+
+function Serialization.indentLine(line, numberOfIndentions)
+  return string.rep('  ', numberOfIndentions) .. line
 end

@@ -100,6 +100,7 @@ doWhenGMRIsFullyLoaded(function()
   end)
 end)
 
+-- FIXME: Enabling mesh visualization seems to crash the game sometimes.
 function toggleMeshVisualization()
   local isEnablingMeshVisualization = not isMeshVisualizationEnabled
 

@@ -26,10 +26,6 @@ doWhenGMRIsFullyLoaded(function()
     end,
     function()
       addOffMeshConnections(AddOn.offMeshConnections)
-
-      if GMR_SavedVariablesPerCharacter.offMeshConnections then
-        addOffMeshConnections(GMR_SavedVariablesPerCharacter.offMeshConnections)
-      end
     end
   )
 
@@ -62,10 +58,12 @@ function setSecondOffMeshConnectionPoint()
   secondOffMeshConnectionPoint = GMR.GetPlayerPosition()
 end
 
+local function writeOffMeshConnectionsToFile()
+  local filePath = HWT.GetWoWDirectory() .. '/Interface/AddOns/Movement/OffMeshConnectionsDatabase.lua'
+  GMR.WriteFile(filePath, 'local addOnName, AddOn = ...\n\nAddOn.offMeshConnections = ' .. Serialization.valueToString(AddOn.offMeshConnections) .. '\n')
+end
+
 function saveOffMeshConnection(isBidirectional, polygonFlags)
-  if not GMR_SavedVariablesPerCharacter.offMeshConnections then
-    GMR_SavedVariablesPerCharacter.offMeshConnections = {}
-  end
   local continentID = select(8, GetInstanceInfo())
   local offMeshConnection = {
     continentID,
@@ -78,8 +76,9 @@ function saveOffMeshConnection(isBidirectional, polygonFlags)
     isBidirectional,
     polygonFlags
   }
-  table.insert(GMR_SavedVariablesPerCharacter.offMeshConnections, offMeshConnection)
+  table.insert(AddOn.offMeshConnections, offMeshConnection)
   addOffMeshConnection(offMeshConnection)
+  writeOffMeshConnectionsToFile()
   firstOffMeshConnectionPoint = nil
   secondOffMeshConnectionPoint = nil
 end
@@ -123,19 +122,12 @@ local function findConnection(connections, connection)
 end
 
 function _.removeOffMeshConnection(connection)
-  local connectionInSavedVariablesIndex = select(2,
-    findConnection(GMR_SavedVariablesPerCharacter.offMeshConnections, connection))
-  print('connectionInSavedVariablesIndex', connectionInSavedVariablesIndex)
-  if connectionInSavedVariablesIndex ~= -1 then
-    table.remove(GMR_SavedVariablesPerCharacter.offMeshConnections, connectionInSavedVariablesIndex)
+  local index = select(2,
+    findConnection(AddOn.offMeshConnections, connection))
+  if index ~= -1 then
+    table.remove(AddOn.offMeshConnections, index)
   end
-
-  local connectionInFileIndex = select(2, findConnection(AddOn.offMeshConnections, connection))
-  if connectionInFileIndex ~= -1 then
-    print('The connection seems to also be in the file "AddOns/Movement/OffMeshConnections.lua" in the table "offMeshConnections". You can remove it from there manually. It has the index ' .. connectionInFileIndex .. ' (starting with index 1)')
-  end
-
-  -- HWT.GetWoWDirectory() .. '/Interface/AddOns/Movement/OffMeshConnectionsDatabase.lua'
+  writeOffMeshConnectionsToFile()
 
   return HWT.RemoveOffmeshConnection(connection)
 end
