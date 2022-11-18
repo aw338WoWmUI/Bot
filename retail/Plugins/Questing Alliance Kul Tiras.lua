@@ -1114,7 +1114,6 @@ GMR.DefineQuester(
         nil,
         function()
           if not GMR.Questing.IsObjectiveCompleted(questID, 1) then
-            print('a')
             gossipWithAt(
               -1683.21875,
               -1351.5798339844,
