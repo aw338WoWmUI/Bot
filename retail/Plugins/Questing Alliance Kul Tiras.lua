@@ -796,7 +796,6 @@ GMR.DefineQuester(
           local offMeshHandler = GMR.OffMeshHandler
           GMR.OffMeshHandler = function(x, y, z)
             if x == 164.22917175293 and y == -711.69964599609 and z == 42.609508514404 then
-              print('b')
               if _G.FlightMapFrame and FlightMapFrame:IsShown() then
                 local EASTPOINT_STATION_TIRAGARDE_SOUND = 28
                 TakeTaxiNode(EASTPOINT_STATION_TIRAGARDE_SOUND)
