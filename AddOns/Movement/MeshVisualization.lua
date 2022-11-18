@@ -4,7 +4,13 @@ local _ = {}
 
 local RANGE = 50
 
+local function convertVertexToScreenPoint(vertex)
+  local x, y = GMR.WorldToScreen(vertex[1], vertex[2], vertex[3])
+  return { x, y }
+end
+
 local function visualizePolygons()
+  local color = { 0, 1, 0, 0.05 }
   GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
   local continentID = select(8, GetInstanceInfo())
   local position = Movement.retrievePlayerPosition()
@@ -14,6 +20,16 @@ local function visualizePolygons()
     local polygons = HWT.GetMeshPolygons(continentID, polygon, position.x, position.y, position.z, RANGE)
 
     if polygons then
+      Array.forEach(polygons, function(polygon)
+        local vertices = HWT.GetMeshPolygonVertices(continentID, polygon)
+        if vertices then
+          local points = Array.map(vertices, convertVertexToScreenPoint)
+          print('points')
+          DevTools_Dump(points)
+          Draw.drawPolygon(points, color)
+        end
+      end)
+
       Array.forEach(polygons, function(polygon)
         local vertices = HWT.GetMeshPolygonVertices(continentID, polygon)
         if vertices then
@@ -92,7 +108,9 @@ end
 local isMeshVisualizationEnabled = false
 
 doWhenGMRIsFullyLoaded(function()
-  hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
+  Draw.connectWithLibDraw(GMR.LibDraw)
+
+  GMR.LibDraw.Sync(function()
     if isMeshVisualizationEnabled then
       visualizePolygons()
       visualizeOffMeshConnections()
