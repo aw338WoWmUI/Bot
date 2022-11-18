@@ -10,7 +10,7 @@ local function convertVertexToScreenPoint(vertex)
 end
 
 local function visualizePolygons()
-  local color = { 0, 1, 0, 0.05 }
+  local color = { 0, 1, 0, 0.2 }
   GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
   local continentID = select(8, GetInstanceInfo())
   local position = Movement.retrievePlayerPosition()
