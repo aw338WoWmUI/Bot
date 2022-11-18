@@ -119,7 +119,7 @@ function Questing.Database.convertQuestieQuestToQuestingQuest(quest)
     classes = Questing.Database.convertQuestieClassesToQuestingClasses(quest.requiredClasses),
     starters = starters,
     enders = enders,
-    preQuestIDs = Array.concat(quest.preQuestGroup, quest.preQuestSingle),
+    preQuestIDs = Array.concat(quest.preQuestGroup or {}, quest.preQuestSingle or {}),
     storylinePreQuestIDs = {}
   }
 end
