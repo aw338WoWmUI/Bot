@@ -45,5 +45,3 @@ SetCVar('SoftTargetTooltipFriend', 1)
 SetCVar('SoftTargetTooltipInteract', 1)
 SetCVar('SoftTargetTooltipLocked', 1)
 -- SetCVar('SoftTargetFriend', 1)
-
-C_Timer.After(0, efficientlyLevelToMaximumLevel)

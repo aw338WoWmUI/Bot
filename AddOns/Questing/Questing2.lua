@@ -1,5 +1,7 @@
 Questing = Questing or {}
 
+local _ = {}
+
 local addOnName, AddOn = ...
 
 local lootedObjects = Set.create()
@@ -1648,8 +1650,26 @@ function Questing.isRunning()
   return isRunning
 end
 
+function Questing.start()
+  if not Questing.isRunning() then
+    isRunning = true
+
+    runAsCoroutine(_.run)
+  end
+end
+
+function Questing.stop()
+  if Questing.isRunning() then
+    isRunning = false
+  end
+end
+
 function Questing.toggle()
-  isRunning = not isRunning
+  if isRunning then
+    Questing.stop()
+  else
+    Questing.start()
+  end
 end
 
 function isIdle()
@@ -1736,8 +1756,8 @@ function registerUnavailableQuests(npcID)
   end)
 end
 
-function run (once)
-  C_Timer.NewTicker(0, function()
+function _.run ()
+  local stopPathMovingInCombatTicker = C_Timer.NewTicker(0, function()
     if GMR.InCombat() then
       Movement.stopPathMoving()
     end
@@ -1855,37 +1875,12 @@ function run (once)
       end
     end
 
-    if once then
+    if not Questing.isRunning() then
+      stopPathMovingInCombatTicker:Cancel()
       return
     end
 
     yielder.yield()
-  end
-end
-
-function efficientlyLevelToMaximumLevel()
-  if not isRunning then
-    isRunning = true
-
-    local thread = coroutine.create(function()
-      for objectID, object in pairs(exploredObjects) do
-        if object.isGoodsVendor then
-          GMR.DefineGoodsVendor(object.x, object.y, object.z, objectID)
-        end
-        if object.isSellVendor then
-          GMR.DefineSellVendor(object.x, object.y, object.z, objectID)
-        end
-        if object.isRepairVendor then
-          GMR.DefineRepairVendor(object.x, object.y, object.z, objectID)
-        end
-        if object.isMailbox then
-          GMR.DefineProfileMailbox(object.x, object.y, object.z)
-        end
-      end
-
-      run()
-    end)
-    resumeWithShowingError(thread)
   end
 end
 
