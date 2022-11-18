@@ -1939,8 +1939,6 @@ local function onEvent(self, event, ...)
     onQuestlineUpdate(...)
   elseif event == 'QUEST_TURNED_IN' then
     onQuestTurnedIn(...)
-  elseif event == 'GOSSIP_SHOW' then
-    print('GOSSIP_SHOW')
   end
 end
 
@@ -1950,7 +1948,6 @@ if Compatibility.isRetail() then
   frame:RegisterEvent('QUESTLINE_UPDATE')
 end
 frame:RegisterEvent('QUEST_TURNED_IN')
-frame:RegisterEvent('GOSSIP_SHOW')
 frame:SetScript('OnEvent', onEvent)
 
 Questing.convertMapPositionToWorldPosition = convertMapPositionToWorldPosition
