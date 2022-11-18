@@ -106,11 +106,57 @@ function Questing.Database.convertQuestieQuestsToQuestingQuests(quests)
   return Array.map(quests, Questing.Database.convertQuestieQuestToQuestingQuest)
 end
 
+local function convertQuestieObjectReferencesToQuestingStructure(data)
+  local result
+  if data.NPC then
+    result = Array.map(data.NPC, function(questID)
+      return {
+        type = 'npc',
+        id = questID
+      }
+    end)
+  elseif data.Item then
+    result = Array.map(data.Item, function(questID)
+      return {
+        type = 'item',
+        id = questID
+      }
+    end)
+  elseif data.GameObject then
+    result = Array.map(data.GameObject, function(questID)
+      return {
+        type = 'object',
+        id = questID
+      }
+    end)
+  else
+    result = {}
+  end
+  return result
+end
+
 function Questing.Database.convertQuestieQuestToQuestingQuest(quest)
   local sidesAndRaces = Questing.Database.convertQuestieRacesToQuestingSidesAndRaces(quest.requiredRaces)
   -- FIXME: Same structure for starters and enders as in Database ({type, id})
-  local starters = select(2, next(quest.startedBy))
-  local enders = select(2, next(quest.finishedBy))
+  print('quest')
+  DevTools_Dump(quest.Finisher)
+  local starters = convertQuestieObjectReferencesToQuestingStructure(quest.Starts)
+  local enders = {}
+  local finisher = quest.Finisher
+  if finisher then
+    local type
+    if finisher.Type == 'monster' then
+      type = 'npc'
+    elseif finisher.Type == 'object' then
+      type = 'object'
+    else
+      print('finisher.Type', finisher.Type)
+    end
+    table.insert(enders, {
+      type = type,
+      id = finisher.Id
+    })
+  end
   return {
     id = quest.Id,
     requiredLevel = quest.requiredLevel,

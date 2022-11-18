@@ -459,10 +459,15 @@ end
 
 function retrieveQuestsOnMap()
   local mapID = GMR.GetMapId()
-  local quests = C_QuestLog.GetQuestsOnMap(mapID)
-  while #quests == 0 and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
-    mapID = C_Map.GetMapInfo(mapID).parentMapID
+  local quests
+  if Compatibility.isRetail() then
     quests = C_QuestLog.GetQuestsOnMap(mapID)
+    while #quests == 0 and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
+      mapID = C_Map.GetMapInfo(mapID).parentMapID
+      quests = C_QuestLog.GetQuestsOnMap(mapID)
+    end
+  else
+    quests = {}
   end
   return quests, mapID
 end
@@ -728,9 +733,17 @@ end
 -- /dump GMR.GetPath(savedPosition.x, savedPosition.y, savedPosition.z)
 -- /dump GMR.PathExists(savedPosition)
 
+local function seemsToBeQuestObjective(object)
+  if HWT.ObjectIsQuestObjective then
+    return HWT.ObjectIsQuestObjective(object.pointer, false)
+  else
+    return Array.hasElements(retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object))
+  end
+end
+
 function doesPassObjectFilter(object)
   return (
-    HWT.ObjectIsQuestObjective(object.pointer, false) or
+    seemsToBeQuestObjective(object.pointer) or
       seemsToBeQuestObject(object.pointer)
   )
 end
