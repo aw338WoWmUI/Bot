@@ -387,7 +387,10 @@ end
 
 function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   if from.x == to.x and from.y == to.y then
-    return to.z - from.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInWater(from) and Movement.isPointInWater(to))
+    return (
+      (to.z - from.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInWater(from) and Movement.isPointInWater(to))) and
+      Movement.thereAreZeroCollisions(Movement.createPointWithZOffset(from, 0.1), to)
+    )
   end
 
   local totalDistance = euclideanDistance(from, to)
