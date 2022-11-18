@@ -2,29 +2,6 @@ local addOnName, AddOn = ...
 
 local _ = {}
 
-local offMeshConnections = {
-  {
-    0,
-    -8437.087890625,
-    376.62121582031,
-    135.7060546875,
-    -8435.947265625,
-    366.25323486328,
-    135.45243835449,
-    true
-  },
-  {
-    0,
-    -8476.66796875,
-    989.84027099609,
-    78.525085449219,
-    -8482.90625,
-    984.82489013672,
-    72.792686462402,
-    true
-  }
-}
-
 local firstOffMeshConnectionPoint = nil
 local secondOffMeshConnectionPoint = nil
 
@@ -39,11 +16,22 @@ local function addOffMeshConnections(offMeshConnections)
 end
 
 doWhenGMRIsFullyLoaded(function()
-  addOffMeshConnections(offMeshConnections)
-
-  if GMR_SavedVariablesPerCharacter.offMeshConnections then
-    addOffMeshConnections(GMR_SavedVariablesPerCharacter.offMeshConnections)
+  if not GMR.IsMeshLoaded() then
+    GMR.LoadMeshFiles()
   end
+
+  Conditionals.doOnceWhen(
+    function()
+      return GMR.IsMeshLoaded()
+    end,
+    function()
+      addOffMeshConnections(AddOn.offMeshConnections)
+
+      if GMR_SavedVariablesPerCharacter.offMeshConnections then
+        addOffMeshConnections(GMR_SavedVariablesPerCharacter.offMeshConnections)
+      end
+    end
+  )
 
   hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
     if firstOffMeshConnectionPoint or secondOffMeshConnectionPoint then
@@ -99,13 +87,17 @@ end
 function removeClosestOffMeshConnection()
   local closestOffMeshConnection = AddOn.findClosestOffMeshConnection()
   if closestOffMeshConnection then
-    _.removeOffMeshConnection(closestOffMeshConnection)
+    return _.removeOffMeshConnection(closestOffMeshConnection)
+  else
+    return false
   end
 end
 
 function AddOn.findClosestOffMeshConnection()
   local continentID = select(8, GetInstanceInfo())
   local connections = HWT.GetOffmeshConnections(continentID)
+
+  -- HWT.GetOffmeshConnectionDetails(HWT.GetOffmeshConnections(select(8, GetInstanceInfo()))[1])
 
   if connections and Array.hasElements(connections) then
     return Array.min(connections, function(connection)
@@ -120,6 +112,30 @@ function AddOn.findClosestOffMeshConnection()
   end
 end
 
+local function doConnectionDetailsMatch(a, b)
+  return Array.equals(a, b)
+end
+
+local function findConnection(connections, connection)
+  local continentID, _, _, x1, y1, z1, x2, y2, z2, isBidirectional = HWT.GetOffmeshConnectionDetails(connection)
+  local connectionDetails = { continentID, x1, y1, z1, x2, y2, z2, isBidirectional }
+  return Array.find(connections, Function.partial(doConnectionDetailsMatch, connectionDetails))
+end
+
 function _.removeOffMeshConnection(connection)
-  HWT.RemoveOffmeshConnection(connection)
+  local connectionInSavedVariablesIndex = select(2,
+    findConnection(GMR_SavedVariablesPerCharacter.offMeshConnections, connection))
+  print('connectionInSavedVariablesIndex', connectionInSavedVariablesIndex)
+  if connectionInSavedVariablesIndex ~= -1 then
+    table.remove(GMR_SavedVariablesPerCharacter.offMeshConnections, connectionInSavedVariablesIndex)
+  end
+
+  local connectionInFileIndex = select(2, findConnection(AddOn.offMeshConnections, connection))
+  if connectionInFileIndex ~= -1 then
+    print('The connection seems to also be in the file "AddOns/Movement/OffMeshConnections.lua" in the table "offMeshConnections". You can remove it from there manually. It has the index ' .. connectionInFileIndex .. ' (starting with index 1)')
+  end
+
+  -- HWT.GetWoWDirectory() .. '/Interface/AddOns/Movement/OffMeshConnectionsDatabase.lua'
+
+  return HWT.RemoveOffmeshConnection(connection)
 end

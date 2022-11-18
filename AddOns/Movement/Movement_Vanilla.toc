@@ -1,6 +1,6 @@
 ## Title: Movement
 ## Interface: 11403
-## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, GMR
+## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, GMR, Conditionals
 ## SavedVariables: savedPosition, position1, position2, from, to
 
 ObjectToValueLookup.lua
@@ -11,3 +11,6 @@ Moving.lua
 Movement.lua
 Meshing.lua
 MeshNet.lua
+MeshVisualization.lua
+OffMeshConnectionsDatabase.lua
+OffMeshConnections.lua

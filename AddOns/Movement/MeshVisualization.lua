@@ -1,5 +1,7 @@
 local addOnName, AddOn = ...
 
+local _ = {}
+
 local RANGE = 50
 
 local function visualizePolygons()
@@ -14,30 +16,36 @@ local function visualizePolygons()
     if polygons then
       Array.forEach(polygons, function(polygon)
         local vertices = HWT.GetMeshPolygonVertices(continentID, polygon)
-        local previousPoint = vertices[1]
-        for index = 2, #vertices do
-          local point = vertices[index]
+        if vertices then
+          local previousPoint = vertices[1]
+          for index = 2, #vertices do
+            local point = vertices[index]
+            GMR.LibDraw.Line(
+              previousPoint[1],
+              previousPoint[2],
+              previousPoint[3],
+              point[1],
+              point[2],
+              point[3]
+            )
+            previousPoint = point
+          end
           GMR.LibDraw.Line(
             previousPoint[1],
             previousPoint[2],
             previousPoint[3],
-            point[1],
-            point[2],
-            point[3]
+            vertices[1][1],
+            vertices[1][2],
+            vertices[1][3]
           )
-          previousPoint = point
         end
-        GMR.LibDraw.Line(
-          previousPoint[1],
-          previousPoint[2],
-          previousPoint[3],
-          vertices[1][1],
-          vertices[1][2],
-          vertices[1][3]
-        )
       end)
     end
   end
+end
+
+local function setDrawColor(red, green, blue)
+  GMR.LibDraw.SetColorRaw(red / 255, green / 255, blue / 255, 1)
 end
 
 local function visualizeOffMeshConnections()
@@ -63,9 +71,12 @@ local function visualizeOffMeshConnections()
     end
 
     local closestConnection = AddOn.findClosestOffMeshConnection()
+    if not closestConnection then
+      print('closestConnection', closestConnection)
+    end
 
     if closestConnection then
-      GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+      setDrawColor(156, 156, 255)
       drawConnection(closestConnection)
     end
 
@@ -90,11 +101,25 @@ doWhenGMRIsFullyLoaded(function()
 end)
 
 function toggleMeshVisualization()
-  isMeshVisualizationEnabled = not isMeshVisualizationEnabled
+  local isEnablingMeshVisualization = not isMeshVisualizationEnabled
 
-  if isMeshVisualizationEnabled then
+  if isEnablingMeshVisualization then
     if not GMR.IsMeshLoaded() then
       GMR.LoadMeshFiles()
+      Conditionals.doOnceWhen(
+        function()
+          return GMR.IsMeshLoaded()
+        end,
+        _.toggleMeshVisualization2
+      )
+    else
+      _.toggleMeshVisualization2()
     end
+  else
+    _.toggleMeshVisualization2()
   end
+end
+
+function _.toggleMeshVisualization2()
+  isMeshVisualizationEnabled = not isMeshVisualizationEnabled
 end
