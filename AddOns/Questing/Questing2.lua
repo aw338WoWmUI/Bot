@@ -778,7 +778,6 @@ function convertObjectPointerToObjectPoint(pointer, type, adjustPoint)
   local continentID = select(8, GetInstanceInfo())
   local x, y, z = GMR.ObjectPosition(pointer)
   local objectID = GMR.ObjectId(pointer)
-  print('pointer 222', pointer, GMR.ObjectName(pointer))
   local point = {
     name = GMR.ObjectName(pointer),
     continentID = continentID,

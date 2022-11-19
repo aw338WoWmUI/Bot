@@ -18,6 +18,9 @@ function Bot.start()
     end)
 
     Questing.start()
+    if not GMR.Frames.CombatRotationMode then
+      GMR.CombatRotationToggle()
+    end
   end
 end
 
@@ -27,6 +30,9 @@ function Bot.stop()
     isRunning = false
     handler:Cancel()
     Questing.stop()
+    if GMR.Frames.CombatRotationMode then
+      GMR.CombatRotationToggle()
+    end
   end
 end
 
