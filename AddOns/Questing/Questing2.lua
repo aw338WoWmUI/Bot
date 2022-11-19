@@ -685,9 +685,6 @@ end
 
 local isObjectRelatedToActiveQuestLookup = {}
 
----@type QuestieTooltips
-local QuestieTooltips = QuestieLoader:ImportModule('QuestieTooltips')
-
 local function retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
   if Compatibility.isRetail() then
     local questIDs = Set.create()
@@ -743,7 +740,7 @@ local function retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
 
     return questIDs:toList()
   else
-    local questieTooltip = retrieveQuestieTooltip(object)
+    local questieTooltip = AddOn.retrieveQuestieTooltip(object)
     if questieTooltip then
       return Array.map(
         Array.filter(
@@ -763,23 +760,6 @@ local function retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
     else
       return {}
     end
-  end
-end
-
-function retrieveQuestieTooltip(object)
-  local key
-  if Core.isUnit(object) then
-    key = 'm'
-  elseif Core.isGameObject(object) then
-    key = 'o'
-  elseif Core.isItem(object) then
-    key = 'i'
-  end
-  if key then
-    key = key .. '_' .. GMR.ObjectId(object)
-    return QuestieTooltips.lookupByKey[key]
-  else
-    return nil
   end
 end
 

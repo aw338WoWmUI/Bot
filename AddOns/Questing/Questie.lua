@@ -28,3 +28,23 @@ function AddOn.retrieveQuestStartPoints()
     end
   end))
 end
+
+---@type QuestieTooltips
+local QuestieTooltips = QuestieLoader:ImportModule('QuestieTooltips')
+
+function AddOn.retrieveQuestieTooltip(object)
+  local key
+  if Core.isUnit(object) then
+    key = 'm'
+  elseif Core.isGameObject(object) then
+    key = 'o'
+  elseif Core.isItem(object) then
+    key = 'i'
+  end
+  if key then
+    key = key .. '_' .. GMR.ObjectId(object)
+    return QuestieTooltips.lookupByKey[key]
+  else
+    return nil
+  end
+end
