@@ -2,10 +2,21 @@ Bot = Bot or {}
 Bot.Warrior = {}
 local _ = {}
 
-local HEROIC_STRIKE = 78
-local BATTLE_SHOUT = 6673
-local REND = 772
-local CHARGE = 100
+local function retrieveHighestRankSpellID(spellID)
+  local name = GetSpellInfo(spellID)
+  local highestRankSpellID = select(7, GetSpellInfo(name))
+  return highestRankSpellID
+end
+
+local HEROIC_STRIKE_RANK_1 = 78
+local BATTLE_SHOUT_RANK_1 = 6673
+local REND_RANK_1 = 772
+local CHARGE_RANK_1 = 100
+
+local HEROIC_STRIKE = retrieveHighestRankSpellID(HEROIC_STRIKE_RANK_1)
+local BATTLE_SHOUT = retrieveHighestRankSpellID(BATTLE_SHOUT_RANK_1)
+local REND = retrieveHighestRankSpellID(REND_RANK_1)
+local CHARGE = retrieveHighestRankSpellID(CHARGE_RANK_1)
 
 local HEROIC_STRIKE_NAME = GetSpellInfo(HEROIC_STRIKE)
 local REND_NAME = GetSpellInfo(REND)

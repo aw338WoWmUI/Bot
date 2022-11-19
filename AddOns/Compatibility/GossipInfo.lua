@@ -68,3 +68,13 @@ function Compatibility.GossipInfo.hasGossipOptions()
     return Array.hasElements(C_GossipInfo.GetOptions())
   end
 end
+
+function Compatibility.GossipInfo.hasAvailableQuests()
+  local numberOfAvailableQuests
+  if C_GossipInfo.GetNumAvailableQuests then
+    numberOfAvailableQuests = C_GossipInfo.GetNumAvailableQuests()
+  else
+    numberOfAvailableQuests = GetNumGossipAvailableQuests()
+  end
+  return numberOfAvailableQuests >= 1
+end

@@ -39,6 +39,14 @@ function Core.isUnit(object)
   return HWT.ObjectIsType(object, HWT.GetObjectTypeFlagsTable().Unit)
 end
 
+function Core.isGameObject(object)
+  return HWT.ObjectIsType(object, HWT.GetObjectTypeFlagsTable().GameObject)
+end
+
+function Core.isItem(object)
+  return HWT.ObjectIsType(object, HWT.GetObjectTypeFlagsTable().Item)
+end
+
 function Core.areFlagsSet(bitMap, flags)
   return bit.band(bitMap, flags) == flags
 end

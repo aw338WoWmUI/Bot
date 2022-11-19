@@ -64,11 +64,18 @@ function Questing.Database.receiveQuestsOnMapThatCanBeAccepted(mapID)
   end)
 end
 
+function Questing.Database.retrieveQuestsOnMapThatTheCharacterIsOn(mapID)
+  local availableQuests = Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
+  return Array.filter(availableQuests, function (quest)
+    return Compatibility.QuestLog.isOnQuest(quest.id)
+  end)
+end
+
 function Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
   local result = {}
 
   local zoneID = ZoneDB:GetAreaIdByUiMapId(mapID)
-  local quests = QuestieDB:GetQuestsByZoneId(zoneID)
+  local quests = QuestieJourney.zoneMap[zoneID]
 
   if (not quests) then
     return nil
@@ -335,10 +342,14 @@ end
 function Questing.Database.retrieveQuestsThatShouldBeAvailableFromNPC(npcID)
   local npc = QuestieDB:GetNPC(npcID)
   local questIDs = npc.questStarts
-  local quests = Array.map(questIDs, Questing.Database.retrieveQuest)
-  return Array.filter(quests, function(quest)
-    return shouldQuestBeAvailable(quest)
-  end)
+  if questIDs then
+    local quests = Array.map(questIDs, Questing.Database.retrieveQuest)
+    return Array.filter(quests, function(quest)
+      return shouldQuestBeAvailable(quest)
+    end)
+  else
+    return {}
+  end
 end
 
 function Questing.Database.isQuestGiver(npcID)

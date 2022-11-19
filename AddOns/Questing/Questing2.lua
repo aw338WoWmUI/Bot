@@ -4,7 +4,7 @@ local _ = {}
 
 local addOnName, AddOn = ...
 
-local lootedObjects = Set.create()
+lootedObjects = Set.create()
 local recentlyVisitedObjectivePoints = {}
 
 local EXPLORE_QUESTS = true
@@ -516,7 +516,7 @@ function retrieveQuestsOnMapThatTheCharacterIsOn()
       end)
     end
   else
-    retrieveQuestsOnMap = Questing.Database.receiveQuestsOnMapThatCanBeAccepted
+    retrieveQuestsOnMap = Questing.Database.retrieveQuestsOnMapThatTheCharacterIsOn
   end
 
   local mapID = GMR.GetMapId()
@@ -672,59 +672,102 @@ end
 
 local isObjectRelatedToActiveQuestLookup = {}
 
+---@type QuestieTooltips
+local QuestieTooltips = QuestieLoader:ImportModule('QuestieTooltips')
+
 local function retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
-  local questIDs = Set.create()
-  local objectID = GMR.ObjectId(object)
+  if Compatibility.isRetail() then
+    local questIDs = Set.create()
+    local objectID = GMR.ObjectId(object)
 
-  local relations
-  if (
-    GMR.ObjectPointer(object) == GMR.ObjectPointer('softinteract') and
-      UnitName('softinteract') == GameTooltipTextLeft1:GetText()
-  ) then
-    relations = findRelationsToQuests('GameTooltip', 'softinteract')
-    -- TODO: Merge new quest relationship information into explored object. Also consider the case when the explored object doesn't exist (regarding exploring other info for the object).
-    if exploredObjects[GMR.ObjectId(object)] and not exploredObjects[GMR.ObjectId(object)].questRelationships then
-      exploredObjects[GMR.ObjectId(object)].questRelationships = relations
-    end
-  elseif exploredObjects[GMR.ObjectId(object)] then
-    relations = exploredObjects[GMR.ObjectId(object)].questRelationships
-  end
-
-  if relations then
-    Array.forEach(Object.entries(relations), function(entry)
-      local questID = entry.key
-      local objectiveIndexesThatObjectIsRelatedTo = entry.value
-      if (
-        GMR.IsQuestActive(questID) and
-          not Compatibility.QuestLog.isComplete(questID) and
-          Set.containsWhichFulfillsCondition(objectiveIndexesThatObjectIsRelatedTo, function(objectiveIndex)
-            return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
-          end)
-      ) then
-        questIDs:add(questID)
+    local relations
+    if (
+      GMR.ObjectPointer(object) == GMR.ObjectPointer('softinteract') and
+        UnitName('softinteract') == GameTooltipTextLeft1:GetText()
+    ) then
+      relations = findRelationsToQuests('GameTooltip', 'softinteract')
+      -- TODO: Merge new quest relationship information into explored object. Also consider the case when the explored object doesn't exist (regarding exploring other info for the object).
+      if exploredObjects[GMR.ObjectId(object)] and not exploredObjects[GMR.ObjectId(object)].questRelationships then
+        exploredObjects[GMR.ObjectId(object)].questRelationships = relations
       end
-    end)
-  end
+    elseif exploredObjects[GMR.ObjectId(object)] then
+      relations = exploredObjects[GMR.ObjectId(object)].questRelationships
+    end
 
-  local npc = Questing.Database.retrieveNPC(objectID)
-  if npc then
-    local objectiveOf = npc.objectiveOf
-    if objectiveOf then
-      for questID, objectiveIndexes in pairs(objectiveOf) do
+    if relations then
+      Array.forEach(Object.entries(relations), function(entry)
+        local questID = entry.key
+        local objectiveIndexesThatObjectIsRelatedTo = entry.value
         if (
           GMR.IsQuestActive(questID) and
             not Compatibility.QuestLog.isComplete(questID) and
-            Set.containsWhichFulfillsCondition(objectiveIndexes, function(objectiveIndex)
+            Set.containsWhichFulfillsCondition(objectiveIndexesThatObjectIsRelatedTo, function(objectiveIndex)
               return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
             end)
         ) then
           questIDs:add(questID)
         end
+      end)
+    end
+
+    local npc = Questing.Database.retrieveNPC(objectID)
+    if npc then
+      local objectiveOf = npc.objectiveOf
+      if objectiveOf then
+        for questID, objectiveIndexes in pairs(objectiveOf) do
+          if (
+            GMR.IsQuestActive(questID) and
+              not Compatibility.QuestLog.isComplete(questID) and
+              Set.containsWhichFulfillsCondition(objectiveIndexes, function(objectiveIndex)
+                return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
+              end)
+          ) then
+            questIDs:add(questID)
+          end
+        end
       end
     end
-  end
 
-  return questIDs:toList()
+    return questIDs:toList()
+  else
+    local questieTooltip = retrieveQuestieTooltip(object)
+    if questieTooltip then
+      return Array.map(
+        Array.filter(
+          Array.map(
+            Object.entries(questieTooltip),
+            function(keyAndValue)
+              return keyAndValue.value
+            end
+          ),
+          function(value)
+            return not value.objective.Completed and (value.objective.Type ~= 'monster' or GMR.IsAlive(object))
+          end),
+        function(value)
+          return value.questId
+        end
+      )
+    else
+      return {}
+    end
+  end
+end
+
+function retrieveQuestieTooltip(object)
+  local key
+  if Core.isUnit(object) then
+    key = 'm'
+  elseif Core.isGameObject(object) then
+    key = 'o'
+  elseif Core.isItem(object) then
+    key = 'i'
+  end
+  if key then
+    key = key .. '_' .. GMR.ObjectId(object)
+    return QuestieTooltips.lookupByKey[key]
+  else
+    return nil
+  end
 end
 
 function convertObjectPointersToObjectPoints(objectPointers, type, adjustPoint)
@@ -777,7 +820,7 @@ end
 -- /dump GMR.GetPath(savedPosition.x, savedPosition.y, savedPosition.z)
 -- /dump GMR.PathExists(savedPosition)
 
-local function seemsToBeQuestObjective(object)
+function _.seemsToBeQuestObjective(object)
   local canQuestBeTurnedIn = Unlocker.retrieveQuestGiverStatus(object) == 12
   if HWT.ObjectIsQuestObjective then
     return canQuestBeTurnedIn or HWT.ObjectIsQuestObjective(object, false)
@@ -788,7 +831,7 @@ end
 
 function doesPassObjectFilter(object)
   return (
-    seemsToBeQuestObjective(object.pointer) or
+    _.seemsToBeQuestObjective(object.pointer) or
       seemsToBeQuestObject(object.pointer)
   )
 end
@@ -1712,6 +1755,7 @@ end
 
 function Questing.start()
   if not Questing.isRunning() then
+    print('Starting questing...')
     isRunning = true
 
     runAsCoroutine(_.run)
@@ -1720,6 +1764,7 @@ end
 
 function Questing.stop()
   if Questing.isRunning() then
+    print('Stopping questing...')
     isRunning = false
   end
 end
@@ -1733,28 +1778,34 @@ function Questing.toggle()
 end
 
 function isIdle()
-  local questID = GMR.GetQuestId()
   return (
     not GMR.InCombat() and
-      not (questID and GMR.IsQuestActive(questID) and not Compatibility.QuestLog.isComplete(questID)) and
-      not GMR.IsQuesting() and
       not GMR.IsCasting() and
-      (not GMR_SavedVariablesPerCharacter.Sell or not GMR.IsSelling()) and
-      not GMR.IsVendoring() and
       not GMR.IsAttacking() and
-      (not GMR.IsClassTrainerNeeded or not GMR.IsClassTrainerNeeded()) and
-      not GMR.IsDead() and
       not GMR.IsDrinking() and
       not GMR.IsEating() and
       not GMR.IsFishing() and
       not GMR.IsLooting() and
+      (not _G.isPathFinding or not isPathFinding()) and
+      (not GMR.IsExecuting() or _.isGMRIdle())
+  )
+end
+
+function _.isGMRIdle()
+  local questID = GMR.GetQuestId()
+  return (
+    not (questID and GMR.IsQuestActive(questID) and not Compatibility.QuestLog.isComplete(questID)) and
+      not GMR.IsQuesting() and
+      (not GMR_SavedVariablesPerCharacter.Sell or not GMR.IsSelling()) and
+      not GMR.IsVendoring() and
+      (not GMR.IsClassTrainerNeeded or not GMR.IsClassTrainerNeeded()) and
+      not GMR.IsDead() and
       not GMR.IsMailing() and
       not seemsThatIsGoingToCreateHealthstone() and
       not GMR.IsUnstuckEnabled() and
       not GMR.IsPreparing() and
       not GMR.IsGhost('player') and
-      (not GMR_SavedVariablesPerCharacter.Repair or not GMR.IsRepairing()) and
-      (not _G.isPathFinding or not isPathFinding())
+      (not GMR_SavedVariablesPerCharacter.Repair or not GMR.IsRepairing())
   )
 end
 
@@ -1788,19 +1839,25 @@ function waitForQuestHasBeenAccepted()
 end
 
 function isAnyActiveQuestCompletable()
+  return _.findFirstCompleteActiveQuest() ~= nil
+end
+
+function _.findFirstCompleteActiveQuest()
   for index = 1, GetNumActiveQuests() do
     if Compatibility.isRetail() then
       local questID = GetActiveQuestID(index)
       if Compatibility.QuestLog.isComplete(questID) then
-        return true
+        return questID
       end
     else
       local isComplete = select(2, GetActiveTitle(index))
       if isComplete then
-        return true
+        return index
       end
     end
   end
+
+  return nil
 end
 
 function isAnyActiveQuestCompletable2()
@@ -1926,14 +1983,9 @@ function _.run ()
           C_GossipInfo.SelectActiveQuest(quest.questID)
         end
       elseif QuestFrame:IsShown() and isAnyActiveQuestCompletable() then
-        for index = 1, GetNumActiveQuests() do
-          local questID = GetActiveQuestID(index)
-          if Compatibility.QuestLog.isComplete(questID) then
-            SelectActiveQuest(index)
-            break
-          end
-        end
-      elseif GossipFrame:IsShown() and C_GossipInfo.GetNumAvailableQuests() >= 1 then
+        local questIdentifier = _.findFirstCompleteActiveQuest()
+        SelectActiveQuest(questIdentifier)
+      elseif GossipFrame:IsShown() and Compatibility.GossipInfo.hasAvailableQuests() then
         local availableQuests = Compatibility.GossipInfo.retrieveAvailableQuests()
         local availableQuest = availableQuests[1]
         local questIdentifier
@@ -1973,6 +2025,7 @@ function _.run ()
 
     if not Questing.isRunning() then
       stopPathMovingInCombatTicker:Cancel()
+      Movement.stopPathMoving()
       return
     end
 

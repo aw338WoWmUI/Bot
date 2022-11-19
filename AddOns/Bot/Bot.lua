@@ -2,13 +2,39 @@ Bot = {}
 
 local isRunning = false
 
+function Bot.isRunning()
+  return isRunning
+end
+
+local handler = nil
+
 function Bot.start()
-  if not isRunning then
+  if not Bot.isRunning() then
+    print('Starting bot...')
     isRunning = true
-    -- efficientlyLevelToMaximumLevel()
-    C_Timer.NewTicker(0, function()
+
+    handler = Scheduling.doEachFrame( function()
       Bot.Warrior.castSpell()
     end)
+
+    Questing.start()
+  end
+end
+
+function Bot.stop()
+  if Bot.isRunning() then
+    print('Stopping bot...')
+    isRunning = false
+    handler:Cancel()
+    Questing.stop()
+  end
+end
+
+function Bot.toggle()
+  if isRunning then
+    Bot.stop()
+  else
+    Bot.start()
   end
 end
 
