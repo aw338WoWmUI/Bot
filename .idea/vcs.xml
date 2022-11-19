@@ -12,6 +12,7 @@
     <mapping directory="$PROJECT_DIR$/AddOns/Math" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Object" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Set" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/AddOns/String" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Tooltips" vcs="Git" />
   </component>
 </project>
