@@ -545,13 +545,14 @@ function retrieveQuestsOnMapThatCanBeAccepted()
     -- FIXME: Might be off.
     retrieveQuestsOnMap = function(mapID)
       local quests = C_QuestLog.GetQuestsOnMap(mapID)
-      print('AddOn.isNotOnQuest', AddOn.isNotOnQuest)
       return Array.filter(
         Array.map(quests, function(quest)
           quest.mapID = mapID
           return quest
         end),
-        AddOn.isNotOnQuest
+        function(quest)
+          return AddOn.isNotOnQuest(quest.questID)
+        end
       )
     end
   else
@@ -561,8 +562,8 @@ function retrieveQuestsOnMapThatCanBeAccepted()
   return _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
 end
 
-function AddOn.isNotOnQuest(quest)
-  return not Compatibility.QuestLog.isOnQuest(quest.id)
+function AddOn.isNotOnQuest(questID)
+  return not Compatibility.QuestLog.isOnQuest(questID)
 end
 
 function retrieveWorldPositionFromMapPosition(mapID, mapX, mapY)
@@ -680,6 +681,8 @@ end
 
 function retrieveAvailableQuestLines(mapID)
   C_QuestLine.RequestQuestLinesForMap(mapID)
+  local wasSuccessful = Events.waitForEvent('QUESTLINE_UPDATE', 2)
+  print('wasSuccessful', wasSuccessful)
   return C_QuestLine.GetAvailableQuestLines(mapID)
 end
 

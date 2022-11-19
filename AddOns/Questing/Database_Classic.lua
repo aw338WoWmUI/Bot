@@ -63,7 +63,9 @@ end
 
 function Questing.Database.receiveQuestsOnMapThatCanBeAccepted(mapID)
   local availableQuests = Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
-  return Array.filter(availableQuests, AddOn.isNotOnQuest)
+  return Array.filter(availableQuests, function (quest)
+    return AddOn.isNotOnQuest(quest.id)
+  end)
 end
 
 function Questing.Database.retrieveQuestsOnMapThatTheCharacterIsOn(mapID)
