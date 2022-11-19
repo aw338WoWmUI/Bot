@@ -36,6 +36,7 @@ if exist "%path%\_retail_" (
 	mklink /D "%path%\_retail_\Interface\AddOns\HWTRetriever" "%~dp0\AddOns\HWTRetriever"
 	mklink /D "%path%\_retail_\Interface\AddOns\Draw" "%~dp0\AddOns\Draw"
 	mklink /D "%path%\_retail_\Interface\AddOns\Scheduling" "%~dp0\AddOns\Scheduling"
+	mklink /D "%path%\_retail_\Interface\AddOns\String" "%~dp0\AddOns\String"
 	mklink /D "%path%\_retail_\Interface\AddOns\!Fixes" "%~dp0\retail\AddOns\!Fixes"
 )
 
@@ -72,6 +73,7 @@ if exist "%path%\_classic_" (
 	mklink /D "%path%\_classic_\Interface\AddOns\HWTRetriever" "%~dp0\AddOns\HWTRetriever"
 	mklink /D "%path%\_classic_\Interface\AddOns\Draw" "%~dp0\AddOns\Draw"
 	mklink /D "%path%\_classic_\Interface\AddOns\Scheduling" "%~dp0\AddOns\Scheduling"
+	mklink /D "%path%\_classic_\Interface\AddOns\String" "%~dp0\AddOns\String"
 )
 
 if exist "%path%\_classic_era_" (
@@ -107,4 +109,5 @@ if exist "%path%\_classic_era_" (
 	mklink /D "%path%\_classic_era_\Interface\AddOns\HWTRetriever" "%~dp0\AddOns\HWTRetriever"
 	mklink /D "%path%\_classic_era_\Interface\AddOns\Draw" "%~dp0\AddOns\Draw"
 	mklink /D "%path%\_classic_era_\Interface\AddOns\Scheduling" "%~dp0\AddOns\Scheduling"
+	mklink /D "%path%\_classic_era_\Interface\AddOns\String" "%~dp0\AddOns\String"
 )

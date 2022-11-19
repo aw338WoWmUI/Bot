@@ -153,7 +153,7 @@ function Serialization.indent(string, numberOfIndentions)
   local indentedLines = Array.map(lines, function(line)
     return Serialization.indentLine(line, numberOfIndentions)
   end)
-  return strjoin('\n', unpack(indentedLines))
+  return String.join('\n', unpack(indentedLines))
 end
 
 function Serialization.indentLine(line, numberOfIndentions)

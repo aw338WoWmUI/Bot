@@ -31,3 +31,6 @@
 [submodule "AddOns/Tooltips"]
 	path = AddOns/Tooltips
 	url = https://github.com/SanjoSolutions/Tooltips.git
+[submodule "AddOns/String"]
+	path = AddOns/String
+	url = https://github.com/SanjoSolutions/LuaString.git
