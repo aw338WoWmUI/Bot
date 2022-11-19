@@ -1,6 +1,10 @@
 Questing = Questing or {}
 Questing.Database = {}
 
+local addOnName, AddOn = ...
+
+local _ = {}
+
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule('QuestieDB')
 ---@type QuestieLib
@@ -59,21 +63,45 @@ end
 
 function Questing.Database.receiveQuestsOnMapThatCanBeAccepted(mapID)
   local availableQuests = Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
-  return Array.filter(availableQuests, function (quest)
-    return not Compatibility.QuestLog.isOnQuest(quest.id)
-  end)
+  return Array.filter(availableQuests, AddOn.isNotOnQuest)
 end
 
 function Questing.Database.retrieveQuestsOnMapThatTheCharacterIsOn(mapID)
   local availableQuests = Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
-  return Array.filter(availableQuests, function (quest)
+  local quests = Array.filter(availableQuests, function(quest)
     return Compatibility.QuestLog.isOnQuest(quest.id)
   end)
+
+  return Array.flatMap(quests, _.convertQuestieQuestToQuestOnMap)
+end
+
+function _.convertQuestieQuestToQuestOnMap(quest)
+  local objectives = {} -- TODO: Other types (game objects)
+  if quest.Objectives then
+    for _, objective in ipairs(quest.Objectives) do
+      for objectID, object in pairs(objective.spawnList) do
+        for zoneID, spawnPoints in pairs(object.Spawns) do
+          print('zoneID', zoneID)
+          local mapID = ZoneDB:GetUiMapIdByAreaId(zoneID)
+          for _, spawnPoint in ipairs(spawnPoints) do
+            local objective = {
+              mapID = mapID,
+              x = spawnPoint[1] / 100,
+              y = spawnPoint[2] / 100
+            }
+            table.insert(objectives, objective)
+          end
+        end
+      end
+    end
+  end
+  return objectives
 end
 
 function Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
   local result = {}
 
+  print('a mapID', mapID)
   local zoneID = ZoneDB:GetAreaIdByUiMapId(mapID)
   local quests = QuestieJourney.zoneMap[zoneID]
 
@@ -202,6 +230,18 @@ function Questing.Database.convertQuestieQuestToQuestingQuest(quest)
       id = finisher.Id
     })
   end
+  local objectives = {} -- TODO: Other types (game objects)
+  for _, objective in ipairs(quest.Objectives) do
+    local type = objective.Type
+    if type == 'monster' then
+      type = 'npc'
+    end
+    local objective = {
+      type = type,
+      id = objective.Id
+    }
+    table.insert(objectives, objective)
+  end
   return {
     id = quest.Id,
     name = quest.name,
@@ -212,7 +252,8 @@ function Questing.Database.convertQuestieQuestToQuestingQuest(quest)
     starters = starters,
     enders = enders,
     preQuestIDs = Array.concat(quest.preQuestGroup or {}, quest.preQuestSingle or {}),
-    storylinePreQuestIDs = {}
+    storylinePreQuestIDs = {},
+    objectives = objectives
   }
 end
 

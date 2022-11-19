@@ -1,8 +1,8 @@
 Questing = Questing or {}
 
-local _ = {}
-
 local addOnName, AddOn = ...
+
+local _ = {}
 
 lootedObjects = Set.create()
 local recentlyVisitedObjectivePoints = {}
@@ -519,11 +519,24 @@ function retrieveQuestsOnMapThatTheCharacterIsOn()
     retrieveQuestsOnMap = Questing.Database.retrieveQuestsOnMapThatTheCharacterIsOn
   end
 
+  return _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
+end
+
+function _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
   local mapID = GMR.GetMapId()
-  local quests = retrieveQuestsOnMap(mapID)
-  while Array.isEmpty(quests) and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
-    mapID = C_Map.GetMapInfo(mapID).parentMapID
-    quests = retrieveQuestsOnMap(mapID)
+  local quests = {}
+  while true do
+    local mapInfo = C_Map.GetMapInfo(mapID)
+    if mapInfo.mapType >= 3 then
+      quests = retrieveQuestsOnMap(mapID)
+      if Array.hasElements(quests) then
+        break
+      else
+        mapID = mapInfo.parentMapID
+      end
+    else
+      break
+    end
   end
   return quests, mapID
 end
@@ -534,22 +547,24 @@ function retrieveQuestsOnMapThatCanBeAccepted()
     -- FIXME: Might be off.
     retrieveQuestsOnMap = function(mapID)
       local quests = C_QuestLog.GetQuestsOnMap(mapID)
-      return Array.map(quests, function(quest)
-        quest.mapID = mapID
-        return quest
-      end)
+      print('AddOn.isNotOnQuest', AddOn.isNotOnQuest)
+      return Array.filter(
+        Array.map(quests, function(quest)
+          quest.mapID = mapID
+          return quest
+        end),
+        AddOn.isNotOnQuest
+      )
     end
   else
     retrieveQuestsOnMap = Questing.Database.receiveQuestsOnMapThatCanBeAccepted
   end
 
-  local mapID = GMR.GetMapId()
-  local quests = retrieveQuestsOnMap(mapID)
-  while Array.isEmpty(quests) and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
-    mapID = C_Map.GetMapInfo(mapID).parentMapID
-    quests = retrieveQuestsOnMap(mapID)
-  end
-  return quests, mapID
+  return _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
+end
+
+function AddOn.isNotOnQuest(quest)
+  return not Compatibility.QuestLog.isOnQuest(quest.id)
 end
 
 function retrieveWorldPositionFromMapPosition(mapID, mapX, mapY)

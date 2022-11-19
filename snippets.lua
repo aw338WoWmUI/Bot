@@ -208,3 +208,5 @@ runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)
 Array.map(Questing.Database.retrieveQuestsThatShouldBeAvailable(GMR.GetMapId()), function (quest) return quest.name end)
 
 runAsCoroutine(function () DevTools_Dump(retrieveObjectPoints()) end)
+
+log(QuestieDB:GetQuest(6).Objectives)

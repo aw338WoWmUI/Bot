@@ -59,11 +59,11 @@ function Serialization.arrayToStringWithIndention(table, depth, maxDepth, refere
     for key, value in pairs(table) do
       if type(value) == 'table' then
         if (not maxDepth or depth <= maxDepth) and not references[value] then
+          references[value] = true
           inside = inside .. Serialization.tableToStringWithIndention(value, nextDepth, maxDepth, references)
         else
           inside = inside .. tostring(value)
         end
-        -- references[value] = true
       else
         inside = inside .. Serialization.valueToString(value)
       end
