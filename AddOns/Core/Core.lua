@@ -7,6 +7,7 @@ Core = {}
 Core.NpcFlags = {
   None = 0x0,
   Gossip = 0x1,
+  QuestGiver = 0x2,
   Trainer = 0x10,
   ClassTrainer = 0x20,
   Vendor = 0x80,

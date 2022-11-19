@@ -137,7 +137,7 @@ function Movement.findClosestDifferentPolygonTowardsPosition(x, y, z, x5, y5, z5
 end
 
 doWhenGMRIsFullyLoaded(function()
-  hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
+  GMR.LibDraw.Sync(function()
     --if DEVELOPMENT then
     --  if not GMR.IsMeshLoaded() then
     --    GMR.LoadMeshFiles()
@@ -934,7 +934,6 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
 
       if not Movement.canReachWaypointWithCurrentMovementDirection(waypoint) then
         if GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) <= 5 then
-          print('GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) <= 5')
           GMR.MoveForwardStop()
         end
         local facingPoint

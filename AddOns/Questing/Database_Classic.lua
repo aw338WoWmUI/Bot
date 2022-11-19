@@ -15,6 +15,8 @@ local QuestiePlayer = QuestieLoader:ImportModule('QuestiePlayer')
 local QuestieJourney = QuestieLoader:ImportModule('QuestieJourney')
 ---@type QuestieReputation
 local QuestieReputation = QuestieLoader:ImportModule('QuestieReputation')
+---@type ZoneDB
+local ZoneDB = QuestieLoader:ImportModule('ZoneDB')
 
 function Questing.Database.retrieveQuest(id)
   local quest = QuestieDB:GetQuest(id)
@@ -25,22 +27,48 @@ function Questing.Database.retrieveQuest(id)
   end
 end
 
+local function convertPointsToMapPoints(points)
+  return Array.flatMap(points, function(point)
+    local ID = point.id
+    local NPC = Questing.Database.retrieveNPC(ID)
+    if NPC and NPC.coordinates then
+      return Array.map(NPC.coordinates, function(coordinates)
+        return {
+          questID = ID,
+          mapID = coordinates[1],
+          x = coordinates[2],
+          y = coordinates[3],
+        }
+      end)
+    else
+      return nil
+    end
+  end)
+end
+
 function Questing.Database.receiveQuestsOnMap(mapID)
   local quests = Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
-  return Array.map(quests, function (quest)
-    return {
-      questID = quest.id,
-      --x = ,
-      --y = ,
-    }
+  return Array.selectTrue(Array.flatMap(quests, function(quest)
+    if Compatibility.QuestLog.isComplete(quest.id) then
+      return convertPointsToMapPoints(quest.enders)
+    elseif not Compatibility.QuestLog.isOnQuest(quest.id) then
+      return convertPointsToMapPoints(quest.starters)
+    end
+  end))
+end
+
+function Questing.Database.receiveQuestsOnMapThatCanBeAccepted(mapID)
+  local availableQuests = Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
+  return Array.filter(availableQuests, function (quest)
+    return not Compatibility.QuestLog.isOnQuest(quest.id)
   end)
 end
 
 function Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
   local result = {}
 
-  local zoneId = ZoneDB:GetAreaIdByUiMapId(mapID)
-  local quests = QuestieDB:GetQuestsByZoneId(zoneId)
+  local zoneID = ZoneDB:GetAreaIdByUiMapId(mapID)
+  local quests = QuestieDB:GetQuestsByZoneId(zoneID)
 
   if (not quests) then
     return nil
@@ -58,13 +86,15 @@ function Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
       else
         local queryResult = QuestieDB.QueryQuest(
           questID,
-          "exclusiveTo",
-          "nextQuestInChain",
-          "parentQuest",
-          "preQuestSingle",
-          "preQuestGroup",
-          "requiredMinRep",
-          "requiredMaxRep"
+          {
+            "exclusiveTo",
+            "nextQuestInChain",
+            "parentQuest",
+            "preQuestSingle",
+            "preQuestGroup",
+            "requiredMinRep",
+            "requiredMaxRep"
+          }
         ) or {}
         local exclusiveTo = queryResult[1]
         local nextQuestInChain = queryResult[2]
@@ -88,7 +118,7 @@ function Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
           -- Repeatable quests
         elseif QuestieDB.IsRepeatable(questID) then
           -- Available quests
-        elseif not GMR.IsQuestActive(questID) then
+        else
           tinsert(result, questID)
         end
       end
@@ -266,8 +296,8 @@ function Questing.Database.retrieveNPC(id)
 end
 
 function Questing.Database.convertQuestieNPCToQuestingNPC(npc)
-  return {
-    id = npc.id,
+  local coordinates
+  if npc.spawns then
     coordinates = Array.flatMap(Object.entries(npc.spawns), function(keyAndValue)
       local zoneID = keyAndValue.key
       local mapID = ZoneDB:GetUiMapIdByAreaId(zoneID)
@@ -279,7 +309,14 @@ function Questing.Database.convertQuestieNPCToQuestingNPC(npc)
           coordinates[2] / 100
         }
       end)
-    end),
+    end)
+  else
+    coordinates = {}
+  end
+
+  return {
+    id = npc.id,
+    coordinates = coordinates,
     canRepair = areFlagsSet(npc.npcFlags, QuestieDB.npcFlags.REPAIR),
     isInnkeeper = areFlagsSet(npc.npcFlags, QuestieDB.npcFlags.INNKEEPER),
     isGrpyhonMaster = areFlagsSet(npc.npcFlags, QuestieDB.npcFlags.FLIGHT_MASTER),

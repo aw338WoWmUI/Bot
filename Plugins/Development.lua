@@ -170,7 +170,7 @@ end
 --  end
 --end)
 
---hooksecurefunc(GMR.LibDraw, 'clearCanvas', function ()
+--GMR.LibDraw.Sync(function ()
 --  local playerPosition = GMR.GetPlayerPosition();
 --  local x1, y1, z1 = playerPosition.x, playerPosition.y, playerPosition.z;
 --  local x2, y2, z2 = GMR.ObjectPosition('target');
@@ -476,42 +476,28 @@ function moveToStoredPosition()
   end
 end
 
-local ticker
-ticker = C_Timer.NewTicker(0, function()
-  if _G.GMR and _G.GMR.LibDraw and _G.GMR.LibDraw.clearCanvas then
-    ticker:Cancel()
-    local clearCanvas = GMR.LibDraw.clearCanvas
-
-    function drawPoints(points)
-      local playerPosition = GMR.GetPlayerPosition()
-      --local previousPoint = points[1]
-      --for i = 2, Array.length(points) do
-      --  local point = points[i]
-      --  GMR.LibDraw.Line(previousPoint[1], previousPoint[2], previousPoint[3], point[1], point[2], point[3])
-      --  previousPoint = point
-      --end
-
-      for i = 1, Array.length(points) do
-        local point = points[i]
-        GMR.LibDraw.GroundCircle(point[1], point[2], point[3], 0.5)
-      end
-    end
-
-    function draw()
-      drawPoints(GMR.Tables.Area.DeeprunTram)
-    end
-
-    -- draw()
-
-    GMR.LibDraw.clearCanvas = function(...)
-      local result = { clearCanvas(...) }
-
-      -- draw()
-
-      return unpack(result)
-    end
-  end
-end)
+--doWhenGMRIsFullyLoaded(function ()
+--  function drawPoints(points)
+--    local playerPosition = GMR.GetPlayerPosition()
+--    --local previousPoint = points[1]
+--    --for i = 2, Array.length(points) do
+--    --  local point = points[i]
+--    --  GMR.LibDraw.Line(previousPoint[1], previousPoint[2], previousPoint[3], point[1], point[2], point[3])
+--    --  previousPoint = point
+--    --end
+--
+--    for i = 1, Array.length(points) do
+--      local point = points[i]
+--      GMR.LibDraw.GroundCircle(point[1], point[2], point[3], 0.5)
+--    end
+--  end
+--
+--  function draw()
+--    drawPoints(GMR.Tables.Area.DeeprunTram)
+--  end
+--
+--  GMR.LibDraw.Sync(draw)
+--end)
 
 function stopMoving()
   local wasExecuting = GMR.IsExecuting()
@@ -569,9 +555,9 @@ function ccdsasdasdad()
   return GMR.GetDistanceToPosition(x, y, z)
 end
 
-function toBinary(value)
+function toBinary(value, width)
   local result = ''
-  local width = 64
+  width = width or 64
   for index = 1, width do
     if bit.band(bit.rshift(value, index - 1), 1) == 1 then
       result = '1' .. result

@@ -60,3 +60,11 @@ function Compatibility.GossipInfo.selectAvailableQuest(questIdentifier)
     return SelectGossipAvailableQuest(questIdentifier)
   end
 end
+
+function Compatibility.GossipInfo.hasGossipOptions()
+  if _G.GetNumGossipOptions then
+    return GetNumGossipOptions() >= 1
+  else
+    return Array.hasElements(C_GossipInfo.GetOptions())
+  end
+end

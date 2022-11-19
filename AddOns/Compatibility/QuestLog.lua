@@ -42,6 +42,22 @@ function Compatibility.QuestLog.isFailed(questID)
   end
 end
 
+function Compatibility.QuestLog.isComplete(questID)
+  if C_QuestLog.IsComplete then
+    return C_QuestLog.IsComplete(questID)
+  else
+    return IsQuestComplete(questID)
+  end
+end
+
+function Compatibility.QuestLog.isOnQuest(questID)
+  if C_QuestLog.IsOnQuest then
+    return C_QuestLog.IsOnQuest(questID)
+  else
+    return GetQuestLogIndexByID(questID) == 0
+  end
+end
+
 function Compatibility.QuestLog.retrieveNumberOfQuestLogEntries()
   if C_QuestLog.GetNumQuestLogEntries then
     return C_QuestLog.GetNumQuestLogEntries()

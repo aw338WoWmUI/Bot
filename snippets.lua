@@ -198,3 +198,9 @@ GMR.RunString('_G.HWT = ({...})[1]')
 GMR.RunString('_G.TEST = {...}')
 
 coroutine.wrap(function () Movement.mountOnFlyingMount() end)()
+
+runAsCoroutine(function () DevTools_Dump(retrieveObjectivePoints()) end)
+
+runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)
+
+runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)

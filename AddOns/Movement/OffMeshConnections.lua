@@ -29,7 +29,7 @@ doWhenGMRIsFullyLoaded(function()
     end
   )
 
-  hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
+  GMR.LibDraw.Sync(function()
     if firstOffMeshConnectionPoint or secondOffMeshConnectionPoint then
       GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
       if firstOffMeshConnectionPoint and secondOffMeshConnectionPoint then

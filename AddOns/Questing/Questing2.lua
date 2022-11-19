@@ -365,11 +365,26 @@ local function generateQuestStartPointsFromStarters(quest)
 end
 
 function retrieveQuestStartPoints()
+  local points
   if isQuestLogFull() then
-    return {}
+    points = {}
+  else
+    points = Array.concat(
+      _.retrieveQuestStartPointsFromObjects(),
+      _.retrieveQuestStartPointsFromAddOnDatabase(),
+      _.retrieveQuestStartPointsFromMap()
+    )
+
+    Array.append(points, _.retrieveQuestStartPointsFromQuestLinesWhichArentAlreadyCoveredByOtherPoints(points))
   end
 
-  local points4 = {}
+  print('points')
+  DevTools_Dump(points)
+  return points
+end
+
+function _.retrieveQuestStartPointsFromObjects()
+  local points = {}
   local objects = retrieveObjects()
   local continentID = select(8, GetInstanceInfo())
   Array.forEach(objects, function(object)
@@ -384,19 +399,26 @@ function retrieveQuestStartPoints()
         questIDs = nil,
         questName = nil
       }
-      table.insert(points4, point)
+      table.insert(points, point)
     end
   end)
+  return points
+end
 
-  local quests2 = Questing.Database.retrieveQuestsThatShouldBeAvailable()
+function _.retrieveQuestStartPointsFromMap()
+  local quests = retrieveQuestsOnMapThatCanBeAccepted()
 
-  local points1 = Array.selectTrue(Array.flatMap(quests2, function(quest)
+  local points = Array.selectTrue(Array.flatMap(quests, function(quest)
     if not unavailableQuestIDs[quest.id] then
       return generateQuestStartPointsFromStarters(quest)
     end
   end))
 
-  local points2 = Array.map(
+  return points
+end
+
+function _.retrieveQuestStartPointsFromAddOnDatabase()
+  return Array.map(
     Array.filter(questGivers, function(questGiver)
       return Array.any(questGiver.questIDs, function(questID)
         return not GMR.IsQuestCompleted(questID) and not GMR.IsQuestActive(questID)
@@ -407,27 +429,35 @@ function retrieveQuestStartPoints()
       point.type = 'acceptQuests'
     end
   )
+end
 
-  local points = Array.concat(points1, points2, points4)
+function _.retrieveQuestStartPointsFromQuestLinesWhichArentAlreadyCoveredByOtherPoints(otherPoints)
+  local coveredQuestIDs = Set.create(Array.flatMap(otherPoints, function(point)
+    return point.questIDs
+  end))
 
+  return _.retrieveQuestStartPointsFromQuestLinesWhichArentAlreadyCovered(coveredQuestIDs)
+end
+
+function _.retrieveQuestStartPointsFromQuestLinesWhichArentAlreadyCovered(coveredQuestIDs)
+  return _.selectPointsWithQuestsThatArentAlreadyCovered(
+    _.retrieveQuestStartPointsFromQuestLines(),
+    coveredQuestIDs
+  )
+end
+
+function _.retrieveQuestStartPointsFromQuestLines()
   if Compatibility.isRetail() then
-    local questIDs = Set.create(Array.flatMap(points, function(point)
-      return point.questIDs
-    end))
-
     local continentID = select(8, GetInstanceInfo())
     local mapID = GMR.GetMapId()
     local questLines = retrieveAvailableQuestLines(mapID) -- FIXME: It seems that it might be required to request the quest line data from the server before this API returns it.
-    while #questLines == 0 and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
+    while Array.isEmpty(questLines) and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
       mapID = C_Map.GetMapInfo(mapID).parentMapID
       questLines = retrieveAvailableQuestLines(mapID)
     end
 
-    local points3 = Array.selectTrue(Array.flatMap(questLines, function(questLine)
-      if (
-        Set.contains(questIDs, questLine.questID) or
-          GMR.IsQuestActive(questLine.questID)
-      ) then
+    local points = Array.selectTrue(Array.flatMap(questLines, function(questLine)
+      if GMR.IsQuestActive(questLine.questID) then
         return nil
       else
         local quest = Questing.Database.retrieveQuest(questLine.questID)
@@ -451,27 +481,73 @@ function retrieveQuestStartPoints()
       end
     end))
 
-    Array.append(points, points3)
+    return points
+  else
+    return {}
   end
-
-  return points
 end
 
-function retrieveQuestsOnMap()
-  local mapID = GMR.GetMapId()
-  local quests
+function _.selectPointsWithQuestsThatArentAlreadyCovered(points, coveredQuestIDs)
+  return Array.filter(points, function(point)
+    return _.areSomeQuestsOfPointNotInSet(point, coveredQuestIDs)
+  end)
+end
+
+function _.areSomeQuestsOfPointNotInSet(point, questIDs)
+  return Array.any(point.questIDs, function(questID)
+    return not Set.contains(questIDs, questID)
+  end)
+end
+
+function _.areAllQuestsOfPointInSet(point, questIDs)
+  return Array.all(point.questIDs, function(questID)
+    return Set.contains(questIDs, questID)
+  end)
+end
+
+function retrieveQuestsOnMapThatTheCharacterIsOn()
+  local retrieveQuestsOnMap
   if Compatibility.isRetail() then
-    quests = C_QuestLog.GetQuestsOnMap(mapID)
-    while #quests == 0 and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
-      mapID = C_Map.GetMapInfo(mapID).parentMapID
-      if Compatibility.isRetail() then
-        quests = C_QuestLog.GetQuestsOnMap(mapID)
-      else
-        quests = Questing.Database.receiveQuestsOnMap(mapID)
-      end
+    retrieveQuestsOnMap = function(mapID)
+      local quests = C_QuestLog.GetQuestsOnMap(mapID)
+      return Array.map(quests, function(quest)
+        quest.mapID = mapID
+        return quest
+      end)
     end
   else
-    quests = {}
+    retrieveQuestsOnMap = Questing.Database.receiveQuestsOnMapThatCanBeAccepted
+  end
+
+  local mapID = GMR.GetMapId()
+  local quests = retrieveQuestsOnMap(mapID)
+  while Array.isEmpty(quests) and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
+    mapID = C_Map.GetMapInfo(mapID).parentMapID
+    quests = retrieveQuestsOnMap(mapID)
+  end
+  return quests, mapID
+end
+
+function retrieveQuestsOnMapThatCanBeAccepted()
+  local retrieveQuestsOnMap
+  if Compatibility.isRetail() then
+    -- FIXME: Might be off.
+    retrieveQuestsOnMap = function(mapID)
+      local quests = C_QuestLog.GetQuestsOnMap(mapID)
+      return Array.map(quests, function(quest)
+        quest.mapID = mapID
+        return quest
+      end)
+    end
+  else
+    retrieveQuestsOnMap = Questing.Database.receiveQuestsOnMapThatCanBeAccepted
+  end
+
+  local mapID = GMR.GetMapId()
+  local quests = retrieveQuestsOnMap(mapID)
+  while Array.isEmpty(quests) and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
+    mapID = C_Map.GetMapInfo(mapID).parentMapID
+    quests = retrieveQuestsOnMap(mapID)
   end
   return quests, mapID
 end
@@ -516,11 +592,11 @@ function determineFirstOpenObjectiveIndex(questID)
 end
 
 function canQuestBeTurnedIn(questID)
-  return GMR.IsQuestCompletable(questID)
+  return Compatibility.QuestLog.isComplete(questID)
 end
 
 function retrieveObjectivePoints()
-  local quests, mapID = retrieveQuestsOnMap()
+  local quests, mapID = retrieveQuestsOnMapThatTheCharacterIsOn()
   local points = Array.selectTrue(
     Array.map(quests, function(quest)
       local questID = quest.questID
@@ -529,7 +605,6 @@ function retrieveObjectivePoints()
       if continentID and position then
         local x, y, z = position.x, position.y, position.z
 
-        local firstOpenObjectiveIndex = determineFirstOpenObjectiveIndex(questID)
         local objectIDs
         if canQuestBeTurnedIn(questID) then
           local quest2 = Questing.Database.retrieveQuest(questID)
@@ -537,6 +612,7 @@ function retrieveObjectivePoints()
             return ender.id
           end)
         else
+          local firstOpenObjectiveIndex = determineFirstOpenObjectiveIndex(questID)
           objectIDs = Array.map(
             retrieveQuestObjectiveInfo(questID, firstOpenObjectiveIndex),
             function(object)
@@ -620,7 +696,7 @@ local function retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
       local objectiveIndexesThatObjectIsRelatedTo = entry.value
       if (
         GMR.IsQuestActive(questID) and
-          not GMR.IsQuestCompletable(questID) and
+          not Compatibility.QuestLog.isComplete(questID) and
           Set.containsWhichFulfillsCondition(objectiveIndexesThatObjectIsRelatedTo, function(objectiveIndex)
             return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
           end)
@@ -637,7 +713,7 @@ local function retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
       for questID, objectiveIndexes in pairs(objectiveOf) do
         if (
           GMR.IsQuestActive(questID) and
-            not GMR.IsQuestCompletable(questID) and
+            not Compatibility.QuestLog.isComplete(questID) and
             Set.containsWhichFulfillsCondition(objectiveIndexes, function(objectiveIndex)
               return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
             end)
@@ -702,10 +778,11 @@ end
 -- /dump GMR.PathExists(savedPosition)
 
 local function seemsToBeQuestObjective(object)
+  local canQuestBeTurnedIn = Unlocker.retrieveQuestGiverStatus(object) == 12
   if HWT.ObjectIsQuestObjective then
-    return HWT.ObjectIsQuestObjective(object.pointer, false)
+    return canQuestBeTurnedIn or HWT.ObjectIsQuestObjective(object, false)
   else
-    return Array.hasElements(retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object))
+    return canQuestBeTurnedIn or Array.hasElements(retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object))
   end
 end
 
@@ -1034,7 +1111,7 @@ local function doSomethingWithObject(point)
     if pointer and GMR.UnitCanAttack('player', pointer) then
       print('doMob')
       Questing.Coroutine.doMob(pointer)
-    elseif pointer and (GMR.ObjectHasGossip(pointer) or Array.hasElements(C_GossipInfo.GetOptions())) then
+    elseif pointer and (GMR.ObjectHasGossip(pointer) or Compatibility.GossipInfo.hasGossipOptions()) then
       print('gossipWithAt')
       Questing.Coroutine.gossipWithAt(point, point.objectID, 1)
     elseif pointer and hasSomeQuestASpecialItem(point.questIDs) then
@@ -1252,24 +1329,20 @@ end
 
 local pointToMove = nil
 
-local ticker
-ticker = C_Timer.NewTicker(0, function()
-  if _G.GMR and GMR.LibDraw and GMR.LibDraw.clearCanvas then
-    ticker:Cancel()
-    hooksecurefunc(GMR.LibDraw, 'clearCanvas', function()
-      if pointToMove then
-        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-        GMR.LibDraw.Circle(pointToMove.x, pointToMove.y, pointToMove.z, 3)
-      end
+doWhenGMRIsFullyLoaded(function()
+  GMR.LibDraw.Sync(function()
+    if pointToMove then
+      GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+      GMR.LibDraw.Circle(pointToMove.x, pointToMove.y, pointToMove.z, 3)
+    end
 
-      if point then
-        GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-        local playerPosition = Movement.retrievePlayerPosition()
-        GMR.LibDraw.Line(playerPosition.x, playerPosition.y, playerPosition.z, point.x, point.y, point.z)
-        GMR.LibDraw.Circle(point.x, point.y, point.z, 0.75)
-      end
-    end)
-  end
+    if point then
+      GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
+      local playerPosition = Movement.retrievePlayerPosition()
+      GMR.LibDraw.Line(playerPosition.x, playerPosition.y, playerPosition.z, point.x, point.y, point.z)
+      GMR.LibDraw.Circle(point.x, point.y, point.z, 0.75)
+    end
+  end)
 end)
 
 local previousPointsToGo = { nil, nil }
@@ -1321,7 +1394,7 @@ function retrievePoints()
         point.continentID == continentID and
           -- A B A
           (not previousPointsToGo[2] or not seemToBeSamePoints(point, previousPointsToGo[2])) and
-          (not point.questIDs or not Array.hasElements(point.questIDs) or Array.any(point.questIDs, isQuestToBeDone))
+          (not point.questIDs or Array.isEmpty(point.questIDs) or Array.any(point.questIDs, isQuestToBeDone))
       )
     end)
   end
@@ -1663,7 +1736,7 @@ function isIdle()
   local questID = GMR.GetQuestId()
   return (
     not GMR.InCombat() and
-      not (questID and GMR.IsQuestActive(questID) and not GMR.IsQuestCompletable(questID)) and
+      not (questID and GMR.IsQuestActive(questID) and not Compatibility.QuestLog.isComplete(questID)) and
       not GMR.IsQuesting() and
       not GMR.IsCasting() and
       (not GMR_SavedVariablesPerCharacter.Sell or not GMR.IsSelling()) and
@@ -1718,7 +1791,7 @@ function isAnyActiveQuestCompletable()
   for index = 1, GetNumActiveQuests() do
     if Compatibility.isRetail() then
       local questID = GetActiveQuestID(index)
-      if GMR.IsQuestCompletable(questID) then
+      if Compatibility.QuestLog.isComplete(questID) then
         return true
       end
     else
@@ -1733,7 +1806,7 @@ end
 function isAnyActiveQuestCompletable2()
   local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
   return Array.any(activeQuests, function(quest)
-    return GMR.IsQuestCompletable(quest.questID)
+    return Compatibility.QuestLog.isComplete(quest.questID)
   end)
 end
 
@@ -1807,7 +1880,7 @@ function _.run ()
 
       local quests = retrieveQuestLogQuests()
       local quest = Array.find(quests, function(quest)
-        return quest.isAutoComplete and GMR.IsQuestCompletable(quest.questID)
+        return quest.isAutoComplete and Compatibility.QuestLog.isComplete(quest.questID)
       end)
       if quest then
         ShowQuestComplete(quest.questID)
@@ -1847,7 +1920,7 @@ function _.run ()
       elseif GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
         local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
         local quest = Array.find(activeQuests, function(quest)
-          return GMR.IsQuestCompletable(quest.questID)
+          return Compatibility.QuestLog.isComplete(quest.questID)
         end)
         if quest then
           C_GossipInfo.SelectActiveQuest(quest.questID)
@@ -1855,7 +1928,7 @@ function _.run ()
       elseif QuestFrame:IsShown() and isAnyActiveQuestCompletable() then
         for index = 1, GetNumActiveQuests() do
           local questID = GetActiveQuestID(index)
-          if GMR.IsQuestCompletable(questID) then
+          if Compatibility.QuestLog.isComplete(questID) then
             SelectActiveQuest(index)
             break
           end
