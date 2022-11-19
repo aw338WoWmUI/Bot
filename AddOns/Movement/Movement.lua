@@ -1,5 +1,7 @@
 Movement = {}
 
+local _ = {}
+
 position1 = nil
 position2 = nil
 aStarPoints = nil
@@ -389,7 +391,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   if from.x == to.x and from.y == to.y then
     return (
       (to.z - from.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInWater(from) and Movement.isPointInWater(to))) and
-      Movement.thereAreZeroCollisions(Movement.createPointWithZOffset(from, 0.1), to)
+        Movement.thereAreZeroCollisions(Movement.createPointWithZOffset(from, 0.1), to)
     )
   end
 
@@ -602,15 +604,62 @@ function Movement.isAFlyingMountAvailable()
   return Array.any(mountIDs, Movement.isFlyingMount)
 end
 
+function Movement.isAGroundMountAvailable()
+  local mountIDs = Movement.receiveAvailableMountIDs()
+  return Array.any(mountIDs, Movement.isGroundMount)
+end
+
 function Movement.receiveAnAvailableFlyingMount()
   local mountIDs = Movement.receiveAvailableMountIDs()
   local mountID = Array.find(mountIDs, Movement.isFlyingMount)
   return mountID
 end
 
+function Movement.receiveAnAvailableGroundMount()
+  local mountIDs = Movement.receiveAvailableMountIDs()
+  local mountID = Array.find(mountIDs, Movement.isGroundMount)
+  return mountID
+end
+
+-- TODO: Water mounts. See https://wowpedia.fandom.com/wiki/API_C_MountJournal.GetMountInfoExtraByID (mountTypeID).
+
+local underWaterMountTypeIDs = Set.create({
+  231,
+  232,
+  254,
+  407
+})
+
+local onWaterMountTypeIDs = Set.create({
+  269
+})
+
+local flyingMountTypeIDs = Set.create({
+  242,
+  247,
+  248,
+  407
+})
+
 function Movement.isFlyingMount(mountID)
   local mountTypeID = select(5, C_MountJournal.GetMountInfoExtraByID(mountID))
-  return mountTypeID == 247 or mountTypeID == 248 or mountTypeID == 242
+  return Set.contains(flyingMountTypeIDs, mountTypeID)
+end
+
+local groundMountTypeIDs = Set.create({
+  230,
+  247,
+  248,
+  269,
+  284,
+  398,
+  407,
+  408
+})
+
+function Movement.isGroundMount(mountID)
+  local mountTypeID = select(5, C_MountJournal.GetMountInfoExtraByID(mountID))
+  return Set.contains(groundMountTypeIDs, mountTypeID)
 end
 
 function Movement.retrieveGroundZ(position)
@@ -849,6 +898,15 @@ function Movement.canMountOnFlyingMount()
   return (
     GMR.IsAlive('player') and
       Movement.canBeFlown() and
+      Movement.isAFlyingMountAvailable() and
+      Movement.canPlayerStandOnPoint(Movement.retrievePlayerPosition(), { withMount = true })
+  )
+end
+
+function Movement.canMountOnGroundMount()
+  return (
+    GMR.IsAlive('player') and
+      Movement.isAGroundMountAvailable() and
       Movement.canPlayerStandOnPoint(Movement.retrievePlayerPosition(), { withMount = true })
   )
 end
@@ -905,33 +963,29 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
 
   return {
     run = function(action, actionSequenceDoer)
+      if not actionSequenceDoer.mounter then
+        actionSequenceDoer.mounter = _.Mounter:new()
+      end
+
       if firstRun then
         -- log('waypoint', waypoint.x, waypoint.y, waypoint.z)
         initialDistance = GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z)
       end
 
       local playerPosition = Movement.retrievePlayerPosition()
+
+      if totalDistance > 10 then
+        actionSequenceDoer.mounter:mount()
+      end
+
+      local playerPosition = Movement.retrievePlayerPosition()
       if (
-        Movement.canBeFlown() and
-          (totalDistance > 10 or Movement.isPositionInTheAir(waypoint))
+        Movement.isMountedOnFlyingMount() and
+          (totalDistance > 10 or Movement.isPositionInTheAir(waypoint)) and
+          (Movement.isPointOnGround(playerPosition) or (Movement.isPointInWater(playerPosition) and not Movement.isPointInWater(waypoint))) and
+          (not isLastWaypoint or Movement.isPositionInTheAir(waypoint))
       ) then
-        if not actionSequenceDoer.stopTryingToMount and not Movement.isMountedOnFlyingMount() and Movement.canMountOnFlyingMount() then
-          GMR.MoveForwardStop()
-          Movement.waitForPlayerStandingStill()
-          local wasAbleToMount = Movement.mountOnFlyingMount()
-          if not wasAbleToMount then
-            actionSequenceDoer.stopTryingToMount = true
-          end
-        end
-        if Movement.isMountedOnFlyingMount() then
-          local playerPosition = Movement.retrievePlayerPosition()
-          if (
-            (Movement.isPointOnGround(playerPosition) or (Movement.isPointInWater(playerPosition) and not Movement.isPointInWater(waypoint))) and
-              (not isLastWaypoint or Movement.isPositionInTheAir(waypoint))
-          ) then
-            Movement.liftUp()
-          end
-        end
+        Movement.liftUp()
       end
 
       if not Movement.canReachWaypointWithCurrentMovementDirection(waypoint) then
@@ -973,7 +1027,8 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
     shouldCancel = function()
       return (
         a.shouldStop() or
-          GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5
+          GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5 or
+          Movement.isPositionInTheAir(waypoint) and not Movement.canMountOnFlyingMount()
       )
     end,
     whenIsDone = function(action, actionSequenceDoer)
@@ -986,6 +1041,47 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       GMR.MoveForwardStop()
     end
   }
+end
+
+function _.stopForwardMovement()
+  GMR.MoveForwardStop()
+  Movement.waitForPlayerStandingStill()
+end
+
+_.Mounter = {}
+
+function _.Mounter:new()
+  local mounter = {
+    stopTryingToMount = false
+  }
+  setmetatable(mounter, { __index = _.Mounter })
+  return mounter
+end
+
+function _.isCharacterAlreadyOnBestMound()
+  return Movement.isMountedOnFlyingMount() or (not Movement.canBeFlown() and IsMounted())
+end
+
+function _.canCharacterMountOnBetterMound()
+  return not _.isCharacterAlreadyOnBestMound()
+end
+
+function _.Mounter:mount()
+  if not self.stopTryingToMount and _.canCharacterMountOnBetterMound() then
+    _.stopForwardMovement()
+    local hasTriedToMount = false
+    local wasAbleToMount = nil
+    if Movement.canBeFlown() and Movement.canMountOnFlyingMount() then
+      hasTriedToMount = true
+      wasAbleToMount = Movement.mountOnFlyingMount()
+    elseif Movement.canMountOnGroundMount() then
+      hasTriedToMount = true
+      wasAbleToMount = Movement.mountOnGroundMount()
+    end
+    if hasTriedToMount then
+      self.stopTryingToMount = not wasAbleToMount
+    end
+  end
 end
 
 function Movement.determinePointHeighEnoughToStayInAir(waypoint)
@@ -1124,39 +1220,44 @@ function Movement.isSpellNameForFlyingMount(spellName)
   return false
 end
 
-function Movement.receiveFlyingMountSpellName()
-  local spellName = GMR.GetFlyingMount()
-  if not Movement.isSpellNameForFlyingMount(spellName) then
-    spellName = nil
-    local mountID = Movement.receiveAnAvailableFlyingMount()
-    print('mountID', mountID)
+function Movement.receiveGroundMountID()
+  return Movement.receiveAnAvailableGroundMount()
+end
+
+function Movement.receiveFlyingMountID()
+  return Movement.receiveAnAvailableFlyingMount()
+end
+
+function Movement.mountOnGroundMount()
+  if not IsMounted() then
+    local mountID = Movement.receiveGroundMountID()
     if mountID then
-      spellName = C_MountJournal.GetMountInfoByID(mountID)
+      Movement.mountOnMount(mountID)
     end
   end
-
-  return spellName
 end
 
 function Movement.mountOnFlyingMount()
-  print('Movement.mountOnFlyingMount()')
   if not Movement.isMountedOnFlyingMount() then
-    local spellName = Movement.receiveFlyingMountSpellName()
+    local mountID = Movement.receiveFlyingMountID()
+    if mountID then
+      Movement.mountOnMount(mountID)
+    end
+  end
+end
+
+function Movement.mountOnMount(mountID)
+  local activeMountID = select(12, Movement.receiveActiveMount())
+  if mountID ~= activeMountID then
+    local spellName = C_MountJournal.GetMountInfoByID(mountID)
     if spellName then
-      if IsMounted() then
-        GMR.Dismount()
-      end
-      Movement.waitForDismounted()
       GMR.CastSpellByName(spellName)
       -- There seems to be some buildings where `IsOutdoors()` returns `true` and there cannot be flown (one found in Bastion).
-      waitForDuration(0.1)
+      waitForDuration(0.2)
       -- With this check we check if the casting works.
       local isCasting = toBoolean(UnitCastingInfo('player'))
       if isCasting then
         Movement.waitForMounted()
-        return IsMounted()
-      else
-        return false
       end
     end
   end
