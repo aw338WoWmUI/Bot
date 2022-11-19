@@ -420,9 +420,10 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
       end
     end
 
-    if not Movement.thereAreZeroCollisions(
-      Movement.createPointWithZOffset(point1, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
-      Movement.createPointWithZOffset(point2, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
+    if not Movement.thereAreZeroCollisions2(
+      point1,
+      point2,
+      Movement.MAXIMUM_WALK_UP_TO_HEIGHT
     ) then
       return false
     end
@@ -435,9 +436,10 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     return false
   end
 
-  if not Movement.thereAreZeroCollisions(
-    Movement.createPointWithZOffset(point1, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
-    Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
+  if not Movement.thereAreZeroCollisions2(
+    point1,
+    to,
+    Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   ) then
     return false
   end
