@@ -210,3 +210,5 @@ Array.map(Questing.Database.retrieveQuestsThatShouldBeAvailable(GMR.GetMapId()),
 runAsCoroutine(function () DevTools_Dump(retrieveObjectPoints()) end)
 
 log(QuestieDB:GetQuest(6).Objectives)
+
+log(QuestieDB:GetQuest(76).Objectives)

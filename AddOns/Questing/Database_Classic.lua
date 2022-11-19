@@ -69,10 +69,15 @@ end
 function Questing.Database.retrieveQuestsOnMapThatTheCharacterIsOn(mapID)
   local availableQuests = Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
   local quests = Array.filter(availableQuests, function(quest)
-    return Compatibility.QuestLog.isOnQuest(quest.id)
+    local isOnQuest = Compatibility.QuestLog.isOnQuest(quest.id)
+    return isOnQuest
   end)
 
-  return Array.flatMap(quests, _.convertQuestieQuestToQuestOnMap)
+  local questieQuests = Array.map(quests, function (quest)
+    return QuestieDB:GetQuest(quest.id)
+  end)
+
+  return Array.flatMap(questieQuests, _.convertQuestieQuestToQuestOnMap)
 end
 
 function _.convertQuestieQuestToQuestOnMap(quest)
@@ -81,10 +86,10 @@ function _.convertQuestieQuestToQuestOnMap(quest)
     for _, objective in ipairs(quest.Objectives) do
       for objectID, object in pairs(objective.spawnList) do
         for zoneID, spawnPoints in pairs(object.Spawns) do
-          print('zoneID', zoneID)
           local mapID = ZoneDB:GetUiMapIdByAreaId(zoneID)
           for _, spawnPoint in ipairs(spawnPoints) do
             local objective = {
+              questID = quest.Id,
               mapID = mapID,
               x = spawnPoint[1] / 100,
               y = spawnPoint[2] / 100
@@ -101,7 +106,6 @@ end
 function Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
   local result = {}
 
-  print('a mapID', mapID)
   local zoneID = ZoneDB:GetAreaIdByUiMapId(mapID)
   local quests = QuestieJourney.zoneMap[zoneID]
 

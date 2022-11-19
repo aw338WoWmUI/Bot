@@ -524,21 +524,19 @@ end
 
 function _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
   local mapID = GMR.GetMapId()
-  local quests = {}
   while true do
     local mapInfo = C_Map.GetMapInfo(mapID)
     if mapInfo.mapType >= 3 then
-      quests = retrieveQuestsOnMap(mapID)
+      local quests = retrieveQuestsOnMap(mapID)
       if Array.hasElements(quests) then
-        break
+        return quests, mapID
       else
         mapID = mapInfo.parentMapID
       end
     else
-      break
+      return {}, nil
     end
   end
-  return quests, mapID
 end
 
 function retrieveQuestsOnMapThatCanBeAccepted()
