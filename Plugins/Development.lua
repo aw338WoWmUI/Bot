@@ -282,7 +282,7 @@ function logQuestGiver()
     local x, y, z = GMR.ObjectPosition(unit)
     local questID = GetQuestID();
     local questName = QuestUtils_GetQuestName(questID)
-    local availableQuests = C_GossipInfo.GetAvailableQuests()
+    local availableQuests = Compatibility.GossipInfo.GetAvailableQuests()
     local output = '' ..
       '{\n' ..
       '  objectID = ' .. objectID .. ',\n' ..

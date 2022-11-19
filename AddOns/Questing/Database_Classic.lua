@@ -25,10 +25,21 @@ function Questing.Database.retrieveQuest(id)
   end
 end
 
-function Questing.Database.retrieveQuestsThatShouldBeAvailable()
+function Questing.Database.receiveQuestsOnMap(mapID)
+  local quests = Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
+  return Array.map(quests, function (quest)
+    return {
+      questID = quest.id,
+      --x = ,
+      --y = ,
+    }
+  end)
+end
+
+function Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
   local result = {}
 
-  local zoneId = QuestiePlayer:GetCurrentZoneId()
+  local zoneId = ZoneDB:GetAreaIdByUiMapId(mapID)
   local quests = QuestieDB:GetQuestsByZoneId(zoneId)
 
   if (not quests) then
@@ -137,9 +148,6 @@ end
 
 function Questing.Database.convertQuestieQuestToQuestingQuest(quest)
   local sidesAndRaces = Questing.Database.convertQuestieRacesToQuestingSidesAndRaces(quest.requiredRaces)
-  -- FIXME: Same structure for starters and enders as in Database ({type, id})
-  print('quest')
-  DevTools_Dump(quest.Finisher)
   local starters = convertQuestieObjectReferencesToQuestingStructure(quest.Starts)
   local enders = {}
   local finisher = quest.Finisher
@@ -159,6 +167,7 @@ function Questing.Database.convertQuestieQuestToQuestingQuest(quest)
   end
   return {
     id = quest.Id,
+    name = quest.name,
     requiredLevel = quest.requiredLevel,
     sides = sidesAndRaces.sides,
     races = sidesAndRaces.races,

@@ -464,7 +464,11 @@ function retrieveQuestsOnMap()
     quests = C_QuestLog.GetQuestsOnMap(mapID)
     while #quests == 0 and C_Map.GetMapInfo(mapID).parentMapID ~= 0 do
       mapID = C_Map.GetMapInfo(mapID).parentMapID
-      quests = C_QuestLog.GetQuestsOnMap(mapID)
+      if Compatibility.isRetail() then
+        quests = C_QuestLog.GetQuestsOnMap(mapID)
+      else
+        quests = Questing.Database.receiveQuestsOnMap(mapID)
+      end
     end
   else
     quests = {}
@@ -645,42 +649,6 @@ local function retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
   end
 
   return questIDs:toList()
-end
-
-function isObjectRelatedToAnyActiveQuest(object)
-  local objectID = GMR.ObjectId(object)
-  if isObjectRelatedToActiveQuestLookup[objectID] then
-    return toBoolean(isObjectRelatedToActiveQuestLookup[objectID])
-  else
-    return #retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object) >= 1
-  end
-end
-
-function updateIsObjectRelatedToActiveQuestLookup()
-  local unitTokens = {
-    'target',
-    'softenemy',
-    'softfriend',
-    'softinteract'
-  }
-  for i = 1, 40 do
-    local unitToken = 'nameplate' .. i
-    table.insert(unitTokens, unitToken)
-  end
-  Array.forEach(unitTokens, function(unitToken)
-    local objectID = GMR.ObjectId(unitToken)
-    if objectID then
-      if C_QuestLog.UnitIsRelatedToActiveQuest(unitToken) then
-        isObjectRelatedToActiveQuestLookup[objectID] = true
-      else
-        isObjectRelatedToActiveQuestLookup[objectID] = nil
-      end
-    end
-  end)
-  if GMR.IsQuestActive(48505) then
-    isObjectRelatedToActiveQuestLookup[126158] = true
-    isObjectRelatedToActiveQuestLookup[126490] = true
-  end
 end
 
 function convertObjectPointersToObjectPoints(objectPointers, type, adjustPoint)
@@ -1106,7 +1074,7 @@ function acceptQuests(point)
     Questing.Coroutine.interactWithAt(questGiverPoint, questGiverPoint.objectID)
     local npcID = GMR.ObjectId('npc')
     if npcID == questGiverPoint.objectID then
-      local availableQuests = C_GossipInfo.GetAvailableQuests()
+      local availableQuests = Compatibility.Quests.retrieveAvailableQuests()
       local quests
       if point.questIDs then
         local questIDs = Set.create(point.questIDs)
@@ -1119,7 +1087,13 @@ function acceptQuests(point)
       local numberOfQuests = #quests
       Array.forEach(quests, function(quest, index)
         if isQuestToBeDone(quest.questID) then
-          C_GossipInfo.SelectAvailableQuest(quest.questID)
+          local questIdentifier
+          if Compatibility.isRetail() then
+            questIdentifier = quest.questID
+          else
+            questIdentifier = quest.index
+          end
+          Compatibility.GossipInfo.selectAvailableQuest(questIdentifier)
           local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
           if wasSuccessful then
             AcceptQuest()
@@ -1742,15 +1716,22 @@ end
 
 function isAnyActiveQuestCompletable()
   for index = 1, GetNumActiveQuests() do
-    local questID = GetActiveQuestID(index)
-    if GMR.IsQuestCompletable(questID) then
-      return true
+    if Compatibility.isRetail() then
+      local questID = GetActiveQuestID(index)
+      if GMR.IsQuestCompletable(questID) then
+        return true
+      end
+    else
+      local isComplete = select(2, GetActiveTitle(index))
+      if isComplete then
+        return true
+      end
     end
   end
 end
 
 function isAnyActiveQuestCompletable2()
-  local activeQuests = C_GossipInfo.GetActiveQuests()
+  local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
   return Array.any(activeQuests, function(quest)
     return GMR.IsQuestCompletable(quest.questID)
   end)
@@ -1758,12 +1739,36 @@ end
 
 function registerUnavailableQuests(npcID)
   local questsThatShouldBeAvailableFromNPC = Questing.Database.retrieveQuestsThatShouldBeAvailableFromNPC(npcID)
-  local availableQuests = C_GossipInfo.GetAvailableQuests()
-  local availableQuestIDs = Set.create(Array.map(availableQuests, function(quest)
-    return quest.questID
-  end))
+  local objectPointer = GMR.FindObject(npcID)
+  local availableQuestsSet
+  if objectPointer and GMR.ObjectPointer('npc') == objectPointer then
+    local availableQuests = Compatibility.Quests.retrieveAvailableQuests()
+    local retrieveQuestIdentifier
+    if Compatibility.isRetail() then
+      retrieveQuestIdentifier = function(quest)
+        return quest.questID
+      end
+    else
+      retrieveQuestIdentifier = function(quest)
+        return quest.name
+      end
+    end
+    availableQuestsSet = Set.create(Array.map(availableQuests, retrieveQuestIdentifier))
+  else
+    availableQuestsSet = Set.create()
+  end
+  local retrieveIdentifierFromQuestingQuest
+  if Compatibility.isRetail() then
+    retrieveIdentifierFromQuestingQuest = function(quest)
+      return quest.id
+    end
+  else
+    retrieveIdentifierFromQuestingQuest = function(quest)
+      return quest.name
+    end
+  end
   Array.forEach(questsThatShouldBeAvailableFromNPC, function(quest)
-    if not availableQuestIDs[quest.id] then
+    if not Set.contains(availableQuestsSet, retrieveIdentifierFromQuestingQuest(quest)) then
       unavailableQuestIDs[quest.id] = true
     end
   end)
@@ -1840,7 +1845,7 @@ function _.run ()
         -- HideUIPanel(QuestFrame)
         -- HideUIPanel(QuestFrameDetailPanel)
       elseif GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
-        local activeQuests = C_GossipInfo.GetActiveQuests()
+        local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
         local quest = Array.find(activeQuests, function(quest)
           return GMR.IsQuestCompletable(quest.questID)
         end)
@@ -1856,9 +1861,15 @@ function _.run ()
           end
         end
       elseif GossipFrame:IsShown() and C_GossipInfo.GetNumAvailableQuests() >= 1 then
-        local availableQuests = C_GossipInfo.GetAvailableQuests()
+        local availableQuests = Compatibility.GossipInfo.retrieveAvailableQuests()
         local availableQuest = availableQuests[1]
-        C_GossipInfo.SelectAvailableQuest(availableQuest.questID)
+        local questIdentifier
+        if Compatibility.isRetail() then
+          questIdentifier = availableQuest.questID
+        else
+          questIdentifier = availableQuest.index
+        end
+        Compatibility.GossipInfo.selectAvailableQuest(questIdentifier)
       elseif QuestFrame:IsShown() and GetNumAvailableQuests() >= 1 then
         SelectAvailableQuest(1)
         --elseif GossipFrame:IsShown() and #C_GossipInfo.GetOptions() >= 1 then
@@ -1883,7 +1894,6 @@ function _.run ()
           end
         end)
 
-        updateIsObjectRelatedToActiveQuestLookup()
         moveToClosestPoint()
       end
     end

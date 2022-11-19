@@ -38,6 +38,7 @@ function Questing.Database.createNPCsIterator()
 end
 
 function Questing.Database.retrieveQuestsThatShouldBeAvailableFromNPC(npcID)
+  -- FIXME: More efficient lookup.
   return Array.filter(quests, function(quest)
     return (
       Array.any(

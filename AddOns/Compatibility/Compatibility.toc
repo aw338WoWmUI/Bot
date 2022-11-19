@@ -1,6 +1,8 @@
 ## Title: Compatibility
 ## Interface: 100002
-## Dependencies: Boolean, Caching
+## Dependencies: Boolean, Caching, Array
 
 Compatibility.lua
 QuestLog.lua
+GossipInfo.lua
+Quests.lua

@@ -1,0 +1,62 @@
+Compatibility = Compatibility or {}
+Compatibility.GossipInfo = {}
+
+function Compatibility.GossipInfo.retrieveAvailableQuests()
+  if C_GossipInfo.GetAvailableQuests then
+    return C_GossipInfo.GetAvailableQuests()
+  else
+    local availableQuests = {}
+    local data = { GetGossipAvailableQuests()}
+    local numberOfFields = 7
+    for index = 1, #data, numberOfFields do
+      local availableQuest = {
+        index = math.ceil(index / numberOfFields),
+        title = data[index],
+        questLevel = data[index + 1],
+        isTrivial = data[index + 2],
+        frequence = data[index + 3],
+        repeatable = data[index + 4],
+        isComplete = false,
+        isLegendary = data[index + 5],
+        isIgnored = data[index + 6],
+        questID = nil
+      }
+      table.insert(availableQuests, availableQuest)
+    end
+    return availableQuests
+  end
+end
+
+function Compatibility.GossipInfo.retrieveActiveQuests()
+  if C_GossipInfo.GetActiveQuests then
+    return C_GossipInfo.GetActiveQuests()
+  else
+    local activeQuests = {}
+    local data = { GetGossipActiveQuests()}
+    local numberOfFields = 6
+    for index = 1, #data, numberOfFields do
+      local activeQuest = {
+        index = math.ceil(index / numberOfFields),
+        title = data[index],
+        questLevel = data[index + 1],
+        isTrivial = data[index + 2],
+        frequence = nil,
+        repeatable = nil,
+        isComplete = data[index + 3],
+        isLegendary = data[index + 4],
+        isIgnored = data[index + 5],
+        questID = nil
+      }
+      table.insert(activeQuests, activeQuest)
+    end
+    return activeQuests
+  end
+end
+
+function Compatibility.GossipInfo.selectAvailableQuest(questIdentifier)
+  if C_GossipInfo.SelectAvailableQuest then
+    return C_GossipInfo.SelectAvailableQuest(questIdentifier)
+  else
+    return SelectGossipAvailableQuest(questIdentifier)
+  end
+end
