@@ -53,7 +53,7 @@ function _.isGoodsVendor(object)
 end
 
 function _.isSellVendor(object)
-  return Core.isFoodVendor(object.pointer) and GMR.UnitReaction('player', object.pointer) >= 4
+  return Core.isSellVendor(object.pointer) and GMR.UnitReaction('player', object.pointer) >= 4
 end
 
 function _.isRepair(object)
