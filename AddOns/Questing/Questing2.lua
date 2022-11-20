@@ -2013,7 +2013,7 @@ function _.run ()
 
     if not Questing.isRunning() then
       stopPathMovingInCombatTicker:Cancel()
-      Movement.stopPathMoving()
+      Movement.stopPathFindingAndMoving()
       return
     end
 
