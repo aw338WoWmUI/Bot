@@ -481,7 +481,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     local point2 = createPoint(x, y, z)
 
     if not (Movement.isPointInDeepWater(point1) and Movement.isPointInDeepWater(point2)) then
-      local z = Movement.retrieveGroundZ(point2)
+      local z = Movement.retrieveGroundZ(createPoint(point2.x, point2.y, point1.z))
 
       if not z then
         return false
@@ -2122,3 +2122,18 @@ end
 Movement.frame = CreateFrame('Frame')
 Movement.frame:SetScript('OnEvent', Movement.onEvent)
 Movement.frame:RegisterEvent('ADDON_LOADED')
+
+function findPathE()
+  Movement.path = Movement.convertGMRPathToPath(GMR.GetPath(savedPosition.x, savedPosition.y, savedPosition.z, false))
+end
+
+function findPathE2()
+  local playerPosition = Movement.retrievePlayerPosition()
+  Movement.path = Movement.convertGMRPathToPath(GMR.GetPathBetweenPoints(playerPosition.x, playerPosition.y, playerPosition.z, savedPosition.x, savedPosition.y, savedPosition.z))
+end
+
+function findPathE3()
+  local playerPosition = Movement.retrievePlayerPosition()
+  Movement.path = Movement.convertGMRPathToPath(GMR.GetPathBetweenPoints(playerPosition.x, playerPosition.y, playerPosition.z, savedPosition.x, savedPosition.y, savedPosition.z))
+  return AStar.canPathBeMoved(Movement.path)
+end

@@ -226,3 +226,5 @@ Movement.canBeJumpedFromPointToPoint(Movement.path[#Movement.path - 2], Movement
 GMR.ObjectRawFacing('player')
 
 HWT.ObjectQuests(GMR.FindObject(42940))
+
+Movement.canBeMovedFromPointToPointCheckingSubSteps(position1, position2)
