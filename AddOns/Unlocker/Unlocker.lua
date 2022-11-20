@@ -25,6 +25,6 @@ function Unlocker.ObjectQuests(object)
       return {}
     end
   else
-    return HWT.ObjectQuests(object)
+    return { HWT.ObjectQuests(object) }
   end
 end

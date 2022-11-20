@@ -689,58 +689,59 @@ local isObjectRelatedToActiveQuestLookup = {}
 
 local function retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
   if Compatibility.isRetail() then
-    local questIDs = Set.create()
-    local objectID = GMR.ObjectId(object)
-
-    local relations
-    if (
-      GMR.ObjectPointer(object) == GMR.ObjectPointer('softinteract') and
-        UnitName('softinteract') == GameTooltipTextLeft1:GetText()
-    ) then
-      relations = findRelationsToQuests('GameTooltip', 'softinteract')
-      -- TODO: Merge new quest relationship information into explored object. Also consider the case when the explored object doesn't exist (regarding exploring other info for the object).
-      if exploredObjects[GMR.ObjectId(object)] and not exploredObjects[GMR.ObjectId(object)].questRelationships then
-        exploredObjects[GMR.ObjectId(object)].questRelationships = relations
-      end
-    elseif exploredObjects[GMR.ObjectId(object)] then
-      relations = exploredObjects[GMR.ObjectId(object)].questRelationships
-    end
-
-    if relations then
-      Array.forEach(Object.entries(relations), function(entry)
-        local questID = entry.key
-        local objectiveIndexesThatObjectIsRelatedTo = entry.value
-        if (
-          GMR.IsQuestActive(questID) and
-            not Compatibility.QuestLog.isComplete(questID) and
-            Set.containsWhichFulfillsCondition(objectiveIndexesThatObjectIsRelatedTo, function(objectiveIndex)
-              return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
-            end)
-        ) then
-          questIDs:add(questID)
-        end
-      end)
-    end
-
-    local npc = Questing.Database.retrieveNPC(objectID)
-    if npc then
-      local objectiveOf = npc.objectiveOf
-      if objectiveOf then
-        for questID, objectiveIndexes in pairs(objectiveOf) do
-          if (
-            GMR.IsQuestActive(questID) and
-              not Compatibility.QuestLog.isComplete(questID) and
-              Set.containsWhichFulfillsCondition(objectiveIndexes, function(objectiveIndex)
-                return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
-              end)
-          ) then
-            questIDs:add(questID)
-          end
-        end
-      end
-    end
-
-    return questIDs:toList()
+    return Unlocker.ObjectQuests(object)
+    --local questIDs = Set.create()
+    --local objectID = GMR.ObjectId(object)
+    --
+    --local relations
+    --if (
+    --  GMR.ObjectPointer(object) == GMR.ObjectPointer('softinteract') and
+    --    UnitName('softinteract') == GameTooltipTextLeft1:GetText()
+    --) then
+    --  relations = findRelationsToQuests('GameTooltip', 'softinteract')
+    --  -- TODO: Merge new quest relationship information into explored object. Also consider the case when the explored object doesn't exist (regarding exploring other info for the object).
+    --  if exploredObjects[GMR.ObjectId(object)] and not exploredObjects[GMR.ObjectId(object)].questRelationships then
+    --    exploredObjects[GMR.ObjectId(object)].questRelationships = relations
+    --  end
+    --elseif exploredObjects[GMR.ObjectId(object)] then
+    --  relations = exploredObjects[GMR.ObjectId(object)].questRelationships
+    --end
+    --
+    --if relations then
+    --  Array.forEach(Object.entries(relations), function(entry)
+    --    local questID = entry.key
+    --    local objectiveIndexesThatObjectIsRelatedTo = entry.value
+    --    if (
+    --      GMR.IsQuestActive(questID) and
+    --        not Compatibility.QuestLog.isComplete(questID) and
+    --        Set.containsWhichFulfillsCondition(objectiveIndexesThatObjectIsRelatedTo, function(objectiveIndex)
+    --          return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
+    --        end)
+    --    ) then
+    --      questIDs:add(questID)
+    --    end
+    --  end)
+    --end
+    --
+    --local npc = Questing.Database.retrieveNPC(objectID)
+    --if npc then
+    --  local objectiveOf = npc.objectiveOf
+    --  if objectiveOf then
+    --    for questID, objectiveIndexes in pairs(objectiveOf) do
+    --      if (
+    --        GMR.IsQuestActive(questID) and
+    --          not Compatibility.QuestLog.isComplete(questID) and
+    --          Set.containsWhichFulfillsCondition(objectiveIndexes, function(objectiveIndex)
+    --            return not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex)
+    --          end)
+    --      ) then
+    --        questIDs:add(questID)
+    --      end
+    --    end
+    --  end
+    --end
+    --
+    --return questIDs:toList()
   else
     local questieTooltip = AddOn.retrieveQuestieTooltip(object)
     if questieTooltip then
@@ -786,7 +787,7 @@ function convertObjectPointerToObjectPoint(pointer, type, adjustPoint)
     type = type,
     pointer = pointer,
     objectID = objectID,
-    questIDs = retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(objectID)
+    questIDs = retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(pointer)
   }
   if adjustPoint then
     point = adjustPoint(point)

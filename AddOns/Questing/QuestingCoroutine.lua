@@ -6,9 +6,11 @@ local function moveTo(to, hasArrived)
   local pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
   Movement.path = path
-  local pathMover = Movement.movePath(path, function ()
-    return not Questing.isRunning() or (hasArrived and hasArrived())
-  end)
+  if path then
+    local pathMover = Movement.movePath(path, function ()
+      return not Questing.isRunning() or (hasArrived and hasArrived())
+    end)
+  end
 end
 
 function Questing.Coroutine.moveTo(point, distance)
