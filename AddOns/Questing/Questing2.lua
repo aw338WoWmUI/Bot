@@ -188,6 +188,27 @@ defineQuest3(
   end
 )
 
+do
+  local objectIDs = Set.create({
+    42383,
+    42386,
+    42391
+  })
+  defineQuest3(
+    26209,
+    function(self)
+      local objects = retrieveObjects()
+      local object = Array.find(objects, function (object)
+        return Set.contains(objectIDs, object.ID) and Core.hasGossip(object.pointer)
+      end)
+      if object then
+        Questing.Coroutine.gossipWithObject(object.pointer, 38008)
+        StaticPopup1Button1:Click()
+      end
+    end
+  )
+end
+
 local questGivers = {
   {
     objectID = 128229,
@@ -1755,7 +1776,7 @@ function _.findFirstCompleteActiveQuest()
     if Compatibility.isRetail() then
       local questID = GetActiveQuestID(index)
       if Compatibility.QuestLog.isComplete(questID) then
-        return questID
+        return index
       end
     else
       local isComplete = select(2, GetActiveTitle(index))
@@ -1901,7 +1922,9 @@ function _.run ()
           C_GossipInfo.SelectActiveQuest(quest.questID)
         end
       elseif QuestFrame:IsShown() and isAnyActiveQuestCompletable() then
+        print('aa')
         local questIdentifier = _.findFirstCompleteActiveQuest()
+        print('questIdentifier', questIdentifier)
         SelectActiveQuest(questIdentifier)
       elseif _.itSeemsMakeSenseToSell() then
         _.sell()
@@ -1929,7 +1952,8 @@ function _.isSellVendorSet()
 end
 
 function _.sell()
-  local point = createPoint(GMR.Tables.Profile.Vendor.Sell[1], GMR.Tables.Profile.Vendor.Sell[2], GMR.Tables.Profile.Vendor.Sell[3])
+  local point = createPoint(GMR.Tables.Profile.Vendor.Sell[1], GMR.Tables.Profile.Vendor.Sell[2],
+    GMR.Tables.Profile.Vendor.Sell[3])
   local objectID = GMR.Tables.Profile.Vendor.Sell[4]
   Questing.Coroutine.interactWithAt(point, objectID)
   _.sellItemsAtVendor()

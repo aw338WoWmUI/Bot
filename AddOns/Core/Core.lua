@@ -88,6 +88,10 @@ function Core.isFlightMaster(object)
   return Core.isUnitNPCType(object, Core.NpcFlags.FlightMaster)
 end
 
+function Core.hasGossip(object)
+  return Core.isUnitNPCType(object, Core.NpcFlags.Gossip)
+end
+
 local sellVendorFlags = {
   Core.NpcFlags.Vendor,
   Core.NpcFlags.AmmoVendor,

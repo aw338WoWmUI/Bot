@@ -154,7 +154,7 @@ function Questing.Coroutine.lootObject(pointer, distance)
     if _.thereAreMoreItemsThatCanBeLootedThanThereIsSpaceInBags() then
       _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
     end
-    local wasSuccessful = Events.waitForEvent('LOOT_CLOSED',5)
+    local wasSuccessful = Events.waitForEvent('LOOT_CLOSED',3)
     print('LOOT_CLOSED', wasSuccessful)
     return wasSuccessful
   else
@@ -236,13 +236,16 @@ local function gossipWithObject(pointer, chooseOption)
       return GMR.ObjectPointer('npc') == pointer
     end, 2)
   end
-  print('aa')
   if Questing.isRunning() then
     local gossipOptionID = chooseOption()
     if gossipOptionID then
       selectOption(gossipOptionID)
     end
   end
+end
+
+function Questing.Coroutine.gossipWithObject(pointer, gossipOptionID)
+  return gossipWithObject(pointer, Function.returnValue(gossipOptionID))
 end
 
 local function gossipWithObjectWithObjectID(objectID, chooseOption)
@@ -328,7 +331,7 @@ function Questing.Coroutine.doMob(pointer)
         Questing.Coroutine.moveToObject(pointer, distance)
       end
 
-      if IsMounted then
+      if IsMounted() then
         GMR.Dismount()
         Movement.waitForDismounted()
       end
