@@ -19,6 +19,7 @@ local TARGET_LIFT_HEIGHT = TOLERANCE_RANGE
 local MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
 local CHARACTER_HEIGHT = 2 -- ~ for human
+local MAXIMUM_WATER_DEPTH_FOR_WALKING = 1.4872055053711
 local MOUNTED_CHARACTER_HEIGHT = 3 -- only an approximation. Seems to depend on mount and maybe also character model.
 local canBeStoodOnPointCache = PointToValueMap:new()
 local canBeStoodWithMountOnPointCache = PointToValueMap:new()
@@ -450,7 +451,7 @@ Movement.MAXIMUM_JUMP_HEIGHT = 1.675
 
 function Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
   return (
-    (Movement.isPointInWater(to) or Movement.canPlayerStandOnPoint(to)) and
+    (Movement.isPointInDeepWater(to) or Movement.canPlayerStandOnPoint(to)) and
       Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   )
 end
@@ -458,7 +459,7 @@ end
 function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   if from.x == to.x and from.y == to.y then
     return (
-      (to.z - from.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInWater(from) and Movement.isPointInWater(to))) and
+      (to.z - from.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInDeepWater(from) and Movement.isPointInDeepWater(to))) and
         Movement.thereAreZeroCollisions(Movement.createPointWithZOffset(from, 0.1), to)
     )
   end
@@ -472,8 +473,8 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     local x, y, z = GMR.GetPositionBetweenPositions(from.x, from.y, from.z, to.x, to.y, to.z, distance)
     local point2 = createPoint(x, y, z)
 
-    if not (Movement.isPointInWater(point1) and Movement.isPointInWater(point2)) then
-      local z = GMR.GetGroundZ(x, y, z)
+    if not (Movement.isPointInDeepWater(point1) and Movement.isPointInDeepWater(point2)) then
+      local z = Movement.retrieveGroundZ(point2)
 
       if not z then
         return false
@@ -502,7 +503,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     distance = distance + stepSize
   end
 
-  if not (to.z - point1.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInWater(point1) and Movement.isPointInWater(to))) then
+  if not (to.z - point1.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInDeepWater(point1) and Movement.isPointInDeepWater(to))) then
     return false
   end
 
@@ -520,7 +521,7 @@ end
 function Movement.canBeJumpedFromPointToPoint(from, to)
   return (
     Movement.isPointOnGround(from) and
-      (Movement.isPointInWater(to) or (Movement.isPointOnGround(to) and Movement.canPlayerStandOnPoint(to))) and
+      (Movement.isPointInDeepWater(to) or (Movement.isPointOnGround(to) and Movement.canPlayerStandOnPoint(to))) and
       to.z - from.z <= Movement.MAXIMUM_JUMP_HEIGHT and
       not _.thereAreCollisions2(
         Movement.createPointWithZOffset(from, Movement.MAXIMUM_JUMP_HEIGHT),
@@ -833,7 +834,7 @@ function Movement.generateMiddlePoint(fromPosition, offsetX, offsetY)
       isInAir = isInAir
     }
     return point3
-  elseif Movement.isPointInWater(point2) then
+  elseif Movement.isPointInDeepWater(point2) then
     return point2
   else
     local point = Movement.closestPointOnGridWithZLeft(
@@ -886,6 +887,32 @@ function Movement.isPointInWater(point)
   -- local waterSurfacePoint = Movement.receiveWaterSurfacePoint(point)
   -- return toBoolean(waterSurfacePoint and waterSurfacePoint.z >= point.z)
   return toBoolean(GMR.IsPositionUnderwater(point.x, point.y, point.z))
+end
+
+function Movement.isPointInDeepWater(point)
+  return toBoolean(GMR.IsPositionUnderwater(point.x, point.y, point.z)) and Movement.isWaterDeepAt(point)
+end
+
+function Movement.isWaterDeepAt(point)
+  local waterDepth = Movement.determineWaterDepth(point)
+  return waterDepth > MAXIMUM_WATER_DEPTH_FOR_WALKING
+end
+
+function Movement.determineWaterDepth(point)
+  local waterSurfacePoint = Movement.receiveWaterSurfacePoint(point)
+  local groundPoint = Movement.retrieveGroundPointInWater(waterSurfacePoint)
+  return euclideanDistance(waterSurfacePoint, groundPoint)
+end
+
+function Movement.retrieveGroundPointInWater(point)
+  local deepPoint = Movement.createPointWithZOffset(point, -MAXIMUM_WATER_DEPTH)
+  local x, y, z = GMR.TraceLine(point.x, point.y, point.z, deepPoint.x, deepPoint.y, deepPoint.z,
+    Movement.TraceLineHitFlags.COLLISION)
+  if x then
+    return createPoint(x, y, z)
+  else
+    return deepPoint
+  end
 end
 
 function Movement.generateNeighborPoints(fromPosition, distance)
@@ -1056,7 +1083,7 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       if (
         Movement.isMountedOnFlyingMount() and
           (totalDistance > 10 or Movement.isPositionInTheAir(waypoint)) and
-          (Movement.isPointOnGround(playerPosition) or (Movement.isPointInWater(playerPosition) and not Movement.isPointInWater(waypoint))) and
+          (Movement.isPointOnGround(playerPosition) or (Movement.isPointInDeepWater(playerPosition) and not Movement.isPointInDeepWater(waypoint))) and
           (not isLastWaypoint or Movement.isPositionInTheAir(waypoint))
       ) then
         Movement.liftUp()
