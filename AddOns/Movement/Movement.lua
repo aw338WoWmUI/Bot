@@ -23,6 +23,7 @@ local MOUNTED_CHARACTER_HEIGHT = 3 -- only an approximation. Seems to depend on 
 local canBeStoodOnPointCache = PointToValueMap:new()
 local canBeStoodWithMountOnPointCache = PointToValueMap:new()
 local DISTANCE = GRID_LENGTH
+lines = {}
 
 local cache = {}
 
@@ -140,6 +141,12 @@ end
 
 doWhenGMRIsFullyLoaded(function()
   GMR.LibDraw.Sync(function()
+    Array.forEach(lines, function(line)
+      local a = line[1]
+      local b = line[2]
+      GMR.LibDraw.Line(a.x, a.y, a.z, b.x, b.y, b.z)
+    end)
+
     --if DEVELOPMENT then
     --  if not GMR.IsMeshLoaded() then
     --    GMR.LoadMeshFiles()
@@ -364,16 +371,77 @@ function Movement.isEnoughSpaceOnTop(from, to)
   return a and b and c
 end
 
-function Movement.thereAreZeroCollisions2(from, to, zHeight)
+function Movement.thereAreZeroCollisions2(from, to, zHeight, track)
   local function thereAreZeroCollisions(zOffset)
     return Movement.thereAreZeroCollisions(
       Movement.createPointWithZOffset(from, zOffset),
-      Movement.createPointWithZOffset(to, zOffset)
+      Movement.createPointWithZOffset(to, zOffset),
+      track
     )
   end
   local interval = 1
   return Array.isTrueForAllInInterval(0, zHeight, interval, thereAreZeroCollisions) and
     (zHeight % interval == 0 or thereAreZeroCollisions(zHeight))
+end
+
+function Movement.thereAreZeroCollisions3(from, to, zHeight)
+  return (
+    Movement.thereAreZeroCollisions2(from, to, zHeight, true) and
+      Movement.thereAreZeroCollisions4(from, to, zHeight, true) and
+      Movement.thereAreZeroCollisions5(from, to, zHeight, true)
+  )
+end
+
+function Movement.thereAreZeroCollisions4(from, to, zHeight)
+  local from2 = createPoint(
+    GMR.GetPositionFromPosition(
+      from.x,
+      from.y,
+      from.z,
+      CHARACTER_RADIUS,
+      Movement.calculateAngleBetweenTwoPoints(from, to) + 0.5 * PI,
+      0
+    )
+  )
+  local to2 = createPoint(
+    GMR.GetPositionFromPosition(
+      to.x,
+      to.y,
+      to.z,
+      CHARACTER_RADIUS,
+      Movement.calculateAngleBetweenTwoPoints(from, to) + 0.5 * PI,
+      0
+    )
+  )
+  return Movement.thereAreZeroCollisions2(from2, to2, zHeight, true)
+end
+
+function Movement.thereAreZeroCollisions5(from, to, zHeight)
+  local from2 = createPoint(
+    GMR.GetPositionFromPosition(
+      from.x,
+      from.y,
+      from.z,
+      CHARACTER_RADIUS,
+      Movement.calculateAngleBetweenTwoPoints(from, to) - 0.5 * PI,
+      0
+    )
+  )
+  local to2 = createPoint(
+    GMR.GetPositionFromPosition(
+      to.x,
+      to.y,
+      to.z,
+      CHARACTER_RADIUS,
+      Movement.calculateAngleBetweenTwoPoints(from, to) - 0.5 * PI,
+      0
+    )
+  )
+  return Movement.thereAreZeroCollisions2(from2, to2, zHeight, true)
+end
+
+function Movement.calculateAngleBetweenTwoPoints(a, b)
+  return GMR.GetAnglesBetweenPositions(a.x, a.y, a.z, b.x, b.y, b.z)
 end
 
 Movement.MAXIMUM_WALK_UP_TO_HEIGHT = 0.94
@@ -422,7 +490,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
       end
     end
 
-    if not Movement.thereAreZeroCollisions2(
+    if not Movement.thereAreZeroCollisions3(
       Movement.createPointWithZOffset(point1, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
       Movement.createPointWithZOffset(point2, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
       CHARACTER_HEIGHT - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
@@ -438,7 +506,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     return false
   end
 
-  if not Movement.thereAreZeroCollisions2(
+  if not Movement.thereAreZeroCollisions3(
     Movement.createPointWithZOffset(point1, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
     Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
     CHARACTER_HEIGHT - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
@@ -454,7 +522,7 @@ function Movement.canBeJumpedFromPointToPoint(from, to)
     Movement.isPointOnGround(from) and
       (Movement.isPointInWater(to) or (Movement.isPointOnGround(to) and Movement.canPlayerStandOnPoint(to))) and
       to.z - from.z <= Movement.MAXIMUM_JUMP_HEIGHT and
-      Movement.thereAreZeroCollisions(
+      not _.thereAreCollisions2(
         Movement.createPointWithZOffset(from, Movement.MAXIMUM_JUMP_HEIGHT),
         Movement.createPointWithZOffset(to, Movement.MAXIMUM_JUMP_HEIGHT)
       )
@@ -671,12 +739,18 @@ function Movement.retrieveGroundZ(position)
   return z
 end
 
-function Movement.thereAreCollisions(a, b)
+function Movement.thereAreCollisions(a, b, track)
+  if track then
+    table.insert(lines, { a, b })
+  end
   local x, y, z = GMR.TraceLine(a.x, a.y, a.z, b.x, b.y, b.z, Movement.TraceLineHitFlags.COLLISION)
   return toBoolean(x)
 end
 
-function Movement.thereAreZeroCollisions(a, b)
+function Movement.thereAreZeroCollisions(a, b, track)
+  if track then
+    -- table.insert(lines, {a, b})
+  end
   return not Movement.thereAreCollisions(a, b)
 end
 
@@ -1096,22 +1170,78 @@ function Movement.determinePointHeighEnoughToStayInAir(waypoint)
   end
 end
 
+function _.thereAreCollisions2(from, to)
+  local from2 = createPoint(
+    GMR.GetPositionFromPosition(
+      from.x,
+      from.y,
+      from.z,
+      CHARACTER_RADIUS,
+      Movement.calculateAngleBetweenTwoPoints(from, to) + 0.5 * PI,
+      0
+    )
+  )
+  local to2 = createPoint(
+    GMR.GetPositionFromPosition(
+      to.x,
+      to.y,
+      to.z,
+      CHARACTER_RADIUS,
+      Movement.calculateAngleBetweenTwoPoints(from, to) + 0.5 * PI,
+      0
+    )
+  )
+  local from3 = createPoint(
+    GMR.GetPositionFromPosition(
+      from.x,
+      from.y,
+      from.z,
+      CHARACTER_RADIUS,
+      Movement.calculateAngleBetweenTwoPoints(from, to) - 0.5 * PI,
+      0
+    )
+  )
+  local to3 = createPoint(
+    GMR.GetPositionFromPosition(
+      to.x,
+      to.y,
+      to.z,
+      CHARACTER_RADIUS,
+      Movement.calculateAngleBetweenTwoPoints(from, to) - 0.5 * PI,
+      0
+    )
+  )
+  lines = {}
+  local a = Movement.thereAreCollisions(
+    from,
+    to,
+    true
+  )
+  local b = Movement.thereAreCollisions(
+    from2,
+    to2,
+    true
+  )
+  local c = Movement.thereAreCollisions(
+    from3,
+    to3,
+    true
+  )
+  return a or b or c
+end
+
 function Movement.isJumpSituation(to)
+  print('isJumpSituation')
   if GMR.IsUnitFlying('player') or Movement.isMountedOnFlyingMount() and Movement.isFlyingAvailableInZone() then
     return false
   end
 
   local playerPosition = Movement.retrievePlayerPosition()
-  if to.z - playerPosition.z > Movement.MAXIMUM_WALK_UP_TO_HEIGHT then
-    local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + Movement.JUMP_DETECTION_HEIGHT)
-    local positionB = Movement.positionInFrontOfPlayer(3, Movement.JUMP_DETECTION_HEIGHT)
-    --position1 = positionA
-    --position2 = positionB
-    return Movement.thereAreCollisions(
-      positionA,
-      positionB
-    )
-  end
+  local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + Movement.JUMP_DETECTION_HEIGHT)
+  local positionB = Movement.positionInFrontOfPlayer(3, Movement.JUMP_DETECTION_HEIGHT)
+  --position1 = positionA
+  --position2 = positionB
+  return _.thereAreCollisions2(positionA, positionB)
 end
 
 local function findPathToSavedPosition2()

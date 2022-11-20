@@ -212,3 +212,15 @@ runAsCoroutine(function () DevTools_Dump(retrieveObjectPoints()) end)
 log(QuestieDB:GetQuest(6).Objectives)
 
 log(QuestieDB:GetQuest(76).Objectives)
+
+Movement.calculateAngleBetweenTwoPoints(Movement.path[#Movement.path - 2], Movement.path[#Movement.path - 1])
+
+Movement.canBeMovedFromPointToPointCheckingSubSteps(Movement.path[#Movement.path - 2], Movement.path[#Movement.path - 1])
+
+Movement.canBeMovedFromPointToPoint(Movement.path[#Movement.path - 2], Movement.path[#Movement.path - 1])
+
+Movement.canBeWalkedOrSwamFromPointToPoint(Movement.path[#Movement.path - 2], Movement.path[#Movement.path - 1])
+
+Movement.canBeJumpedFromPointToPoint(Movement.path[#Movement.path - 2], Movement.path[#Movement.path - 1])
+
+GMR.ObjectRawFacing('player')

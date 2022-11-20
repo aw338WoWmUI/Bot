@@ -274,9 +274,7 @@ function Questing.Coroutine.doMob(pointer)
     if isIdle() then
       local position = createPoint(GMR.ObjectPosition(pointer))
       if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
-        print('move to 1')
         Questing.Coroutine.moveToObject(pointer, distance)
-        print('move to 2')
       end
 
       if IsMounted then

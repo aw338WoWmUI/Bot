@@ -681,8 +681,7 @@ end
 
 function retrieveAvailableQuestLines(mapID)
   C_QuestLine.RequestQuestLinesForMap(mapID)
-  local wasSuccessful = Events.waitForEvent('QUESTLINE_UPDATE', 2)
-  print('wasSuccessful', wasSuccessful)
+  Events.waitForEvent('QUESTLINE_UPDATE', 0.2)
   return C_QuestLine.GetAvailableQuestLines(mapID)
 end
 
@@ -818,7 +817,8 @@ end
 function _.seemsToBeQuestObjective(object)
   local canQuestBeTurnedIn = Unlocker.retrieveQuestGiverStatus(object) == 12
   if HWT.ObjectIsQuestObjective then
-    return canQuestBeTurnedIn or HWT.ObjectIsQuestObjective(object, false)
+    -- FIXME: Make work for quests with quest objectives which are not alive.
+    return (canQuestBeTurnedIn or HWT.ObjectIsQuestObjective(object, false)) and GMR.IsAlive(object)
   else
     return canQuestBeTurnedIn or Array.hasElements(retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object))
   end
@@ -2061,13 +2061,6 @@ local function onAddonLoaded(name)
   end
 end
 
-local function onQuestlineUpdate(requestRequired)
-  if requestRequired then
-    local mapID = C_Map.GetBestMapForUnit('player')
-    C_QuestLine.RequestQuestLinesForMap(mapID)
-  end
-end
-
 local function onQuestTurnedIn()
   objectIDsOfObjectsWhichCurrentlySeemAbsent = Set.create()
 end
@@ -2075,8 +2068,6 @@ end
 local function onEvent(self, event, ...)
   if event == 'ADDON_LOADED' then
     onAddonLoaded(...)
-  elseif event == 'QUESTLINE_UPDATE' then
-    onQuestlineUpdate(...)
   elseif event == 'QUEST_TURNED_IN' then
     onQuestTurnedIn(...)
   end
@@ -2084,9 +2075,6 @@ end
 
 local frame = CreateFrame('Frame')
 frame:RegisterEvent('ADDON_LOADED')
-if Compatibility.isRetail() then
-  frame:RegisterEvent('QUESTLINE_UPDATE')
-end
 frame:RegisterEvent('QUEST_TURNED_IN')
 frame:SetScript('OnEvent', onEvent)
 
