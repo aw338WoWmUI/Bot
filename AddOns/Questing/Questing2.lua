@@ -815,8 +815,13 @@ end
 -- /dump GMR.GetPath(savedPosition.x, savedPosition.y, savedPosition.z)
 -- /dump GMR.PathExists(savedPosition)
 
+local turnInQuestGiverStatuses = Set.create({
+  11,
+  12
+})
+
 function _.seemsToBeQuestObjective(object)
-  local canQuestBeTurnedIn = Unlocker.retrieveQuestGiverStatus(object) == 12
+  local canQuestBeTurnedIn = Set.contains(turnInQuestGiverStatuses, Unlocker.retrieveQuestGiverStatus(object))
   if HWT.ObjectIsQuestObjective then
     -- FIXME: Make work for quests with quest objectives which are not alive.
     return (canQuestBeTurnedIn or HWT.ObjectIsQuestObjective(object, false)) and GMR.IsAlive(object)

@@ -1430,7 +1430,6 @@ function Movement.waitForIsInAirOrDismounted(timeout)
 end
 
 function Movement.liftUp()
-  print('Movement.liftUp()')
   GMR.JumpOrAscendStart()
   Movement.waitForIsInAirOrDismounted(3)
   GMR.AscendStop()
