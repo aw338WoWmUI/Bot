@@ -977,6 +977,11 @@ function Movement.isPositionInTheAir(position)
   return Movement.isPointInAir(position)
 end
 
+function Movement.isPositionMaximumOffTheGround(position, maximumOffGroundDistance)
+  local groundZ = Movement.retrieveGroundZ(position)
+  return position.z - groundZ <= maximumOffGroundDistance
+end
+
 function Movement.isPointInAir(point)
   local z = Movement.retrieveGroundZ(Movement.createPointWithZOffset(point, 0.25))
   return not z or point.z - z >= MINIMUM_LIFT_HEIGHT
@@ -996,7 +1001,7 @@ function Movement.canBeFlown()
 end
 
 function Movement.canMountOnFlyingMount()
-  return (
+  return toBoolean(
     GMR.IsAlive('player') and
       Movement.canBeFlown() and
       Movement.isAFlyingMountAvailable() and
@@ -1129,7 +1134,7 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       return (
         a.shouldStop() or
           GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5 or
-          Movement.isPositionInTheAir(waypoint) and not Movement.canMountOnFlyingMount()
+          not Movement.isPositionMaximumOffTheGround(waypoint, TOLERANCE_RANGE) and not Movement.canMountOnFlyingMount()
       )
     end,
     whenIsDone = function(action, actionSequenceDoer)

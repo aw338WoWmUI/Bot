@@ -1908,6 +1908,8 @@ function _.run ()
   local yielder = createYielder()
 
   while true do
+    GMR.ScanObjects()
+
     local time = GetTime()
     for key, value in pairs(recentlyVisitedObjectivePoints) do
       if time - value.time > 60 then
