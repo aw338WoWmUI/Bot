@@ -18,6 +18,14 @@ end
 function Questing.Coroutine.moveTo(point, distance)
   distance = distance or INTERACT_DISTANCE
 
+  local function hasArrived()
+    return GMR.IsPlayerPosition(point.x, point.y, point.z, distance)
+  end
+
+  Questing.Coroutine.moveToUntil(point, hasArrived)
+end
+
+function Questing.Coroutine.moveToUntil(point, stopCondition)
   if Movement.isPositionInTheAir(point) and not Movement.canCharacterFly() then
     point = createPoint(
       point.x,
@@ -26,15 +34,11 @@ function Questing.Coroutine.moveTo(point, distance)
     )
   end
 
-  local function hasArrived()
-    return GMR.IsPlayerPosition(point.x, point.y, point.z, distance)
-  end
-
-  while Questing.isRunning() and not hasArrived() do
+  while Questing.isRunning() and not stopCondition() do
     if isIdle() then
-      moveTo(point, hasArrived)
+      moveTo(point, stopCondition)
       waitFor(function()
-        return hasArrived() or isIdle()
+        return stopCondition() or isIdle()
       end)
     else
       yieldAndResume()

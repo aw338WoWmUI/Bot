@@ -1164,16 +1164,16 @@ function _.Mounter:new()
   return mounter
 end
 
-function _.isCharacterAlreadyOnBestMound()
+function _.isCharacterAlreadyOnBestMount()
   return Movement.isMountedOnFlyingMount() or (not Movement.canBeFlown() and IsMounted())
 end
 
-function _.canCharacterMountOnBetterMound()
-  return not _.isCharacterAlreadyOnBestMound()
+function _.canCharacterMountOnBetterMount()
+  return GMR.IsAlive('player') and not _.isCharacterAlreadyOnBestMount()
 end
 
 function _.Mounter:mount()
-  if not self.stopTryingToMount and _.canCharacterMountOnBetterMound() then
+  if not self.stopTryingToMount and _.canCharacterMountOnBetterMount() then
     _.stopForwardMovement()
     local hasTriedToMount = false
     local wasAbleToMount = nil

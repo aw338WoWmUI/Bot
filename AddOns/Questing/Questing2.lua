@@ -1956,7 +1956,13 @@ function _.run ()
         registerUnavailableQuests(npcID)
       end
 
-      if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
+      if GMR.IsGhost('player') then
+        local corpsePosition = createPoint(GMR.GetCorpsePosition())
+        Questing.Coroutine.moveToUntil(corpsePosition, function()
+          return StaticPopup1Button1:IsShown()
+        end)
+        StaticPopup1Button1:Click()
+      elseif QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
         CompleteQuest()
       elseif QuestFrameRewardPanel:IsShown() and hasEnoughFreeSlotsToCompleteQuest() then
         GetQuestReward(1)
