@@ -2,7 +2,7 @@ local addOnName, AddOn = ...
 
 local _ = {}
 
-local RANGE = 50
+local RANGE = 5
 
 local function convertVertexToScreenPoint(vertex)
   local x, y = GMR.WorldToScreen(vertex[1], vertex[2], vertex[3])
@@ -14,7 +14,7 @@ local function visualizePolygons()
   GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
   local continentID = select(8, GetInstanceInfo())
   local position = Movement.retrievePlayerPosition()
-  local polygon = HWT.GetClosestMeshPolygon(continentID, position.x, position.y, position.z, 1000, 1000, 1000)
+  local polygon = HWT.GetClosestMeshPolygon(continentID, position.x, position.y, position.z, RANGE, RANGE, RANGE)
 
   if polygon then
     local polygons = HWT.GetMeshPolygons(continentID, polygon, position.x, position.y, position.z, RANGE)

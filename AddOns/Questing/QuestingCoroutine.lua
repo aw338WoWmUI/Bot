@@ -3,6 +3,8 @@ Questing.Coroutine = {}
 
 local function moveTo(to, hasArrived)
   local from = Movement.retrievePlayerPosition()
+  local continentID = select(8, GetInstanceInfo())
+  from = createPoint(GMR.GetClosestPointOnMesh(continentID, from.x, from.y, from.z))
   local pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
   Movement.path = path

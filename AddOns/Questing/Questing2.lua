@@ -575,19 +575,8 @@ function retrieveWorldPositionFromMapPosition(mapID, mapX, mapY)
     }
     local continentID = C_Map.GetWorldPosFromMapPos(mapID, point)
     local x, y, z = GMR.GetWorldPositionFromMap(mapID, mapX, mapY)
-    if not Movement.canPlayerBeOnPoint(createPoint(x, y, z)) or not GMR.IsOnMeshPoint(x, y, z) then
-      local x2, y2, z2 = GMR.TraceLine(x, y, z, x, y, z + 1000, Movement.TraceLineHitFlags.COLLISION)
-      if x2 then
-        x, y, z = x2, y2, z2
-        if GMR.IsOnMeshPoint(x, y, z) then
-          local x3, y3, z3 = GMR.GetClosestPointOnMesh(continentID, x, y, z)
-          if x3 and y3 and z3 then
-            x, y, z = x3, y3, z3
-          end
-        end
-      end
-    end
-    return continentID, createPoint(x, y, z)
+    local xm, ym, zm = GMR.GetClosestPointOnMesh(continentID, x, y, z)
+    return continentID, createPoint(xm, ym, zm)
   else
     return nil, nil
   end
