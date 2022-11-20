@@ -1105,26 +1105,10 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
         Movement.liftUp()
       end
 
-      if not Movement.canReachWaypointWithCurrentMovementDirection(waypoint) then
-        if GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) <= 5 then
-          GMR.MoveForwardStop()
-        end
-        local facingPoint
-        if Movement.isPointOnGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
-          facingPoint = Movement.createPointWithZOffset(waypoint, TARGET_LIFT_HEIGHT)
-        else
-          facingPoint = waypoint
-        end
-        if Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
-          local pointInAir = Movement.determinePointHeighEnoughToStayInAir(waypoint)
-          if pointInAir and GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > 5 then
-            facingPoint = pointInAir
-          end
-        end
-        Movement.faceDirection(facingPoint, function()
-          return action.isDone() or action.shouldCancel()
-        end)
+      if _.areConditionsMetForFacingWaypoint(waypoint) then
+        _.faceWaypoint(action, waypoint)
       end
+
       if not GMR.IsMoving() then
         GMR.MoveForwardStart()
       end
@@ -1139,7 +1123,9 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       firstRun = false
     end,
     isDone = function()
-      return GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, TOLERANCE_RANGE)
+      return (
+        GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, TOLERANCE_RANGE)
+      )
     end,
     shouldCancel = function()
       return (
@@ -1159,6 +1145,32 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       GMR.MoveForwardStop()
     end
   }
+end
+
+function _.areConditionsMetForFacingWaypoint(waypoint)
+  return GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > 5 or
+    not Movement.canReachWaypointWithCurrentMovementDirection(waypoint)
+end
+
+function _.faceWaypoint(action, waypoint)
+  if GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) <= 5 then
+    GMR.MoveForwardStop()
+  end
+  local facingPoint
+  if Movement.isPointOnGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
+    facingPoint = Movement.createPointWithZOffset(waypoint, TARGET_LIFT_HEIGHT)
+  else
+    facingPoint = waypoint
+  end
+  if Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
+    local pointInAir = Movement.determinePointHeighEnoughToStayInAir(waypoint)
+    if pointInAir and GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > 5 then
+      facingPoint = pointInAir
+    end
+  end
+  Movement.faceDirection(facingPoint, function()
+    return action.isDone() or action.shouldCancel()
+  end)
 end
 
 function _.stopForwardMovement()
@@ -1301,11 +1313,8 @@ local function findPathToSavedPosition2()
   local from = Movement.retrievePlayerPosition()
   local to = savedPosition
   local pathFinder = Movement.createPathFinder()
-  debugprofilestart()
   local path = pathFinder.start(from, to)
   Movement.path = path
-  local duration = debugprofilestop()
-  -- log(duration)
   return path
 end
 
@@ -1321,7 +1330,6 @@ function Movement.moveToSavedPosition()
     local path = findPathToSavedPosition2()
     Movement.path = path
     if path then
-      -- print('go path')
       Movement.movePath(path)
     end
   end)
@@ -1729,8 +1737,9 @@ function Movement.movePath(path, stop)
   local pathLength = #path
   local totalDistance = Movement.calculateTotalPathDistance(path)
   local stopMoving = GMR.StopMoving
-  GMR.StopMoving = function()
-  end
+  GMR.StopMoving = Function.noOperation
+  local dismount = GMR.Dismount
+  GMR.Dismount = Function.noOperation
   print('Movement.movePath')
   pathMover = createActionSequenceDoer2(
     Array.map(path, function(waypoint, index)
@@ -1739,6 +1748,7 @@ function Movement.movePath(path, stop)
     {
       onStop = function()
         GMR.StopMoving = stopMoving
+        GMR.Dismount = dismount
         GMR.MoveForwardStop()
       end
     }
@@ -2166,7 +2176,8 @@ function findPathE3()
 end
 
 function findPathE4()
-  Movement.path = Movement.convertGMRPathToPath(GMR.GetPath(QuestingPointToMove.x, QuestingPointToMove.y, QuestingPointToMove.z, false))
+  Movement.path = Movement.convertGMRPathToPath(GMR.GetPath(QuestingPointToMove.x, QuestingPointToMove.y,
+    QuestingPointToMove.z, false))
 end
 
 function aaaaaaa2394ui2u32uio()

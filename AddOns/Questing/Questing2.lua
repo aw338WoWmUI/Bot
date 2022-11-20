@@ -1861,6 +1861,7 @@ function _.run ()
       if pointer then
         local point = createPoint(GMR.ObjectPosition(pointer))
         print('doMob', GMR.ObjectName(pointer))
+        Movement.stopPathFindingAndMoving()
         Questing.Coroutine.doMob(pointer)
       end
     end
