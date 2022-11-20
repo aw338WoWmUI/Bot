@@ -177,7 +177,9 @@ defineQuest3(
             npcPosition.x, npcPosition.y, npcPosition.z)
           local distance = 2
           local pushFromPosition = Movement.generatePoint(npcPosition, distance, angle)
-          Questing.Coroutine.moveTo(pushFromPosition, distance)
+          Questing.Coroutine.moveTo(pushFromPosition, {
+            distance = distance
+          })
           Questing.Coroutine.interactWithObjectWithObjectID(npcID)
         end
         yieldAndResume()
@@ -1220,6 +1222,10 @@ function acceptQuests(point)
           end
         end
       end)
+      if QuestFrameDetailPanel:IsShown() then
+        AcceptQuest()
+        waitForQuestHasBeenAccepted()
+      end
     else
       registerUnavailableQuests(questGiverPoint.objectID)
     end
@@ -1349,7 +1355,9 @@ local function moveToPoint(point)
     if questHandler then
       runQuestHandler(questHandler)
     else
-      Questing.Coroutine.moveToUntil(point, GMR.InCombat)
+      Questing.Coroutine.moveTo(point, {
+        additionalStopConditions = GMR.InCombat
+      })
       if GMR.IsPlayerPosition(point.x, point.y, point.z, INTERACT_DISTANCE) then
         recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)] = {
           time = GetTime()
@@ -1368,13 +1376,11 @@ local function moveToPoint(point)
   end
 end
 
-local pointToMove = nil
-
 doWhenGMRIsFullyLoaded(function()
   GMR.LibDraw.Sync(function()
-    if pointToMove then
+    if QuestingPointToMove then
       GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-      GMR.LibDraw.Circle(pointToMove.x, pointToMove.y, pointToMove.z, 3)
+      GMR.LibDraw.Circle(QuestingPointToMove.x, QuestingPointToMove.y, QuestingPointToMove.z, 3)
     end
 
     if point then
@@ -1452,7 +1458,7 @@ function moveToClosestPoint()
       previousPointsToGo[1] = pointToGo
     end
 
-    pointToMove = pointToGo
+    QuestingPointToMove = pointToGo
     moveToPoint(pointToGo)
   else
     if not isPlayerOnMeshPoint() then
@@ -1463,7 +1469,7 @@ function moveToClosestPoint()
       local pathFinder = Movement.createPathFinder()
       local path = pathFinder.start(playerPosition, to)
       if path then
-        pointToMove = path[#path]
+        QuestingPointToMove = path[#path]
         print('m1')
         Movement.movePath(path)
         print('m2')
@@ -1838,7 +1844,7 @@ function _.run ()
       end
     end
     if Questing.isRunning() and isIdle() then
-      pointToMove = nil
+      QuestingPointToMove = nil
 
       local quests = retrieveQuestLogQuests()
       local quest = Array.find(quests, function(quest)
@@ -1930,11 +1936,12 @@ function _.sell()
 end
 
 function _.sellItemsAtVendor()
+  print('_.sellItemsAtVendor()')
   for containerIndex = 0, NUM_BAG_SLOTS do
     for slotIndex = 1, Compatibility.Container.receiveNumberOfSlotsOfContainer(containerIndex) do
-      local quality = select(4, Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex))
-      if quality == Enum.ItemQuality.Poor then
-        UseContainerItem(containerIndex, slotIndex)
+      local itemInfo = Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex)
+      if itemInfo and itemInfo.quality == Enum.ItemQuality.Poor then
+        Compatibility.Container.UseContainerItem(containerIndex, slotIndex)
         Events.waitForEvent('BAG_UPDATE_DELAYED')
       end
     end

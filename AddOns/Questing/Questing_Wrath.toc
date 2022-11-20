@@ -2,6 +2,7 @@
 ## Interface: 30400
 ## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, GMR, HWT, Unlocker, Core
 ## SavedVariables: exploredObjects
+## SavedVariablesPerCharacter: QuestingPointToMove
 
 namespace.lua
 VendoringFix.lua

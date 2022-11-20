@@ -17,8 +17,10 @@ local function moveTo(to, hasArrived)
   end
 end
 
-function Questing.Coroutine.moveTo(point, distance, additionalStopConditions)
-  distance = distance or INTERACT_DISTANCE
+function Questing.Coroutine.moveTo(point, options)
+  options = options or {}
+  local additionalStopConditions = options.additionalStopConditions
+  local distance = options.distance or INTERACT_DISTANCE
 
   local function hasArrived()
     return GMR.IsPlayerPosition(point.x, point.y, point.z, distance) or additionalStopConditions and additionalStopConditions()
@@ -99,7 +101,9 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   distance = distance or INTERACT_DISTANCE
 
   if not GMR.IsPlayerPosition(point.x, point.y, point.z, distance) then
-    Questing.Coroutine.moveTo(point, distance)
+    Questing.Coroutine.moveTo(point, {
+      distance = distance
+    })
   end
 
   if Questing.isRunning() then
@@ -174,7 +178,9 @@ function Questing.Coroutine.useItemOnNPC(point, objectID, itemID, distance)
   distance = distance or INTERACT_DISTANCE
 
   if not GMR.IsPlayerPosition(point.x, point.y, point.z, distance) then
-    Questing.Coroutine.moveTo(point, distance)
+    Questing.Coroutine.moveTo(point, {
+      distance = distance
+    })
   end
 
   if Questing.isRunning() then
@@ -186,7 +192,9 @@ function Questing.Coroutine.useItemOnGround(point, itemID, distance)
   distance = distance or INTERACT_DISTANCE
 
   if not GMR.IsPlayerPosition(point.x, point.y, point.z, distance) then
-    Questing.Coroutine.moveTo(point, distance)
+    Questing.Coroutine.moveTo(point, {
+      distance = distance
+    })
   end
 
   if Questing.isRunning() then
@@ -198,7 +206,9 @@ function Questing.Coroutine.useItemOnPosition(position, itemID, distance)
   distance = distance or INTERACT_DISTANCE
 
   if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
-    Questing.Coroutine.moveTo(position, distance)
+    Questing.Coroutine.moveTo(position, {
+      distance = distance
+    })
   end
 
   Questing.Coroutine.useItem(itemID)

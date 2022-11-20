@@ -686,6 +686,11 @@ function Movement.receiveAnAvailableFlyingMount()
 end
 
 function Movement.receiveAnAvailableGroundMount()
+  local isUsable = select(5, C_MountJournal.GetMountInfoByID(1434))
+  if isUsable then
+    return 1434 -- This one is also faster in water
+  end
+
   local mountIDs = Movement.receiveAvailableMountIDs()
   local mountID = Array.find(mountIDs, Movement.isGroundMount)
   return mountID
@@ -1379,7 +1384,7 @@ function Movement.waitForDismounted()
 end
 
 function Movement.waitForMounted()
-  return waitFor(function()
+  waitFor(function()
     return IsMounted()
   end)
 end
@@ -1431,12 +1436,11 @@ function Movement.mountOnMount(mountID)
     if spellName then
       GMR.CastSpellByName(spellName)
       -- There seems to be some buildings where `IsOutdoors()` returns `true` and there cannot be flown (one found in Bastion).
-      waitForDuration(0.2)
+      waitForDuration(1)
       -- With this check we check if the casting works.
       local isCasting = toBoolean(UnitCastingInfo('player'))
       if isCasting then
         Movement.waitForMounted()
-        waitForDuration(1)
       end
     end
   end
@@ -1727,6 +1731,7 @@ function Movement.movePath(path, stop)
   local stopMoving = GMR.StopMoving
   GMR.StopMoving = function()
   end
+  print('Movement.movePath')
   pathMover = createActionSequenceDoer2(
     Array.map(path, function(waypoint, index)
       return Movement.createMoveToAction3(waypoint, index < pathLength, a, totalDistance, index == pathLength)
@@ -2158,6 +2163,10 @@ function findPathE3()
   Movement.path = Movement.convertGMRPathToPath(GMR.GetPathBetweenPoints(playerPosition.x, playerPosition.y,
     playerPosition.z, savedPosition.x, savedPosition.y, savedPosition.z))
   return AStar.canPathBeMoved(Movement.path)
+end
+
+function findPathE4()
+  Movement.path = Movement.convertGMRPathToPath(GMR.GetPath(QuestingPointToMove.x, QuestingPointToMove.y, QuestingPointToMove.z, false))
 end
 
 function aaaaaaa2394ui2u32uio()
