@@ -977,9 +977,9 @@ function Movement.isPositionInTheAir(position)
   return Movement.isPointInAir(position)
 end
 
-function Movement.isPositionMaximumOffTheGround(position, maximumOffGroundDistance)
+function Movement.isPositionLessOffGroundThanTheMaximum(position, maximumOffGroundDistance)
   local groundZ = Movement.retrieveGroundZ(position)
-  return position.z - groundZ <= maximumOffGroundDistance
+  return not groundZ or position.z - groundZ <= maximumOffGroundDistance
 end
 
 function Movement.isPointInAir(point)
@@ -1134,7 +1134,7 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       return (
         a.shouldStop() or
           GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5 or
-          not Movement.isPositionMaximumOffTheGround(waypoint, TOLERANCE_RANGE) and not Movement.canMountOnFlyingMount()
+          not Movement.isPositionLessOffGroundThanTheMaximum(waypoint, TOLERANCE_RANGE) and not Movement.canMountOnFlyingMount()
       )
     end,
     whenIsDone = function(action, actionSequenceDoer)

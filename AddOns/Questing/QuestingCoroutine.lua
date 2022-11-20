@@ -100,6 +100,7 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
     local pointer = GMR.FindObject(objectID)
     if pointer then
       if IsMounted() then
+        print('GMR.Dismount()')
         GMR.Dismount()
       end
       GMR.Interact(pointer)
@@ -292,6 +293,11 @@ function Questing.Coroutine.doMob(pointer)
     else
       yieldAndResume()
     end
+  end
+
+  local x, y, z = GMR.ObjectPosition(pointer)
+  if GMR.IsPlayerPosition(x, y, z, INTERACT_DISTANCE) then
+    GMR.Interact(pointer)
   end
 
   print('--- Questing.Coroutine.doMob')
