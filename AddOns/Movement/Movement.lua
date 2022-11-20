@@ -10,7 +10,6 @@ aStarPoints2 = nil
 local DEVELOPMENT = true
 local zOffset = 1.6
 local MAXIMUM_FALL_HEIGHT = 30
-local CHARACTER_RADIUS = 0.55 -- the radius might vary race by race
 local MAXIMUM_WATER_DEPTH = 1000
 local GRID_LENGTH = 2
 local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.25 yards.
@@ -27,6 +26,14 @@ local DISTANCE = GRID_LENGTH
 lines = {}
 
 local cache = {}
+
+function Movement.retrieveCharacterBoundingRadius()
+  return HWT.UnitBoundingRadius('player')
+end
+
+function Movement.retrieveCharacterHeight()
+  return HWT.ObjectHeight('player')
+end
 
 function Movement.addPointToCache(fromX, fromY, fromZ, toX, toY, toZ)
   local a = cache[fromX]
@@ -227,13 +234,13 @@ doWhenGMRIsFullyLoaded(function()
           point.y,
           point.z
         )
-        GMR.LibDraw.Circle(point.x, point.y, point.z, CHARACTER_RADIUS)
+        GMR.LibDraw.Circle(point.x, point.y, point.z, Movement.retrieveCharacterBoundingRadius())
         previousPoint = point
       end
       local firstPoint = path[1]
       local lastPoint = path[#path]
-      GMR.LibDraw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, CHARACTER_RADIUS)
-      GMR.LibDraw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, CHARACTER_RADIUS)
+      GMR.LibDraw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, Movement.retrieveCharacterBoundingRadius())
+      GMR.LibDraw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, Movement.retrieveCharacterBoundingRadius())
     end
 
     if DEVELOPMENT then
@@ -399,7 +406,7 @@ function Movement.thereAreZeroCollisions4(from, to, zHeight)
       from.x,
       from.y,
       from.z,
-      CHARACTER_RADIUS,
+      Movement.retrieveCharacterBoundingRadius(),
       Movement.calculateAngleBetweenTwoPoints(from, to) + 0.5 * PI,
       0
     )
@@ -409,7 +416,7 @@ function Movement.thereAreZeroCollisions4(from, to, zHeight)
       to.x,
       to.y,
       to.z,
-      CHARACTER_RADIUS,
+      Movement.retrieveCharacterBoundingRadius(),
       Movement.calculateAngleBetweenTwoPoints(from, to) + 0.5 * PI,
       0
     )
@@ -423,7 +430,7 @@ function Movement.thereAreZeroCollisions5(from, to, zHeight)
       from.x,
       from.y,
       from.z,
-      CHARACTER_RADIUS,
+      Movement.retrieveCharacterBoundingRadius(),
       Movement.calculateAngleBetweenTwoPoints(from, to) - 0.5 * PI,
       0
     )
@@ -433,7 +440,7 @@ function Movement.thereAreZeroCollisions5(from, to, zHeight)
       to.x,
       to.y,
       to.z,
-      CHARACTER_RADIUS,
+      Movement.retrieveCharacterBoundingRadius(),
       Movement.calculateAngleBetweenTwoPoints(from, to) - 0.5 * PI,
       0
     )
@@ -494,7 +501,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     if not Movement.thereAreZeroCollisions3(
       Movement.createPointWithZOffset(point1, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
       Movement.createPointWithZOffset(point2, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
-      CHARACTER_HEIGHT - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+      Movement.retrieveCharacterHeight() - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
     ) then
       return false
     end
@@ -510,7 +517,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   if not Movement.thereAreZeroCollisions3(
     Movement.createPointWithZOffset(point1, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
     Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
-    CHARACTER_HEIGHT - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+    Movement.retrieveCharacterHeight() - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   ) then
     return false
   end
@@ -560,23 +567,16 @@ end
 function Movement.canPlayerBeOnPoint(point, options)
   options = options or {}
 
-  local height
-  if options.withMount then
-    height = MOUNTED_CHARACTER_HEIGHT
-  else
-    height = CHARACTER_HEIGHT
-  end
-
   local pointALittleBitOver = Movement.createPointWithZOffset(point, 0.1)
   local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(
     point,
     Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   )
   local pointALittleBitOverMaximumWalkUpToHeight = Movement.createPointWithZOffset(pointOnMaximumWalkUpToHeight, 0.1)
-  local pointOnCharacterHeight = Movement.createPointWithZOffset(point, height)
+  local pointOnCharacterHeight = Movement.createPointWithZOffset(point, Movement.retrieveCharacterHeight())
 
   local function areThereCollisionsAround()
-    local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight, CHARACTER_RADIUS, 8)
+    local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight, Movement.retrieveCharacterBoundingRadius(), 8)
     return Array.all(points, function(point)
       return Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, point)
     end)
@@ -620,7 +620,7 @@ function Movement.canPlayerStandOnPoint(point, options)
     )
     if standOnPoint then
       local MAXIMUM_STEEPNESS_HEIGHT = 0.55436325073242
-      local points = Movement.generatePointsAround(standOnPoint, CHARACTER_RADIUS, 8)
+      local points = Movement.generatePointsAround(standOnPoint, Movement.retrieveCharacterBoundingRadius(), 8)
       return not Array.all(points, function(point)
         local point1 = Movement.createPointWithZOffset(point, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
         return Movement.thereAreCollisions(
@@ -1203,7 +1203,7 @@ function _.thereAreCollisions2(from, to)
       from.x,
       from.y,
       from.z,
-      CHARACTER_RADIUS,
+      Movement.retrieveCharacterBoundingRadius(),
       Movement.calculateAngleBetweenTwoPoints(from, to) + 0.5 * PI,
       0
     )
@@ -1213,7 +1213,7 @@ function _.thereAreCollisions2(from, to)
       to.x,
       to.y,
       to.z,
-      CHARACTER_RADIUS,
+      Movement.retrieveCharacterBoundingRadius(),
       Movement.calculateAngleBetweenTwoPoints(from, to) + 0.5 * PI,
       0
     )
@@ -1223,7 +1223,7 @@ function _.thereAreCollisions2(from, to)
       from.x,
       from.y,
       from.z,
-      CHARACTER_RADIUS,
+      Movement.retrieveCharacterBoundingRadius(),
       Movement.calculateAngleBetweenTwoPoints(from, to) - 0.5 * PI,
       0
     )
@@ -1233,7 +1233,7 @@ function _.thereAreCollisions2(from, to)
       to.x,
       to.y,
       to.z,
-      CHARACTER_RADIUS,
+      Movement.retrieveCharacterBoundingRadius(),
       Movement.calculateAngleBetweenTwoPoints(from, to) - 0.5 * PI,
       0
     )
@@ -1964,7 +1964,7 @@ end
 
 function Movement.generateWalkToPointFromCollisionPoint(from, collisionPoint)
   local pointWithDistanceToCollisionPoint = Movement.retrievePositionBetweenPositions(collisionPoint, from,
-    CHARACTER_RADIUS)
+    Movement.retrieveCharacterBoundingRadius())
   local z = Movement.retrieveGroundZ(pointWithDistanceToCollisionPoint)
   return createPoint(pointWithDistanceToCollisionPoint.x, pointWithDistanceToCollisionPoint.y, z)
 end
