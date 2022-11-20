@@ -1231,7 +1231,6 @@ function _.thereAreCollisions2(from, to)
 end
 
 function Movement.isJumpSituation(to)
-  print('isJumpSituation')
   if GMR.IsUnitFlying('player') or Movement.isMountedOnFlyingMount() and Movement.isFlyingAvailableInZone() then
     return false
   end
