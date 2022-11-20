@@ -1,5 +1,5 @@
 ## Title: Unlocker
 ## Interface: 11403
-## OptionalDeps: GMR
+## Dependencies: HWT, Set
 
 Unlocker.lua

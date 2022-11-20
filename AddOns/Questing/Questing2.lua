@@ -408,8 +408,6 @@ function retrieveQuestStartPoints()
     Array.append(points, _.retrieveQuestStartPointsFromQuestLinesWhichArentAlreadyCoveredByOtherPoints(points))
   end
 
-  print('points')
-  DevTools_Dump(points)
   return points
 end
 

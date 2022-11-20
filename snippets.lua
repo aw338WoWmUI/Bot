@@ -230,3 +230,8 @@ HWT.ObjectQuests(GMR.FindObject(42940))
 Movement.canBeMovedFromPointToPointCheckingSubSteps(position1, position2)
 
 aaaaaaa2394ui2u32uio()
+
+GMR.ObjectRawType(GMR.FindObject(203972))
+HWT.ObjectTypeFlags(GMR.FindObject(203972)) -- 257
+HWT.ObjectIsQuestObjective(GMR.FindObject(203972), false)
+HWT.GameObjectType(GMR.FindObject(203972))

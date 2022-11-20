@@ -1,5 +1,5 @@
 ## Title: Unlocker
 ## Interface: 100002
-## OptionalDeps: GMR
+## Dependencies: HWT, Set
 
 Unlocker.lua
