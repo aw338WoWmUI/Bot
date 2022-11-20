@@ -1414,6 +1414,7 @@ function Movement.mountOnMount(mountID)
       local isCasting = toBoolean(UnitCastingInfo('player'))
       if isCasting then
         Movement.waitForMounted()
+        waitForDuration(0.5)
       end
     end
   end

@@ -1198,16 +1198,16 @@ function acceptQuests(point)
       Array.forEach(quests, function(quest, index)
         if isQuestToBeDone(quest.questID) then
           local questIdentifier
-          if Compatibility.isRetail() then
+          if Compatibility.isRetail() and GossipFrame:IsShown() then
             questIdentifier = quest.questID
           else
             questIdentifier = quest.index
           end
-          Compatibility.GossipInfo.selectAvailableQuest(questIdentifier)
+          Compatibility.Quests.selectAvailableQuest(questIdentifier)
           local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
           if wasSuccessful then
             AcceptQuest()
-            if index < numberOfQuests then
+            if index <= numberOfQuests - 2 then
               Events.waitForEvent('GOSSIP_SHOW')
             end
           end
@@ -1961,9 +1961,6 @@ function _.run ()
       elseif QuestFrameDetailPanel:IsShown() then
         AcceptQuest()
         waitForQuestHasBeenAccepted()
-        -- if
-        -- HideUIPanel(QuestFrame)
-        -- HideUIPanel(QuestFrameDetailPanel)
       elseif GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
         local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
         local quest = Array.find(activeQuests, function(quest)
@@ -1987,6 +1984,7 @@ function _.run ()
         Compatibility.GossipInfo.selectAvailableQuest(questIdentifier)
       elseif QuestFrame:IsShown() and GetNumAvailableQuests() >= 1 then
         SelectAvailableQuest(1)
+        Events.waitForEvent('QUEST_DETAIL', 1)
         --elseif GossipFrame:IsShown() and #C_GossipInfo.GetOptions() >= 1 then
         --  local options = C_GossipInfo.GetOptions()
         --  local option = options[1]
