@@ -576,7 +576,8 @@ function Movement.canPlayerBeOnPoint(point, options)
   local pointOnCharacterHeight = Movement.createPointWithZOffset(point, Movement.retrieveCharacterHeight())
 
   local function areThereCollisionsAround()
-    local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight, Movement.retrieveCharacterBoundingRadius(), 8)
+    local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight,
+      Movement.retrieveCharacterBoundingRadius(), 8)
     return Array.all(points, function(point)
       return Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, point)
     end)
@@ -1000,6 +1001,10 @@ function Movement.canBeFlown()
   return Movement.isFlyingAvailableInZone() and GMR.IsOutdoors() and Movement.canCharacterFly()
 end
 
+function Movement.canBeGroundMounted()
+  return GMR.IsOutdoors()
+end
+
 function Movement.canMountOnFlyingMount()
   return toBoolean(
     GMR.IsAlive('player') and
@@ -1010,8 +1015,9 @@ function Movement.canMountOnFlyingMount()
 end
 
 function Movement.canMountOnGroundMount()
-  return (
+  return toBoolean(
     GMR.IsAlive('player') and
+      Movement.canBeGroundMounted() and
       Movement.isAGroundMountAvailable() and
       Movement.canPlayerStandOnPoint(Movement.retrievePlayerPosition(), { withMount = true })
   )
@@ -1134,7 +1140,8 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       return (
         a.shouldStop() or
           GMR.GetDistanceToPosition(waypoint.x, waypoint.y, waypoint.z) > initialDistance + 5 or
-          not Movement.isPositionLessOffGroundThanTheMaximum(waypoint, TOLERANCE_RANGE) and not Movement.canMountOnFlyingMount()
+          not Movement.isPositionLessOffGroundThanTheMaximum(waypoint,
+            TOLERANCE_RANGE) and not Movement.canMountOnFlyingMount()
       )
     end,
     whenIsDone = function(action, actionSequenceDoer)
@@ -1158,22 +1165,15 @@ _.Mounter = {}
 
 function _.Mounter:new()
   local mounter = {
-    stopTryingToMount = false
+    positionWhereFailedToMountLastTime = nil
   }
   setmetatable(mounter, { __index = _.Mounter })
   return mounter
 end
 
-function _.isCharacterAlreadyOnBestMount()
-  return Movement.isMountedOnFlyingMount() or (not Movement.canBeFlown() and IsMounted())
-end
-
-function _.canCharacterMountOnBetterMount()
-  return GMR.IsAlive('player') and not _.isCharacterAlreadyOnBestMount()
-end
-
 function _.Mounter:mount()
-  if not self.stopTryingToMount and _.canCharacterMountOnBetterMount() then
+  if not self:stopTryingToMount() and _.canCharacterMountOnBetterMount() then
+    print('mount')
     _.stopForwardMovement()
     local hasTriedToMount = false
     local wasAbleToMount = nil
@@ -1185,9 +1185,26 @@ function _.Mounter:mount()
       wasAbleToMount = Movement.mountOnGroundMount()
     end
     if hasTriedToMount then
-      self.stopTryingToMount = not wasAbleToMount
+      if wasAbleToMount then
+        self.positionWhereFailedToMountLastTime = nil
+      else
+        self.positionWhereFailedToMountLastTime = Movement.retrievePlayerPosition()
+      end
     end
   end
+end
+
+function _.Mounter:stopTryingToMount()
+  return self.positionWhereFailedToMountLastTime and GMR.IsPlayerPosition(self.positionWhereFailedToMountLastTime.x,
+    self.positionWhereFailedToMountLastTime.y, self.positionWhereFailedToMountLastTime.z, 10)
+end
+
+function _.isCharacterAlreadyOnBestMount()
+  return Movement.isMountedOnFlyingMount() or (not Movement.canBeFlown() and IsMounted())
+end
+
+function _.canCharacterMountOnBetterMount()
+  return not _.isCharacterAlreadyOnBestMount() and (Movement.canMountOnFlyingMount() or Movement.canMountOnGroundMount())
 end
 
 function Movement.determinePointHeighEnoughToStayInAir(waypoint)
@@ -1419,7 +1436,7 @@ function Movement.mountOnMount(mountID)
       local isCasting = toBoolean(UnitCastingInfo('player'))
       if isCasting then
         Movement.waitForMounted()
-        waitForDuration(0.5)
+        waitForDuration(1)
       end
     end
   end
@@ -1699,7 +1716,6 @@ function Movement.calculateTotalPathDistance(path)
 end
 
 function Movement.movePath(path, stop)
-  print('Movement.movePath')
   Movement.stopMoving()
   local a = {
     shouldStop = stop or function()
@@ -2031,7 +2047,6 @@ function Movement.stopMoving()
     pathMover.stop()
     pathMover = nil
     Movement.path = nil
-    print('Movement.path = nil')
   end
 end
 
@@ -2134,11 +2149,17 @@ end
 
 function findPathE2()
   local playerPosition = Movement.retrievePlayerPosition()
-  Movement.path = Movement.convertGMRPathToPath(GMR.GetPathBetweenPoints(playerPosition.x, playerPosition.y, playerPosition.z, savedPosition.x, savedPosition.y, savedPosition.z))
+  Movement.path = Movement.convertGMRPathToPath(GMR.GetPathBetweenPoints(playerPosition.x, playerPosition.y,
+    playerPosition.z, savedPosition.x, savedPosition.y, savedPosition.z))
 end
 
 function findPathE3()
   local playerPosition = Movement.retrievePlayerPosition()
-  Movement.path = Movement.convertGMRPathToPath(GMR.GetPathBetweenPoints(playerPosition.x, playerPosition.y, playerPosition.z, savedPosition.x, savedPosition.y, savedPosition.z))
+  Movement.path = Movement.convertGMRPathToPath(GMR.GetPathBetweenPoints(playerPosition.x, playerPosition.y,
+    playerPosition.z, savedPosition.x, savedPosition.y, savedPosition.z))
   return AStar.canPathBeMoved(Movement.path)
+end
+
+function aaaaaaa2394ui2u32uio()
+  return Movement.canPlayerStandOnPoint(position1)
 end

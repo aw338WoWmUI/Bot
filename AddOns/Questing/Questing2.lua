@@ -11,6 +11,9 @@ local EXPLORE_QUESTS = true
 
 local questsThatWorked = Set.create()
 local questsThatFailedToWork = Set.create()
+local questBlacklist = Set.create({
+  31308, -- pet battle quest
+})
 
 local function isQuestThatWorked(questID)
   return (
@@ -27,6 +30,10 @@ local function isQuestThatFailedToWork(questID)
 end
 
 local function isQuestToBeDone(questID)
+  if Set.contains(questBlacklist, questID) then
+    return false
+  end
+
   if EXPLORE_QUESTS then
     return not isQuestThatFailedToWork(questID)
   else
@@ -1342,7 +1349,7 @@ local function moveToPoint(point)
     if questHandler then
       runQuestHandler(questHandler)
     else
-      Questing.Coroutine.moveTo(point)
+      Questing.Coroutine.moveToUntil(point, GMR.InCombat)
       if GMR.IsPlayerPosition(point.x, point.y, point.z, INTERACT_DISTANCE) then
         recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)] = {
           time = GetTime()
@@ -1350,8 +1357,9 @@ local function moveToPoint(point)
       end
     end
   elseif point.type == 'loot' then
-    Questing.Coroutine.interactWithObject(point.pointer)
-    Set.add(lootedObjects, point.pointer)
+    if Questing.Coroutine.lootObject(point.pointer) then
+      Set.add(lootedObjects, point.pointer)
+    end
   elseif point.type == 'discoverFlightMaster' then
     Questing.Coroutine.interactWithObject(point.pointer)
   else
@@ -1461,102 +1469,6 @@ function moveToClosestPoint()
         print('m2')
       end
     end
-  end
-end
-
-function canInteractWithQuestGiver()
-  local namePlate = C_NamePlate.GetNamePlateForUnit('softinteract', issecure())
-  if namePlate then
-    local icon = namePlate.UnitFrame.SoftTargetFrame.Icon
-    if icon:IsShown() then
-      local texture = icon:GetTexture()
-      if texture == 'Cursor Quest' then
-        return true
-      end
-    end
-  end
-
-  return false
-end
-
-local lastQuestGiverObjectPointerInteractedWith = nil
-
-function interactWithQuestGiver()
-  local unitToken = 'softinteract'
-  GMR.Interact(unitToken)
-  exploredObjects[GMR.ObjectId(unitToken)] = {}
-  lastQuestGiverObjectPointerInteractedWith = GMR.ObjectPointer(unitToken)
-end
-
-function canInteractWithObject()
-  local namePlate = C_NamePlate.GetNamePlateForUnit('softinteract', issecure())
-  if namePlate then
-    local icon = namePlate.UnitFrame.SoftTargetFrame.Icon
-    if icon:IsShown() then
-      local texture = icon:GetTexture()
-      if texture == 4675650 then
-        return true
-      end
-    end
-  end
-
-  return false
-end
-
-function interactWithObject()
-  local unitToken = 'softinteract'
-  GMR.Interact(unitToken)
-end
-
-function canGossipWithObject()
-  local namePlate = C_NamePlate.GetNamePlateForUnit('softinteract', issecure())
-  if namePlate then
-    local icon = namePlate.UnitFrame.SoftTargetFrame.Icon
-    if icon:IsShown() then
-      local texture = icon:GetTexture()
-      if texture == 'Cursor Speak' then
-        return true
-      end
-    end
-  end
-
-  return false
-end
-
-local lastGossipedWithObjectPointer = nil
-
-function gossipWithObject()
-  local unitToken = 'softinteract'
-  GMR.Interact(unitToken)
-  lastGossipedWithObjectPointer = GMR.ObjectPointer(unitToken)
-end
-
-function canTurnInQuest()
-  local namePlate = C_NamePlate.GetNamePlateForUnit('softinteract', issecure())
-  if namePlate then
-    local icon = namePlate.UnitFrame.SoftTargetFrame.Icon
-    if icon:IsShown() then
-      local texture = icon:GetTexture()
-      if texture == 'Cursor QuestTurnIn' then
-        return true
-      end
-    end
-  end
-
-  return false
-end
-
-function turnInQuest()
-  local unitToken = 'softinteract'
-  GMR.Interact(unitToken)
-end
-
-function canExploreSoftInteractObject()
-  local objectID = GMR.ObjectId('softinteract')
-  if objectID then
-    return not exploredObjects[objectID]
-  else
-    return false
   end
 end
 
@@ -1921,6 +1833,7 @@ function _.run ()
       local pointer = GMR.GetAttackingEnemy()
       if pointer then
         local point = createPoint(GMR.ObjectPosition(pointer))
+        print('doMob', GMR.ObjectName(pointer))
         Questing.Coroutine.doMob(pointer)
       end
     end
@@ -1934,6 +1847,13 @@ function _.run ()
       if quest then
         ShowQuestComplete(quest.questID)
       end
+
+      local questIDs = retrieveQuestLogQuestIDs()
+      Array.forEach(questIDs, function(questID)
+        if Compatibility.QuestLog.isFailed(questID) then
+          GMR.AbandonQuest(questID)
+        end
+      end)
 
       if Compatibility.isRetail() then
         for index = 1, GetNumAutoQuestPopUps() do
@@ -1966,9 +1886,6 @@ function _.run ()
         CompleteQuest()
       elseif QuestFrameRewardPanel:IsShown() and hasEnoughFreeSlotsToCompleteQuest() then
         GetQuestReward(1)
-      elseif QuestFrameDetailPanel:IsShown() then
-        AcceptQuest()
-        waitForQuestHasBeenAccepted()
       elseif GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
         local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
         local quest = Array.find(activeQuests, function(quest)
@@ -1980,41 +1897,9 @@ function _.run ()
       elseif QuestFrame:IsShown() and isAnyActiveQuestCompletable() then
         local questIdentifier = _.findFirstCompleteActiveQuest()
         SelectActiveQuest(questIdentifier)
-      elseif GossipFrame:IsShown() and Compatibility.GossipInfo.hasAvailableQuests() then
-        local availableQuests = Compatibility.GossipInfo.retrieveAvailableQuests()
-        local availableQuest = availableQuests[1]
-        local questIdentifier
-        if Compatibility.isRetail() then
-          questIdentifier = availableQuest.questID
-        else
-          questIdentifier = availableQuest.index
-        end
-        Compatibility.GossipInfo.selectAvailableQuest(questIdentifier)
-      elseif QuestFrame:IsShown() and GetNumAvailableQuests() >= 1 then
-        SelectAvailableQuest(1)
-        Events.waitForEvent('QUEST_DETAIL', 1)
-        --elseif GossipFrame:IsShown() and #C_GossipInfo.GetOptions() >= 1 then
-        --  local options = C_GossipInfo.GetOptions()
-        --  local option = options[1]
-        --  C_GossipInfo.SelectOption(option.gossipOptionID)
-      elseif canInteractWithQuestGiver() and lastQuestGiverObjectPointerInteractedWith ~= GMR.ObjectPointer('softinteract') then
-        interactWithQuestGiver()
-        --elseif canInteractWithObject() then
-        --  interactWithObject()
-        --elseif canGossipWithObject() and lastGossipedWithObjectPointer ~= GMR.ObjectPointer('softinteract') then
-        --  gossipWithObject()
-      elseif canTurnInQuest() then
-        turnInQuest()
-        --elseif canExploreSoftInteractObject() then
-        --  exploreSoftInteractObject()
+      elseif _.itSeemsMakeSenseToSell() then
+        _.sell()
       else
-        local questIDs = retrieveQuestLogQuestIDs()
-        Array.forEach(questIDs, function(questID)
-          if Compatibility.QuestLog.isFailed(questID) then
-            GMR.AbandonQuest(questID)
-          end
-        end)
-
         moveToClosestPoint()
       end
     end
@@ -2026,6 +1911,33 @@ function _.run ()
     end
 
     yielder.yield()
+  end
+end
+
+function _.itSeemsMakeSenseToSell()
+  return Questing.areBagsFull() and _.isSellVendorSet()
+end
+
+function _.isSellVendorSet()
+  return toBoolean(GMR.Tables.Profile.Vendor.Sell and Object.hasKeys(GMR.Tables.Profile.Vendor.Sell))
+end
+
+function _.sell()
+  local point = createPoint(GMR.Tables.Profile.Vendor.Sell[1], GMR.Tables.Profile.Vendor.Sell[2], GMR.Tables.Profile.Vendor.Sell[3])
+  local objectID = GMR.Tables.Profile.Vendor.Sell[4]
+  Questing.Coroutine.interactWithAt(point, objectID)
+  _.sellItemsAtVendor()
+end
+
+function _.sellItemsAtVendor()
+  for containerIndex = 0, NUM_BAG_SLOTS do
+    for slotIndex = 1, Compatibility.Container.receiveNumberOfSlotsOfContainer(containerIndex) do
+      local quality = select(4, Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex))
+      if quality == Enum.ItemQuality.Poor then
+        UseContainerItem(containerIndex, slotIndex)
+        Events.waitForEvent('BAG_UPDATE_DELAYED')
+      end
+    end
   end
 end
 

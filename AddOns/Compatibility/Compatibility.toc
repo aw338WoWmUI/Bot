@@ -6,3 +6,4 @@ Compatibility.lua
 QuestLog.lua
 GossipInfo.lua
 Quests.lua
+Container.lua

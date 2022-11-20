@@ -1,6 +1,8 @@
 Questing = Questing or {}
 Questing.Coroutine = {}
 
+local _ = {}
+
 local function moveTo(to, hasArrived)
   local from = Movement.retrievePlayerPosition()
   local continentID = select(8, GetInstanceInfo())
@@ -15,11 +17,11 @@ local function moveTo(to, hasArrived)
   end
 end
 
-function Questing.Coroutine.moveTo(point, distance)
+function Questing.Coroutine.moveTo(point, distance, additionalStopConditions)
   distance = distance or INTERACT_DISTANCE
 
   local function hasArrived()
-    return GMR.IsPlayerPosition(point.x, point.y, point.z, distance)
+    return GMR.IsPlayerPosition(point.x, point.y, point.z, distance) or additionalStopConditions and additionalStopConditions()
   end
 
   Questing.Coroutine.moveToUntil(point, hasArrived)
@@ -106,6 +108,7 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
       if IsMounted() then
         print('GMR.Dismount()')
         GMR.Dismount()
+        Movement.waitForDismounted()
       end
       GMR.Interact(pointer)
       waitForDuration(2)
@@ -132,10 +135,39 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
   if Questing.isRunning() and GMR.ObjectExists(pointer) then
     if IsMounted() then
       GMR.Dismount()
+      Movement.waitForDismounted()
     end
     GMR.Interact(pointer)
-    waitForDuration(2)
+    return true
+  else
+    return false
   end
+end
+
+function Questing.Coroutine.lootObject(pointer, distance)
+  if Questing.Coroutine.interactWithObject(pointer, distance) then
+    -- after all items have been looted that can be looted
+    if _.thereAreMoreItemsThatCanBeLootedThanThereIsSpaceInBags() then
+      _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
+    end
+    local wasSuccessful = Events.waitForEvent('LOOT_CLOSED',5)
+    print('LOOT_CLOSED', wasSuccessful)
+    return wasSuccessful
+  else
+    return false
+  end
+end
+
+function _.thereAreMoreItemsThatCanBeLootedThanThereIsSpaceInBags()
+  return GetNumLootItems() >= 1
+end
+
+function _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
+  -- canBeSoldForMoreGold or quest item > gray item with sell value <= X
+  -- GetLootInfo (https://wowpedia.fandom.com/wiki/API_GetLootInfo)
+  --   isQuestItem
+  --   quantity
+  -- GetLootRollItemLink (https://wowpedia.fandom.com/wiki/API_GetLootRollItemLink)
 end
 
 function Questing.Coroutine.useItemOnNPC(point, objectID, itemID, distance)
@@ -288,6 +320,7 @@ function Questing.Coroutine.doMob(pointer)
 
       if IsMounted then
         GMR.Dismount()
+        Movement.waitForDismounted()
       end
       GMR.TargetObject(pointer)
       GMR.StartAttack()
@@ -299,9 +332,11 @@ function Questing.Coroutine.doMob(pointer)
     end
   end
 
-  local x, y, z = GMR.ObjectPosition(pointer)
-  if GMR.IsPlayerPosition(x, y, z, INTERACT_DISTANCE) then
-    GMR.Interact(pointer)
+  if not GMR.InCombat() then
+    local x, y, z = GMR.ObjectPosition(pointer)
+    if GMR.IsPlayerPosition(x, y, z, INTERACT_DISTANCE) then
+      Questing.Coroutine.lootObject(pointer)
+    end
   end
 
   print('--- Questing.Coroutine.doMob')
