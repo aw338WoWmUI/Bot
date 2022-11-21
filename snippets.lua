@@ -235,3 +235,5 @@ GMR.ObjectRawType(GMR.FindObject(203972))
 HWT.ObjectTypeFlags(GMR.FindObject(203972)) -- 257
 HWT.ObjectIsQuestObjective(GMR.FindObject(203972), false)
 HWT.GameObjectType(GMR.FindObject(203972))
+
+Movement.isJumpSituation(savedPosition)

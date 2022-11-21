@@ -29,12 +29,27 @@ local cache = {}
 local run = nil
 local pathFinder = nil
 
+local characterHeight = nil
+
 function Movement.retrieveCharacterBoundingRadius()
   return HWT.UnitBoundingRadius('player')
 end
 
 function Movement.retrieveCharacterHeight()
   return HWT.ObjectHeight('player')
+end
+
+function Movement.retrieveUnmountedCharacterHeight()
+  if IsMounted() then
+    return characterHeight
+  else
+    characterHeight = Movement.retrieveCharacterHeight()
+    return characterHeight
+  end
+end
+
+function Movement.retrieveUnmountedCharacterHeightBestEffort()
+  return Movement.retrieveUnmountedCharacterHeight() or Movement.retrieveCharacterHeight()
 end
 
 function Movement.addPointToCache(fromX, fromY, fromZ, toX, toY, toZ)
@@ -469,7 +484,7 @@ function Movement.calculateAngleBetweenTwoPoints(a, b)
 end
 
 Movement.MAXIMUM_WALK_UP_TO_HEIGHT = 0.94
-Movement.JUMP_DETECTION_HEIGHT = 1.5
+Movement.JUMP_DETECTION_HEIGHT = Movement.MAXIMUM_WALK_UP_TO_HEIGHT + 0.01
 Movement.MAXIMUM_JUMP_HEIGHT = 1.675
 
 function Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
@@ -517,7 +532,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     if not Movement.thereAreZeroCollisions3(
       Movement.createPointWithZOffset(point1, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
       Movement.createPointWithZOffset(point2, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
-      Movement.retrieveCharacterHeight() - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+      Movement.retrieveUnmountedCharacterHeightBestEffort() - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
     ) then
       return false
     end
@@ -533,7 +548,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   if not Movement.thereAreZeroCollisions3(
     Movement.createPointWithZOffset(point1, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
     Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
-    Movement.retrieveCharacterHeight() - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+    Movement.retrieveUnmountedCharacterHeightBestEffort() - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   ) then
     return false
   end
@@ -589,7 +604,7 @@ function Movement.canPlayerBeOnPoint(point, options)
     Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   )
   local pointALittleBitOverMaximumWalkUpToHeight = Movement.createPointWithZOffset(pointOnMaximumWalkUpToHeight, 0.1)
-  local pointOnCharacterHeight = Movement.createPointWithZOffset(point, Movement.retrieveCharacterHeight())
+  local pointOnCharacterHeight = Movement.createPointWithZOffset(point, Movement.retrieveUnmountedCharacterHeightBestEffort())
 
   local function areThereCollisionsAround()
     local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight,
@@ -1107,7 +1122,7 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
 
       local playerPosition = Movement.retrievePlayerPosition()
 
-      if totalDistance > 10 then
+      if totalDistance > 10 and (not actionSequenceDoer.lastTimeDismounted or GetTime() - actionSequenceDoer.lastTimeDismounted >= 3) then
         actionSequenceDoer.mounter:mount()
       end
 
@@ -1132,6 +1147,7 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
 
       if Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted() then
         Movement.dismount()
+        actionSequenceDoer.lastTimeDismounted = GetTime()
       end
 
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
@@ -1173,9 +1189,8 @@ function Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted()
 end
 
 function _.thereSeemsToBeSomethingInFrontOfTheCharacterForWhichTheCharacterSeemsToHigh()
-  local playerPosition = Movement.retrievePlayerPosition()
   local characterHeight = Movement.retrieveCharacterHeightForHeightCheck()
-  local positionA = Movement.createPointWithZOffset(playerPosition, characterHeight)
+  local positionA = Movement.positionInFrontOfPlayer2(-1, characterHeight)
   local positionB = Movement.positionInFrontOfPlayer2(0.5, characterHeight)
   position1 = positionA
   position2 = positionB
@@ -1345,15 +1360,16 @@ function _.thereAreCollisions2(from, to)
 end
 
 function Movement.isJumpSituation(to)
-  if GMR.IsUnitFlying('player') or Movement.isMountedOnFlyingMount() and Movement.isFlyingAvailableInZone() then
+  if Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
     return false
   end
 
   local playerPosition = Movement.retrievePlayerPosition()
-  local positionA = createPoint(playerPosition.x, playerPosition.y, playerPosition.z + Movement.JUMP_DETECTION_HEIGHT)
-  local positionB = Movement.positionInFrontOfPlayer(3, Movement.JUMP_DETECTION_HEIGHT)
+  local positionA = Movement.createPointWithZOffset(playerPosition, Movement.JUMP_DETECTION_HEIGHT)
+  local positionB = Movement.positionInFrontOfPlayer2(3, Movement.JUMP_DETECTION_HEIGHT)
   --position1 = positionA
   --position2 = positionB
+
   return _.thereAreCollisions2(positionA, positionB)
 end
 
@@ -1813,7 +1829,7 @@ local function cleanUpPathFinding()
   pathFinder = nil
   run = nil
   aStarPoints = nil
-  Movement.path = nil
+  -- Movement.path = nil
 end
 
 local function cleanUpPathMoving()
