@@ -8,6 +8,20 @@ function Unlocker.retrieveQuestGiverStatus(object)
   return HWT.ObjectQuestGiverStatus(object)
 end
 
+local objectIDsToQuests2 = {
+  [165505] = { 29548 }
+}
+
+function Unlocker.ObjectIsQuestObjective(object)
+  local objectID = HWT.ObjectId(object)
+  local quests = objectIDsToQuests2[objectID]
+  if quests then
+    return Array.any(quests, Compatibility.QuestLog.isOnQuest)
+  else
+    return HWT.ObjectIsQuestObjective(object, false)
+  end
+end
+
 local objectIDsToQuests = {
   [209436] = {
     [29619] = {

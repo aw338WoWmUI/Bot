@@ -905,9 +905,9 @@ local turnInQuestGiverStatuses = Set.create({
 
 function _.seemsToBeQuestObjective(object)
   local canQuestBeTurnedIn = Set.contains(turnInQuestGiverStatuses, Unlocker.retrieveQuestGiverStatus(object))
-  if HWT.ObjectIsQuestObjective then
+  if Compatibility.isRetail() then
     -- FIXME: Make work for quests with quest objectives which are not alive.
-    return (canQuestBeTurnedIn or HWT.ObjectIsQuestObjective(object, false)) and GMR.IsAlive(object)
+    return (canQuestBeTurnedIn or Unlocker.ObjectIsQuestObjective(object)) and GMR.IsAlive(object)
   else
     return canQuestBeTurnedIn or Array.hasElements(retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object))
   end
