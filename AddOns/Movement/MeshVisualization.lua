@@ -1,3 +1,5 @@
+MeshVisualization = {}
+
 local addOnName, AddOn = ...
 
 local _ = {}
@@ -10,8 +12,6 @@ local function convertVertexToScreenPoint(vertex)
 end
 
 local function visualizePolygons()
-  local color = { 0, 1, 0, 0.2 }
-  GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
   local continentID = select(8, GetInstanceInfo())
   local position = Movement.retrievePlayerPosition()
   local polygon = HWT.GetClosestMeshPolygon(continentID, position.x, position.y, position.z, RANGE, RANGE, RANGE)
@@ -20,41 +20,48 @@ local function visualizePolygons()
     local polygons = HWT.GetMeshPolygons(continentID, polygon, position.x, position.y, position.z, RANGE)
 
     if polygons then
+      local options = {
+        color = { 0, 1, 0, 1 },
+        fillColor = { 0, 1, 0, 0.2 }
+      }
       Array.forEach(polygons, function(polygon)
-        local vertices = HWT.GetMeshPolygonVertices(continentID, polygon)
-        if vertices then
-          local points = Array.map(vertices, convertVertexToScreenPoint)
-          Draw.drawPolygon(points, color)
-        end
-      end)
-
-      Array.forEach(polygons, function(polygon)
-        local vertices = HWT.GetMeshPolygonVertices(continentID, polygon)
-        if vertices then
-          local previousPoint = vertices[1]
-          for index = 2, #vertices do
-            local point = vertices[index]
-            GMR.LibDraw.Line(
-              previousPoint[1],
-              previousPoint[2],
-              previousPoint[3],
-              point[1],
-              point[2],
-              point[3]
-            )
-            previousPoint = point
-          end
-          GMR.LibDraw.Line(
-            previousPoint[1],
-            previousPoint[2],
-            previousPoint[3],
-            vertices[1][1],
-            vertices[1][2],
-            vertices[1][3]
-          )
-        end
+        MeshVisualization.visualizePolygon(polygon, options)
       end)
     end
+  end
+end
+
+function MeshVisualization.visualizePolygon(polygon, options)
+  options = options or {}
+
+  local continentID = select(8, GetInstanceInfo())
+  local vertices = HWT.GetMeshPolygonVertices(continentID, polygon)
+  if vertices then
+    local points = Array.map(vertices, convertVertexToScreenPoint)
+    Draw.drawPolygon(points, options.fillColor)
+
+    GMR.LibDraw.SetColorRaw(unpack(options.color))
+    local previousPoint = vertices[1]
+    for index = 2, #vertices do
+      local point = vertices[index]
+      GMR.LibDraw.Line(
+        previousPoint[1],
+        previousPoint[2],
+        previousPoint[3],
+        point[1],
+        point[2],
+        point[3]
+      )
+      previousPoint = point
+    end
+    GMR.LibDraw.Line(
+      previousPoint[1],
+      previousPoint[2],
+      previousPoint[3],
+      vertices[1][1],
+      vertices[1][2],
+      vertices[1][3]
+    )
   end
 end
 

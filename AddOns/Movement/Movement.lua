@@ -237,7 +237,7 @@ doWhenGMRIsFullyLoaded(function()
       end
     end
 
-    local path = Movement.path
+    local path = MovementPath
     if GMR.IsChecked('DisplayMovement') and path then
       GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
       local previousPoint = path[1]
@@ -604,7 +604,8 @@ function Movement.canPlayerBeOnPoint(point, options)
     Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   )
   local pointALittleBitOverMaximumWalkUpToHeight = Movement.createPointWithZOffset(pointOnMaximumWalkUpToHeight, 0.1)
-  local pointOnCharacterHeight = Movement.createPointWithZOffset(point, Movement.retrieveUnmountedCharacterHeightBestEffort())
+  local pointOnCharacterHeight = Movement.createPointWithZOffset(point,
+    Movement.retrieveUnmountedCharacterHeightBestEffort())
 
   local function areThereCollisionsAround()
     local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight,
@@ -769,11 +770,26 @@ function Movement.isGroundMount(mountID)
 end
 
 function Movement.retrieveGroundZ(position)
+  local position1 = createPoint(position.x, position.y, position.z + Movement.MAXIMUM_JUMP_HEIGHT)
+  local position2 = createPoint(position.x, position.y, position.z - 10)
   local x, y, z = GMR.TraceLine(
-    position.x, position.y, position.z + Movement.MAXIMUM_JUMP_HEIGHT,
-    position.x, position.y, position.z - MAXIMUM_AIR_HEIGHT,
+    position1.x, position1.y, position1.z,
+    position2.x, position2.y, position2.z,
     Movement.TraceLineHitFlags.COLLISION
   )
+  if not z then
+    -- There seemed to be one case where no z was returned at a position, even though it looked like that there was
+    -- a surface.
+    local offset = 0.6
+    position1 = createPoint(position1.x + offset, position1.y + offset, position.z)
+    position2 = createPoint(position2.x + offset, position2.y + offset, position2.z)
+    x, y, z = GMR.TraceLine(
+      position1.x, position1.y, position1.z,
+      position2.x, position2.y, position2.z,
+      Movement.TraceLineHitFlags.COLLISION
+    )
+  end
+
   return z
 end
 
@@ -1388,20 +1404,41 @@ local function findPathToSavedPosition2()
   pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
   Movement.path = path
+  MovementPath = Movement.path
   return path
 end
 
 function Movement.findPathToSavedPosition()
   local thread = coroutine.create(function()
     Movement.path = findPathToSavedPosition2()
+    MovementPath = Movement.path
   end)
   return resumeWithShowingError(thread)
+end
+
+function Movement.findPathToQuestingPointToMove()
+  local thread = coroutine.create(function()
+    Movement.path = _.findPathToSavedPosition3()
+    MovementPath = Movement.path
+  end)
+  return resumeWithShowingError(thread)
+end
+
+function _.findPathToSavedPosition3()
+  local from = Movement.retrievePlayerPosition()
+  local to = QuestingPointToMove
+  pathFinder = Movement.createPathFinder()
+  local path = pathFinder.start(from, to)
+  Movement.path = path
+  MovementPath = Movement.path
+  return path
 end
 
 function Movement.moveToSavedPosition()
   local thread = coroutine.create(function()
     local path = findPathToSavedPosition2()
     Movement.path = path
+    MovementPath = Movement.path
     if path then
       Movement.movePath(path)
     end
@@ -1756,6 +1793,7 @@ function Movement.findPathInner(from, to, toleranceDistance, a)
   )
 
   Movement.path = path
+  MovementPath = Movement.path
 
   if subPathWhichHasBeenGeneratedFromMovementPoints then
     Movement.storeConnection(subPathWhichHasBeenGeneratedFromMovementPoints)
@@ -1839,6 +1877,7 @@ local function cleanUpPathFinding()
   run = nil
   aStarPoints = nil
   -- Movement.path = nil
+  -- MovementPath = Movement.path
 end
 
 local function cleanUpPathMoving()
@@ -1903,6 +1942,7 @@ function Movement.moveTo(to, options)
     local path = pathFinder.start(from, to, options.toleranceDistance)
     pathFinder = nil
     Movement.path = path
+    MovementPath = Movement.path
     if path then
       pathMover = Movement.movePath(path, options.stop)
       cleanUpPathFindingAndMoving()
@@ -2143,6 +2183,7 @@ function Movement.stopMoving()
     pathMover.stop()
     pathMover = nil
     Movement.path = nil
+    MovementPath = Movement.path
   end
 end
 
@@ -2241,24 +2282,31 @@ Movement.frame:RegisterEvent('ADDON_LOADED')
 
 function findPathE()
   Movement.path = Movement.convertGMRPathToPath(GMR.GetPath(savedPosition.x, savedPosition.y, savedPosition.z, false))
+  MovementPath = Movement.path
 end
 
 function findPathE2()
   local playerPosition = Movement.retrievePlayerPosition()
   Movement.path = Movement.convertGMRPathToPath(GMR.GetPathBetweenPoints(playerPosition.x, playerPosition.y,
     playerPosition.z, savedPosition.x, savedPosition.y, savedPosition.z))
+  MovementPath = Movement.path
 end
 
 function findPathE3()
   local playerPosition = Movement.retrievePlayerPosition()
   Movement.path = Movement.convertGMRPathToPath(GMR.GetPathBetweenPoints(playerPosition.x, playerPosition.y,
     playerPosition.z, savedPosition.x, savedPosition.y, savedPosition.z))
+  MovementPath = Movement.path
   return AStar.canPathBeMoved(Movement.path)
 end
 
 function findPathE4()
-  Movement.path = Movement.convertGMRPathToPath(GMR.GetPath(QuestingPointToMove.x, QuestingPointToMove.y,
-    QuestingPointToMove.z, false))
+  local path = GMR.GetPath(QuestingPointToMove.x, QuestingPointToMove.y, QuestingPointToMove.z, false)
+  if path then
+    path = Movement.convertGMRPathToPath(path)
+  end
+  Movement.path = path
+  MovementPath = Movement.path
 end
 
 function aaaaaaa2394ui2u32uio()

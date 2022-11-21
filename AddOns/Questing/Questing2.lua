@@ -11,13 +11,13 @@ local recentlyVisitedObjectivePoints = {}
 
 local EXPLORE_QUESTS = true
 
+local polygon = nil
+
 local questsThatWorked = Set.create()
 local questsThatFailedToWork = Set.create()
 local questBlacklist = Set.create({
   31308, -- pet battle quest
 })
-
-local pointToShow = nil
 
 local function isQuestThatWorked(questID)
   return (
@@ -1429,7 +1429,7 @@ local function moveToPoint(point)
   print('point.type', point.type)
   DevTools_Dump(point)
 
-  pointToShow = nil
+  QuestingPointToShow = nil
 
   if point.type == 'acceptQuests' then
     local questNamesString
@@ -1442,7 +1442,7 @@ local function moveToPoint(point)
       questIDsString = ''
     end
     print('acceptQuests', point.x, point.y, point.z, point.objectID, questIDsString, questNamesString)
-    pointToShow = QuestingPointToMove
+    QuestingPointToShow = QuestingPointToMove
     acceptQuests(point)
   elseif point.type == 'object' then
     local questHandler = retrieveQuestHandlerForOneOfQuests(point.questIDs)
@@ -1450,17 +1450,17 @@ local function moveToPoint(point)
     if questHandler then
       runQuestHandler(questHandler)
     else
-      pointToShow = QuestingPointToMove
+      QuestingPointToShow = QuestingPointToMove
       doSomethingWithObject(point)
     end
   elseif point.type == 'endQuest' then
     print('end quest')
-    pointToShow = QuestingPointToMove
+    QuestingPointToShow = QuestingPointToMove
     Questing.Coroutine.interactWithAt(point, point.objectID)
   elseif point.type == 'exploration' then
     local name = GMR.ObjectName(point.pointer)
     print('explore object', name)
-    pointToShow = QuestingPointToMove
+    QuestingPointToShow = QuestingPointToMove
     exploreObject(point.pointer)
     waitForPlayerHasArrivedAt(point)
   elseif point.type == 'objectToUseItemOn' then
@@ -1469,11 +1469,11 @@ local function moveToPoint(point)
     if isSpecialItemUsable(point) then
       print('use')
       local distance = GMR.GetDistanceBetweenObjects('player', point.pointer)
-      pointToShow = QuestingPointToMove
+      QuestingPointToShow = QuestingPointToMove
       Questing.Coroutine.useItemOnNPC(point, point.objectID, point.itemID, distance)
     else
       print('move to')
-      pointToShow = QuestingPointToMove
+      QuestingPointToShow = QuestingPointToMove
       Questing.Coroutine.useItemOnNPC(point, point.objectID, point.itemID)
       waitForSpecialItemUsable(point)
       print('use after wait')
@@ -1483,7 +1483,7 @@ local function moveToPoint(point)
   elseif point.type == 'objectToUseItemOnWhenDead' then
     print('objectToUseItemOnWhenDead')
     if GMR.IsAlive(point.pointer) then
-      pointToShow = QuestingPointToMove
+      QuestingPointToShow = QuestingPointToMove
       _.doMob(point.pointer)
     end
     GMR.TargetObject(point.pointer)
@@ -1495,11 +1495,11 @@ local function moveToPoint(point)
     end
   elseif point.type == 'objectToUseItemAtPosition' then
     print('quest log special item at position')
-    pointToShow = QuestingPointToMove
+    QuestingPointToShow = QuestingPointToMove
     Questing.Coroutine.useItemOnGround(point, point.itemID, 3)
   elseif point.type == 'gossipWith' then
     print('gossip with')
-    pointToShow = QuestingPointToMove
+    QuestingPointToShow = QuestingPointToMove
     Questing.Coroutine.gossipWithAt(point, point.objectID, point.optionToSelect)
   elseif point.type == 'objective' then
     local firstQuestID = point.questIDs[1]
@@ -1515,16 +1515,16 @@ local function moveToPoint(point)
       end
     end
   elseif point.type == 'loot' then
-    pointToShow = QuestingPointToMove
+    QuestingPointToShow = QuestingPointToMove
     if Questing.Coroutine.lootObject(point.pointer) then
       Set.add(lootedObjects, point.pointer)
     end
   elseif point.type == 'discoverFlightMaster' then
-    pointToShow = QuestingPointToMove
+    QuestingPointToShow = QuestingPointToMove
     Questing.Coroutine.interactWithObject(point.pointer)
   else
     print('moveToPoint', point.x, point.y, point.z)
-    pointToShow = QuestingPointToMove
+    QuestingPointToShow = QuestingPointToMove
     Questing.Coroutine.moveTo(point)
   end
 end
@@ -1574,22 +1574,22 @@ function _.handleObjective(point)
         position = retrieveNavigationPosition()
       end
     end
-  end
 
-  if position then
+    if not position then
+      position = createPoint(point.x, point.y, point.z)
+    end
+
     local continentID = select(8, GetInstanceInfo())
     local x, y, z = GMR.GetClosestPointOnMesh(continentID, position.x, position.y, position.z)
     if x and y and z then
       position = createPoint(x, y, z)
     end
-
-    Movement.createPointWithZOffset()
-
-    Object.assign(point, position)
   end
 
+  Object.assign(point, position)
+
   QuestingPointToMove = point
-  pointToShow = QuestingPointToMove
+  QuestingPointToShow = QuestingPointToMove
   Questing.Coroutine.moveTo(point, {
     additionalStopConditions = GMR.InCombat
   })
@@ -1611,9 +1611,9 @@ end
 
 doWhenGMRIsFullyLoaded(function()
   GMR.LibDraw.Sync(function()
-    if pointToShow then
+    if QuestingPointToShow then
       GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-      GMR.LibDraw.Circle(pointToShow.x, pointToShow.y, pointToShow.z, 3)
+      GMR.LibDraw.Circle(QuestingPointToShow.x, QuestingPointToShow.y, QuestingPointToShow.z, 3)
     end
 
     if point then
@@ -1621,6 +1621,16 @@ doWhenGMRIsFullyLoaded(function()
       local playerPosition = Movement.retrievePlayerPosition()
       GMR.LibDraw.Line(playerPosition.x, playerPosition.y, playerPosition.z, point.x, point.y, point.z)
       GMR.LibDraw.Circle(point.x, point.y, point.z, 0.75)
+    end
+
+    if polygon then
+      MeshVisualization.visualizePolygon(
+        polygon,
+        {
+          color = { 0, 0, 1, 1 },
+          fillColor = { 0, 0, 1, 0.2 }
+        }
+      )
     end
   end)
 end)
@@ -2258,3 +2268,19 @@ frame:RegisterEvent('QUEST_TURNED_IN')
 frame:SetScript('OnEvent', onEvent)
 
 Questing.convertMapPositionToWorldPosition = convertMapPositionToWorldPosition
+
+function showClosestMeshPolygonToPointToShow()
+  polygon = HWT.GetClosestMeshPolygon(select(8, GetInstanceInfo()), QuestingPointToShow.x, QuestingPointToShow.y,
+    QuestingPointToShow.z, 1000, 1000, 1000)
+  return polygon
+end
+
+function removeClosestMeshPolygonToPointToShow()
+  local polygon = HWT.GetClosestMeshPolygon(select(8, GetInstanceInfo()), QuestingPointToShow.x, QuestingPointToShow.y,
+    QuestingPointToShow.z, 1000, 1000, 1000)
+  log('polygon', polygon)
+  print('polygon', polygon)
+  -- return HWT.SetMeshPolygonArea(select(8, GetInstanceInfo()), polygon, 9999999)
+  print('a', HWT.SetMeshPolygonFlags(select(8, GetInstanceInfo()), polygon, 0))
+  return HWT.GetMeshPolygonFlags(select(8, GetInstanceInfo()), polygon)
+end

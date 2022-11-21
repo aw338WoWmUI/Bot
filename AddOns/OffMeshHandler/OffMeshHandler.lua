@@ -9,6 +9,7 @@ function stopPathFinding()
     run = nil
     aStarPoints = nil
     Movement.path = nil
+    MovementPath = Movement.path
   end
 end
 
@@ -63,6 +64,7 @@ ticker = C_Timer.NewTicker(0, function()
             local path = pathFinder.start(from, to)
             stopPathFinding()
             Movement.path = path
+            MovementPath = Movement.path
             -- print('path')
             -- DevTools_Dump(path)
             if path then
