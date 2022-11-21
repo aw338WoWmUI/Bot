@@ -1809,7 +1809,6 @@ function Movement.movePath(path, stop)
   GMR.StopMoving = Function.noOperation
   local dismount = GMR.Dismount
   GMR.Dismount = Function.noOperation
-  print('Movement.movePath')
   pathMover = createActionSequenceDoer2(
     Array.map(path, function(waypoint, index)
       return Movement.createMoveToAction3(waypoint, index < pathLength, a, totalDistance, index == pathLength)

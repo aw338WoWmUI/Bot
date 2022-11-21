@@ -8,7 +8,6 @@ function Unlocker.retrieveQuestGiverStatus(object)
   return HWT.ObjectQuestGiverStatus(object)
 end
 
--- Calling HWT.ObjectQuests with a pointer to an object with this object IDs seems to crash the game.
 local objectIDsToQuests = {
   [209436] = {
     [29619] = {
@@ -24,6 +23,11 @@ local objectIDsToQuests = {
     [26230] = {
       [2] = true
     }
+  },
+  [165505] = {
+    [29548] = {
+      [1] = true
+    }
   }
 }
 
@@ -37,10 +41,10 @@ function Unlocker.ObjectQuests(object)
   local quests = objectIDsToQuests[objectID]
   if quests then
     local questIDs = Set.create()
-    for questID, objectives in ipairs(quests) do
+    for questID, objectives in pairs(quests) do
       if GMR.IsQuestActive(questID) then
         for objectiveIndex in pairs(objectives) do
-          if GMR.Questing.IsObjectiveCompleted(questIDs, objectiveIndex) then
+          if not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex) then
             Set.add(questIDs, questID)
             break
           end
