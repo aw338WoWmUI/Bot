@@ -1,5 +1,7 @@
 local _ = {}
 
+Q_ = _
+
 function _.updateNPCPositionsToClosest()
   _.updateGoodsVendorToClosest()
   _.updateSellVendorToClosest()

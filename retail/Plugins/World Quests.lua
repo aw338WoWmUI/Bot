@@ -602,8 +602,7 @@ function defineQuest2(questID, pickUpX, pickUpY, pickUpZ, pickUpObjectID)
       local itemID = GetItemInfoInstant(itemLink)
       GMR.Questing.UseItemOnPosition(playerPosition.x, playerPosition.y, playerPosition.z, itemID)
       addObjectsThatHasBeenChargedWith(objectsThatPotentiallyCanBeChargedWith)
-      elseif objectPointer and GMR.ObjectHasGossip(objectPointer) then
-        -- FIXME: GMR.ObjectHasGossip seems to also return true for normal mobs.
+      elseif objectPointer and Core.hasGossip(objectPointer) then
         print('GMR.Questing.GossipWith')
         local x, y, z = GMR.ObjectPosition(objectPointer)
         local objectID = GMR.ObjectId(objectPointer)

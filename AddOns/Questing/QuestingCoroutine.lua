@@ -4,26 +4,21 @@ Questing.Coroutine = {}
 local _ = {}
 
 local function moveTo(to, hasArrived)
-  local from = Movement.retrievePlayerPosition()
-  local continentID = select(8, GetInstanceInfo())
-  from = createPoint(GMR.GetClosestPointOnMesh(continentID, from.x, from.y, from.z))
-  local pathFinder = Movement.createPathFinder()
-  local path = pathFinder.start(from, to)
-  Movement.path = path
-  if path then
-    local pathMover = Movement.movePath(path, function ()
+  Movement.moveTo(to, {
+    stop = function()
       return not Questing.isRunning() or (hasArrived and hasArrived())
-    end)
-  end
+    end
+  })
 end
 
 function Questing.Coroutine.moveTo(point, options)
   options = options or {}
   local additionalStopConditions = options.additionalStopConditions
-  local distance = options.distance or INTERACT_DISTANCE
+  local distance = options.distance or 1
 
   local function hasArrived()
-    return GMR.IsPlayerPosition(point.x, point.y, point.z, distance) or additionalStopConditions and additionalStopConditions()
+    return GMR.IsPlayerPosition(point.x, point.y, point.z,
+      distance) or additionalStopConditions and additionalStopConditions()
   end
 
   Questing.Coroutine.moveToUntil(point, hasArrived)
@@ -109,12 +104,12 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   if Questing.isRunning() then
     local pointer = GMR.FindObject(objectID)
     if pointer then
-      if IsMounted() then
-        print('GMR.Dismount()')
-        GMR.Dismount()
-        Movement.waitForDismounted()
-      end
-      GMR.Interact(pointer)
+      --if IsMounted() then
+      --  print('GMR.Dismount()')
+      --  GMR.Dismount()
+      --  Movement.waitForDismounted()
+      --end
+      GMR.InteractObject(pointer)
       waitForDuration(2)
     end
   end
@@ -137,11 +132,11 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
   end
 
   if Questing.isRunning() and GMR.ObjectExists(pointer) then
-    if IsMounted() then
-      GMR.Dismount()
-      Movement.waitForDismounted()
-    end
-    GMR.Interact(pointer)
+    --if IsMounted() then
+    --  GMR.Dismount()
+    --  Movement.waitForDismounted()
+    --end
+    GMR.InteractObject(pointer)
     return true
   else
     return false
@@ -154,7 +149,7 @@ function Questing.Coroutine.lootObject(pointer, distance)
     if _.thereAreMoreItemsThatCanBeLootedThanThereIsSpaceInBags() then
       _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
     end
-    local wasSuccessful = Events.waitForEvent('LOOT_CLOSED',3)
+    local wasSuccessful = Events.waitForEvent('LOOT_CLOSED', 3)
     print('LOOT_CLOSED', wasSuccessful)
     return wasSuccessful
   else
@@ -232,9 +227,8 @@ local function gossipWithObject(pointer, chooseOption)
   print(name)
   while Questing.isRunning() and GMR.ObjectExists(pointer) and GMR.ObjectPointer('npc') ~= pointer do
     Questing.Coroutine.interactWithObject(pointer)
-    waitFor(function()
-      return GMR.ObjectPointer('npc') == pointer
-    end, 2)
+    Events.waitForEvent('GOSSIP_SHOW', 2)
+    yieldAndResume()
   end
   if Questing.isRunning() then
     local gossipOptionID = chooseOption()
@@ -313,33 +307,44 @@ end
 
 function Questing.Coroutine.gossipWithAt(point, objectID, optionToSelect)
   Questing.Coroutine.interactWithAt(point, objectID)
-  selectOption(optionToSelect)
+  Events.waitForEvent('GOSSIP_SHOW', 2)
+  yieldAndResume()
+  if Questing.isRunning() then
+    selectOption(optionToSelect)
+  end
 end
 
-function Questing.Coroutine.doMob(pointer)
+function Questing.Coroutine.doMob(pointer, options)
+  print('Questing.Coroutine.doMob')
+  options = options or {}
+
   local distance = GMR.GetCombatRange()
   local objectID = GMR.ObjectId(pointer)
 
   local function isJobDone()
-    return not GMR.ObjectExists(pointer) or GMR.IsDead(pointer)
+    return not GMR.ObjectExists(pointer) or GMR.IsDead(pointer) or options.additionalStopConditions and options.additionalStopConditions()
   end
 
+  local isFirstRun = true
   while Questing.isRunning() and not isJobDone() do
-    if isIdle() then
+    if isFirstRun or isIdle() then
+      GMR.ScanObjects()
+
       local position = createPoint(GMR.ObjectPosition(pointer))
       if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
         Questing.Coroutine.moveToObject(pointer, distance)
       end
 
       if IsMounted() then
-        GMR.Dismount()
-        Movement.waitForDismounted()
+        Movement.dismount()
       end
+      print('targeting', GMR.ObjectName(pointer))
       GMR.TargetObject(pointer)
       GMR.StartAttack()
       waitFor(function()
         return isJobDone() or isIdle()
       end)
+      isFirstRun = false
     else
       yieldAndResume()
     end

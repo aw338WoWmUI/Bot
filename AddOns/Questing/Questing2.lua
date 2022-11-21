@@ -4,6 +4,8 @@ local addOnName, AddOn = ...
 
 local _ = {}
 
+Questing_ = _
+
 lootedObjects = Set.create()
 local recentlyVisitedObjectivePoints = {}
 
@@ -14,6 +16,8 @@ local questsThatFailedToWork = Set.create()
 local questBlacklist = Set.create({
   31308, -- pet battle quest
 })
+
+local pointToShow = nil
 
 local function isQuestThatWorked(questID)
   return (
@@ -198,12 +202,71 @@ do
     26209,
     function(self)
       local objects = retrieveObjects()
-      local object = Array.find(objects, function (object)
+      local object = Array.find(objects, function(object)
         return Set.contains(objectIDs, object.ID) and Core.hasGossip(object.pointer)
       end)
       if object then
         Questing.Coroutine.gossipWithObject(object.pointer, 38008)
         StaticPopup1Button1:Click()
+      end
+    end
+  )
+end
+
+do
+  local questID = 26228
+  defineQuest3(
+    questID,
+    function(self)
+      Questing.Coroutine.useItemOnPosition(
+        createPoint(
+          -9849.0380859375,
+          1398.9611816406,
+          52.249256134033
+        ),
+        57761,
+        1
+      )
+      waitFor(function()
+        return Compatibility.QuestLog.isComplete(questID)
+      end)
+      if GMR.IsInVehicle() then
+        GMR.RunMacroText('/leavevehicle')
+      end
+    end
+  )
+end
+
+do
+  local questID = 26232
+  defineQuest3(
+    questID,
+    function(self)
+      if self:isObjectiveOpen(1) then
+        print(1)
+        Questing.Coroutine.moveTo(createPoint(
+          -9861.0556640625,
+          1333.9146728516,
+          41.904102325439
+        ))
+        print(2)
+        waitFor(function()
+          GMR.ScanObjects()
+          local object = GMR.FindObject(42387)
+          return object and GMR.UnitCanAttack('player', object)
+        end)
+        print(3)
+        while not Compatibility.QuestLog.isComplete(questID) do
+          GMR.ScanObjects()
+          local object = GMR.FindObject(42387)
+          print('object', object)
+          if object then
+            Questing.Coroutine.doMob(object)
+          else
+            yieldAndResume()
+          end
+        end
+        print(4)
       end
     end
   )
@@ -684,7 +747,10 @@ function retrieveObjectivePoints()
   )
 
   points = Array.filter(points, function(point)
-    return not recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)]
+    return (
+      not recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)]
+        and Array.any(point.questIDs, _.hasEnoughFreeSlotsToCompleteQuest)
+    )
   end)
 
   return points
@@ -943,7 +1009,7 @@ function retrieveExplorationPoints()
     return (
       Questing.Database.isQuestGiver(object.ID) and
         isAlive(object.pointer) and
-        -- (isInteractable(object.pointer) or GMR.ObjectHasGossip(object.pointer) or isFriendly(object.pointer)) and
+        -- (isInteractable(object.pointer) or Core.hasGossip(object.pointer) or isFriendly(object.pointer)) and
         not Set.contains(explorationObjectBlacklist, object.ID) and
         not Set.contains(explorationObjectNameBlacklist, GMR.ObjectName(object.pointer))
     )
@@ -1171,10 +1237,29 @@ local function doSomethingWithObject(point)
   else
     if pointer and GMR.UnitCanAttack('player', pointer) then
       print('doMob')
-      Questing.Coroutine.doMob(pointer)
-    elseif pointer and (GMR.ObjectHasGossip(pointer) or Compatibility.GossipInfo.hasGossipOptions()) then
-      print('gossipWithAt')
-      Questing.Coroutine.gossipWithAt(point, point.objectID, 1)
+      _.doMob(pointer)
+    elseif pointer and Core.hasGossip(pointer) then
+      print('gossipWith')
+      Questing.Coroutine.gossipWithObject(pointer)
+      if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
+        CompleteQuest()
+      elseif QuestFrameRewardPanel:IsShown() and hasEnoughFreeSlotsToCompleteQuestGiverQuest() then
+        GetQuestReward(1)
+      elseif GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
+        local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
+        local quest = Array.find(activeQuests, function(quest)
+          return Compatibility.QuestLog.isComplete(quest.questID)
+        end)
+        print('quest', quest)
+        if quest then
+          C_GossipInfo.SelectActiveQuest(quest.questID)
+        end
+      elseif QuestFrame:IsShown() and isAnyActiveQuestCompletable() then
+        print('aa')
+        local questIdentifier = _.findFirstCompleteActiveQuest()
+        print('questIdentifier', questIdentifier)
+        SelectActiveQuest(questIdentifier)
+      end
     elseif pointer and hasSomeQuestASpecialItem(point.questIDs) then
       local specialItem = retrieveFirstSpecialItem(point.questIDs)
       Questing.Coroutine.useItemOnPosition(point, specialItem)
@@ -1189,6 +1274,18 @@ local function doSomethingWithObject(point)
       Questing.Coroutine.moveTo(point)
     end
   end
+end
+
+function _.doMob(pointer)
+  return Questing.Coroutine.doMob(pointer, {
+    additionalStopConditions = function()
+      return GMR.InCombat() and not _.isUnitAttackingTheCharacter(pointer)
+    end
+  })
+end
+
+function _.isUnitAttackingTheCharacter(unit)
+  return GMR.InCombat(unit) and HWT.UnitTarget(unit) == GMR.ObjectPointer('player')
 end
 
 function acceptQuests(point)
@@ -1308,6 +1405,9 @@ end
 local function moveToPoint(point)
   print('point.type', point.type)
   DevTools_Dump(point)
+
+  pointToShow = nil
+
   if point.type == 'acceptQuests' then
     local questNamesString
     local questIDsString
@@ -1319,6 +1419,7 @@ local function moveToPoint(point)
       questIDsString = ''
     end
     print('acceptQuests', point.x, point.y, point.z, point.objectID, questIDsString, questNamesString)
+    pointToShow = QuestingPointToMove
     acceptQuests(point)
   elseif point.type == 'object' then
     local questHandler = retrieveQuestHandlerForOneOfQuests(point.questIDs)
@@ -1326,14 +1427,17 @@ local function moveToPoint(point)
     if questHandler then
       runQuestHandler(questHandler)
     else
+      pointToShow = QuestingPointToMove
       doSomethingWithObject(point)
     end
   elseif point.type == 'endQuest' then
     print('end quest')
+    pointToShow = QuestingPointToMove
     Questing.Coroutine.interactWithAt(point, point.objectID)
   elseif point.type == 'exploration' then
     local name = GMR.ObjectName(point.pointer)
     print('explore object', name)
+    pointToShow = QuestingPointToMove
     exploreObject(point.pointer)
     waitForPlayerHasArrivedAt(point)
   elseif point.type == 'objectToUseItemOn' then
@@ -1342,9 +1446,11 @@ local function moveToPoint(point)
     if isSpecialItemUsable(point) then
       print('use')
       local distance = GMR.GetDistanceBetweenObjects('player', point.pointer)
+      pointToShow = QuestingPointToMove
       Questing.Coroutine.useItemOnNPC(point, point.objectID, point.itemID, distance)
     else
       print('move to')
+      pointToShow = QuestingPointToMove
       Questing.Coroutine.useItemOnNPC(point, point.objectID, point.itemID)
       waitForSpecialItemUsable(point)
       print('use after wait')
@@ -1354,7 +1460,8 @@ local function moveToPoint(point)
   elseif point.type == 'objectToUseItemOnWhenDead' then
     print('objectToUseItemOnWhenDead')
     if GMR.IsAlive(point.pointer) then
-      Questing.Coroutine.doMob(point.pointer)
+      pointToShow = QuestingPointToMove
+      _.doMob(point.pointer)
     end
     GMR.TargetObject(point.pointer)
     if isSpecialItemUsable(point) then
@@ -1365,41 +1472,58 @@ local function moveToPoint(point)
     end
   elseif point.type == 'objectToUseItemAtPosition' then
     print('quest log special item at position')
+    pointToShow = QuestingPointToMove
     Questing.Coroutine.useItemOnGround(point, point.itemID, 3)
   elseif point.type == 'gossipWith' then
     print('gossip with')
+    pointToShow = QuestingPointToMove
     Questing.Coroutine.gossipWithAt(point, point.objectID, point.optionToSelect)
   elseif point.type == 'objective' then
-    local questHandler = retrieveQuestHandlerForOneOfQuests(point.questIDs)
-    if questHandler then
-      runQuestHandler(questHandler)
+    local firstQuestID = point.questIDs[1]
+    local isQuestComplete = Compatibility.QuestLog.isComplete(firstQuestID)
+    if isQuestComplete then
+      pointToShow = QuestingPointToMove
+      _.handleObjective(point)
     else
-      Questing.Coroutine.moveTo(point, {
-        additionalStopConditions = GMR.InCombat
-      })
-      if GMR.IsPlayerPosition(point.x, point.y, point.z, INTERACT_DISTANCE) then
-        recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)] = {
-          time = GetTime()
-        }
+      local questHandler = retrieveQuestHandlerForOneOfQuests(point.questIDs)
+      if questHandler then
+        runQuestHandler(questHandler)
+      else
+        pointToShow = QuestingPointToMove
+        _.handleObjective(point)
       end
     end
   elseif point.type == 'loot' then
+    pointToShow = QuestingPointToMove
     if Questing.Coroutine.lootObject(point.pointer) then
       Set.add(lootedObjects, point.pointer)
     end
   elseif point.type == 'discoverFlightMaster' then
+    pointToShow = QuestingPointToMove
     Questing.Coroutine.interactWithObject(point.pointer)
   else
     print('moveToPoint', point.x, point.y, point.z)
+    pointToShow = QuestingPointToMove
     Questing.Coroutine.moveTo(point)
+  end
+end
+
+function _.handleObjective(point)
+  Questing.Coroutine.moveTo(point, {
+    additionalStopConditions = GMR.InCombat
+  })
+  if GMR.IsPlayerPosition(point.x, point.y, point.z, INTERACT_DISTANCE) then
+    recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)] = {
+      time = GetTime()
+    }
   end
 end
 
 doWhenGMRIsFullyLoaded(function()
   GMR.LibDraw.Sync(function()
-    if QuestingPointToMove then
+    if pointToShow then
       GMR.LibDraw.SetColorRaw(0, 1, 0, 1)
-      GMR.LibDraw.Circle(QuestingPointToMove.x, QuestingPointToMove.y, QuestingPointToMove.z, 3)
+      GMR.LibDraw.Circle(pointToShow.x, pointToShow.y, pointToShow.z, 3)
     end
 
     if point then
@@ -1485,7 +1609,7 @@ function moveToClosestPoint()
       local playerPosition = Movement.retrievePlayerPosition()
       local x, y, z = GMR.GetClosestPointOnMesh(continentID, playerPosition.x, playerPosition.y, playerPosition.z)
       local to = createPoint(x, y, z)
-      local pathFinder = Movement.createPathFinder()
+      pathFinder = Movement.createPathFinder()
       local path = pathFinder.start(playerPosition, to)
       if path then
         QuestingPointToMove = path[#path]
@@ -1594,7 +1718,7 @@ function exploreObject(object)
             elseif texture == 'Cursor Innkeeper' then
               exploredObject.isInnkeeper = true
               local objectID = GMR.ObjectId(pointer)
-              GMR.Interact(softInteractPointer)
+              GMR.InteractObject(softInteractPointer)
               print(5)
               waitForGossipDialog()
               print(6)
@@ -1616,11 +1740,11 @@ function exploreObject(object)
             elseif texture == 'Cursor Taxi' or texture == 'Cursor UnableTaxi' then
               exploredObject.isTaxi = true
               if texture == 'Cursor Taxi' then
-                GMR.Interact(softInteractPointer)
+                GMR.InteractObject(softInteractPointer)
               end
             elseif texture == 'Cursor QuestTurnIn' or texture == 'Cursor UnableQuestTurnIn' then
               if texture == 'Cursor QuestTurnIn' then
-                GMR.Interact(softInteractPointer)
+                GMR.InteractObject(softInteractPointer)
               elseif texture == 'Cursor UnableQuestTurnIn' then
                 local x, y, z = GMR.ObjectPosition(softInteractPointer)
                 local objectID = GMR.ObjectId(softInteractPointer)
@@ -1748,9 +1872,17 @@ function determineNumberOfFreeInventorySlots()
   return numberOfFreeSlots
 end
 
-function hasEnoughFreeSlotsToCompleteQuest()
-  local numberOfItemsAddedToBag = GetNumQuestRewards()
-  if GetNumQuestChoices() >= 1 then
+function hasEnoughFreeSlotsToCompleteQuestGiverQuest()
+  return _.hasEnoughFreSlotsForRewards(GetNumQuestRewards(), GetNumQuestChoices())
+end
+
+function _.hasEnoughFreeSlotsToCompleteQuest(questID)
+  return _.hasEnoughFreSlotsForRewards(GetNumQuestLogRewards(questID), GetNumQuestLogChoices(questID))
+end
+
+function _.hasEnoughFreSlotsForRewards(numberOfRewards, numberOfChoices)
+  local numberOfItemsAddedToBag = numberOfRewards
+  if numberOfChoices >= 1 then
     numberOfItemsAddedToBag = numberOfItemsAddedToBag + 1
   end
   local numberOfFreeInventorySlots = determineNumberOfFreeInventorySlots()
@@ -1789,6 +1921,9 @@ end
 
 function isAnyActiveQuestCompletable2()
   local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
+  print('activeQuests')
+  DevTools_Dump(activeQuests)
+  print('--- activeQuests')
   return Array.any(activeQuests, function(quest)
     return Compatibility.QuestLog.isComplete(quest.questID)
   end)
@@ -1832,14 +1967,14 @@ function registerUnavailableQuests(npcID)
 end
 
 function _.run ()
-  local stopPathMovingInCombatTicker = C_Timer.NewTicker(0, function()
+  local regularChecksTicker = C_Timer.NewTicker(0, function()
     if GMR.InCombat() then
       Movement.stopPathMoving()
     end
 
-    --if not Questing.isRunning() then
-    --  Movement.stopPathFindingAndMoving()
-    --end
+    if not Questing.isRunning() then
+      Movement.stopPathFindingAndMoving()
+    end
   end)
 
   local yielder = createYielder()
@@ -1858,9 +1993,10 @@ function _.run ()
       local pointer = GMR.GetAttackingEnemy()
       if pointer then
         local point = createPoint(GMR.ObjectPosition(pointer))
-        print('doMob', GMR.ObjectName(pointer))
+        local name = GMR.ObjectName(pointer)
+        print('doMob', name)
         Movement.stopPathFindingAndMoving()
-        Questing.Coroutine.doMob(pointer)
+        _.doMob(pointer)
       end
     end
     if Questing.isRunning() and isIdle() then
@@ -1908,23 +2044,6 @@ function _.run ()
           return StaticPopup1Button1:IsShown()
         end)
         StaticPopup1Button1:Click()
-      elseif QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
-        CompleteQuest()
-      elseif QuestFrameRewardPanel:IsShown() and hasEnoughFreeSlotsToCompleteQuest() then
-        GetQuestReward(1)
-      elseif GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
-        local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
-        local quest = Array.find(activeQuests, function(quest)
-          return Compatibility.QuestLog.isComplete(quest.questID)
-        end)
-        if quest then
-          C_GossipInfo.SelectActiveQuest(quest.questID)
-        end
-      elseif QuestFrame:IsShown() and isAnyActiveQuestCompletable() then
-        print('aa')
-        local questIdentifier = _.findFirstCompleteActiveQuest()
-        print('questIdentifier', questIdentifier)
-        SelectActiveQuest(questIdentifier)
       elseif _.itSeemsMakeSenseToSell() then
         _.sell()
       else
@@ -1933,7 +2052,7 @@ function _.run ()
     end
 
     if not Questing.isRunning() then
-      stopPathMovingInCombatTicker:Cancel()
+      regularChecksTicker:Cancel()
       Movement.stopPathFindingAndMoving()
       return
     end
@@ -1955,7 +2074,34 @@ function _.sell()
     GMR.Tables.Profile.Vendor.Sell[3])
   local objectID = GMR.Tables.Profile.Vendor.Sell[4]
   Questing.Coroutine.interactWithAt(point, objectID)
-  _.sellItemsAtVendor()
+  if _.hasSellingGossipOption() then
+    _.selectSellingGossipOption()
+  end
+  local wasSuccessful = Events.waitForEvent('MERCHANT_SHOW', 2)
+  if wasSuccessful then
+    _.sellItemsAtVendor()
+  end
+  CloseMerchant()
+end
+
+function _.hasSellingGossipOption()
+  return toBoolean(_.retrieveSellingGossipOption())
+end
+
+function _.isSellingGossipOption(option)
+  return option.icon == 132060
+end
+
+function _.selectSellingGossipOption()
+  local option = _.retrieveSellingGossipOption()
+  if option then
+    Compatibility.GossipInfo.selectOption(option.gossipOptionID)
+  end
+end
+
+function _.retrieveSellingGossipOption()
+  local options = Compatibility.GossipInfo.retrieveOptions()
+  return Array.find(options, _.isSellingGossipOption)
 end
 
 function _.sellItemsAtVendor()

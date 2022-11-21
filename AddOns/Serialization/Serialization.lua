@@ -149,7 +149,7 @@ function Serialization.createOpeningBracketOfLevel(level)
 end
 
 function Serialization.indent(string, numberOfIndentions)
-  local lines = { strsplit('\n', string) }
+  local lines = String.split('\n', string)
   local indentedLines = Array.map(lines, function(line)
     return Serialization.indentLine(line, numberOfIndentions)
   end)

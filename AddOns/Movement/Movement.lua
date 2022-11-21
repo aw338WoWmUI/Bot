@@ -17,7 +17,6 @@ local TOLERANCE_RANGE = 1
 local TARGET_LIFT_HEIGHT = TOLERANCE_RANGE
 local MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
-local CHARACTER_HEIGHT = 2 -- ~ for human
 local MAXIMUM_WATER_DEPTH_FOR_WALKING = 1.4872055053711
 local MOUNTED_CHARACTER_HEIGHT = 3 -- only an approximation. Seems to depend on mount and maybe also character model.
 local canBeStoodOnPointCache = PointToValueMap:new()
@@ -26,6 +25,9 @@ local DISTANCE = GRID_LENGTH
 lines = {}
 
 local cache = {}
+
+local run = nil
+local pathFinder = nil
 
 function Movement.retrieveCharacterBoundingRadius()
   return HWT.UnitBoundingRadius('player')
@@ -326,6 +328,20 @@ function Movement.positionInFrontOfPlayer(distance, deltaZ)
       distance,
       GMR.ObjectRawFacing('player'),
       GMR.GetPitch('player')
+    )
+  )
+end
+
+function Movement.positionInFrontOfPlayer2(distance, deltaZ)
+  local playerPosition = Movement.retrievePlayerPosition()
+  return createPoint(
+    GMR.GetPositionFromPosition(
+      playerPosition.x,
+      playerPosition.y,
+      playerPosition.z + (deltaZ or 0),
+      distance,
+      GMR.ObjectRawFacing('player'),
+      0
     )
   )
 end
@@ -1097,7 +1113,8 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
 
       local playerPosition = Movement.retrievePlayerPosition()
       if (
-        Movement.isMountedOnFlyingMount() and
+        Movement.canBeFlown() and
+          Movement.isMountedOnFlyingMount() and
           (totalDistance > 10 or Movement.isPositionInTheAir(waypoint)) and
           (Movement.isPointOnGround(playerPosition) or (Movement.isPointInDeepWater(playerPosition) and not Movement.isPointInDeepWater(waypoint))) and
           (not isLastWaypoint or Movement.isPositionInTheAir(waypoint))
@@ -1111,6 +1128,10 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
 
       if not GMR.IsMoving() then
         GMR.MoveForwardStart()
+      end
+
+      if Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted() then
+        Movement.dismount()
       end
 
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
@@ -1145,6 +1166,33 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       GMR.MoveForwardStop()
     end
   }
+end
+
+function Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted()
+  return IsMounted() and _.thereSeemsToBeSomethingInFrontOfTheCharacterForWhichTheCharacterSeemsToHigh()
+end
+
+function _.thereSeemsToBeSomethingInFrontOfTheCharacterForWhichTheCharacterSeemsToHigh()
+  local playerPosition = Movement.retrievePlayerPosition()
+  local characterHeight = Movement.retrieveCharacterHeightForHeightCheck()
+  local positionA = Movement.createPointWithZOffset(playerPosition, characterHeight)
+  local positionB = Movement.positionInFrontOfPlayer2(0.5, characterHeight)
+  position1 = positionA
+  position2 = positionB
+  return _.thereAreCollisions2(positionA, positionB)
+end
+
+function Movement.retrieveCharacterHeightForHeightCheck()
+  if Movement.isMountedOn(1434) then
+    return Movement.retrieveCharacterHeight() / 2
+  else
+    return Movement.retrieveCharacterHeight()
+  end
+end
+
+function Movement.dismount()
+  Dismount()
+  Movement.waitForDismounted()
 end
 
 function _.areConditionsMetForFacingWaypoint(waypoint)
@@ -1312,7 +1360,7 @@ end
 local function findPathToSavedPosition2()
   local from = Movement.retrievePlayerPosition()
   local to = savedPosition
-  local pathFinder = Movement.createPathFinder()
+  pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
   Movement.path = path
   return path
@@ -1387,6 +1435,11 @@ function Movement.isDismounted()
   return not IsMounted()
 end
 
+function Movement.isMountedOn(mountID)
+  local activeMountID = select(12, Movement.receiveActiveMount())
+  return activeMountID == mountID
+end
+
 function Movement.waitForDismounted()
   return waitFor(Movement.isDismounted)
 end
@@ -1438,8 +1491,7 @@ function Movement.mountOnFlyingMount()
 end
 
 function Movement.mountOnMount(mountID)
-  local activeMountID = select(12, Movement.receiveActiveMount())
-  if mountID ~= activeMountID then
+  if not Movement.isMountedOn(mountID) then
     local spellName = C_MountJournal.GetMountInfoByID(mountID)
     if spellName then
       GMR.CastSpellByName(spellName)
@@ -1757,9 +1809,6 @@ function Movement.movePath(path, stop)
   return pathMover
 end
 
-local run = nil
-local pathFinder = nil
-
 local function cleanUpPathFinding()
   pathFinder = nil
   run = nil
@@ -1781,10 +1830,13 @@ end
 
 local function stopPathFinding()
   if pathFinder then
+    print('stop')
     pathFinder.stop()
     cleanUpPathFinding()
   end
 end
+
+Movement.stopPathFinding = stopPathFinding
 
 function Movement.stopPathMoving()
   if pathMover then
@@ -1806,32 +1858,33 @@ local function isDifferentPathFindingRequestThanRun(to)
   return not run or to ~= run.to
 end
 
-local function moveTo(x, y, z)
-  if x and y and z then
-    local from = Movement.retrievePlayerPosition()
-    local to = createPoint(x, y, z)
+function Movement.moveTo(to, options)
+  options = options or {}
 
-    if isDifferentPathFindingRequestThanRun(to) then
-      Movement.stopPathFindingAndMoving()
-      run = {
-        from = from,
-        to = to
-      }
-      pathFinder = Movement.createPathFinder()
-      local path = pathFinder.start(from, to)
-      pathFinder = nil
-      Movement.path = path
-      if path then
-        pathMover = Movement.movePath(path)
-        cleanUpPathFindingAndMoving()
-      end
+  local from = Movement.retrievePlayerPosition()
+  local continentID = select(8, GetInstanceInfo())
+  from = createPoint(GMR.GetClosestPointOnMesh(continentID, from.x, from.y, from.z))
+
+  if isDifferentPathFindingRequestThanRun(to) then
+    Movement.stopPathFindingAndMoving()
+    run = {
+      from = from,
+      to = to
+    }
+    pathFinder = Movement.createPathFinder()
+    local path = pathFinder.start(from, to)
+    pathFinder = nil
+    Movement.path = path
+    if path then
+      pathMover = Movement.movePath(path, options.stop)
+      cleanUpPathFindingAndMoving()
     end
   end
 end
 
 local function moveToFromNonCoroutine(x, y, z)
   runAsCoroutine(function()
-    moveTo(x, y, z)
+    Movement.moveTo(createPoint(x, y, z))
   end)
 end
 
@@ -2183,3 +2236,5 @@ end
 function aaaaaaa2394ui2u32uio()
   return Movement.canPlayerStandOnPoint(position1)
 end
+
+-- position2 = Movement.createPointWithZOffset(Movement.retrievePlayerPosition(), Movement.retrieveCharacterHeight())
