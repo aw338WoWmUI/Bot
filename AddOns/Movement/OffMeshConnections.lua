@@ -60,7 +60,8 @@ end
 
 local function writeOffMeshConnectionsToFile()
   local filePath = HWT.GetWoWDirectory() .. '/Interface/AddOns/Movement/OffMeshConnectionsDatabase.lua'
-  GMR.WriteFile(filePath, 'local addOnName, AddOn = ...\n\nAddOn.offMeshConnections = ' .. Serialization.valueToString(AddOn.offMeshConnections) .. '\n')
+  GMR.WriteFile(filePath,
+    'local addOnName, AddOn = ...\n\nAddOn.offMeshConnections = ' .. Serialization.valueToString(AddOn.offMeshConnections) .. '\n')
 end
 
 function saveOffMeshConnection(isBidirectional, polygonFlags)
@@ -126,8 +127,8 @@ function _.removeOffMeshConnection(connection)
     findConnection(AddOn.offMeshConnections, connection))
   if index ~= -1 then
     table.remove(AddOn.offMeshConnections, index)
+    writeOffMeshConnectionsToFile()
   end
-  writeOffMeshConnectionsToFile()
 
   return HWT.RemoveOffmeshConnection(connection)
 end

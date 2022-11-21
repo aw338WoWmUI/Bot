@@ -85,14 +85,6 @@ local function visualizeOffMeshConnections()
     end
 
     local closestConnection = AddOn.findClosestOffMeshConnection()
-    if not closestConnection then
-      print('closestConnection', closestConnection)
-    end
-
-    if closestConnection then
-      setDrawColor(156, 156, 255)
-      drawConnection(closestConnection)
-    end
 
     GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
     Array.forEach(connections, function(connection)
@@ -100,6 +92,11 @@ local function visualizeOffMeshConnections()
         drawConnection(connection)
       end
     end)
+
+    if closestConnection then
+      setDrawColor(156, 156, 255)
+      drawConnection(closestConnection)
+    end
   end
 end
 

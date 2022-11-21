@@ -1548,12 +1548,12 @@ function Movement.createPathFinder()
   }
 
   return {
-    start = function(from, to)
+    start = function(from, to, toleranceDistance)
       if not GMR.IsMeshLoaded() then
         GMR.LoadMeshFiles()
       end
 
-      return Movement.findPath2(from, to, a)
+      return Movement.findPath2(from, to, toleranceDistance, a)
     end,
     stop = function()
       shouldStop2 = true
@@ -1567,8 +1567,8 @@ function Movement.waitForPlayerStandingStill()
   end)
 end
 
-function Movement.findPath2(from, to, a)
-  return Movement.findPathInner(from, to, a, 0)
+function Movement.findPath2(from, to, toleranceDistance, a)
+  return Movement.findPathInner(from, to, toleranceDistance, a)
 end
 
 function Movement.retrievePointIndex(point)
@@ -1718,7 +1718,7 @@ function Movement.storeConnection(path)
   end
 end
 
-function Movement.findPathInner(from, to, a)
+function Movement.findPathInner(from, to, toleranceDistance, a)
   local path
   -- aStarPoints = {}
 
@@ -1742,7 +1742,8 @@ function Movement.findPathInner(from, to, a)
     to,
     receiveNeighborPoints,
     a,
-    yielder
+    yielder,
+    toleranceDistance
   )
 
   Movement.path = path
@@ -1888,7 +1889,7 @@ function Movement.moveTo(to, options)
       to = to
     }
     pathFinder = Movement.createPathFinder()
-    local path = pathFinder.start(from, to)
+    local path = pathFinder.start(from, to, options.toleranceDistance)
     pathFinder = nil
     Movement.path = path
     if path then

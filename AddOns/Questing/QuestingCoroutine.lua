@@ -3,11 +3,14 @@ Questing.Coroutine = {}
 
 local _ = {}
 
-local function moveTo(to, hasArrived)
+local function moveTo(to, options)
+  options = options or {}
+
   Movement.moveTo(to, {
     stop = function()
-      return not Questing.isRunning() or (hasArrived and hasArrived())
-    end
+      return not Questing.isRunning() or (options.hasArrived and options.hasArrived())
+    end,
+    toleranceDistance = options.toleranceDistance
   })
 end
 
@@ -35,7 +38,9 @@ function Questing.Coroutine.moveToUntil(point, stopCondition)
 
   while Questing.isRunning() and not stopCondition() do
     if isIdle() then
-      moveTo(point, stopCondition)
+      moveTo(point, {
+        hasArrived = stopCondition
+      })
       waitFor(function()
         return stopCondition() or isIdle()
       end)
@@ -78,7 +83,9 @@ function Questing.Coroutine.moveToObject(pointer, distance)
   while Questing.isRunning() and not isJobDone() do
     if isIdle() then
       local position = retrievePosition()
-      moveTo(position)
+      moveTo(position, {
+        toleranceDistance = distance
+      })
       waitFor(function()
         return isJobDone() or isIdle()
       end)
