@@ -777,6 +777,15 @@ function Movement.retrieveGroundZ(position)
   return z
 end
 
+function Movement.retrieveGroundZ2(position)
+  local x, y, z = GMR.TraceLine(
+    position.x, position.y, position.z,
+    position.x, position.y, position.z - MAXIMUM_AIR_HEIGHT,
+    Movement.TraceLineHitFlags.COLLISION
+  )
+  return z
+end
+
 function Movement.thereAreCollisions(a, b, track)
   if track then
     table.insert(lines, { a, b })
@@ -1879,7 +1888,10 @@ function Movement.moveTo(to, options)
 
   local from = Movement.retrievePlayerPosition()
   local continentID = select(8, GetInstanceInfo())
-  from = createPoint(GMR.GetClosestPointOnMesh(continentID, from.x, from.y, from.z))
+  local x, y, z = GMR.GetClosestPointOnMesh(continentID, from.x, from.y, from.z)
+  if x and y and z then
+    from = createPoint(x, y, z)
+  end
 
   if isDifferentPathFindingRequestThanRun(to) then
     Movement.stopPathFindingAndMoving()

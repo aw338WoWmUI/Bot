@@ -237,3 +237,5 @@ HWT.ObjectIsQuestObjective(GMR.FindObject(203972), false)
 HWT.GameObjectType(GMR.FindObject(203972))
 
 Movement.isJumpSituation(savedPosition)
+
+position2 = createPoint(GMR.GetClosestPointOnMesh(select(8, GetInstanceInfo()), QuestingPointToMove.x, QuestingPointToMove.y, QuestingPointToMove.z))

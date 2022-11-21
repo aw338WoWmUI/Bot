@@ -615,18 +615,22 @@ end
 
 function _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
   local mapID = GMR.GetMapId()
-  while true do
-    local mapInfo = C_Map.GetMapInfo(mapID)
-    if mapInfo.mapType >= 3 then
-      local quests = retrieveQuestsOnMap(mapID)
-      if Array.hasElements(quests) then
-        return quests, mapID
+  if mapID then
+    while true do
+      local mapInfo = C_Map.GetMapInfo(mapID)
+      if mapInfo.mapType >= 3 then
+        local quests = retrieveQuestsOnMap(mapID)
+        if Array.hasElements(quests) then
+          return quests, mapID
+        else
+          mapID = mapInfo.parentMapID
+        end
       else
-        mapID = mapInfo.parentMapID
+        return {}, nil
       end
-    else
-      return {}, nil
     end
+  else
+    return {}, nil
   end
 end
 
@@ -666,8 +670,7 @@ function retrieveWorldPositionFromMapPosition(mapID, mapX, mapY)
     }
     local continentID = C_Map.GetWorldPosFromMapPos(mapID, point)
     local x, y, z = GMR.GetWorldPositionFromMap(mapID, mapX, mapY)
-    local xm, ym, zm = GMR.GetClosestPointOnMesh(continentID, x, y, z)
-    return continentID, createPoint(xm, ym, zm)
+    return continentID, createPoint(x, y, z)
   else
     return nil, nil
   end
@@ -1115,77 +1118,83 @@ local function isPlayerOnMeshPoint()
 end
 
 function retrieveNavigationPosition()
-  frame2:Show()
-  frame3:Show()
+  local frame = C_Navigation.GetFrame()
 
-  local yielder = createYielderWithTimeTracking(1 / 60)
+  if frame and C_Navigation.HasValidScreenPosition() and not C_Navigation.WasClampedToScreen() then
+    frame2:Show()
+    frame3:Show()
 
-  local lastDistance = nil
-  local lastPosition = nil
+    local yielder = createYielderWithTimeTracking(1 / 60)
 
-  local pitch = GMR.GetPitch('player')
-  local yaw = GMR.ObjectRawFacing('player')
+    local lastDistance = nil
+    local lastPosition = nil
 
-  while true do
-    local playerPosition = Movement.retrievePlayerPosition()
-    local navigationPointDistance = C_Navigation.GetDistance()
-    local navigationX, navigationY = C_Navigation.GetFrame():GetCenter()
-    local scale = UIParent:GetEffectiveScale()
-    navigationX = navigationX * scale
-    navigationY = navigationY * scale
+    local pitch = GMR.GetPitch('player')
+    local yaw = GMR.ObjectRawFacing('player')
 
-    frame3:SetPoint('CENTER', UIParent, 'BOTTOMLEFT', navigationX, navigationY)
+    while true do
+      local playerPosition = Movement.retrievePlayerPosition()
+      local navigationPointDistance = C_Navigation.GetDistance()
+      local navigationX, navigationY = frame:GetCenter()
+      local scale = UIParent:GetEffectiveScale()
+      navigationX = navigationX * scale
+      navigationY = navigationY * scale
 
-    local vector = Vector:new(
-      navigationPointDistance * math.cos(yaw) * math.cos(pitch),
-      navigationPointDistance * math.sin(yaw) * math.cos(pitch),
-      navigationPointDistance * math.sin(pitch)
-    )
-    local position = createPoint(
-      playerPosition.x + vector.x,
-      playerPosition.y + vector.y,
-      playerPosition.z + vector.z
-    )
-    point = position
+      frame3:SetPoint('CENTER', UIParent, 'BOTTOMLEFT', navigationX, navigationY)
 
-    local x, y = GMR.WorldToScreen(position.x, position.y, position.z)
-    point2d = { x = x, y = y }
-    frame2:SetPoint('CENTER', UIParent, 'BOTTOMLEFT', x, y)
+      local vector = Vector:new(
+        navigationPointDistance * math.cos(yaw) * math.cos(pitch),
+        navigationPointDistance * math.sin(yaw) * math.cos(pitch),
+        navigationPointDistance * math.sin(pitch)
+      )
+      local position = createPoint(
+        playerPosition.x + vector.x,
+        playerPosition.y + vector.y,
+        playerPosition.z + vector.z
+      )
+      point = position
 
-    local deltaX = navigationX - x
-    local deltaY = navigationY - y
+      local x, y = GMR.WorldToScreen(position.x, position.y, position.z)
+      point2d = { x = x, y = y }
+      frame2:SetPoint('CENTER', UIParent, 'BOTTOMLEFT', x, y)
 
-    local distance = euclideanDistance2D(
-      { x = navigationX, y = navigationY },
-      { x = x, y = y }
-    )
+      local deltaX = navigationX - x
+      local deltaY = navigationY - y
 
-    if lastDistance and lastDistance <= distance then
-      point = lastPosition
-      frame2:Hide()
-      frame3:Hide()
-      return lastPosition
+      local distance = euclideanDistance2D(
+        { x = navigationX, y = navigationY },
+        { x = x, y = y }
+      )
+
+      if lastDistance and lastDistance <= distance then
+        point = lastPosition
+        frame2:Hide()
+        frame3:Hide()
+        return lastPosition
+      end
+
+      local oneDegree = 2 * PI / 360
+      if deltaX < 0 then
+        yaw = yaw + oneDegree
+      elseif deltaX > 0 then
+        yaw = yaw - oneDegree
+      end
+
+      if deltaY < 0 then
+        pitch = pitch - oneDegree
+      elseif deltaY > 0 then
+        pitch = pitch + oneDegree
+      end
+
+      if yielder.hasRanOutOfTime() then
+        yielder.yield()
+      end
+
+      lastDistance = distance
+      lastPosition = position
     end
-
-    local oneDegree = 2 * PI / 360
-    if deltaX < 0 then
-      yaw = yaw + oneDegree
-    elseif deltaX > 0 then
-      yaw = yaw - oneDegree
-    end
-
-    if deltaY < 0 then
-      pitch = pitch - oneDegree
-    elseif deltaY > 0 then
-      pitch = pitch + oneDegree
-    end
-
-    if yielder.hasRanOutOfTime() then
-      yielder.yield()
-    end
-
-    lastDistance = distance
-    lastPosition = position
+  else
+    return nil
   end
 end
 
@@ -1241,6 +1250,7 @@ local function doSomethingWithObject(point)
     elseif pointer and Core.hasGossip(pointer) then
       print('gossipWith')
       Questing.Coroutine.gossipWithObject(pointer)
+
       _.completeQuest()
       if GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
         local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
@@ -1256,6 +1266,12 @@ local function doSomethingWithObject(point)
         local questIdentifier = _.findFirstCompleteActiveQuest()
         print('questIdentifier', questIdentifier)
         SelectActiveQuest(questIdentifier)
+      end
+
+      local options = Compatibility.GossipInfo.retrieveOptions()
+      local option = options[1]
+      if option then
+        Compatibility.GossipInfo.selectOption(option.gossipOptionID)
       end
     elseif pointer and hasSomeQuestASpecialItem(point.questIDs) then
       local specialItem = retrieveFirstSpecialItem(point.questIDs)
@@ -1489,14 +1505,12 @@ local function moveToPoint(point)
     local firstQuestID = point.questIDs[1]
     local isQuestComplete = Compatibility.QuestLog.isComplete(firstQuestID)
     if isQuestComplete then
-      pointToShow = QuestingPointToMove
       _.handleObjective(point)
     else
       local questHandler = retrieveQuestHandlerForOneOfQuests(point.questIDs)
       if questHandler then
         runQuestHandler(questHandler)
       else
-        pointToShow = QuestingPointToMove
         _.handleObjective(point)
       end
     end
@@ -1516,6 +1530,66 @@ local function moveToPoint(point)
 end
 
 function _.handleObjective(point)
+  local objectID = point.objectID
+  local position
+  if objectID then
+    position = _.retrievePositionFromObjectID(objectID)
+  end
+
+  if not position then
+    local firstQuestID = point.questIDs[1]
+    if firstQuestID then
+      C_SuperTrack.SetSuperTrackedQuestID(firstQuestID)
+      local frame = C_Navigation.GetFrame()
+      if frame and C_Navigation.HasValidScreenPosition() then
+        if C_Navigation.WasClampedToScreen() then
+          GMR.FaceDirection(point.x, point.y, point.z)
+        end
+
+        if C_Navigation.WasClampedToScreen() then
+          local lastAngle = nil
+          waitFor(function()
+            local angle = GMR.ObjectRawFacing('player')
+            local result = lastAngle and angle == lastAngle
+            lastAngle = angle
+            return result
+          end)
+          local navigationY = select(2, frame:GetCenter())
+          local scale = UIParent:GetEffectiveScale()
+          local navigationY = navigationY * scale
+          if navigationY >= 0.5 * 768 then
+            MoveViewDownStart()
+            waitUntil(function()
+              return not C_Navigation.WasClampedToScreen()
+            end, 5)
+            MoveViewDownStop()
+          else
+            MoveViewUpStart()
+            waitUntil(function()
+              return not C_Navigation.WasClampedToScreen()
+            end, 5)
+            MoveViewUpStop()
+          end
+        end
+        position = retrieveNavigationPosition()
+      end
+    end
+  end
+
+  if position then
+    local continentID = select(8, GetInstanceInfo())
+    local x, y, z = GMR.GetClosestPointOnMesh(continentID, position.x, position.y, position.z)
+    if x and y and z then
+      position = createPoint(x, y, z)
+    end
+
+    Movement.createPointWithZOffset()
+
+    Object.assign(point, position)
+  end
+
+  QuestingPointToMove = point
+  pointToShow = QuestingPointToMove
   Questing.Coroutine.moveTo(point, {
     additionalStopConditions = GMR.InCombat
   })
@@ -1523,6 +1597,15 @@ function _.handleObjective(point)
     recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)] = {
       time = GetTime()
     }
+  end
+end
+
+function _.retrievePositionFromObjectID(objectID)
+  local object = GMR.FindObject(objectID)
+  if object then
+    return createPoint(GMR.ObjectPosition(object))
+  else
+    return nil
   end
 end
 
