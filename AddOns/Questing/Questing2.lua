@@ -1241,11 +1241,8 @@ local function doSomethingWithObject(point)
     elseif pointer and Core.hasGossip(pointer) then
       print('gossipWith')
       Questing.Coroutine.gossipWithObject(pointer)
-      if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
-        CompleteQuest()
-      elseif QuestFrameRewardPanel:IsShown() and hasEnoughFreeSlotsToCompleteQuestGiverQuest() then
-        GetQuestReward(1)
-      elseif GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
+      _.completeQuest()
+      if GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
         local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
         local quest = Array.find(activeQuests, function(quest)
           return Compatibility.QuestLog.isComplete(quest.questID)
@@ -1266,6 +1263,7 @@ local function doSomethingWithObject(point)
     elseif pointer then
       print('interactWithObject')
       Questing.Coroutine.interactWithObject(pointer)
+      _.completeQuest()
     elseif objectID then
       print('interactWithAt')
       Questing.Coroutine.interactWithAt(point, objectID)
@@ -1273,6 +1271,15 @@ local function doSomethingWithObject(point)
       print('moveToPoint2')
       Questing.Coroutine.moveTo(point)
     end
+  end
+end
+
+function _.completeQuest()
+  if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
+    CompleteQuest()
+  end
+  if QuestFrameRewardPanel:IsShown() and hasEnoughFreeSlotsToCompleteQuestGiverQuest() then
+    GetQuestReward(1)
   end
 end
 
