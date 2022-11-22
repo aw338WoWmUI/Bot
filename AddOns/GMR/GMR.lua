@@ -37,23 +37,30 @@ local runFunctionsWhenGMRIsLoaded = Function.once(function()
 end)
 
 function doWhenGMRIsLoaded(fn)
-  table.insert(functionsToRunWhenGMRIsLoaded, fn)
-  runFunctionsWhenGMRIsLoaded()
+  if GMRHelpers.isFullyLoaded() then
+    runAsCoroutine(fn)
+  else
+    table.insert(functionsToRunWhenGMRIsLoaded, fn)
+    runFunctionsWhenGMRIsLoaded()
+  end
 end
 
 function doWhenGMRIsFullyLoaded(fn)
-  table.insert(functionsToRunWhenGMRIsFullyLoaded, fn)
-  runFunctionsWhenGMRIsFullyLoaded()
+  if GMRHelpers.isFullyLoaded() then
+    runAsCoroutine(fn)
+  else
+    table.insert(functionsToRunWhenGMRIsFullyLoaded, fn)
+    runFunctionsWhenGMRIsFullyLoaded()
+  end
 end
 
 function doRegularlyWhenGMRIsFullyLoaded(fn)
   doWhenGMRIsFullyLoaded(function()
-    local thread = coroutine.create(function()
+    runAsCoroutine(function()
       while true do
         fn()
         yieldAndResume()
       end
     end)
-    resumeWithShowingError(thread)
   end)
 end
