@@ -15,7 +15,7 @@ local GRID_LENGTH = 2
 local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.25 yards.
 local TOLERANCE_RANGE = 1
 local TARGET_LIFT_HEIGHT = TOLERANCE_RANGE
-local MAXIMUM_AIR_HEIGHT = 5000
+Movement.MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
 local MAXIMUM_WATER_DEPTH_FOR_WALKING = 1.4872055053711
 local MOUNTED_CHARACTER_HEIGHT = 3 -- only an approximation. Seems to depend on mount and maybe also character model.
@@ -619,9 +619,9 @@ function Movement.canPlayerBeOnPoint(point, options)
     end)
   end
 
-  print('D', Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) ,
-      Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) ,
-      areThereZeroCollisionsAround())
+  print('D', Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver),
+    Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight),
+    areThereZeroCollisionsAround())
   local result = (
     Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) and
       Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) and
@@ -662,9 +662,9 @@ function _.canPlayerBeOnPoint2(point, options)
       end)
     end
 
-    print('D', Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) ,
-        Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) ,
-        areThereZeroCollisionsAround())
+    print('D', Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver),
+      Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight),
+      areThereZeroCollisionsAround())
     local result = (
       Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) and
         Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) and
@@ -674,8 +674,10 @@ function _.canPlayerBeOnPoint2(point, options)
     print('c', 2)
     return result
   else
-    local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(_.retrieveContinentID(), point.x, point.y, point.z))
-    if closestPointOnMesh and Float.seemsCloseBy(closestPointOnMesh.x, point.x) and Float.seemsCloseBy(closestPointOnMesh.y, point.y) then
+    local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(Movement.retrieveContinentID(),
+      point.x, point.y, point.z))
+    if closestPointOnMesh and Float.seemsCloseBy(closestPointOnMesh.x,
+      point.x) and Float.seemsCloseBy(closestPointOnMesh.y, point.y) then
       return math.abs(closestPointOnMesh.z - point.z) <= TOLERANCE_RANGE
     end
   end
@@ -683,7 +685,7 @@ function _.canPlayerBeOnPoint2(point, options)
   return nil
 end
 
-function _.retrieveContinentID()
+function Movement.retrieveContinentID()
   local continentID = select(8, GetInstanceInfo())
   return continentID
 end
@@ -872,7 +874,8 @@ function Movement.isPositionInRangeForTraceLineChecks(position)
 end
 
 function Movement.retrieveGroundZ2(position)
-  local collisionPoint = Movement.traceLineCollisionWithFallback(position, Movement.createPointWithZOffset(position, -MAXIMUM_AIR_HEIGHT))
+  local collisionPoint = Movement.traceLineCollisionWithFallback(position,
+    Movement.createPointWithZOffset(position, -Movement.MAXIMUM_AIR_HEIGHT))
   if collisionPoint then
     return collisionPoint.z
   else
@@ -1029,7 +1032,11 @@ end
 
 function Movement.isWaterDeepAt(point)
   local waterDepth = Movement.determineWaterDepth(point)
-  return waterDepth > MAXIMUM_WATER_DEPTH_FOR_WALKING
+  if waterDepth then
+    return waterDepth > MAXIMUM_WATER_DEPTH_FOR_WALKING
+  else
+    return nil
+  end
 end
 
 function Movement.determineWaterDepth(point)
@@ -1263,7 +1270,8 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
     end,
     isDone = function()
       return (
-        GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, TOLERANCE_RANGE)
+        GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, TOLERANCE_RANGE) or
+          _.isPointCloseToCharacterWithZTolerance(waypoint)
       )
     end,
     shouldCancel = function()
@@ -1284,6 +1292,15 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       GMR.MoveForwardStop()
     end
   }
+end
+
+function _.isPointCloseToCharacterWithZTolerance(point)
+  local playerPosition = Movement.retrievePlayerPosition()
+  return (
+    euclideanDistance2D(playerPosition, point) <= TOLERANCE_RANGE and
+    point.z >= playerPosition.z and
+    point.z <= playerPosition.z + Movement.retrieveCharacterHeight()
+  )
 end
 
 function Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted()
@@ -2197,7 +2214,8 @@ function Movement.traceLineCollisionWithFallback(from, to)
   elseif Float.seemsCloseBy(from.x, to.x) and Float.seemsCloseBy(from.y, to.y) then
     local x = from.x
     local y = from.y
-    local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(_.retrieveContinentID(), from))
+    local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(Movement.retrieveContinentID(),
+      from))
     local minZ = math.min(from.z, to.z)
     local maxZ = math.max(from.z, to.z)
     if (

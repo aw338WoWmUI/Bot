@@ -1521,13 +1521,13 @@ local function moveToPoint(point)
     local firstQuestID = point.questIDs[1]
     local isQuestComplete = Compatibility.QuestLog.isComplete(firstQuestID)
     if isQuestComplete then
-      _.handleObjective(point)
+      Questing.handleObjective(point)
     else
       local questHandler = retrieveQuestHandlerForOneOfQuests(point.questIDs)
       if questHandler then
         runQuestHandler(questHandler)
       else
-        _.handleObjective(point)
+        Questing.handleObjective(point)
       end
     end
   elseif point.type == 'loot' then
@@ -1545,7 +1545,7 @@ local function moveToPoint(point)
   end
 end
 
-function _.handleObjective(point)
+function Questing.handleObjective(point)
   local objectID = point.objectID
   local position
   if objectID then
@@ -1596,9 +1596,10 @@ function _.handleObjective(point)
     end
 
     local continentID = select(8, GetInstanceInfo())
-    local x, y, z = GMR.GetClosestPointOnMesh(continentID, position.x, position.y, position.z)
-    if x and y and z then
-      position = createPoint(x, y, z)
+    local position2 = Movement.createPositionFromPoint(continentID, position)
+    local closesPointOnMeshWithPathTo = _.findClosestPointOnMeshWithPathTo(position2)
+    if closesPointOnMeshWithPathTo then
+      position = closesPointOnMeshWithPathTo
     end
   end
 
@@ -1614,6 +1615,35 @@ function _.handleObjective(point)
       time = GetTime()
     }
   end
+end
+
+function _.findClosestPointOnMeshWithPathTo(position)
+  local continentID = select(8, GetInstanceInfo())
+  local previousClosesPointOnMesh = nil
+  local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(position)
+  while closestPointOnMesh and not (previousClosesPointOnMesh and closestPointOnMesh == previousClosesPointOnMesh) do
+    if GMR.PathExists(closestPointOnMesh.x, closestPointOnMesh.y, closestPointOnMesh.z) then
+      return closestPointOnMesh
+    else
+      local point = Movement.traceLineCollision(
+        Movement.createPointWithZOffset(closestPointOnMesh, 0.1),
+        Movement.createPointWithZOffset(closestPointOnMesh, Movement.MAXIMUM_AIR_HEIGHT)
+      )
+      previousClosesPointOnMesh = closestPointOnMesh
+      if point then
+        local point2 = Movement.traceLineCollision(
+          Movement.createPointWithZOffset(point, 0.1),
+          Movement.createPointWithZOffset(point, -0.1)
+        )
+        closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(continentID,
+          point2))
+      else
+        closestPointOnMesh = nil
+      end
+    end
+  end
+
+  return closestPointOnMesh
 end
 
 function _.retrievePositionFromObjectID(objectID)
@@ -2302,4 +2332,17 @@ function removeClosestMeshPolygonToPointToShow()
   -- return HWT.SetMeshPolygonArea(select(8, GetInstanceInfo()), polygon, 9999999)
   print('a', HWT.SetMeshPolygonFlags(select(8, GetInstanceInfo()), polygon, 0))
   return HWT.GetMeshPolygonFlags(select(8, GetInstanceInfo()), polygon)
+end
+
+function testHandleObjective()
+  local continentID = Movement.retrieveContinentID()
+  local mapID, mapPosition = C_Map.GetMapPosFromWorldPos(continentID, savedPosition)
+  local continentID, position = retrieveWorldPositionFromMapPosition(mapID, mapPosition.x, mapPosition.y)
+  local point = {
+    x = position.x,
+    y = position.y,
+    z = position.z,
+    questIDs = {}
+  }
+  return Questing.handleObjective(point)
 end
