@@ -18,21 +18,21 @@ function Questing.canLearnRiding()
   return (
     Questing.canLearnApprenticeRiding() or
       Questing.canLearnJourneymanRiding() or
-      Questing.canLearnExperRiding() or
+      Questing.canLearnExpertRiding() or
       Questing.canLearnMasterRiding()
   )
 end
 
 function Questing.canLearnApprenticeRiding()
-  return UnitLevel('player') >= APPRENTICE_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(APPRENTICE_RIDING) and _.hasEnoughGoldToLearnApprenticeRiding()
+  return UnitLevel('player') >= APPRENTICE_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(APPRENTICE_RIDING) and not GMR.IsSpellKnown(JOURNEYMAN_RIDING) and not GMR.IsSpellKnown(EXPERT_RIDING) and not GMR.IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnApprenticeRiding()
 end
 
 function Questing.canLearnJourneymanRiding()
-  return UnitLevel('player') >= JOURNEYMAN_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(JOURNEYMAN_RIDING) and _.hasEnoughGoldToLearnJourneymanRiding()
+  return UnitLevel('player') >= JOURNEYMAN_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(JOURNEYMAN_RIDING) and not GMR.IsSpellKnown(EXPERT_RIDING) and not GMR.IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnJourneymanRiding()
 end
 
 function Questing.canLearnExpertRiding()
-  return UnitLevel('player') >= EXPERT_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(EXPERT_RIDING) and _.hasEnoughGoldToLearnExpertRiding()
+  return UnitLevel('player') >= EXPERT_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(EXPERT_RIDING) and not GMR.IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnExpertRiding()
 end
 
 function Questing.canLearnMasterRiding()
