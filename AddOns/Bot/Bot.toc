@@ -1,6 +1,6 @@
 ## Title: Bot
 ## Interface: 100002
-## Dependencies: Boolean, Scheduling
+## Dependencies: Boolean, Scheduling, GMR
 
 Bot.lua
 Warrior.lua

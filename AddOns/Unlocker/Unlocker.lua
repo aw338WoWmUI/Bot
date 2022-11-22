@@ -6,7 +6,7 @@ Unlocker.QuestGiverStatuses = {
 }
 
 function Unlocker.retrieveQuestGiverStatus(object)
-  return HWT.ObjectQuestGiverStatus(object)
+  return HWT and HWT.ObjectQuestGiverStatus(object)
 end
 
 local objectIDsToQuests2 = {

@@ -493,7 +493,8 @@ function _.retrieveQuestStartPointsFromObjects()
         z = object.z,
         type = 'acceptQuests',
         questIDs = nil,
-        questName = nil
+        questName = nil,
+        fromObject = true
       }
       table.insert(points, point)
     end
@@ -1371,8 +1372,15 @@ function acceptQuests(point)
           local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
           if wasSuccessful then
             AcceptQuest()
+
             if index <= numberOfQuests - 2 then
-              Events.waitForEvent('GOSSIP_SHOW')
+              if GossipFrame:IsShown() then
+                Events.waitForEvent('GOSSIP_SHOW')
+              else -- the other frame type
+
+              end
+            else
+              Events.waitForEvent('QUEST_DETAIL')
             end
           end
         end
@@ -2040,7 +2048,7 @@ function Questing.areBagsFull()
 end
 
 function waitForQuestHasBeenAccepted()
-  return Events.waitForEvent('QUEST_ACCEPTED', 1)
+  return Events.waitForEvent('QUEST_ACCEPTED')
 end
 
 function isAnyActiveQuestCompletable()
@@ -2307,12 +2315,27 @@ local function onEvent(self, event, ...)
     onAddonLoaded(...)
   elseif event == 'QUEST_TURNED_IN' then
     onQuestTurnedIn(...)
+  elseif event == 'GOSSIP_SHOW' then
+    print('GOSSIP_SHOW')
+  elseif event == 'QUEST_ACCEPTED' then
+    print('QUEST_ACCEPTED')
+  elseif event == 'QUEST_ACCEPT_CONFIRM' then
+    print('QUEST_ACCEPT_CONFIRM', Unlocker.retrieveQuestGiverStatus('target'))
+  elseif event == 'QUEST_LOG_UPDATE' then
+    print('QUEST_LOG_UPDATE', Unlocker.retrieveQuestGiverStatus('target'))
+  elseif event == 'QUEST_LOG_CRITERIA_UPDATE' then
+    print('QUEST_LOG_CRITERIA_UPDATE', Unlocker.retrieveQuestGiverStatus('target'))
   end
 end
 
 local frame = CreateFrame('Frame')
 frame:RegisterEvent('ADDON_LOADED')
 frame:RegisterEvent('QUEST_TURNED_IN')
+frame:RegisterEvent('GOSSIP_SHOW')
+frame:RegisterEvent('QUEST_ACCEPTED')
+frame:RegisterEvent('QUEST_ACCEPT_CONFIRM')
+frame:RegisterEvent('QUEST_LOG_UPDATE')
+frame:RegisterEvent('QUEST_LOG_CRITERIA_UPDATE')
 frame:SetScript('OnEvent', onEvent)
 
 Questing.convertMapPositionToWorldPosition = convertMapPositionToWorldPosition

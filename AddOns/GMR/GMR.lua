@@ -1,5 +1,11 @@
+GMRHelpers = {}
+
 local functionsToRunWhenGMRIsLoaded = {}
 local functionsToRunWhenGMRIsFullyLoaded = {}
+
+function GMRHelpers.isFullyLoaded()
+  return _G.GMR and GMR.IsFullyLoaded and GMR.IsFullyLoaded()
+end
 
 local function runFunctions(functions)
   runAsCoroutine(function()
@@ -12,9 +18,7 @@ end
 
 local runFunctionsWhenGMRIsFullyLoaded = Function.once(function()
   Conditionals.doOnceWhen(
-    function()
-      return _G.GMR and GMR.IsFullyLoaded and GMR.IsFullyLoaded()
-    end,
+    GMRHelpers.isFullyLoaded,
     function()
       runFunctions(functionsToRunWhenGMRIsFullyLoaded)
     end
