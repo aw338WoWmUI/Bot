@@ -241,3 +241,11 @@ Movement.isJumpSituation(savedPosition)
 position2 = createPoint(GMR.GetClosestPointOnMesh(select(8, GetInstanceInfo()), QuestingPointToMove.x, QuestingPointToMove.y, QuestingPointToMove.z))
 
 AStar.canPathBeMoved(Movement.path)
+
+Movement.traceLineCollision(Movement.createPointWithZOffset(MovementPath[10], 1), Movement.createPointWithZOffset(MovementPath[10], -1000))
+
+-- z
+
+Movement.canPlayerStandOnPoint(MovementPath[6])
+
+Movement.canPlayerStandOnPoint(MovementPath[4])

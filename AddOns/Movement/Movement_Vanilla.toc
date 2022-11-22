@@ -1,7 +1,8 @@
 ## Title: Movement
 ## Interface: 11403
-## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, GMR, Conditionals, Draw
+## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, GMR, Conditionals, Draw, Float
 ## SavedVariables: savedPosition, position1, position2, from, to
+## SavedVariablesPerCharacter: MovementCharacterHeight
 
 ObjectToValueLookup.lua
 PointToValueMap.lua

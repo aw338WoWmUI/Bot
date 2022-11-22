@@ -19,17 +19,17 @@ local MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
 local MAXIMUM_WATER_DEPTH_FOR_WALKING = 1.4872055053711
 local MOUNTED_CHARACTER_HEIGHT = 3 -- only an approximation. Seems to depend on mount and maybe also character model.
-local canBeStoodOnPointCache = PointToValueMap:new()
+canBeStoodOnPointCache = PointToValueMap:new()
 local canBeStoodWithMountOnPointCache = PointToValueMap:new()
 local DISTANCE = GRID_LENGTH
+local FEMALE_HUMAN_CHARACTER_HEIGHT = 1.970519900322
+Movement.MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS = 330
 lines = {}
 
 local cache = {}
 
 local run = nil
 local pathFinder = nil
-
-local characterHeight = nil
 
 function Movement.retrieveCharacterBoundingRadius()
   return HWT.UnitBoundingRadius('player')
@@ -41,15 +41,15 @@ end
 
 function Movement.retrieveUnmountedCharacterHeight()
   if IsMounted() then
-    return characterHeight
+    return MovementCharacterHeight
   else
-    characterHeight = Movement.retrieveCharacterHeight()
-    return characterHeight
+    MovementCharacterHeight = Movement.retrieveCharacterHeight()
+    return MovementCharacterHeight
   end
 end
 
 function Movement.retrieveUnmountedCharacterHeightBestEffort()
-  return Movement.retrieveUnmountedCharacterHeight() or Movement.retrieveCharacterHeight()
+  return Movement.retrieveUnmountedCharacterHeight() or FEMALE_HUMAN_CHARACTER_HEIGHT
 end
 
 function Movement.addPointToCache(fromX, fromY, fromZ, toX, toY, toZ)
@@ -391,6 +391,7 @@ function Movement.canBeMovedFromPointToPoint(from, to)
   local a = Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
   local b = Movement.canBeJumpedFromPointToPoint(from, to)
   local c = Movement.canBeFlownFromPointToPoint(from, to)
+  print(a, b, c)
   return a or b or c
 end
 
@@ -488,6 +489,8 @@ Movement.JUMP_DETECTION_HEIGHT = Movement.MAXIMUM_WALK_UP_TO_HEIGHT + 0.01
 Movement.MAXIMUM_JUMP_HEIGHT = 1.675
 
 function Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
+  print('a', Movement.canPlayerStandOnPoint(to))
+  print('e', Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to))
   return (
     (Movement.isPointInDeepWater(to) or Movement.canPlayerStandOnPoint(to)) and
       Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
@@ -607,80 +610,151 @@ function Movement.canPlayerBeOnPoint(point, options)
   local pointOnCharacterHeight = Movement.createPointWithZOffset(point,
     Movement.retrieveUnmountedCharacterHeightBestEffort())
 
-  local function areThereCollisionsAround()
+  local function areThereZeroCollisionsAround()
     local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight,
       Movement.retrieveCharacterBoundingRadius(), 8)
+    print('c', 1)
     return Array.all(points, function(point)
       return Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, point)
     end)
   end
 
+  print('D', Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) ,
+      Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) ,
+      areThereZeroCollisionsAround())
   local result = (
     Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) and
       Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) and
-      areThereCollisionsAround()
+      areThereZeroCollisionsAround()
   )
 
+  print('c', 2)
   return result
+end
+
+function _.canPlayerBeOnPoint2(point, options)
+  options = options or {}
+
+  if Movement.isPositionInRangeForTraceLineChecks(point) then
+    local pointALittleBitAbove = Movement.traceLineCollisionWithFallback(
+      Movement.createPointWithZOffset(point, TOLERANCE_RANGE),
+      point
+    )
+    if pointALittleBitAbove and pointALittleBitAbove.z > point.z then
+      point = pointALittleBitAbove
+    end
+
+    local pointALittleBitOver = Movement.createPointWithZOffset(point, 0.1)
+    local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(
+      point,
+      Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+    )
+    local pointALittleBitOverMaximumWalkUpToHeight = Movement.createPointWithZOffset(pointOnMaximumWalkUpToHeight, 0.1)
+    local pointOnCharacterHeight = Movement.createPointWithZOffset(point,
+      Movement.retrieveUnmountedCharacterHeightBestEffort())
+
+    local function areThereZeroCollisionsAround()
+      local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight,
+        Movement.retrieveCharacterBoundingRadius(), 8)
+      print('c', 1)
+      return Array.all(points, function(point)
+        return Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, point)
+      end)
+    end
+
+    print('D', Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) ,
+        Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) ,
+        areThereZeroCollisionsAround())
+    local result = (
+      Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) and
+        Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) and
+        areThereZeroCollisionsAround()
+    )
+
+    print('c', 2)
+    return result
+  else
+    local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(_.retrieveContinentID(), point.x, point.y, point.z))
+    if closestPointOnMesh and Float.seemsCloseBy(closestPointOnMesh.x, point.x) and Float.seemsCloseBy(closestPointOnMesh.y, point.y) then
+      return math.abs(closestPointOnMesh.z - point.z) <= TOLERANCE_RANGE
+    end
+  end
+
+  return nil
+end
+
+function _.retrieveContinentID()
+  local continentID = select(8, GetInstanceInfo())
+  return continentID
 end
 
 function Movement.canPlayerStandOnPoint(point, options)
   options = options or {}
 
-  if options.withMount then
-    local value = canBeStoodWithMountOnPointCache:retrieveValue(point)
-    if value ~= nil then
-      return value
-    end
-  else
-    local value = canBeStoodOnPointCache:retrieveValue(point)
-    if value ~= nil then
-      return value
-    end
-  end
-
-  local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(
-    point,
-    Movement.MAXIMUM_WALK_UP_TO_HEIGHT
-  )
-  local pointALittleBitOverMaximumWalkUpToHeight = Movement.createPointWithZOffset(pointOnMaximumWalkUpToHeight, 0.1)
-
-  local function canFallOff()
-    local pointALittleBitUnderPoint = Movement.createPointWithZOffset(point, -0.1)
-    local standOnPoint = Movement.traceLineCollision(
-      pointALittleBitOverMaximumWalkUpToHeight,
-      pointALittleBitUnderPoint
-    )
-    if standOnPoint then
-      local MAXIMUM_STEEPNESS_HEIGHT = 0.55436325073242
-      local points = Movement.generatePointsAround(standOnPoint, Movement.retrieveCharacterBoundingRadius(), 8)
-      return not Array.all(points, function(point)
-        local point1 = Movement.createPointWithZOffset(point, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
-        return Movement.thereAreCollisions(
-          point1,
-          Movement.createPointWithZOffset(
-            point1,
-            -(MAXIMUM_STEEPNESS_HEIGHT + 0.00000000000001 + Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
-          )
-        )
-      end)
+  if Movement.isPositionInRangeForTraceLineChecks(point) then
+    if options.withMount then
+      local value = canBeStoodWithMountOnPointCache:retrieveValue(point)
+      if value ~= nil then
+        print(1)
+        return value
+      end
     else
-      return false
+      local value = canBeStoodOnPointCache:retrieveValue(point)
+      if value ~= nil then
+        print(2)
+        return value
+      end
     end
-  end
 
-  local result = (
-    Movement.canPlayerBeOnPoint(point, options) and
-      not canFallOff()
-  )
+    local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(
+      point,
+      Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+    )
+    local pointALittleBitOverMaximumWalkUpToHeight = Movement.createPointWithZOffset(pointOnMaximumWalkUpToHeight, 0.1)
 
-  if options.withMount then
-    canBeStoodWithMountOnPointCache:setValue(point, result)
+    local function canFallOff()
+      local pointALittleBitUnderPoint = Movement.createPointWithZOffset(point, -0.1)
+      local standOnPoint = Movement.traceLineCollisionWithFallback(
+        pointALittleBitOverMaximumWalkUpToHeight,
+        pointALittleBitUnderPoint
+      )
+      if standOnPoint then
+        local MAXIMUM_STEEPNESS_HEIGHT = 0.55436325073242
+        local points = Movement.generatePointsAround(standOnPoint, Movement.retrieveCharacterBoundingRadius(), 8)
+        return not Array.all(points, function(point)
+          local point1 = Movement.createPointWithZOffset(point, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
+          print(3)
+          return Movement.thereAreCollisions(
+            point1,
+            Movement.createPointWithZOffset(
+              point1,
+              -(MAXIMUM_STEEPNESS_HEIGHT + 0.00000000000001 + Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
+            )
+          )
+        end)
+      else
+        print(4)
+        return false
+      end
+    end
+
+    print('b', _.canPlayerBeOnPoint2(point, options))
+    local result = (
+      _.canPlayerBeOnPoint2(point, options) and
+        not canFallOff()
+    )
+
+    if options.withMount then
+      canBeStoodWithMountOnPointCache:setValue(point, result)
+    else
+      canBeStoodOnPointCache:setValue(point, result)
+    end
+
+    print(5)
+    return result
   else
-    canBeStoodOnPointCache:setValue(point, result)
+    return nil
   end
-
-  return result
 end
 
 function Movement.isFlyingAvailableInZone()
@@ -772,42 +846,46 @@ end
 function Movement.retrieveGroundZ(position)
   local position1 = createPoint(position.x, position.y, position.z + Movement.MAXIMUM_JUMP_HEIGHT)
   local position2 = createPoint(position.x, position.y, position.z - 10)
-  local x, y, z = GMR.TraceLine(
-    position1.x, position1.y, position1.z,
-    position2.x, position2.y, position2.z,
-    Movement.TraceLineHitFlags.COLLISION
-  )
-  if not z then
+  local collisionPoint = Movement.traceLineCollisionWithFallback(position1, position2)
+  if not collisionPoint then
     -- There seemed to be one case where no z was returned at a position, even though it looked like that there was
     -- a surface.
     local offset = 0.6
     position1 = createPoint(position1.x + offset, position1.y + offset, position.z)
     position2 = createPoint(position2.x + offset, position2.y + offset, position2.z)
-    x, y, z = GMR.TraceLine(
-      position1.x, position1.y, position1.z,
-      position2.x, position2.y, position2.z,
-      Movement.TraceLineHitFlags.COLLISION
-    )
+    collisionPoint = Movement.traceLineCollisionWithFallback(position1, position2)
   end
 
-  return z
+  if collisionPoint then
+    return collisionPoint.z
+  else
+    return nil
+  end
+end
+
+function Movement.isPositionFarerAwayThanMaxiumRangeForTraceLineChecks(position)
+  return not Movement.isPositionInRangeForTraceLineChecks(position)
+end
+
+function Movement.isPositionInRangeForTraceLineChecks(position)
+  return GMR.GetDistanceToPosition(position.x, position.y, position.z) <= Movement.MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS
 end
 
 function Movement.retrieveGroundZ2(position)
-  local x, y, z = GMR.TraceLine(
-    position.x, position.y, position.z,
-    position.x, position.y, position.z - MAXIMUM_AIR_HEIGHT,
-    Movement.TraceLineHitFlags.COLLISION
-  )
-  return z
+  local collisionPoint = Movement.traceLineCollisionWithFallback(position, Movement.createPointWithZOffset(position, -MAXIMUM_AIR_HEIGHT))
+  if collisionPoint then
+    return collisionPoint.z
+  else
+    return nil
+  end
 end
 
 function Movement.thereAreCollisions(a, b, track)
   if track then
     table.insert(lines, { a, b })
   end
-  local x, y, z = GMR.TraceLine(a.x, a.y, a.z, b.x, b.y, b.z, Movement.TraceLineHitFlags.COLLISION)
-  return toBoolean(x)
+  local collisionPoint = Movement.traceLineCollisionWithFallback(a, b)
+  return toBoolean(collisionPoint)
 end
 
 function Movement.thereAreZeroCollisions(a, b, track)
@@ -936,13 +1014,7 @@ function Movement.generatePoint(fromPosition, distance, angle)
 end
 
 function Movement.receiveWaterSurfacePoint(point)
-  local x, y, z = GMR.TraceLine(point.x, point.y, point.z + MAXIMUM_WATER_DEPTH, point.x, point.y, point.z,
-    Movement.TraceLineHitFlags.WATER)
-  if x then
-    return createPoint(x, y, z)
-  else
-    return nil
-  end
+  return Movement.traceLineWater(Movement.createPointWithZOffset(point, MAXIMUM_WATER_DEPTH), point)
 end
 
 function Movement.isPointInWater(point)
@@ -962,16 +1034,21 @@ end
 
 function Movement.determineWaterDepth(point)
   local waterSurfacePoint = Movement.receiveWaterSurfacePoint(point)
-  local groundPoint = Movement.retrieveGroundPointInWater(waterSurfacePoint)
-  return euclideanDistance(waterSurfacePoint, groundPoint)
+  if waterSurfacePoint then
+    local groundPoint = Movement.retrieveGroundPointInWater(waterSurfacePoint)
+    if groundPoint then
+      return euclideanDistance(waterSurfacePoint, groundPoint)
+    end
+  end
+
+  return nil
 end
 
 function Movement.retrieveGroundPointInWater(point)
   local deepPoint = Movement.createPointWithZOffset(point, -MAXIMUM_WATER_DEPTH)
-  local x, y, z = GMR.TraceLine(point.x, point.y, point.z, deepPoint.x, deepPoint.y, deepPoint.z,
-    Movement.TraceLineHitFlags.COLLISION)
-  if x then
-    return createPoint(x, y, z)
+  local collisionPoint = Movement.traceLineCollision(point, deepPoint)
+  if collisionPoint then
+    return collisionPoint
   else
     return deepPoint
   end
@@ -2094,16 +2171,60 @@ function Movement.moveToSavedPath()
 end
 
 function Movement.traceLine(from, to, hitFlags)
-  local x, y, z = GMR.TraceLine(
-    from.x,
-    from.y,
-    from.z,
-    to.x,
-    to.y,
-    to.z,
-    hitFlags
-  )
-  if x then
+  if Movement.isPositionInRangeForTraceLineChecks(from) and Movement.isPositionInRangeForTraceLineChecks(to) then
+    local x, y, z = GMR.TraceLine(
+      from.x,
+      from.y,
+      from.z,
+      to.x,
+      to.y,
+      to.z,
+      hitFlags
+    )
+    if x then
+      return createPoint(x, y, z)
+    else
+      return nil
+    end
+  else
+    return nil
+  end
+end
+
+function Movement.traceLineCollisionWithFallback(from, to)
+  if Movement.isPositionInRangeForTraceLineChecks(from) and Movement.isPositionInRangeForTraceLineChecks(from) then
+    return Movement.traceLine(from, to, Movement.TraceLineHitFlags.COLLISION)
+  elseif Float.seemsCloseBy(from.x, to.x) and Float.seemsCloseBy(from.y, to.y) then
+    local x = from.x
+    local y = from.y
+    local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(_.retrieveContinentID(), from))
+    local minZ = math.min(from.z, to.z)
+    local maxZ = math.max(from.z, to.z)
+    if (
+      closestPointOnMesh and
+        Float.seemsCloseBy(closestPointOnMesh.x, x) and
+        Float.seemsCloseBy(closestPointOnMesh.y, y) and
+        closestPointOnMesh.z >= minZ and closestPointOnMesh.z <= maxZ
+    ) then
+      return closestPointOnMesh
+    end
+  else
+    return nil
+  end
+end
+
+function Movement.createPositionFromPoint(continentID, point)
+  return {
+    continentID = continentID,
+    x = point.x,
+    y = point.y,
+    z = point.z
+  }
+end
+
+function Movement.retrieveClosestPointOnMesh(position)
+  local x, y, z = HWT.GetClosestPositionOnMesh(position.continentID, position.x, position.y, position.z)
+  if x and y and z then
     return createPoint(x, y, z)
   else
     return nil
@@ -2112,6 +2233,10 @@ end
 
 function Movement.traceLineCollision(from, to)
   return Movement.traceLine(from, to, Movement.TraceLineHitFlags.COLLISION)
+end
+
+function Movement.traceLineWater(from, to)
+  return Movement.traceLine(from, to, Movement.TraceLineHitFlags.WATER)
 end
 
 function Movement.retrievePositionBetweenPositions(a, b, distanceFromA)

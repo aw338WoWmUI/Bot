@@ -34,3 +34,6 @@
 [submodule "AddOns/String"]
 	path = AddOns/String
 	url = https://github.com/SanjoSolutions/LuaString.git
+[submodule "AddOns/Float"]
+	path = AddOns/Float
+	url = https://github.com/SanjoSolutions/LuaFloat.git

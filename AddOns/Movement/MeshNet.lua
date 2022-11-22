@@ -8,7 +8,7 @@ function mesh(fromX, fromY, toX, toY)
     local a = {}
     zCoordinates[y] = a
     for x = fromX, toX, GRID_LENGTH do
-      local tracePoint = Movement.traceLineCollision(
+      local tracePoint = Movement.traceLineCollisionWithFallback(
         createPoint(x, y, MAXIMUM_Z),
         createPoint(x, y, MINIMUM_Z)
       )
