@@ -84,6 +84,14 @@ function Compatibility.GossipInfo.hasAvailableQuests()
   return numberOfAvailableQuests >= 1
 end
 
+function Compatibility.GossipInfo.selectActiveQuest(questIdentifier)
+  if C_GossipInfo.SelectActiveQuest then
+    return C_GossipInfo.SelectActiveQuest(questIdentifier)
+  else
+    return SelectGossipActiveQuest(questIdentifier)
+  end
+end
+
 function Compatibility.GossipInfo.selectOption(gossipOptionID)
   -- TODO: Compatibility for WotLK and Vanilla
   return C_GossipInfo.SelectOption(gossipOptionID)

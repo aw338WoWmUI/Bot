@@ -398,6 +398,11 @@ function canPickUpQuest()
   return not isQuestLogFull()
 end
 
+local questGiverStatuses = Set.create({
+  Unlocker.QuestGiverStatuses.DailyQuest,
+  Unlocker.QuestGiverStatuses.Quest
+})
+
 local function generateQuestStartPointsFromStarters(quest)
   if quest.starters then
     local yielder = createYielderWithTimeTracking(1 / 60)
@@ -408,7 +413,7 @@ local function generateQuestStartPointsFromStarters(quest)
         local npc = Questing.Database.retrieveNPC(starter.id)
         if npc then
           local npcPointer = GMR.FindObject(npc.id)
-          if npcPointer and Unlocker.retrieveQuestGiverStatus(npcPointer) ~= Unlocker.QuestGiverStatuses.Quest then
+          if npcPointer and not Set.contains(questGiverStatuses, Unlocker.retrieveQuestGiverStatus(npcPointer)) then
             return nil
           end
 
@@ -479,7 +484,7 @@ function _.retrieveQuestStartPointsFromObjects()
   local objects = retrieveObjects()
   local continentID = select(8, GetInstanceInfo())
   Array.forEach(objects, function(object)
-    if Unlocker.retrieveQuestGiverStatus(object.pointer) == Unlocker.QuestGiverStatuses.Quest then
+    if Set.contains(questGiverStatuses, Unlocker.retrieveQuestGiverStatus(object.pointer)) then
       local point = {
         objectID = object.ID,
         continentID = continentID,
@@ -1291,6 +1296,17 @@ local function doSomethingWithObject(point)
 end
 
 function _.completeQuest()
+  local activeQuests = Compatibility.Quests.retrieveActiveQuests()
+  local activeQuest = activeQuests[1]
+  if activeQuest then
+    local questIdentifier
+    if GossipFrame:IsShown() then
+      questIdentifier = activeQuest.questID
+    elseif QuestFrame:IsShown() then
+      questIdentifier = 1
+    end
+    Compatibility.Quests.selectActiveQuest(questIdentifier)
+  end
   if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
     CompleteQuest()
   end
@@ -2278,7 +2294,8 @@ function showClosestMeshPolygonToPointToShow()
 end
 
 function removeClosestMeshPolygonToPointToShow()
-  local polygon = HWT.GetClosestMeshPolygon(select(8, GetInstanceInfo()), QuestingPointToShow.x, QuestingPointToShow.y,
+  local polygon = HWT.GetClosestMeshPolygon(select(8, GetInstanceInfo()), QuestingPointToShow.x,
+    QuestingPointToShow.y,
     QuestingPointToShow.z, 1000, 1000, 1000)
   log('polygon', polygon)
   print('polygon', polygon)

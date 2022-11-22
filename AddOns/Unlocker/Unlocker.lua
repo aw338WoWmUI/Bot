@@ -1,6 +1,7 @@
 Unlocker = {}
 
 Unlocker.QuestGiverStatuses = {
+  DailyQuest = 9,
   Quest = 10
 }
 

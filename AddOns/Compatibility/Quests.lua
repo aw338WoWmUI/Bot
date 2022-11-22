@@ -106,3 +106,11 @@ function Compatibility.Quests.retrieveActiveQuests()
     return availableQuests
   end
 end
+
+function Compatibility.Quests.selectActiveQuest(questIdentifier)
+  if GossipFrame:IsShown() then
+    Compatibility.GossipInfo.selectActiveQuest(questIdentifier)
+  elseif QuestFrame:IsShown() then
+    SelectActiveQuest(questIdentifier)
+  end
+end
