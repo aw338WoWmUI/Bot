@@ -14,5 +14,6 @@ data/retail/questItems.lua
 Database.lua
 Questing.lua
 QuestingCoroutine.lua
+learningToRide.lua
 Questing2.lua
 ClosestNPCUpdater.lua

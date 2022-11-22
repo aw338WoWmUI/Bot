@@ -2144,8 +2144,8 @@ function _.run ()
           return StaticPopup1Button1:IsShown()
         end)
         StaticPopup1Button1:Click()
-      elseif Questing.canLearnJourneymanRiding() then
-        Questing.learnJourneymanRiding()
+      elseif Questing.canLearnRiding() then
+        Questing.learnRiding()
       elseif _.itSeemsMakeSenseToSell() then
         _.sell()
       else
@@ -2285,90 +2285,4 @@ function removeClosestMeshPolygonToPointToShow()
   -- return HWT.SetMeshPolygonArea(select(8, GetInstanceInfo()), polygon, 9999999)
   print('a', HWT.SetMeshPolygonFlags(select(8, GetInstanceInfo()), polygon, 0))
   return HWT.GetMeshPolygonFlags(select(8, GetInstanceInfo()), polygon)
-end
-
-local JOURNEYMAN_RIDING = 33391
-local JOURNEYMAN_RIDING_LEVEL_REQUIRED = 20
-
-function Questing.canLearnJourneymanRiding()
-  return UnitLevel('player') >= JOURNEYMAN_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(JOURNEYMAN_RIDING)
-end
-
-function Questing.learnJourneymanRiding()
-  if _.hasEnoughGoldToLearnJourneymanRiding() then
-    _.learnJourneymanRidingAtFlyingTrainer()
-  end
-end
-
-local FACTION_ALLIANCE = 72
-local FACTION_OGRIMMAR = 76
-
-local JOURNEYMAN_RIDING_BASE_COST = 50
-
-local STANDING = {
-  Friendly = 5,
-  Honored = 6,
-  Revered = 7,
-  Exalted = 8
-}
-
-local STANDING_DISCOUNTS = {
-  [STANDING.Friendly] = 5,
-  [STANDING.Honored] = 10,
-  [STANDING.Revered] = 15,
-  [STANDING.Exalted] = 20
-}
-
-function _.hasEnoughGoldToLearnJourneymanRiding()
-  local factionID
-  local factionName = UnitFactionGroup('player')
-  if factionName == 'Alliance' then
-    factionID = FACTION_ALLIANCE
-  elseif factionName == 'Horde' then
-    factionID = FACTION_OGRIMMAR
-  end
-  local cost = JOURNEYMAN_RIDING_BASE_COST
-  local standing = select(3, GetFactionInfo(factionID))
-  local discount = STANDING_DISCOUNTS[standing]
-  if discount then
-    cost = cost * (1 - discount / 100)
-  end
-  local availableGold = GetMoney() / 10000
-  return availableGold >= cost
-end
-
-local FLYING_TRAINERS = {
-  Alliance = {
-    objectID = 43769,
-    position = {
-      continentID = 0,
-      x = -8845.400390625,
-      y = 502.65301513672,
-      z = 109.61595916748
-    }
-  },
-  Horde = {
-    objectID = 44919,
-    position = {
-      continentID = 1,
-      x = 1799.5400390625,
-      y = -4357.08984375,
-      z = 102.40349578857
-    }
-  }
-}
-
-function _.learnJourneymanRidingAtFlyingTrainer()
-  local trainer = FLYING_TRAINERS[UnitFactionGroup('player')]
-  Questing.Coroutine.interactWithAt(trainer.position, trainer.objectID)
-  if GMR.IsTrainerFrameShown() then
-    SetTrainerServiceTypeFilter('available', 1)
-    for index = 1, GetNumTrainerServices() do
-      local levelRequired = select(4, GetTrainerServiceInfo(index))
-      if levelRequired == JOURNEYMAN_RIDING_LEVEL_REQUIRED then
-        BuyTrainerService(index)
-        break
-      end
-    end
-  end
 end

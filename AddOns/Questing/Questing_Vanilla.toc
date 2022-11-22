@@ -10,5 +10,6 @@ Questie.lua
 Database_Classic.lua
 Questing.lua
 QuestingCoroutine.lua
+learningToRide.lua
 Questing2.lua
 ClosestNPCUpdater.lua
