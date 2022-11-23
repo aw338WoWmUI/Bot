@@ -8,3 +8,20 @@ GMR.AbandonQuest(questID)
 /dump exploredObjects[278560]
 /dump coroutine.wrap(function () exploreObject(GMR.FindObject(278560)) end)()
 /dump GMR.GetDistanceBetweenObjects('player', 'softinteract')
+
+/dump GMR.CombatRotationToggle()
+
+/dump HWT.GameObjectType(GMR.FindObject(55))
+/dump HWT.ObjectQuests(GMR.FindObject(55))
+
+/dump Unlocker.retrieveQuestGiverStatus(GMR.FindObject(55))
+
+/dump Movement.isPointCloseToCharacterWithZTolerance(QuestingPointToShow)
+
+/dump HWT.GameObjectType(GMR.FindObject(56))
+
+/dump HWT.ObjectIsQuestObjective(GMR.FindObject(56), false)
+
+/dump Movement.canBeMovedFromPointToPointCheckingSubSteps(MovementPath[5], MovementPath[6])
+
+/dump Movement.receiveWaterSurfacePoint(MovementPath[6])

@@ -1376,7 +1376,8 @@ function acceptQuests(point)
             if index <= numberOfQuests - 2 then
               if GossipFrame:IsShown() then
                 Events.waitForEvent('GOSSIP_SHOW')
-              else -- the other frame type
+              else
+                -- the other frame type
 
               end
             else
@@ -1578,6 +1579,7 @@ function Questing.handleObjective(point)
             lastAngle = angle
             return result
           end)
+          yieldAndResume()
           local navigationY = select(2, frame:GetCenter())
           local scale = UIParent:GetEffectiveScale()
           local navigationY = navigationY * scale
@@ -2230,12 +2232,16 @@ function _.sell()
     GMR.Tables.Profile.Vendor.Sell[3])
   local objectID = GMR.Tables.Profile.Vendor.Sell[4]
   Questing.Coroutine.interactWithAt(point, objectID)
-  if _.hasSellingGossipOption() then
-    _.selectSellingGossipOption()
-  end
-  local wasSuccessful = Events.waitForEvent('MERCHANT_SHOW', 2)
-  if wasSuccessful then
+  if MerchantFrame:IsShown() then
     _.sellItemsAtVendor()
+  else
+    if _.hasSellingGossipOption() then
+      _.selectSellingGossipOption()
+    end
+    local wasSuccessful = Events.waitForEvent('MERCHANT_SHOW', 2)
+    if wasSuccessful then
+      _.sellItemsAtVendor()
+    end
   end
   CloseMerchant()
 end
@@ -2265,7 +2271,11 @@ function _.sellItemsAtVendor()
   for containerIndex = 0, NUM_BAG_SLOTS do
     for slotIndex = 1, Compatibility.Container.receiveNumberOfSlotsOfContainer(containerIndex) do
       local itemInfo = Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex)
-      if itemInfo and itemInfo.quality == Enum.ItemQuality.Poor then
+      if itemInfo and (
+        itemInfo.quality == Enum.ItemQuality.Poor or
+          (QuestingOptions.sellUncommon and itemInfo.quality == Enum.ItemQuality.Uncommon) or
+          (QuestingOptions.sellRare and itemInfo.quality == Enum.ItemQuality.Rare)
+      ) then
         Compatibility.Container.UseContainerItem(containerIndex, slotIndex)
         Events.waitForEvent('BAG_UPDATE_DELAYED')
       end
@@ -2297,6 +2307,10 @@ local function initializeSavedVariables()
   if exploredObjects == nil then
     -- objectID to flags
     exploredObjects = {}
+  end
+
+  if QuestingOptions == nil then
+    QuestingOptions = {}
   end
 end
 

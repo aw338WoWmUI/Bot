@@ -24,6 +24,7 @@ function Unlocker.ObjectIsQuestObjective(object)
 end
 
 local objectIDsToQuests = {
+  -- seems to crash the game
   [209436] = {
     [29619] = {
       [1] = true
@@ -39,19 +40,20 @@ local objectIDsToQuests = {
       [2] = true
     }
   },
+  --[] = {
+  --  [] = {
+  --    [1] = true
+  --  }
+  --},
+  -- optional quest objective
   [165505] = {
     [29548] = {
       [1] = true
     }
-  }
+  },
 }
 
 function Unlocker.ObjectQuests(object)
-  local gameObjectType, gameObjectTypeText = HWT.GameObjectType(object)
-  if gameObjectType == 4 or gameObjectTypeText == 'chest' then
-    log('game object', gameObjectType, gameObjectTypeText, GMR.ObjectName(object))
-  end
-
   local objectID = HWT.ObjectId(object)
   local quests = objectIDsToQuests[objectID]
   if quests then
@@ -67,7 +69,14 @@ function Unlocker.ObjectQuests(object)
       end
     end
     return Set.toList(questIDs)
+  elseif Unlocker.ObjectIsQuestObjective(object) then
+    local gameObjectType = HWT.GameObjectType(object)
+    if gameObjectType == 4 or gameObjectType == 3 then -- for some containers and quest giver objects the game seems to crash when ObjectQuests is called with their pointer
+      return {}
+    else
+      return { HWT.ObjectQuests(object) }
+    end
   else
-    return { HWT.ObjectQuests(object) }
+    return {}
   end
 end

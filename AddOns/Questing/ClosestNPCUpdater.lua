@@ -1,29 +1,56 @@
 local _ = {}
 
+local lastContinentID = nil
+
+local closestNPCs = {
+  Goods = nil,
+  Sell = nil,
+  Repair = nil
+}
+
 Q_ = _
 
 function _.updateNPCPositionsToClosest()
+  local continentID = select(8, GetInstanceInfo())
+  if lastContinentID and continentID ~= lastContinentID then
+    for key in pairs(closestNPCs) do
+      closestNPCs[key] = nil
+      GMR.Tables.Profile.Vendor[key] = nil
+    end
+  end
+
   _.updateGoodsVendorToClosest()
   _.updateSellVendorToClosest()
   _.updateRepairerToClosest()
+
+  lastContinentID = continentID
 end
 
 function _.updateGoodsVendorToClosest()
-  _.updateNPCPositionToClosest(_.findClosestGoodsVendor, GMR.DefineGoodsVendor)
+  _.updateNPCPositionToClosest(_.findClosestGoodsVendor, function (npc)
+    closestNPCs.Goods = npc
+    GMR.DefineGoodsVendor(npc.x, npc.y, npc.z, npc.ID)
+  end)
 end
 
 function _.updateSellVendorToClosest()
-  _.updateNPCPositionToClosest(_.findClosestSellVendor, GMR.DefineSellVendor)
+  _.updateNPCPositionToClosest(_.findClosestSellVendor, function (npc)
+    closestNPCs.Sell = npc
+    GMR.DefineSellVendor(npc.x, npc.y, npc.z, npc.ID)
+  end)
 end
 
 function _.updateRepairerToClosest()
-  _.updateNPCPositionToClosest(_.findClosestCanRepairNPC, GMR.DefineRepairVendor)
+  _.updateNPCPositionToClosest(_.findClosestCanRepairNPC, function (npc)
+    closestNPCs.Repair = npc
+    GMR.DefineRepairVendor(npc.x, npc.y, npc.z, npc.ID)
+  end)
 end
 
 function _.updateNPCPositionToClosest(find, update)
   local npc = find()
   if npc then
-    update(npc.x, npc.y, npc.z, npc.ID)
+    update(npc)
   end
 end
 
@@ -47,6 +74,9 @@ function _.findClosestNPC(matches)
   local npc = Array.min(NPCs, function(NPC)
     return GMR.GetDistanceToPosition(NPC.x, NPC.y, NPC.z)
   end)
+  if npc then
+    npc.continentID = select(8, GetInstanceInfo())
+  end
   return npc
 end
 

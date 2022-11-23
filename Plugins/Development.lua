@@ -629,10 +629,6 @@ function toggleGMR()
   end
 end
 
-doWhenGMRIsFullyLoaded(function()
-  GMR.RunEncryptedScript(GMR.Encrypt('_G.__A = ({...})[1]'))
-end)
-
 function printQuestGiverStatus()
   local targetQuestGiverStatusNumber = __A.ObjectQuestGiverStatus('target')
   local status = Array.find(Object.entries(__A.GetObjectQuestGiverStatusesTable()), function (keyAndValue)

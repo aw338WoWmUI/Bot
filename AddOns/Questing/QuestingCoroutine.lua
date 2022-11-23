@@ -143,7 +143,12 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
     --  GMR.Dismount()
     --  Movement.waitForDismounted()
     --end
+    print(GMR.ObjectDynamicFlags(pointer), GMR.ObjectFlags(pointer), GMR.ObjectFlags2(pointer))
     GMR.InteractObject(pointer)
+    waitFor(function ()
+      return not UnitCastingInfo('player')
+    end)
+    print(GMR.ObjectDynamicFlags(pointer), GMR.ObjectFlags(pointer), GMR.ObjectFlags2(pointer))
     return true
   else
     return false
@@ -332,29 +337,27 @@ function Questing.Coroutine.doMob(pointer, options)
     return not GMR.ObjectExists(pointer) or GMR.IsDead(pointer) or options.additionalStopConditions and options.additionalStopConditions()
   end
 
-  local isFirstRun = true
+  local position = createPoint(GMR.ObjectPosition(pointer))
+  if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
+    Questing.Coroutine.moveToObject(pointer, distance)
+  end
+
+  if IsMounted() then
+    Movement.dismount()
+  end
+
+  print('targeting', GMR.ObjectName(pointer))
+  GMR.TargetObject(pointer)
+  local targetObject = GMR.TargetObject
+  GMR.TargetObject = Function.noOperation
+  GMR.StartAttack()
+
   while Questing.isRunning() and not isJobDone() do
-    if isFirstRun or isIdle() then
-      GMR.ScanObjects()
-
-      local position = createPoint(GMR.ObjectPosition(pointer))
-      if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
-        Questing.Coroutine.moveToObject(pointer, distance)
-      end
-
-      if IsMounted() then
-        Movement.dismount()
-      end
-      print('targeting', GMR.ObjectName(pointer))
-      GMR.TargetObject(pointer)
-      GMR.StartAttack()
-      waitFor(function()
-        return isJobDone() or isIdle()
-      end)
-      isFirstRun = false
-    else
-      yieldAndResume()
+    local position = createPoint(GMR.ObjectPosition(pointer))
+    if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
+      Questing.Coroutine.moveToObject(pointer, distance)
     end
+    yieldAndResume()
   end
 
   if not GMR.InCombat() then
@@ -363,6 +366,8 @@ function Questing.Coroutine.doMob(pointer, options)
       Questing.Coroutine.lootObject(pointer)
     end
   end
+
+  GMR.TargetObject = targetObject
 
   print('--- Questing.Coroutine.doMob')
 end

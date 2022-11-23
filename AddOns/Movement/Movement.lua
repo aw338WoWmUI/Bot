@@ -499,6 +499,7 @@ end
 
 function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   if from.x == to.x and from.y == to.y then
+    print(1)
     return (
       (to.z - from.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInDeepWater(from) and Movement.isPointInDeepWater(to))) and
         Movement.thereAreZeroCollisions(Movement.createPointWithZOffset(from, 0.1), to)
@@ -518,16 +519,21 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
       local z = Movement.retrieveGroundZ(createPoint(point2.x, point2.y, point1.z))
 
       if not z then
+        print(2)
         return false
       end
 
       point2 = createPoint(x, y, z)
 
+      local maximumDeltaZ = _.determineMaximumDeltaZ(point1, point2)
+
       if point1.x == x and point1.y == y then
-        return z - point1.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+        print(3)
+        return z - point1.z <= maximumDeltaZ
       end
 
-      if not (z - point1.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT) then
+      if not (z - point1.z <= maximumDeltaZ) then
+        print(4)
         return false
       end
     end
@@ -537,6 +543,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
       Movement.createPointWithZOffset(point2, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
       Movement.retrieveUnmountedCharacterHeightBestEffort() - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
     ) then
+      print(5)
       return false
     end
 
@@ -544,7 +551,11 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     distance = distance + stepSize
   end
 
-  if not (to.z - point1.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInDeepWater(point1) and Movement.isPointInDeepWater(to))) then
+  local maximumDeltaZ = _.determineMaximumDeltaZ(point1, to)
+  print(6, 1, to.z - point1.z, maximumDeltaZ)
+  print(6, 2, Movement.isPointInDeepWater(point1), Movement.isPointInDeepWater(to))
+  if not (to.z - point1.z <= maximumDeltaZ or (Movement.isPointInDeepWater(point1) and Movement.isPointInDeepWater(to))) then
+    print(6)
     return false
   end
 
@@ -553,10 +564,23 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
     Movement.retrieveUnmountedCharacterHeightBestEffort() - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   ) then
+    print(7)
     return false
   end
 
   return true
+end
+
+function _.determineMaximumDeltaZ(from, to)
+  local maximumDeltaZ
+  print('Movement.isPointInWater(from)', Movement.isPointInOrSlightlyAboveWater(from))
+  print('Movement.isPointInWater(to)', Movement.isPointInOrSlightlyAboveWater(to))
+  if Movement.isPointInOrSlightlyAboveWater(from) and Movement.isPointInOrSlightlyAboveWater(to) then
+    maximumDeltaZ = Movement.retrieveCharacterHeight()
+  else
+    maximumDeltaZ = Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+  end
+  return maximumDeltaZ
 end
 
 function Movement.canBeJumpedFromPointToPoint(from, to)
@@ -1017,13 +1041,30 @@ function Movement.generatePoint(fromPosition, distance, angle)
 end
 
 function Movement.receiveWaterSurfacePoint(point)
-  return Movement.traceLineWater(Movement.createPointWithZOffset(point, MAXIMUM_WATER_DEPTH), point)
+  local waterSurfacePoint = Movement.traceLineWater(Movement.createPointWithZOffset(point, MAXIMUM_WATER_DEPTH), point)
+  if waterSurfacePoint then
+    return waterSurfacePoint
+  else
+    position1 = point
+    position2 = Movement.createPointWithZOffset(point, -Movement.MAXIMUM_AIR_HEIGHT)
+    return Movement.traceLineWater(point, Movement.createPointWithZOffset(point, -Movement.MAXIMUM_AIR_HEIGHT))
+  end
 end
 
 function Movement.isPointInWater(point)
   -- local waterSurfacePoint = Movement.receiveWaterSurfacePoint(point)
   -- return toBoolean(waterSurfacePoint and waterSurfacePoint.z >= point.z)
   return toBoolean(GMR.IsPositionUnderwater(point.x, point.y, point.z))
+end
+
+function Movement.isPointInOrSlightlyAboveWater(point)
+  return Movement.isPointInWater(point) or Movement.isPointSlightlyAboveWater(point)
+end
+
+function Movement.isPointSlightlyAboveWater(point)
+  local waterSurfacePoint = Movement.receiveWaterSurfacePoint(point)
+  print('aa', waterSurfacePoint and point.z - waterSurfacePoint.z)
+  return waterSurfacePoint and point.z - waterSurfacePoint.z <= 1
 end
 
 function Movement.isPointInDeepWater(point)
@@ -1271,7 +1312,7 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
     isDone = function()
       return (
         GMR.IsPlayerPosition(waypoint.x, waypoint.y, waypoint.z, TOLERANCE_RANGE) or
-          _.isPointCloseToCharacterWithZTolerance(waypoint)
+          (isLastWaypoint and _.isPointCloseToCharacterWithZTolerance(waypoint))
       )
     end,
     shouldCancel = function()
@@ -1298,8 +1339,8 @@ function _.isPointCloseToCharacterWithZTolerance(point)
   local playerPosition = Movement.retrievePlayerPosition()
   return (
     euclideanDistance2D(playerPosition, point) <= TOLERANCE_RANGE and
-    point.z >= playerPosition.z and
-    point.z <= playerPosition.z + Movement.retrieveCharacterHeight()
+      point.z >= playerPosition.z and
+      point.z <= playerPosition.z + Movement.retrieveCharacterHeight()
   )
 end
 
@@ -1318,7 +1359,7 @@ end
 
 function Movement.retrieveCharacterHeightForHeightCheck()
   if Movement.isMountedOn(1434) then
-    return Movement.retrieveCharacterHeight() / 2
+    return 3
   else
     return Movement.retrieveCharacterHeight()
   end
@@ -2188,7 +2229,8 @@ function Movement.moveToSavedPath()
 end
 
 function Movement.traceLine(from, to, hitFlags)
-  if Movement.isPositionInRangeForTraceLineChecks(from) and Movement.isPositionInRangeForTraceLineChecks(to) then
+  if Movement.isPositionInRangeForTraceLineChecks(from) then
+    print(1)
     local x, y, z = GMR.TraceLine(
       from.x,
       from.y,
@@ -2204,6 +2246,7 @@ function Movement.traceLine(from, to, hitFlags)
       return nil
     end
   else
+    print(2)
     return nil
   end
 end
