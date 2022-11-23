@@ -1,4 +1,5 @@
 ## Title: Disable GMR
 ## Interface: 30400
+## Dependencies: Function, Hooking
 
 DisableGMR.lua

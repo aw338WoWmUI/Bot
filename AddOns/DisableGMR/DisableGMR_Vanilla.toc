@@ -1,4 +1,5 @@
 ## Title: Disable GMR
 ## Interface: 11403
+## Dependencies: Function, Hooking
 
 DisableGMR.lua

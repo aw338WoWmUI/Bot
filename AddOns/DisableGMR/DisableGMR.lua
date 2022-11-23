@@ -1,10 +1,12 @@
 -- Prevent the GMR login and subscribe frame from showing
 hooksecurefunc('CreateFrame', function(_, name)
   if name == 'LoginFrame' then
-    LoginFrame.Show = function()
-    end
+    LoginFrame.Show = Function.noOperation
   elseif name == 'SubscribeFrame' then
-    SubscribeFrame.Show = function()
-    end
+    SubscribeFrame.Show = Function.noOperation
   end
+end)
+
+Hooking.hookFunctionOnGlobalTable('GMR', 'Print', function ()
+  return Function.noOperation
 end)
