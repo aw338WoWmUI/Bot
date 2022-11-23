@@ -1307,18 +1307,51 @@ function _.completeQuests()
     if GossipFrame:IsShown() then
       questIdentifier = activeQuest.questID
     elseif QuestFrame:IsShown() then
-      questIdentifier = 1
+      questIdentifier = activeQuest.index
     end
     Compatibility.Quests.selectActiveQuest(questIdentifier)
   end
   if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
     CompleteQuest()
   end
-  if QuestFrameRewardPanel:IsShown() and hasEnoughFreeSlotsToCompleteQuestGiverQuest() then
-    GetQuestReward(1)
+  if QuestFrameRewardPanel:IsShown() then
+    --if not hasEnoughFreeSlotsToCompleteQuestGiverQuest() then
+    --  local itemsToPickUp = _.retrieveItemsToPickUp()
+    --
+    --  local itemsToDestroy = retrieveItemsToDestroy(itemsToPickUp)
+    --  if itemsToDestroy then
+    --    destroyItems(itemsToDestroy)
+    --  end
+    --end
+    if hasEnoughFreeSlotsToCompleteQuestGiverQuest() then
+      GetQuestReward(1)
+    end
   end
   _.waitForNPCUpdate()
 end
+
+--function _.retrieveItemsToPickUp()
+--  local questReward =
+--  local sellPrice = receiveSellPrice(questReward)
+--end
+
+--function retrieveItemsToDestroy(itemsToPickUp)
+--  local itemsThatQualifyForDestruction = findGrayItemsInBags()
+--  sortItemsThatQualifyForDestruction(itemsThatQualifyForDestruction)
+--
+--  local itemsToDestroy = {}
+--  for index = 1, #itemsToPickUp do
+--    local itemToPickUp = itemsToPickUp[index]
+--    local itemThatQualifiesForDestruction = itemsThatQualifyForDestruction[index]
+--    if itemsToPickup.sellPrice >= itemThatQualifiesForDestruction.sellPrice then
+--      table.insert(itemsToDestroy, itemThatQualifiesForDestruction)
+--    else
+--      return nil
+--    end
+--  end
+--
+--  return itemsToDestroy
+--end
 
 function _.waitForNPCUpdate()
   return waitForDuration(1)
@@ -2240,7 +2273,9 @@ function _.sell()
   local point = createPoint(GMR.Tables.Profile.Vendor.Sell[1], GMR.Tables.Profile.Vendor.Sell[2],
     GMR.Tables.Profile.Vendor.Sell[3])
   local objectID = GMR.Tables.Profile.Vendor.Sell[4]
-  Questing.Coroutine.interactWithAt(point, objectID)
+  Questing.Coroutine.interactWithObjectWithObjectID(objectID, {
+    fallbackPosition = point
+  })
   if MerchantFrame:IsShown() then
     _.sellItemsAtVendor()
   else

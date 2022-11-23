@@ -3,6 +3,8 @@ Questing.Coroutine = {}
 
 local _ = {}
 
+local MAXIMUM_OBJECT_LOAD_DISTANCE = 250
+
 local function moveTo(to, options)
   options = options or {}
 
@@ -122,11 +124,24 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   end
 end
 
-function Questing.Coroutine.interactWithObjectWithObjectID(objectID, distance, delay)
+function Questing.Coroutine.interactWithObjectWithObjectID(objectID, options)
+  options = options or {}
+
   local pointer = GMR.FindObject(objectID)
+
+  if not pointer then
+    Questing.Coroutine.moveTo(options.fallbackPosition, {
+      distance = MAXIMUM_OBJECT_LOAD_DISTANCE,
+      additionalStopConditions = function()
+        return GMR.FindObject(objectID)
+      end
+    })
+  end
+
+  pointer = GMR.FindObject(objectID)
   print('pointer', pointer)
   if pointer then
-    Questing.Coroutine.interactWithObject(pointer, distance, delay)
+    Questing.Coroutine.interactWithObject(pointer, options.distance, options.delay)
   end
 end
 
@@ -145,7 +160,7 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
     --end
     print(GMR.ObjectDynamicFlags(pointer), GMR.ObjectFlags(pointer), GMR.ObjectFlags2(pointer))
     GMR.InteractObject(pointer)
-    waitFor(function ()
+    waitFor(function()
       return not UnitCastingInfo('player')
     end)
     print(GMR.ObjectDynamicFlags(pointer), GMR.ObjectFlags(pointer), GMR.ObjectFlags2(pointer))
@@ -327,6 +342,7 @@ function Questing.Coroutine.gossipWithAt(point, objectID, optionToSelect)
 end
 
 function Questing.Coroutine.doMob(pointer, options)
+  -- FIXME: Mobs which are in the air.
   print('Questing.Coroutine.doMob')
   options = options or {}
 

@@ -30,10 +30,16 @@ function Questing.Database.retrieveNPC(id)
 end
 
 function Questing.Database.createNPCsIterator()
-  local index = nil
-  return function()
-    index = next(NPCs, index)
-    return NPCs[index]
+  if NPCs then
+    local index = nil
+    return function()
+      index = next(NPCs, index)
+      return NPCs[index]
+    end
+  else
+    return function()
+      return nil
+    end
   end
 end
 

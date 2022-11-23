@@ -13,12 +13,11 @@ local MAXIMUM_FALL_HEIGHT = 30
 local MAXIMUM_WATER_DEPTH = 1000
 local GRID_LENGTH = 2
 local MINIMUM_LIFT_HEIGHT = 0.25 -- Minimum flying lift height seems to be ~ 0.25 yards.
-local TOLERANCE_RANGE = 1
+local TOLERANCE_RANGE = 0.5
 local TARGET_LIFT_HEIGHT = TOLERANCE_RANGE
 Movement.MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
 local MAXIMUM_WATER_DEPTH_FOR_WALKING = 1.4872055053711
-local MOUNTED_CHARACTER_HEIGHT = 3 -- only an approximation. Seems to depend on mount and maybe also character model.
 canBeStoodOnPointCache = PointToValueMap:new()
 local canBeStoodWithMountOnPointCache = PointToValueMap:new()
 local DISTANCE = GRID_LENGTH
@@ -397,17 +396,18 @@ end
 
 function Movement.isEnoughSpaceOnTop(from, to)
   local offset = 0.1
+  local characterHeight = Movement.retrieveCharacterHeightForHeightCheck()
   local a = Movement.thereAreZeroCollisions(
     Movement.createPointWithZOffset(from, offset),
-    Movement.createPointWithZOffset(from, MOUNTED_CHARACTER_HEIGHT)
+    Movement.createPointWithZOffset(from, characterHeight)
   )
   local b = Movement.thereAreZeroCollisions(
     Movement.createPointWithZOffset(to, offset),
-    Movement.createPointWithZOffset(to, MOUNTED_CHARACTER_HEIGHT)
+    Movement.createPointWithZOffset(to, characterHeight)
   )
 
   local c = Movement.thereAreZeroCollisions2(Movement.createPointWithZOffset(from, offset),
-    Movement.createPointWithZOffset(to, offset), MOUNTED_CHARACTER_HEIGHT - offset)
+    Movement.createPointWithZOffset(to, offset), characterHeight - offset)
   return a and b and c
 end
 
@@ -1526,7 +1526,7 @@ function Movement.isJumpSituation(to)
 
   local playerPosition = Movement.retrievePlayerPosition()
   local positionA = Movement.createPointWithZOffset(playerPosition, Movement.JUMP_DETECTION_HEIGHT)
-  local positionB = Movement.positionInFrontOfPlayer2(3, Movement.JUMP_DETECTION_HEIGHT)
+  local positionB = Movement.positionInFrontOfPlayer2(0.5, Movement.JUMP_DETECTION_HEIGHT)
   --position1 = positionA
   --position2 = positionB
 
@@ -2488,6 +2488,22 @@ end
 
 function findPathE4()
   local path = GMR.GetPath(QuestingPointToMove.x, QuestingPointToMove.y, QuestingPointToMove.z, false)
+  if path then
+    path = Movement.convertGMRPathToPath(path)
+  end
+  Movement.path = path
+  MovementPath = Movement.path
+end
+
+function findPathE5()
+  local continentID = Movement.retrieveContinentID()
+  local playerPosition = Movement.retrievePlayerPosition()
+  local start = createPoint(HWT.GetClosestPositionOnMesh(continentID, playerPosition.x, playerPosition.y, playerPosition.z))
+  print('start')
+  DevTools_Dump(start)
+  local path = HWT.FindPath(continentID, start.x, start.y, start.z, QuestingPointToMove.x, QuestingPointToMove.y, QuestingPointToMove.z, false, 1024, 0, 1, false)
+  print('path')
+  DevTools_Dump(path)
   if path then
     path = Movement.convertGMRPathToPath(path)
   end
