@@ -52,11 +52,3 @@ function Bot.toggle()
     Bot.start()
   end
 end
-
----- Prevent the GMR login frame from showing
---hooksecurefunc('CreateFrame', function(_, name)
---  if name == 'LoginFrame' then
---    LoginFrame.Show = function()
---    end
---  end
---end)

@@ -1,0 +1,4 @@
+## Title: Disable GMR
+## Interface: 30400
+
+DisableGMR.lua

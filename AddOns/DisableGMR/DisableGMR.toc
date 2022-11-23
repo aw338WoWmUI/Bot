@@ -1,0 +1,4 @@
+## Title: Disable GMR
+## Interface: 100002
+
+DisableGMR.lua
