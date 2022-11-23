@@ -32,7 +32,7 @@ function Compatibility.GossipInfo.retrieveActiveQuests()
     return C_GossipInfo.GetActiveQuests()
   else
     local activeQuests = {}
-    local data = { GetGossipActiveQuests()}
+    local data = { GetGossipActiveQuests() }
     local numberOfFields = 6
     for index = 1, #data, numberOfFields do
       local activeQuest = {

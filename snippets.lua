@@ -249,3 +249,8 @@ Movement.traceLineCollision(Movement.createPointWithZOffset(MovementPath[10], 1)
 Movement.canPlayerStandOnPoint(MovementPath[6])
 
 Movement.canPlayerStandOnPoint(MovementPath[4])
+
+Compatibility.QuestLog.isComplete(C_SuperTrack.GetSuperTrackedQuestID())
+
+position1 = Movement.retrievePlayerPosition()
+position2 = Movement.createPointWithZOffset(position1, 3.5)

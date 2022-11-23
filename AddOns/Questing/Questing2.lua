@@ -1257,7 +1257,7 @@ local function doSomethingWithObject(point)
       print('gossipWith')
       Questing.Coroutine.gossipWithObject(pointer)
 
-      _.completeQuest()
+      _.completeQuests()
       if GossipFrame:IsShown() and isAnyActiveQuestCompletable2() then
         local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
         local quest = Array.find(activeQuests, function(quest)
@@ -1285,7 +1285,7 @@ local function doSomethingWithObject(point)
     elseif pointer then
       print('interactWithObject')
       Questing.Coroutine.interactWithObject(pointer)
-      _.completeQuest()
+      _.completeQuests()
     elseif objectID then
       print('interactWithAt')
       Questing.Coroutine.interactWithAt(point, objectID)
@@ -1296,9 +1296,12 @@ local function doSomethingWithObject(point)
   end
 end
 
-function _.completeQuest()
+function _.completeQuests()
+  -- TODO: Support for completing multiple quests
   local activeQuests = Compatibility.Quests.retrieveActiveQuests()
-  local activeQuest = activeQuests[1]
+  local activeQuest = Array.find(activeQuests, function (quest)
+    return quest.isComplete
+  end)
   if activeQuest then
     local questIdentifier
     if GossipFrame:IsShown() then
@@ -1314,6 +1317,11 @@ function _.completeQuest()
   if QuestFrameRewardPanel:IsShown() and hasEnoughFreeSlotsToCompleteQuestGiverQuest() then
     GetQuestReward(1)
   end
+  _.waitForNPCUpdate()
+end
+
+function _.waitForNPCUpdate()
+  return waitForDuration(1)
 end
 
 function _.doMob(pointer)
@@ -1402,6 +1410,7 @@ function acceptQuests(point)
       acceptQuests(point)
     end
   end
+  _.waitForNPCUpdate()
 end
 
 local function retrieveQuestHandler(questID)

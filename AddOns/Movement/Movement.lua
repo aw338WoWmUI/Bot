@@ -1359,7 +1359,7 @@ end
 
 function Movement.retrieveCharacterHeightForHeightCheck()
   if Movement.isMountedOn(1434) then
-    return 3
+    return 3.5
   else
     return Movement.retrieveCharacterHeight()
   end
