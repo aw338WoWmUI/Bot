@@ -424,22 +424,32 @@ function Core.stopMovingForward()
   MoveForwardStop()
 end
 
-function Core.doesPathExistFromCharacterTo(to, includeWater, searchCapacity, agentRadius, searchDeviation, isSmooth)
-  return toBoolean(Core.FindPathFromCharacterTo(to, includeWater, searchCapacity, agentRadius, searchDeviation,
-    isSmooth))
+function Core.doesPathExistFromCharacterTo(to, options)
+  return toBoolean(Core.FindPathFromCharacterTo(to, options))
 end
 
-function Core.FindPath(from, to, includeWater, searchCapacity, agentRadius, searchDeviation, isSmooth)
-  if includeWater == nil then
+function Core.FindPath(from, to, options)
+  options = options or {}
+
+  local includeWater
+  if options.includeWater == nil then
     includeWater = true
+  else
+    includeWater = options.includeWater
   end
+
+  local searchCapacity = options.searchCapacity or 1024
+  local agentRadius = options.agentRadius or 0
+  local searchDeviation = options.searchDeviation or 3
+  local isSmooth = options.isSmooth or false
+
   return HWT.FindPath(from.continentID, from.x, from.y, from.z, to.x, to.y, to.z, not includeWater, searchCapacity,
     agentRadius, searchDeviation, isSmooth)
 end
 
-function Core.FindPathFromCharacterTo(to, includeWater, searchCapacity, agentRadius, searchDeviation, isSmooth)
+function Core.FindPathFromCharacterTo(to, options)
   local characterPosition = Core.retrieveCharacterPosition()
-  return Core.FindPath(characterPosition, to, includeWater, searchCapacity, agentRadius, searchDeviation, isSmooth)
+  return Core.FindPath(characterPosition, to, options)
 end
 
 function Core.CastSpellByName(name, target)
