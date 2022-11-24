@@ -214,22 +214,18 @@ do
           1333.9146728516,
           41.904102325439
         ))
-        print(2)
         waitFor(function()
           local object = Core.findClosestObject(42387)
           return object and Core.canUnitAttackOtherUnit('player', object)
         end)
-        print(3)
         while not Compatibility.QuestLog.isComplete(questID) do
           local object = Core.findClosestObject(42387)
-          print('object', object)
           if object then
             Questing.Coroutine.doMob(object)
           else
             yieldAndResume()
           end
         end
-        print(4)
       end
     end
   )
@@ -340,8 +336,6 @@ local function convertMapPositionToWorldPosition(mapPosition)
 end
 
 function retrieveNPCPosition(npc)
-  print('npc')
-  DevTools_Dump(npc)
   local npcMapPosition = npc.coordinates[1]
   return convertMapPositionToWorldPosition(npcMapPosition)
 end
@@ -380,11 +374,9 @@ local function generateQuestStartPointsFromStarters(quest)
             local continentID = position.continentID
             local x, y, z
             if npcPointer then
-              print(1)
               local position = Core.retrieveObjectPosition(npcPointer)
               x, y, z = position.x, position.y, position.z
             else
-              print(2)
               x, y, z = position.x, position.y, position.z
             end
 
@@ -456,7 +448,8 @@ function _.retrieveQuestStartPointsFromObjects()
         type = 'acceptQuests',
         questIDs = nil,
         questName = nil,
-        fromObject = true
+        fromObject = true,
+        pointer = object.pointer
       }
       table.insert(points, point)
     end
@@ -513,9 +506,6 @@ function _.retrieveQuestStartPointsFromQuestLines()
       mapID = C_Map.GetMapInfo(mapID).parentMapID
       questLines = retrieveAvailableQuestLines(mapID)
     end
-
-    print('quest lines')
-    DevTools_Dump(questLines)
 
     local points = Array.selectTrue(Array.flatMap(questLines, function(questLine)
       if Compatibility.QuestLog.isOnQuest(questLine.questID) then
@@ -897,7 +887,7 @@ end
 function retrieveLootPoints()
   local objects = Core.retrieveObjects()
   local filteredObjects = Array.filter(objects, function(object)
-    return not Set.contains(lootedObjects, object.pointer) and Core.isLootable(object)
+    return not Set.contains(lootedObjects, object.pointer) and Core.isLootable(object.pointer)
   end)
   local objectPointers = convertObjectsToPointers(filteredObjects)
   local objectPoints = convertObjectPointersToObjectPoints(objectPointers, 'loot')
@@ -1137,7 +1127,6 @@ end
 local function doSomethingWithObject(point)
   local objectID = point.objectID
   local pointer = point.pointer
-  print('pointer', pointer)
   if not pointer and objectID then
     pointer = Core.findClosestObject(objectID) -- FIXME: Object closest to point position which matches objectID
   end
@@ -1261,13 +1250,12 @@ function _.doMob(pointer)
 end
 
 function acceptQuests(point)
+  print(1)
   local questGiverPoint
   if point.objectID then
     questGiverPoint = point
   else
     local object = findClosestQuestGiver(point)
-    print('object')
-    DevTools_Dump(object)
     if object then
       questGiverPoint = {
         objectID = object.ID,
@@ -1278,7 +1266,11 @@ function acceptQuests(point)
     end
   end
   if questGiverPoint then
-    Questing.Coroutine.interactWithAt(questGiverPoint, questGiverPoint.objectID)
+    if questGiverPoint.pointer then
+      Questing.Coroutine.gossipWithObject(questGiverPoint.pointer)
+    else
+      Questing.Coroutine.gossipWithAt(questGiverPoint, questGiverPoint.objectID)
+    end
     local npcID = HWT.ObjectId('npc')
     if npcID == questGiverPoint.objectID then
       local availableQuests = Compatibility.Quests.retrieveAvailableQuests()
@@ -1304,24 +1296,22 @@ function acceptQuests(point)
           local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
           if wasSuccessful then
             AcceptQuest()
+            waitForQuestHasBeenAccepted()
 
-            if index <= numberOfQuests - 2 then
+            if numberOfQuests >= 3 and index <= numberOfQuests - 2 then
               if GossipFrame:IsShown() then
                 Events.waitForEvent('GOSSIP_SHOW')
               else
                 -- the other frame type
 
               end
-            else
+            elseif numberOfQuests >= 2 then
               Events.waitForEvent('QUEST_DETAIL')
             end
           end
         end
       end)
-      if QuestFrameDetailPanel:IsShown() then
-        AcceptQuest()
-        waitForQuestHasBeenAccepted()
-      end
+      _.waitForNPCUpdate()
     else
       registerUnavailableQuests(questGiverPoint.objectID)
     end
@@ -1333,7 +1323,6 @@ function acceptQuests(point)
       acceptQuests(point)
     end
   end
-  _.waitForNPCUpdate()
 end
 
 local function retrieveQuestHandler(questID)
@@ -1383,9 +1372,6 @@ local function convertQuestIDsToString(questIDs)
 end
 
 local function moveToPoint(point)
-  print('point.type', point.type)
-  DevTools_Dump(point)
-
   QuestingPointToShow = nil
 
   if point.type == 'acceptQuests' then

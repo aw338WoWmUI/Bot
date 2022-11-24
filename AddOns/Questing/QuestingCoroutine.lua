@@ -133,7 +133,6 @@ function Questing.Coroutine.interactWithObjectWithObjectID(objectID, options)
   end
 
   pointer = Core.findClosestObject(objectID)
-  print('pointer', pointer)
   if pointer then
     Questing.Coroutine.interactWithObject(pointer, options.distance, options.delay)
   end

@@ -238,7 +238,6 @@ function Core.retrieveWorldPositionFromMapPosition(mapPosition)
   local z
   local playerPosition = Movement.retrieveCharacterPosition()
   if euclideanDistance2D(playerPosition, worldPosition) <= MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS then
-    print(3)
     local collisionPoint = Movement.traceLineCollision(
       Core.createPosition(worldPosition.x, worldPosition.y, MAX_Z),
       Core.createPosition(worldPosition.x, worldPosition.y, MIN_Z)
@@ -249,7 +248,6 @@ function Core.retrieveWorldPositionFromMapPosition(mapPosition)
   end
 
   if not z then
-    print(4)
     z = Core.retrieveZCoordinate(Core.createWorldPosition(continentID, worldPosition.x, worldPosition.y, nil))
   end
 
@@ -457,7 +455,13 @@ function _.haveVectorsSameDirection(vector1, vector2)
 end
 
 function Core.retrieveObjectPointers()
-  local objectPointers = select(3, HWT.GetObjectCount())
+  local objectPointers = {}
+  local count = HWT.GetObjectCount()
+  for index = 1, count do
+    local objectPointer = HWT.GetObjectWithIndex(index)
+    table.insert(objectPointers, objectPointer)
+  end
+
   return objectPointers
 end
 
@@ -476,8 +480,10 @@ function Core.findClosestObject(objectIDs)
 
   local objectIDsSet = Set.create(objectIDs)
 
-  local objectWithOneTheObjectIDs = Array.filter(Core.retrieveObjectPointers(), function(pointer)
-    return Set.contains(objectIDsSet, HWT.ObjectId(pointer))
+  local pointers = Core.retrieveObjectPointers()
+  local objectWithOneTheObjectIDs = Array.filter(pointers, function(pointer)
+    local objectID = HWT.ObjectId(pointer)
+    return Set.contains(objectIDsSet, objectID)
   end)
 
   local characterPosition = Core.retrieveCharacterPosition()
@@ -490,6 +496,9 @@ function Core.findClosestObject(objectIDs)
 end
 
 function Core.calculateDistanceBetweenPositions(a, b)
+  if a.x == nil or a.y == nil or a.z == nil or b.x == nil or b.y == nil or b.z == nil then
+    Logging.log(debugstack())
+  end
   return HWT.GetDistanceBetweenPositions(a.x, a.y, a.z, b.x, b.y, b.z)
 end
 
@@ -547,7 +556,7 @@ function Core.isCharacterAlive()
 end
 
 function Core.isAlive(objectIdentifier)
-  return Core.isDead(objectIdentifier)
+  return not Core.isDead(objectIdentifier)
 end
 
 function Core.isDead(objectIdentifier)
@@ -635,9 +644,16 @@ function Core.calculateAnglesBetweenTwoPoints(a, b)
     b.z - a.z
   )
   vector:Normalize()
-  local yaw = 2 * PI - math.asin(-vector.y)
-  local pitch = math.atan2(vector.x, vector.z) - 0.5 * PI
-  return yaw, pitch
+  local yaw, pitch = Vector3D_CalculateYawPitchFromNormalVector(vector)
+  return _.normalizeAngle(yaw), _.normalizeAngle(pitch)
+end
+
+function _.normalizeAngle(angle)
+  angle = angle % (2 * PI)
+  if angle < 0 then
+    angle = 2 * PI + angle
+  end
+  return angle
 end
 
 function Core.startStrafingLeft()
@@ -787,7 +803,7 @@ function Core.receiveCorpsePosition()
 end
 
 function Core.interactWithObject(objectIdentifier)
-  return InteractUnit(objectIdentifier)
+  return C_PlayerInteractionManager.InteractUnit(objectIdentifier)
 end
 
 function Core.useItemByID(itemID, target)
@@ -823,4 +839,12 @@ end
 
 function Core.retrieveCharacterCombatRange()
   return HWT.UnitCombatReach('player')
+end
+
+function Core.isCharacterFlying()
+  return Core.areFlagsSet(HWT.UnitMovementFlags('player'), HWT.GetUnitMovementFlagsTable().Flying)
+end
+
+function Core.isCharacterSwimming()
+  return Core.areFlagsSet(HWT.UnitMovementFlags('player'), HWT.GetUnitMovementFlagsTable().Swimming)
 end

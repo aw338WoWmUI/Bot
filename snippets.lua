@@ -241,3 +241,23 @@ Core.retrieveZCoordinate2(Core.createWorldPosition(QuestingPointToShow.continent
 Core.retrieveZCoordinate(Core.createWorldPosition(QuestingPointToShow.continentID, QuestingPointToShow.x, QuestingPointToShow.y, nil))
 
 Core.retrieveZCoordinate(Core.createWorldPosition(Core.retrieveCurrentContinentID(), savedPosition.x, savedPosition.y, nil))
+
+Core.calculateAnglesBetweenTwoPoints(Core.retrieveCharacterPosition(), Core.retrieveObjectPosition('target'))
+HWT.ObjectFacing('player')
+HWT.UnitPitch('player')
+
+-- MovementPath[5]
+
+Movement.canReachWaypointWithCurrentMovementDirection(MovementPath[5])
+
+Movement.canReachWaypointWithCurrentMovementDirection(MovementPath[1])
+
+Movement.canReachWaypointWithCurrentMovementDirection(savedPosition)
+
+runAsCoroutine(function () Movement.facePoint(Core.retrieveObjectPosition('target')) end)
+
+Core.findClosestObject(63596)
+
+HWT.GetObjectCount(); print(HWT.GetObjectWithIndex(1))
+
+print(HWT.GetObjectWithIndex(1))

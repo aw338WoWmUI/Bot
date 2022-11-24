@@ -2,6 +2,8 @@ Movement = {}
 
 local _ = {}
 
+Movement_ = _
+
 position1 = nil
 position2 = nil
 aStarPoints = nil
@@ -986,6 +988,24 @@ function Movement.distanceOfPointToLine(point, line)
   return BA:cross(BC):magnitude() / BC:magnitude()
 end
 
+function Movement.calculate2DDistanceOfPointToLine(point, line)
+  -- source: https://en.wikipedia.org/w/index.php?title=Distance_from_a_point_to_a_line&oldid=1122418293#Line_defined_by_two_points
+
+  local P1 = line[1]
+  local P2 = line[2]
+
+  local x1 = P1.x
+  local y1 = P1.y
+
+  local x2 = P2.x
+  local y2 = P2.y
+
+  local x0 = point.x
+  local y0 = point.y
+
+  return math.abs((x2 - x1) * (y1 - y0) - (x1 - x0) * (y2 - y1)) / math.sqrt(math.pow(x2 - x1, 2), math.pow(y2 - y1, 2))
+end
+
 function Movement.canReachWaypointWithCurrentMovementDirection(waypoint)
   local playerPosition = Movement.retrieveCharacterPosition()
   local pitch = HWT.UnitPitch('player')
@@ -1000,7 +1020,13 @@ function Movement.canReachWaypointWithCurrentMovementDirection(waypoint)
     y = playerPosition.y + movementVector.y,
     z = playerPosition.z + movementVector.z
   }
-  return Movement.distanceOfPointToLine(waypoint, { playerPosition, positionB }) <= TOLERANCE_RANGE
+
+  if Core.isCharacterFlying() or Core.isCharacterSwimming() then
+    return Movement.distanceOfPointToLine(waypoint, { playerPosition, positionB }) <= TOLERANCE_RANGE
+  else
+    local distance = Movement.calculate2DDistanceOfPointToLine(waypoint, { playerPosition, positionB })
+    return distance <= TOLERANCE_RANGE
+  end
 end
 
 function Movement.isCharacterFlying()
@@ -1706,14 +1732,6 @@ function Movement.receiveNeighborPoints(point, distance)
   return neighborPoints
 end
 
-function Movement.calculateTotalPathDistance(path)
-  local totalDistance = 0
-  for index = 2, #path do
-    totalDistance = totalDistance + euclideanDistance2D(path[index - 1], path[index])
-  end
-  return totalDistance
-end
-
 function Movement.movePath(path, stop)
   Movement.stopMoving()
   local a = {
@@ -1722,7 +1740,7 @@ function Movement.movePath(path, stop)
     end
   }
   local pathLength = #path
-  local totalDistance = Movement.calculateTotalPathDistance(path)
+  local totalDistance = Core.calculatePathLength(path)
   pathMover = createActionSequenceDoer2(
     Array.map(path, function(waypoint, index)
       return Movement.createMoveToAction3(waypoint, index < pathLength, a, totalDistance, index == pathLength)
@@ -1831,7 +1849,7 @@ end
 
 function Movement.facePoint(point, stop)
   Movement.face(
-    function ()
+    function()
       return Movement.calculateAnglesFromCharacterToPoint(point)
     end,
     stop
@@ -1857,10 +1875,15 @@ function Movement.isCharacterFacingPoint(point)
   return Movement.isCharacterFacingWithAngles(yaw, pitch)
 end
 
+local TOLERANCE_DIFFERENCE = 0.00000006
+
 function Movement.isCharacterFacingWithAngles(yaw, pitch)
   local characterYaw = HWT.ObjectFacing('player')
   local characterPitch = HWT.UnitPitch('player')
-  return Float.seemsCloseBy(yaw, characterYaw) and Float.seemsCloseBy(pitch, characterPitch)
+  return (
+    math.abs(yaw - characterYaw) <= TOLERANCE_DIFFERENCE and
+      math.abs(pitch - characterPitch) <= TOLERANCE_DIFFERENCE
+  )
 end
 
 function Movement.isCharacterFacingObject(object)
@@ -1868,41 +1891,39 @@ function Movement.isCharacterFacingObject(object)
   return Movement.isCharacterFacingPoint(position)
 end
 
-function Movement.face(retrieveTargetAngles, stop)
-  local yawStepSize = 2 * PI / 360
-  local pitchStepSize = 2 * PI / 360
+local ANGLE_PER_SECOND = math.rad(180)
 
-  local function isFacingDirection()
-    local yaw, pitch = retrieveTargetAngles()
-    return Movement.isCharacterFacingWithAngles(yaw, pitch)
+function Movement.face(retrieveTargetAngles, stop)
+  local yaw, pitch = retrieveTargetAngles()
+  local yawDelta = math.abs(HWT.ObjectFacing('player') - yaw)
+  local duration = yawDelta / ANGLE_PER_SECOND
+  HWT.FaceDirectionSmoothly(yaw, duration)
+
+  if Core.isCharacterFlying() or Core.isCharacterSwimming() then
+    HWT.SetPitch(pitch)
   end
 
-  while not isFacingDirection() and (not stop or not stop()) do
-    local yaw, pitch = retrieveTargetAngles()
+  waitUntil(function ()
+    return not HWT.IsFacingSmoothly()
+  end)
+end
 
+function _.waitForCharacterToHaveStoppedRotating()
+  local previousCharacterYaw = nil
+  local previousCharacterPitch = nil
+  waitFor(function()
     local characterYaw = HWT.ObjectFacing('player')
     local characterPitch = HWT.UnitPitch('player')
 
-    local deltaYaw = yaw - characterYaw
-    if math.abs(deltaYaw) > yawStepSize then
-      deltaYaw = Math.sign(deltaYaw) * yawStepSize
+    if previousCharacterYaw and previousCharacterPitch and Float.seemsCloseBy(previousCharacterYaw,
+      characterYaw) and Float.seemsCloseBy(previousCharacterPitch, characterPitch) then
+      return true
+    else
+      previousCharacterYaw = characterYaw
+      previousCharacterPitch = characterPitch
+      return false
     end
-
-    local deltaPitch = pitch - characterPitch
-    if math.abs(deltaPitch) > pitchStepSize then
-      deltaPitch = Math.sign(deltaPitch) * pitchStepSize
-    end
-
-    if deltaYaw ~= 0 then
-      HWT.FaceDirection(characterYaw + deltaYaw)
-    end
-
-    if deltaPitch ~= 0 then
-      HWT.SetPitch(characterPitch + deltaPitch)
-    end
-
-    yieldAndResume()
-  end
+  end)
 end
 
 function Movement.closestPointOnGrid(point)
