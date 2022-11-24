@@ -9,20 +9,6 @@ function findIn(table, searchTerm)
   end
 end
 
-local IS_LOGGING_ENABLED = true
-
-local function writeToLogFile(content)
-  if IS_LOGGING_ENABLED then
-    HWT.WriteFile('C:/log.txt', content, true)
-  end
-end
-
-function logToFile(content)
-  if IS_LOGGING_ENABLED then
-    writeToLogFile(tostring(content) .. '\n')
-  end
-end
-
 local function writeToLogFile2(filePath, content)
   if IS_LOGGING_ENABLED then
     HWT.WriteFile(filePath, content, true)
@@ -39,13 +25,6 @@ function log2(filePath, ...)
   if IS_LOGGING_ENABLED then
     local string = strjoin(' ', unpack(Array.map({ ... }, Serialization.valueToString)))
     logToFile2(filePath, string)
-  end
-end
-
-function log(...)
-  if IS_LOGGING_ENABLED then
-    local string = strjoin(' ', unpack(Array.map({ ... }, Serialization.valueToString)))
-    logToFile(string)
   end
 end
 

@@ -261,7 +261,7 @@ local function lessThan(a, b)
 end
 
 function Core.retrieveZCoordinate(position)
-  local SMALL_OFFSET = 1
+  local DISTANCE_TO_POINT = 0.1
 
   local searchSpaces = {
     {
@@ -323,7 +323,7 @@ function Core.retrieveZCoordinate(position)
       local z = zCoordinatesToConstructSearchSpacesFrom.values[index]
 
       local fromZ1 = zCoordinatesToConstructSearchSpacesFrom.values[index - 1]
-      local toZ1 = z - SMALL_OFFSET
+      local toZ1 = z - DISTANCE_TO_POINT
       if toZ1 > fromZ1 then
         table.insert(searchSpaces, {
           from = fromZ1,
@@ -331,7 +331,7 @@ function Core.retrieveZCoordinate(position)
         })
       end
 
-      local fromZ2 = z + SMALL_OFFSET
+      local fromZ2 = z + DISTANCE_TO_POINT
       local toZ2 = zCoordinatesToConstructSearchSpacesFrom.values[index + 1]
       if fromZ2 < toZ2 then
         table.insert(searchSpaces, {
@@ -412,19 +412,28 @@ function Core.retrieveZCoordinateOnPolygon(position, polygon)
     vertex3[3] - vertex1[3]
   )
 
-  local a = (vector2.y * position.x - vector2.x * position.y) / (vector1.x * vector2.y - vector2.x * vector1.y)
-  local b = (vector1.y * position.x - vector1.x * position.y) / (vector2.x * vector1.y - vector1.x * vector2.y)
+  local targetVector = Vector:new(
+    position.x - vertex1[1],
+    position.y - vertex1[2],
+    nil
+  )
+
+  local a = (vector2.y * targetVector.x - vector2.x * targetVector.y) / (vector1.x * vector2.y - vector2.x * vector1.y)
+  local b = (vector1.y * targetVector.x - vector1.x * targetVector.y) / (vector2.x * vector1.y - vector1.x * vector2.y)
 
   local z = vertex1[3] + a * vector1.z + b * vector2.z
 
   local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(
     Core.createWorldPosition(position.continentID, position.x, position.y, z)
   )
-  if closestPositionOnMesh and Float.seemsCloseBy(closestPositionOnMesh.x, position.x) and Float.seemsCloseBy(closestPositionOnMesh.y, position.y) then
+  if closestPositionOnMesh and Float.seemsCloseBy(closestPositionOnMesh.x,
+    position.x) and Float.seemsCloseBy(closestPositionOnMesh.y, position.y) then
     return closestPositionOnMesh.z
   else
     return z
   end
+
+  return z
 end
 
 function Core.retrieveClosestMeshPolygon(worldPosition, deltaX, deltaY, deltaZ, includeWater)

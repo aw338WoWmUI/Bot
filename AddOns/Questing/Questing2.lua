@@ -2104,7 +2104,6 @@ end
 function removeClosestMeshPolygonToPointToShow()
   local polygon = Core.retrieveClosestMeshPolygon(Core.createWorldPositionFromPosition(Core.retrieveCurrentContinentID(),
     QuestingPointToShow), 1000, 1000, 1000)
-  log('polygon', polygon)
   print('polygon', polygon)
   -- return HWT.SetMeshPolygonArea(select(8, GetInstanceInfo()), polygon, 9999999)
   print('a', HWT.SetMeshPolygonFlags(select(8, GetInstanceInfo()), polygon, 0))
