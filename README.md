@@ -1,13 +1,11 @@
-# GMR AddOns
-
-AddOns that work with GMR, GMR plugins and GMR profiles.
+# Bot
 
 ## Installation
 
 ### Cloning the respository
 
 ```sh
-git clone --recurse-submodules https://github.com/AkiKonani/GMRAddOns.git
+git clone --recurse-submodules https://github.com/AkiKonani/Bot.git
 ```
 
 ### Installation of the add-ons
