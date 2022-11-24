@@ -1831,7 +1831,9 @@ end
 
 function Movement.facePoint(point, stop)
   Movement.face(
-    Movement.calculateAnglesFromCharacterToPoint,
+    function ()
+      return Movement.calculateAnglesFromCharacterToPoint(point)
+    end,
     stop
   )
 end
@@ -2177,6 +2179,17 @@ function findPathE5()
   end
   Movement.path = path
   MovementPath = Movement.path
+end
+
+function findPathE6()
+  local path = Core.FindPathFromCharacterTo(savedPosition)
+  if path then
+    path = Movement.convertGMRPathToPath(path)
+  end
+  Movement.path = path
+  MovementPath = Movement.path
+  print('path')
+  DevTools_Dump(path)
 end
 
 function aaaaaaa2394ui2u32uio()

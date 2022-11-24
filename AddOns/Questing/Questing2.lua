@@ -2102,8 +2102,6 @@ local function onEvent(self, event, ...)
     print('QUEST_ACCEPTED')
   elseif event == 'QUEST_ACCEPT_CONFIRM' then
     print('QUEST_ACCEPT_CONFIRM', Unlocker.retrieveQuestGiverStatus('target'))
-  elseif event == 'QUEST_LOG_UPDATE' then
-    print('QUEST_LOG_UPDATE', Unlocker.retrieveQuestGiverStatus('target'))
   elseif event == 'QUEST_LOG_CRITERIA_UPDATE' then
     print('QUEST_LOG_CRITERIA_UPDATE', Unlocker.retrieveQuestGiverStatus('target'))
   end
@@ -2115,7 +2113,6 @@ frame:RegisterEvent('QUEST_TURNED_IN')
 frame:RegisterEvent('GOSSIP_SHOW')
 frame:RegisterEvent('QUEST_ACCEPTED')
 frame:RegisterEvent('QUEST_ACCEPT_CONFIRM')
-frame:RegisterEvent('QUEST_LOG_UPDATE')
 frame:RegisterEvent('QUEST_LOG_CRITERIA_UPDATE')
 frame:SetScript('OnEvent', onEvent)
 
