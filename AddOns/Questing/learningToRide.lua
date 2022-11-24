@@ -24,19 +24,19 @@ function Questing.canLearnRiding()
 end
 
 function Questing.canLearnApprenticeRiding()
-  return UnitLevel('player') >= APPRENTICE_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(APPRENTICE_RIDING) and not GMR.IsSpellKnown(JOURNEYMAN_RIDING) and not GMR.IsSpellKnown(EXPERT_RIDING) and not GMR.IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnApprenticeRiding()
+  return UnitLevel('player') >= APPRENTICE_RIDING_LEVEL_REQUIRED and not IsSpellKnown(APPRENTICE_RIDING) and not IsSpellKnown(JOURNEYMAN_RIDING) and not IsSpellKnown(EXPERT_RIDING) and not IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnApprenticeRiding()
 end
 
 function Questing.canLearnJourneymanRiding()
-  return UnitLevel('player') >= JOURNEYMAN_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(JOURNEYMAN_RIDING) and not GMR.IsSpellKnown(EXPERT_RIDING) and not GMR.IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnJourneymanRiding()
+  return UnitLevel('player') >= JOURNEYMAN_RIDING_LEVEL_REQUIRED and not IsSpellKnown(JOURNEYMAN_RIDING) and not IsSpellKnown(EXPERT_RIDING) and not IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnJourneymanRiding()
 end
 
 function Questing.canLearnExpertRiding()
-  return UnitLevel('player') >= EXPERT_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(EXPERT_RIDING) and not GMR.IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnExpertRiding()
+  return UnitLevel('player') >= EXPERT_RIDING_LEVEL_REQUIRED and not IsSpellKnown(EXPERT_RIDING) and not IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnExpertRiding()
 end
 
 function Questing.canLearnMasterRiding()
-  return UnitLevel('player') >= MASTER_RIDING_LEVEL_REQUIRED and not GMR.IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnMasterRiding()
+  return UnitLevel('player') >= MASTER_RIDING_LEVEL_REQUIRED and not IsSpellKnown(MASTER_RIDING) and _.hasEnoughGoldToLearnMasterRiding()
 end
 
 local FACTION_ALLIANCE = 72
@@ -119,7 +119,7 @@ local FLYING_TRAINERS = {
 function Questing.learnRiding()
   local trainer = FLYING_TRAINERS[UnitFactionGroup('player')]
   Questing.Coroutine.interactWithAt(trainer.position, trainer.objectID)
-  if GMR.IsTrainerFrameShown() then
+  if Core.isTrainerFrameShown() then
     SetTrainerServiceTypeFilter('available', 1)
     local unitLevel = UnitLevel('player')
     for index = 1, GetNumTrainerServices() do

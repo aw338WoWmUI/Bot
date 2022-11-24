@@ -1,29 +1,11 @@
-GMR.ExecutePath(true, Movement.convertPathToGMRPath(Movement.path))
-GMR.GetPath(savedPosition.x, savedPosition.y, savedPosition.z)
-GMR.LoadMeshFiles()
-
-GMR.ExecutePath(true, GMR.GetPath(savedPosition.x, savedPosition.y, savedPosition.z))
-local playerPosition = GMR.GetPlayerPosition(); print(GMR.GetDistanceBetweenPositions(playerPosition.x, playerPosition.y, playerPosition.z, Movement.path[5].x, Movement.path[5].y, Movement.path[5].z))
-GMR.MoveTo(Movement.path[2].x, Movement.path[2].y, Movement.path[2].z)
+local playerPosition = Core.retrieveCharacterPosition(); print(Core.calculateDistanceBetweenPositions(playerPosition, Movement.path[5]))
 Movement.isPositionInTheAir(Movement.path[2])
 Movement.moveToSavedPath()
 coroutine.wrap(function () DevTools_Dump(retrieveQuestStartPoints()) end)()
 
-GMR.GetPathBetweenPoints(1112.2868652344, -466.92352294922, 20.854103088379, 1069, -494, 0.023681640625)
+Core.retrieveDistanceBetweenObjects('player', 'target')
 
-GMR.MeshTo(GMR.ObjectPosition('target'))
-
-GMR.GetPath(GMR.ObjectPosition('target'))
-
-GMR.ExecutePath(true, GMR.GetPath(GMR.ObjectPosition('target')))
-
-GMR.OffMeshHandler(GMR.ObjectPosition('target'))
-
-GMR.MoveTo(GMR.ObjectPosition('target'))
-
-GMR.GetDistanceBetweenObjects('player', 'target')
-
-GMR.GetDistanceToPosition(Movement.path[8].x, Movement.path[8].y, Movement.path[8].z)
+Core.calculateDistanceFromCharacterToPosition(Movement.path[8])
 
 Movement.canBeMovedFromAToB(Movement.path[#Movement.path - 1], Movement.path[#Movement.path])
 
@@ -63,7 +45,7 @@ Movement.canBeFlownFromPointToPoint(Movement.path[5], Movement.path[6])
 
 -- CHARACTER_HEIGHT
 
-local pz = GMR.GetPlayerPosition().z; print(Movement.path[8].z - pz)
+local pz = Core.retrieveCharacterPosition().z; print(Movement.path[8].z - pz)
 
 Movement.canBeMovedFromPointToPoint(Movement.path[9], Movement.path[10])
 
@@ -103,31 +85,9 @@ p:retrieveValue({ x = 1, y = 2, z = 3})
 
 Movement.canBeFlownFromPointToPoint(Movement.path[2], Movement.path[3])
 
-GMR.ObjectPointer('target')
+Core.retrieveObjectPointer('target')
 
-getmetatable(GMR.GetObject('target'))
-
-GMR.GetObject(GMR.ObjectPointer('target'))
-
-Object.keys(GMR.GetObject('target'))
-
-type(GMR.GetObject('target'))
-
-GMR.ObjectFlags('target')
-
-GMR.ObjectFlags2('target')
-
-GMR.GetObjectWithIndex(1)
-
-GMR.GetObjectWithXYZ()
-
-GMR.ScanObjects()
-
-getmetatable(GMR.GetObject(GMR.ObjectPointer('target')))
-
-GMR.GetObject(GMR.ObjectPointer('target'))
-
-GMR.GetNearbyObjects(250)
+Core.retrieveObjectWhichAreCloseToTheCharacter(250)
 
 coroutine.wrap(function () DevTools_Dump(retrieveQuestStartPoints()) end)()
 
@@ -135,11 +95,9 @@ C_SuperTrack.GetSuperTrackedQuestID()
 
 shouldQuestBeAvailable(Array.find(quests, function (quest) return quest.id == 26391 end))
 
-GMR.IsQuestCompleted(quest.id)
+Compatibility.QuestLog.isQuestFlaggedCompleted(quest.id)
 
-GMR.IsQuestCompleted(26389)
-
-retrieveAvailableQuestLines(GMR.GetMapId())
+Compatibility.QuestLog.isQuestFlaggedCompleted(26389)
 
 retrieveAvailableQuestLines(425)
 
@@ -159,43 +117,33 @@ C_GossipInfo.GetOptions()
 
 C_QuestLog.GetNextWaypoint(C_SuperTrack.GetSuperTrackedQuestID())
 
-GMR.Questing.GetQuestInfo(C_SuperTrack.GetSuperTrackedQuestID())
-
 coroutine.wrap(function () DevTools_Dump(retrieveNavigationPosition()) end)()
 
-GMR_SavedVariablesPerCharacter.SelectedMount = GetSpellInfo(470)
-
---GMR.RunEncryptedScript(GMR.Encrypt('print("test"); DevTools_Dump({...})'))
-GMR.RunEncryptedScript(GMR.Encrypt('_G.__A = ({...})[1]'))
-
-__A.ObjectQuests(GMR.ObjectPointer('target'))
+__A.ObjectQuests(Core.retrieveObjectPointer('target'))
 
 -- __A.ObjectIsQuestObjective()
 -- __A.ObjectQuestGiverStatus()
  __A.ObjectQuestGiverStatus('target')
 -- __A.GetObjectQuestGiverStatusesTable()
 
-HWT.ObjectQuests(GMR.FindObject(209436))
+HWT.ObjectQuests(Core.findClosestObject(209436))
 
-HWT.GameObjectType(GMR.FindObject(209436))
+HWT.GameObjectType(Core.findClosestObject(209436))
 
 coroutine.wrap(function () DevTools_Dump(retrieveObjectivePoints()) end)()
 coroutine.wrap(function () DevTools_Dump(retrieveQuestStartPoints()) end)()
 coroutine.wrap(function () DevTools_Dump(retrieveObjectPoints()) end)()
-HWT.ObjectQuests(GMR.FindObject(209463))
-HWT.GameObjectType(GMR.FindObject(209463))
-HWT.ObjectTypeFlags(GMR.FindObject(209463))
-HWT.ObjectIsQuestObjective(GMR.FindObject(209463))
+HWT.ObjectQuests(Core.findClosestObject(209463))
+HWT.GameObjectType(Core.findClosestObject(209463))
+HWT.ObjectTypeFlags(Core.findClosestObject(209463))
+HWT.ObjectIsQuestObjective(Core.findClosestObject(209463))
 -- 209550
-HWT.ObjectIsQuestObjective(GMR.FindObject(209550), false)
-seemsToBeQuestObject(GMR.FindObject(209550))
+HWT.ObjectIsQuestObjective(Core.findClosestObject(209550), false)
+seemsToBeQuestObject(Core.findClosestObject(209550))
 
 coroutine.wrap(function () DevTools_Dump(retrieveFlightMasterDiscoveryPoints()) end)()
 
 coroutine.wrap(function () DevTools_Dump(retrievePoints()) end)()
-
-GMR.RunString('_G.HWT = ({...})[1]')
-GMR.RunString('_G.TEST = {...}')
 
 coroutine.wrap(function () Movement.mountOnFlyingMount() end)()
 
@@ -205,15 +153,13 @@ runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)
 
 runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)
 
-Array.map(Questing.Database.retrieveQuestsThatShouldBeAvailable(GMR.GetMapId()), function (quest) return quest.name end)
-
 runAsCoroutine(function () DevTools_Dump(retrieveObjectPoints()) end)
 
 log(QuestieDB:GetQuest(6).Objectives)
 
 log(QuestieDB:GetQuest(76).Objectives)
 
-Movement.calculateAngleBetweenTwoPoints(Movement.path[#Movement.path - 2], Movement.path[#Movement.path - 1])
+Core.calculateAnglesBetweenTwoPoints(Movement.path[#Movement.path - 2], Movement.path[#Movement.path - 1])
 
 Movement.canBeMovedFromPointToPointCheckingSubSteps(Movement.path[#Movement.path - 2], Movement.path[#Movement.path - 1])
 
@@ -223,22 +169,19 @@ Movement.canBeWalkedOrSwamFromPointToPoint(Movement.path[#Movement.path - 2], Mo
 
 Movement.canBeJumpedFromPointToPoint(Movement.path[#Movement.path - 2], Movement.path[#Movement.path - 1])
 
-GMR.ObjectRawFacing('player')
+HWT.ObjectFacing('player')
 
-HWT.ObjectQuests(GMR.FindObject(42940))
+HWT.ObjectQuests(Core.findClosestObject(42940))
 
 Movement.canBeMovedFromPointToPointCheckingSubSteps(position1, position2)
 
 aaaaaaa2394ui2u32uio()
 
-GMR.ObjectRawType(GMR.FindObject(203972))
-HWT.ObjectTypeFlags(GMR.FindObject(203972)) -- 257
-HWT.ObjectIsQuestObjective(GMR.FindObject(203972), false)
-HWT.GameObjectType(GMR.FindObject(203972))
+HWT.ObjectTypeFlags(Core.findClosestObject(203972)) -- 257
+HWT.ObjectIsQuestObjective(Core.findClosestObject(203972), false)
+HWT.GameObjectType(Core.findClosestObject(203972))
 
 Movement.isJumpSituation(savedPosition)
-
-position2 = createPoint(GMR.GetClosestPointOnMesh(select(8, GetInstanceInfo()), QuestingPointToMove.x, QuestingPointToMove.y, QuestingPointToMove.z))
 
 AStar.canPathBeMoved(Movement.path)
 
@@ -252,5 +195,37 @@ Movement.canPlayerStandOnPoint(MovementPath[4])
 
 Compatibility.QuestLog.isComplete(C_SuperTrack.GetSuperTrackedQuestID())
 
-position1 = Movement.retrievePlayerPosition()
+position1 = Movement.retrieveCharacterPosition()
 position2 = Movement.createPointWithZOffset(position1, 3.5)
+
+C_QuestLog.GetQuestsOnMap(Core.receiveMapIDForWhereTheCharacterIsAt())
+
+pointer = HWT.GetObject('target')
+
+Core.calculateDistanceToObject(pointer)
+
+runAsCoroutine(function () DevTools_Dump(Questing_.retrieveQuestStartPointsFromQuestLines()) end)
+
+HWT.IsMapLoaded(Core.receiveMapIDForWhereTheCharacterIsAt())
+
+HWT.LoadMap(0)
+
+Core.retrieveClosestPositionOnMesh(Core.retrieveObjectPosition('target'))
+
+p = Core.retrieveObjectPosition('target')
+
+Core.retrieveClosestPositionOnMesh(Core.createWorldPosition(p.continentID, p.x, p.y, 10000))
+
+Core.retrieveZCoordinate(Core.retrieveObjectPosition('target'))
+
+HWT.GetAnglesBetweenObjects('player', 'target')
+
+Core.calculateAnglesBetweenTwoPoints(Core.retrieveObjectPosition('player'), Core.retrieveObjectPosition('target'))
+
+HWT.LoadMap(Core.retrieveCurrentContinentID(), 'retail2')
+
+HWT.IsMapLoaded(Core.retrieveCurrentContinentID())
+
+HWT.LoadMap(Core.retrieveCurrentContinentID())
+
+HWT.UnloadMap(Core.retrieveCurrentContinentID())

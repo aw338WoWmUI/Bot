@@ -18,13 +18,13 @@ end
 
 function isWalkableOn(point)
   local offset = 0.5
-  return toBoolean(GMR.TraceLine(point.x, point.y, point.z + offset, point.x, point.y, point.z - offset))
+  return toBoolean(HWT.TraceLine(point.x, point.y, point.z + offset, point.x, point.y, point.z - offset, Core.TraceLineHitFlags.COLLISION))
 end
 
 function visualizeMesh()
   Array.forEach(connections, function (connection)
     local pointA = points[connection[1]]
     local pointB = points[connection[2]]
-    GMR.LibDraw.Line(pointA.x, pointA.y, pointA.z, pointB.x, pointB.y, pointB.z)
+    LibDraw.Line(pointA.x, pointA.y, pointA.z, pointB.x, pointB.y, pointB.z)
   end)
 end

@@ -12,6 +12,8 @@ local closestNPCs = {
   Repair = nil
 }
 
+Questing.closestNPCs = closestNPCs
+
 Q_ = _
 
 function _.updateNPCPositionsToClosest()
@@ -19,7 +21,6 @@ function _.updateNPCPositionsToClosest()
   if lastContinentID and continentID ~= lastContinentID then
     for key in pairs(closestNPCs) do
       closestNPCs[key] = nil
-      GMR.Tables.Profile.Vendor[key] = nil
     end
   end
 
@@ -33,21 +34,18 @@ end
 function _.updateGoodsVendorToClosest()
   _.updateNPCPositionToClosest(_.findClosestGoodsVendor, function(npc)
     closestNPCs.Goods = npc
-    GMR.DefineGoodsVendor(npc.x, npc.y, npc.z, npc.ID)
   end)
 end
 
 function _.updateSellVendorToClosest()
   _.updateNPCPositionToClosest(_.findClosestSellVendor, function(npc)
     closestNPCs.Sell = npc
-    GMR.DefineSellVendor(npc.x, npc.y, npc.z, npc.ID)
   end)
 end
 
 function _.updateRepairerToClosest()
   _.updateNPCPositionToClosest(_.findClosestCanRepairNPC, function(npc)
     closestNPCs.Repair = npc
-    GMR.DefineRepairVendor(npc.x, npc.y, npc.z, npc.ID)
   end)
 end
 
@@ -71,7 +69,7 @@ function _.findClosestCanRepairNPC()
 end
 
 function _.findClosestNPC(matches, fallbackList)
-  local objects = retrieveObjects()
+  local objects = Core.retrieveObjects()
   local NPCs = Array.filter(objects, function(object)
     return matches(object)
   end)
@@ -82,7 +80,7 @@ function _.findClosestNPC(matches, fallbackList)
     end)
   end
   local npc = Array.min(NPCs, function(NPC)
-    return GMR.GetDistanceToPosition(NPC.x, NPC.y, NPC.z)
+    return Core.calculateDistanceFromCharacterToPosition(NPC)
   end)
   if npc then
     npc.continentID = select(8, GetInstanceInfo())
@@ -91,15 +89,15 @@ function _.findClosestNPC(matches, fallbackList)
 end
 
 function _.isGoodsVendor(object)
-  return Core.isFoodVendor(object.pointer) and GMR.UnitReaction('player', object.pointer) >= 4
+  return Core.isFoodVendor(object.pointer) and Core.unitReaction('player', object.pointer) >= 4
 end
 
 function _.isSellVendor(object)
-  return Core.isSellVendor(object.pointer) and GMR.UnitReaction('player', object.pointer) >= 4
+  return Core.isSellVendor(object.pointer) and Core.unitReaction('player', object.pointer) >= 4
 end
 
 function _.isRepair(object)
-  return Core.isRepair(object.pointer) and GMR.UnitReaction('player', object.pointer) >= 4
+  return Core.isRepair(object.pointer) and Core.unitReaction('player', object.pointer) >= 4
 end
 
 function _.buildNPCsLookupTables()

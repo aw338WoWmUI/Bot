@@ -1,5 +1,5 @@
 ## Title: Warrior
 ## Interface: 100002
-## Dependencies: Questing, Yielder, GMR
+## Dependencies: Questing, Yielder, GMR, Bot
 
 Warrior.lua

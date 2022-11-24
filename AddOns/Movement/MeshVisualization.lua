@@ -7,17 +7,15 @@ local _ = {}
 local RANGE = 5
 
 local function convertVertexToScreenPoint(vertex)
-  local x, y = GMR.WorldToScreen(vertex[1], vertex[2], vertex[3])
-  return { x, y }
+  return Core.convertWorldPositionToScreenPosition(Core.createPosition(vertex[1], vertex[2], vertex[3]))
 end
 
 local function visualizePolygons()
-  local continentID = select(8, GetInstanceInfo())
-  local position = Movement.retrievePlayerPosition()
-  local polygon = HWT.GetClosestMeshPolygon(continentID, position.x, position.y, position.z, RANGE, RANGE, RANGE)
+  local position = Core.retrieveCharacterPosition()
+  local polygon = Core.retrieveClosestMeshPolygon(position, RANGE, RANGE, RANGE)
 
   if polygon then
-    local polygons = HWT.GetMeshPolygons(continentID, polygon, position.x, position.y, position.z, RANGE)
+    local polygons = HWT.GetMeshPolygons(position.continentID, polygon, position.x, position.y, position.z, RANGE)
 
     if polygons then
       local options = {
@@ -40,11 +38,11 @@ function MeshVisualization.visualizePolygon(polygon, options)
     local points = Array.map(vertices, convertVertexToScreenPoint)
     Draw.drawPolygon(points, options.fillColor)
 
-    GMR.LibDraw.SetColorRaw(unpack(options.color))
+    LibDraw.SetColorRaw(unpack(options.color))
     local previousPoint = vertices[1]
     for index = 2, #vertices do
       local point = vertices[index]
-      GMR.LibDraw.Line(
+      LibDraw.Line(
         previousPoint[1],
         previousPoint[2],
         previousPoint[3],
@@ -54,7 +52,7 @@ function MeshVisualization.visualizePolygon(polygon, options)
       )
       previousPoint = point
     end
-    GMR.LibDraw.Line(
+    LibDraw.Line(
       previousPoint[1],
       previousPoint[2],
       previousPoint[3],
@@ -66,7 +64,7 @@ function MeshVisualization.visualizePolygon(polygon, options)
 end
 
 local function setDrawColor(red, green, blue)
-  GMR.LibDraw.SetColorRaw(red / 255, green / 255, blue / 255, 1)
+  LibDraw.SetColorRaw(red / 255, green / 255, blue / 255, 1)
 end
 
 local function visualizeOffMeshConnections()
@@ -78,22 +76,22 @@ local function visualizeOffMeshConnections()
 
     local function drawConnection(connection)
       local x1, y1, z1, x2, y2, z2 = select(4, HWT.GetOffmeshConnectionDetails(connection))
-      local isPoint1InRange = GMR.GetDistanceToPosition(x1, y1, z1) <= RANGE
-      local isPoint2InRange = GMR.GetDistanceToPosition(x2, y2, z2) <= RANGE
+      local isPoint1InRange = Core.calculateDistanceFromCharacterToPosition(createPoint(x1, y1, z1)) <= RANGE
+      local isPoint2InRange = Core.calculateDistanceFromCharacterToPosition(createPoint(x2, y2, z2)) <= RANGE
       if isPoint1InRange or isPoint2InRange then
-        GMR.LibDraw.Line(x1, y1, z1, x2, y2, z2)
+        LibDraw.Line(x1, y1, z1, x2, y2, z2)
         if isPoint1InRange then
-          GMR.LibDraw.Circle(x1, y1, z1, radius)
+          LibDraw.Circle(x1, y1, z1, radius)
         end
         if isPoint2InRange then
-          GMR.LibDraw.Circle(x2, y2, z2, radius)
+          LibDraw.Circle(x2, y2, z2, radius)
         end
       end
     end
 
     local closestConnection = AddOn.findClosestOffMeshConnection()
 
-    GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
+    LibDraw.SetColorRaw(0, 0, 1, 1)
     Array.forEach(connections, function(connection)
       if connection ~= closestConnection then
         drawConnection(connection)
@@ -109,15 +107,13 @@ end
 
 local isMeshVisualizationEnabled = false
 
-doWhenGMRIsFullyLoaded(function()
-  Draw.connectWithLibDraw(GMR.LibDraw)
+Draw.connectWithLibDraw(LibDraw)
 
-  GMR.LibDraw.Sync(function()
-    if isMeshVisualizationEnabled then
-      visualizePolygons()
-      visualizeOffMeshConnections()
-    end
-  end)
+LibDraw.Sync(function()
+  if isMeshVisualizationEnabled then
+    visualizePolygons()
+    visualizeOffMeshConnections()
+  end
 end)
 
 -- FIXME: Enabling mesh visualization seems to crash the game sometimes.
@@ -125,11 +121,12 @@ function toggleMeshVisualization()
   local isEnablingMeshVisualization = not isMeshVisualizationEnabled
 
   if isEnablingMeshVisualization then
-    if not GMR.IsMeshLoaded() then
-      GMR.LoadMeshFiles()
+    local continentID = Core.retrieveCurrentContinentID()
+    if not HWT.IsMapLoaded(continentID) then
+      HWT.LoadMap(continentID)
       Conditionals.doOnceWhen(
         function()
-          return GMR.IsMeshLoaded()
+          return HWT.IsMapLoaded(continentID)
         end,
         _.toggleMeshVisualization2
       )

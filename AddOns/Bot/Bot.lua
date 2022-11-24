@@ -10,26 +10,15 @@ local handler = nil
 
 function Bot.start()
   if not Bot.isRunning() then
-    local text = 'Starting bot'
-    if GMRHelpers.isFullyLoaded() then
-      text = text .. '...'
-    else
-      text = text .. ' when GMR is fully loaded...'
-    end
-    print(text)
+    print('Starting bot...')
 
     isRunning = true
 
-    doWhenGMRIsFullyLoaded(function()
-      handler = Scheduling.doEachFrame(function()
-        Bot.Warrior.castSpell()
-      end)
-
-      Questing.start()
-      if not GMR.Frames.CombatRotationMode then
-        GMR.CombatRotationToggle()
-      end
+    handler = Scheduling.doEachFrame(function()
+      Bot.Warrior.castSpell()
     end)
+
+    Questing.start()
   end
 end
 
@@ -39,9 +28,6 @@ function Bot.stop()
     isRunning = false
     handler:Cancel()
     Questing.stop()
-    if GMR.Frames.CombatRotationMode then
-      GMR.CombatRotationToggle()
-    end
   end
 end
 

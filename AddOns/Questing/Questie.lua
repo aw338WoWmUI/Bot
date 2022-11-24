@@ -1,7 +1,7 @@
 local addOnName, AddOn = ...
 
 --function selectCloseQuests(quests)
---  local playerPosition = GMR.GetPlayerPosition()
+--  local playerPosition = Core.retrieveCharacterPosition()
 --  local MAXIMUM_DISTANCE = 100
 --  return Array.filter(quests, function (quest)
 --    local questGiverID = quest.
@@ -42,7 +42,7 @@ function AddOn.retrieveQuestieTooltip(object)
     key = 'i'
   end
   if key then
-    key = key .. '_' .. GMR.ObjectId(object)
+    key = key .. '_' .. HWT.ObjectId(object)
     return QuestieTooltips.lookupByKey[key]
   else
     return nil

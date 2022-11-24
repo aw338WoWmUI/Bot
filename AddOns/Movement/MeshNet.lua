@@ -25,11 +25,11 @@ function makePolygons(zCoordinates)
 end
 
 function savePosition1()
-  position1 = Movement.closestPointOnGrid(Movement.retrievePlayerPosition())
+  position1 = Movement.closestPointOnGrid(Movement.retrieveCharacterPosition())
 end
 
 function savePosition2()
-  position2 = Movement.closestPointOnGrid(Movement.retrievePlayerPosition())
+  position2 = Movement.closestPointOnGrid(Movement.retrieveCharacterPosition())
 end
 
 function generateMeshNetForSavedPositions()

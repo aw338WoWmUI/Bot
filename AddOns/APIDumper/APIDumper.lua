@@ -33,10 +33,10 @@ end
 
 function _.dumpForVersion(variable, variableName, outputFileName)
   local output = _.dump(variable, variableName)
-  if not GMR.DirectoryExists(directory) then
-    GMR.CreateDirectory(directory)
+  if not HWT.DirectoryExists(directory) then
+    HWT.CreateDirectory(directory)
   end
-  GMR.WriteFile(directory .. '/' .. outputFileName, output)
+  HWT.WriteFile(directory .. '/' .. outputFileName, output)
 end
 
 function _.dump(variable, variableName)

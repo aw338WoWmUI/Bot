@@ -1,6 +1,7 @@
 ## Title: Bot
 ## Interface: 30400
-## Dependencies: Boolean, Scheduling, GMR
+## Dependencies: Boolean, Scheduling
 
 Bot.lua
+Core.lua
 Warrior.lua

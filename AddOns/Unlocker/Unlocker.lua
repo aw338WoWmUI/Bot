@@ -59,9 +59,9 @@ function Unlocker.ObjectQuests(object)
   if quests then
     local questIDs = Set.create()
     for questID, objectives in pairs(quests) do
-      if GMR.IsQuestActive(questID) then
+      if Compatibility.QuestLog.isOnQuest(questID) then
         for objectiveIndex in pairs(objectives) do
-          if not GMR.Questing.IsObjectiveCompleted(questID, objectiveIndex) then
+          if not Core.isObjectiveComplete(questID, objectiveIndex) then
             Set.add(questIDs, questID)
             break
           end

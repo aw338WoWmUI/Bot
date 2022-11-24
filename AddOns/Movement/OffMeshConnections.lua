@@ -15,35 +15,33 @@ local function addOffMeshConnections(offMeshConnections)
   Array.forEach(offMeshConnections, addOffMeshConnection)
 end
 
-doWhenGMRIsFullyLoaded(function()
-  if not GMR.IsMeshLoaded() then
-    GMR.LoadMeshFiles()
-  end
+doWhenHWTIsLoaded(function()
+  Core.loadMapForCurrentContinentIfNotLoaded()
 
   Conditionals.doOnceWhen(
     function()
-      return GMR.IsMeshLoaded()
+      return Core.isMapLoadedForCurrentCotinent()
     end,
     function()
       addOffMeshConnections(AddOn.offMeshConnections)
     end
   )
 
-  GMR.LibDraw.Sync(function()
+  LibDraw.Sync(function()
     if firstOffMeshConnectionPoint or secondOffMeshConnectionPoint then
-      GMR.LibDraw.SetColorRaw(0, 0, 1, 1)
+      LibDraw.SetColorRaw(0, 0, 1, 1)
       if firstOffMeshConnectionPoint and secondOffMeshConnectionPoint then
-        GMR.LibDraw.Line(
+        LibDraw.Line(
           firstOffMeshConnectionPoint.x, firstOffMeshConnectionPoint.y, firstOffMeshConnectionPoint.z,
           secondOffMeshConnectionPoint.x, secondOffMeshConnectionPoint.y, secondOffMeshConnectionPoint.z
         )
       end
       if firstOffMeshConnectionPoint then
-        GMR.LibDraw.Circle(firstOffMeshConnectionPoint.x, firstOffMeshConnectionPoint.y, firstOffMeshConnectionPoint.z,
+        LibDraw.Circle(firstOffMeshConnectionPoint.x, firstOffMeshConnectionPoint.y, firstOffMeshConnectionPoint.z,
           CIRCLE_RADIUS)
       end
       if secondOffMeshConnectionPoint then
-        GMR.LibDraw.Circle(secondOffMeshConnectionPoint.x, secondOffMeshConnectionPoint.y,
+        LibDraw.Circle(secondOffMeshConnectionPoint.x, secondOffMeshConnectionPoint.y,
           secondOffMeshConnectionPoint.z, CIRCLE_RADIUS)
       end
     end
@@ -51,16 +49,16 @@ doWhenGMRIsFullyLoaded(function()
 end)
 
 function setFirstOffMeshConnectionPoint()
-  firstOffMeshConnectionPoint = GMR.GetPlayerPosition()
+  firstOffMeshConnectionPoint = Core.retrieveCharacterPosition()
 end
 
 function setSecondOffMeshConnectionPoint()
-  secondOffMeshConnectionPoint = GMR.GetPlayerPosition()
+  secondOffMeshConnectionPoint = Core.retrieveCharacterPosition()
 end
 
 local function writeOffMeshConnectionsToFile()
   local filePath = HWT.GetWoWDirectory() .. '/Interface/AddOns/Movement/OffMeshConnectionsDatabase.lua'
-  GMR.WriteFile(filePath,
+  HWT.WriteFile(filePath,
     'local addOnName, AddOn = ...\n\nAddOn.offMeshConnections = ' .. Serialization.valueToString(AddOn.offMeshConnections) .. '\n')
 end
 
@@ -103,8 +101,8 @@ function AddOn.findClosestOffMeshConnection()
     return Array.min(connections, function(connection)
       local x1, y1, z1, x2, y2, z2 = select(4, HWT.GetOffmeshConnectionDetails(connection))
       return math.min(
-        GMR.GetDistanceToPosition(x1, y1, z1),
-        GMR.GetDistanceToPosition(x2, y2, z2)
+        Core.calculateDistanceFromCharacterToPosition(createPoint(x1, y1, z1)),
+        Core.calculateDistanceFromCharacterToPosition(createPoint(x2, y2, z2))
       )
     end)
   else

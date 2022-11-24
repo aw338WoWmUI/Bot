@@ -16,7 +16,7 @@ GMR.FaceSmoothly = function(...)
   end
 
   if x and y and z and not GMR.IsFacingXYZ(x, y, z) then
-    local playerPosition = GMR.GetPlayerPosition()
+    local playerPosition = Core.retrieveCharacterPosition()
 
     local distance = calculateDistance(playerPosition, { x = x, y = y })
 

@@ -38,6 +38,7 @@ if exist "%path%\_retail_" (
 	mklink /D "%path%\_retail_\Interface\AddOns\Scheduling" "%~dp0\AddOns\Scheduling"
 	mklink /D "%path%\_retail_\Interface\AddOns\String" "%~dp0\AddOns\String"
 	mklink /D "%path%\_retail_\Interface\AddOns\Float" "%~dp0\AddOns\Float"
+	mklink /D "%path%\_retail_\Interface\AddOns\!LibDraw" "%~dp0\AddOns\!LibDraw"
 	:: mklink /D "%path%\_retail_\Interface\AddOns\DisableGMR" "%~dp0\AddOns\DisableGMR"
 	mklink /D "%path%\_retail_\Interface\AddOns\!Fixes" "%~dp0\retail\AddOns\!Fixes"
 )
@@ -77,6 +78,7 @@ if exist "%path%\_classic_" (
 	mklink /D "%path%\_classic_\Interface\AddOns\Scheduling" "%~dp0\AddOns\Scheduling"
 	mklink /D "%path%\_classic_\Interface\AddOns\String" "%~dp0\AddOns\String"
 	mklink /D "%path%\_classic_\Interface\AddOns\Float" "%~dp0\AddOns\Float"
+	mklink /D "%path%\_classic_\Interface\AddOns\!LibDraw" "%~dp0\AddOns\!LibDraw"
 	:: mklink /D "%path%\_classic_\Interface\AddOns\DisableGMR" "%~dp0\AddOns\DisableGMR"
 )
 
@@ -115,5 +117,6 @@ if exist "%path%\_classic_era_" (
 	mklink /D "%path%\_classic_era_\Interface\AddOns\Scheduling" "%~dp0\AddOns\Scheduling"
 	mklink /D "%path%\_classic_era_\Interface\AddOns\String" "%~dp0\AddOns\String"
 	mklink /D "%path%\_classic_era_\Interface\AddOns\Float" "%~dp0\AddOns\Float"
+	mklink /D "%path%\_classic_era_\Interface\AddOns\!LibDraw" "%~dp0\AddOns\!LibDraw"
 	:: mklink /D "%path%\_classic_era_\Interface\AddOns\DisableGMR" "%~dp0\AddOns\DisableGMR"
 )

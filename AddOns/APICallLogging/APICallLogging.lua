@@ -122,7 +122,7 @@ end
 
 function _.writeToLogFile(content)
   if IS_LOGGING_ENABLED then
-    GMR.WriteFile('C:/log.txt', content, true)
+    HWT.WriteFile('C:/log.txt', content, true)
   end
 end
 

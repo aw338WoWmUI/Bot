@@ -22,8 +22,7 @@ function Questing.Coroutine.moveTo(point, options)
   local distance = options.distance or 1
 
   local function hasArrived()
-    return GMR.IsPlayerPosition(point.x, point.y, point.z,
-      distance) or additionalStopConditions and additionalStopConditions()
+    return Core.isCharacterCloseToPosition(point, distance) or additionalStopConditions and additionalStopConditions()
   end
 
   Questing.Coroutine.moveToUntil(point, hasArrived)
@@ -60,7 +59,7 @@ function Questing.Coroutine.moveToObject(pointer, distance)
   distance = distance or INTERACT_DISTANCE
 
   local function retrievePosition()
-    local position = createPoint(GMR.ObjectPosition(pointer))
+    local position = Core.retrieveObjectPosition(pointer)
 
     if Movement.isPositionInTheAir(position) and not Movement.canCharacterFly() then
       position = createPoint(
@@ -74,11 +73,11 @@ function Questing.Coroutine.moveToObject(pointer, distance)
   end
 
   local function isJobDone()
-    if not GMR.ObjectExists(pointer) then
+    if not HWT.ObjectExists(pointer) then
       return true
     else
       local position = retrievePosition()
-      return GMR.IsPlayerPosition(position.x, position.y, position.z, distance)
+      return Core.isCharacterCloseToPosition(position, distance)
     end
   end
 
@@ -104,21 +103,16 @@ end
 function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   distance = distance or INTERACT_DISTANCE
 
-  if not GMR.IsPlayerPosition(point.x, point.y, point.z, distance) then
+  if not Core.isCharacterCloseToPosition(point, distance) then
     Questing.Coroutine.moveTo(point, {
       distance = distance
     })
   end
 
   if Questing.isRunning() then
-    local pointer = GMR.FindObject(objectID)
+    local pointer = Core.findClosestObject(objectID)
     if pointer then
-      --if IsMounted() then
-      --  print('GMR.Dismount()')
-      --  GMR.Dismount()
-      --  Movement.waitForDismounted()
-      --end
-      GMR.InteractObject(pointer)
+      Core.interactWithObject(pointer)
       waitForDuration(2)
     end
   end
@@ -127,18 +121,18 @@ end
 function Questing.Coroutine.interactWithObjectWithObjectID(objectID, options)
   options = options or {}
 
-  local pointer = GMR.FindObject(objectID)
+  local pointer = Core.findClosestObject(objectID)
 
   if not pointer then
     Questing.Coroutine.moveTo(options.fallbackPosition, {
       distance = MAXIMUM_OBJECT_LOAD_DISTANCE,
       additionalStopConditions = function()
-        return GMR.FindObject(objectID)
+        return Core.findClosestObject(objectID)
       end
     })
   end
 
-  pointer = GMR.FindObject(objectID)
+  pointer = Core.findClosestObject(objectID)
   print('pointer', pointer)
   if pointer then
     Questing.Coroutine.interactWithObject(pointer, options.distance, options.delay)
@@ -148,22 +142,16 @@ end
 function Questing.Coroutine.interactWithObject(pointer, distance, delay)
   distance = distance or INTERACT_DISTANCE
 
-  local position = createPoint(GMR.ObjectPosition(pointer))
-  if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
+  local position = Core.retrieveObjectPosition(pointer)
+  if not Core.isCharacterCloseToPosition(position, distance) then
     Questing.Coroutine.moveToObject(pointer, distance)
   end
 
-  if Questing.isRunning() and GMR.ObjectExists(pointer) then
-    --if IsMounted() then
-    --  GMR.Dismount()
-    --  Movement.waitForDismounted()
-    --end
-    print(GMR.ObjectDynamicFlags(pointer), GMR.ObjectFlags(pointer), GMR.ObjectFlags2(pointer))
-    GMR.InteractObject(pointer)
+  if Questing.isRunning() and HWT.ObjectExists(pointer) then
+    Core.interactWithObject(pointer)
     waitFor(function()
       return not UnitCastingInfo('player')
     end)
-    print(GMR.ObjectDynamicFlags(pointer), GMR.ObjectFlags(pointer), GMR.ObjectFlags2(pointer))
     return true
   else
     return false
@@ -199,35 +187,37 @@ end
 function Questing.Coroutine.useItemOnNPC(point, objectID, itemID, distance)
   distance = distance or INTERACT_DISTANCE
 
-  if not GMR.IsPlayerPosition(point.x, point.y, point.z, distance) then
+  if not Core.isCharacterCloseToPosition(point, distance) then
     Questing.Coroutine.moveTo(point, {
       distance = distance
     })
   end
 
   if Questing.isRunning() then
-    GMR.Questing.UseItemOnNpc(point.x, point.y, point.z, objectID, itemID, distance)
+    local pointer = Core.findClosestObject(objectID)
+    Core.useItemByID(itemID, pointer)
   end
 end
 
 function Questing.Coroutine.useItemOnGround(point, itemID, distance)
   distance = distance or INTERACT_DISTANCE
 
-  if not GMR.IsPlayerPosition(point.x, point.y, point.z, distance) then
+  if not Core.isCharacterCloseToPosition(point, distance) then
     Questing.Coroutine.moveTo(point, {
       distance = distance
     })
   end
 
   if Questing.isRunning() then
-    GMR.Questing.UseItemOnGround(point.x, point.y, point.z, itemID, distance)
+    Core.useItemByID(itemID)
+    Core.clickPosition(point)
   end
 end
 
 function Questing.Coroutine.useItemOnPosition(position, itemID, distance)
   distance = distance or INTERACT_DISTANCE
 
-  if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
+  if not Core.isCharacterCloseToPosition(position, distance) then
     Questing.Coroutine.moveTo(position, {
       distance = distance
     })
@@ -238,8 +228,7 @@ end
 
 function Questing.Coroutine.useItem(itemID)
   if Questing.isRunning() then
-    local playerPosition = Movement.retrievePlayerPosition()
-    GMR.Questing.UseItemOnPosition(playerPosition.x, playerPosition.y, playerPosition.z, itemID)
+    Core.useItemByID(itemID)
   end
 end
 
@@ -250,9 +239,9 @@ local function selectOption(optionToSelect)
 end
 
 local function gossipWithObject(pointer, chooseOption)
-  local name = GMR.ObjectName(pointer)
+  local name = Core.retrieveObjectName(pointer)
   print(name)
-  while Questing.isRunning() and GMR.ObjectExists(pointer) and GMR.ObjectPointer('npc') ~= pointer do
+  while Questing.isRunning() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
     Questing.Coroutine.interactWithObject(pointer)
     Events.waitForEvent('GOSSIP_SHOW', 2)
     yieldAndResume()
@@ -270,7 +259,7 @@ function Questing.Coroutine.gossipWithObject(pointer, gossipOptionID)
 end
 
 local function gossipWithObjectWithObjectID(objectID, chooseOption)
-  local objectPointer = GMR.FindObject(objectID)
+  local objectPointer = Core.findClosestObject(objectID)
 
   print('objectPointer', objectPointer, objectID)
 
@@ -293,7 +282,7 @@ local function gossipWithObjectWithObjectID(objectID, chooseOption)
           return not visitedPositions[position]
         end)
         return Array.min(positionsThatCanStillBeVisited, function(position)
-          return GMR.GetDistanceToPosition(position.x, position.y, position.z)
+          return Core.calculateDistanceFromCharacterToPosition(position)
         end)
       end
 
@@ -301,7 +290,7 @@ local function gossipWithObjectWithObjectID(objectID, chooseOption)
       while closestPosition do
         Questing.Coroutine.moveTo(closestPosition)
         visitedPositions:add(closestPosition)
-        local objectPointer = GMR.FindObject(objectID)
+        local objectPointer = Core.findClosestObject(objectID)
         if objectPointer then
           gossipWithObject(objectPointer, chooseOption)
           break
@@ -346,15 +335,15 @@ function Questing.Coroutine.doMob(pointer, options)
   print('Questing.Coroutine.doMob')
   options = options or {}
 
-  local distance = GMR.GetCombatRange()
-  local objectID = GMR.ObjectId(pointer)
+  local distance = Core.retrieveCharacterCombatRange()
+  local objectID = HWT.ObjectId(pointer)
 
   local function isJobDone()
-    return not GMR.ObjectExists(pointer) or GMR.IsDead(pointer) or options.additionalStopConditions and options.additionalStopConditions()
+    return not HWT.ObjectExists(pointer) or Core.isDead(pointer) or options.additionalStopConditions and options.additionalStopConditions()
   end
 
-  local position = createPoint(GMR.ObjectPosition(pointer))
-  if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
+  local position = Core.retrieveObjectPosition(pointer)
+  if not Core.isCharacterCloseToPosition(position, distance) then
     Questing.Coroutine.moveToObject(pointer, distance)
   end
 
@@ -362,28 +351,24 @@ function Questing.Coroutine.doMob(pointer, options)
     Movement.dismount()
   end
 
-  print('targeting', GMR.ObjectName(pointer))
-  GMR.TargetObject(pointer)
-  local targetObject = GMR.TargetObject
-  GMR.TargetObject = Function.noOperation
-  GMR.StartAttack()
+  print('targeting', Core.retrieveObjectName(pointer))
+  Core.targetUnit(pointer)
+  Core.startAttacking()
 
   while Questing.isRunning() and not isJobDone() do
-    local position = createPoint(GMR.ObjectPosition(pointer))
-    if not GMR.IsPlayerPosition(position.x, position.y, position.z, distance) then
+    local position = Core.retrieveObjectPosition(pointer)
+    if not Core.isCharacterCloseToPosition(position, distance) then
       Questing.Coroutine.moveToObject(pointer, distance)
     end
     yieldAndResume()
   end
 
-  if not GMR.InCombat() then
-    local x, y, z = GMR.ObjectPosition(pointer)
-    if GMR.IsPlayerPosition(x, y, z, INTERACT_DISTANCE) then
+  if not Bot.isCharacterInCombat() then
+    local position = Core.retrieveObjectPosition(pointer)
+    if Core.isCharacterCloseToPosition(position, INTERACT_DISTANCE) then
       Questing.Coroutine.lootObject(pointer)
     end
   end
-
-  GMR.TargetObject = targetObject
 
   print('--- Questing.Coroutine.doMob')
 end

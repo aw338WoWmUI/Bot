@@ -81,3 +81,27 @@ function Compatibility.QuestLog.retrieveNumberOfQuestLogEntries()
     return GetNumQuestLogEntries()
   end
 end
+
+function Compatibility.QuestLog.isQuestFlaggedCompleted(questID)
+  if C_QuestLog.IsQuestFlaggedCompleted then
+    return C_QuestLog.IsQuestFlaggedCompleted(questID)
+  else
+    return IsQuestFlaggedCompleted(questID)
+  end
+end
+
+function Compatibility.QuestLog.SetAbandonQuest(questID)
+	if C_QuestLog.SetAbandonQuest then
+    C_QuestLog.SetAbandonQuest(questID)
+  else
+    SetAbandonQuest(questID)
+  end
+end
+
+function Compatibility.QuestLog.AbandonQuest()
+	if C_QuestLog.AbandonQuest then
+    C_QuestLog.AbandonQuest()
+  else
+    AbandonQuest()
+  end
+end

@@ -13,7 +13,7 @@ local function angleTo(from, to)
 end
 
 local function isPlayerInRange(coordinates, range)
-  local playerPosition = GMR.GetPlayerPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   local distance = calculateDistance(playerPosition, coordinates)
   return distance ~= nil and distance <= range
 end
@@ -22,19 +22,10 @@ local function hasArrivedAt(coordinates, proximityTolerance)
   return isPlayerInRange(coordinates, proximityTolerance)
 end
 
-local function retrieveObjectPosition(identifier)
-  local x, y, z = GMR.ObjectPosition(identifier)
-  return {
-    x = x,
-    y = y,
-    z = z
-  }
-end
-
 local function getDifferenceBetweenAngleFromPlayerToPositionAndPlayerFacingAngle(position)
-  local playerPosition = retrieveObjectPosition('player')
+  local playerPosition = Core.retrieveObjectPosition('player')
   local angleFromPlayerToTarget = angleTo(playerPosition, position)
-  local playerFacingAngle = GMR.ObjectRawFacing('player')
+  local playerFacingAngle = HWT.ObjectFacing('player')
   local differenceBetweenAngleFromPlayerToTargetAndPlayerFacingAngle = angleFromPlayerToTarget - playerFacingAngle
   if differenceBetweenAngleFromPlayerToTargetAndPlayerFacingAngle < 0 then
     differenceBetweenAngleFromPlayerToTargetAndPlayerFacingAngle = differenceBetweenAngleFromPlayerToTargetAndPlayerFacingAngle + 2 * math.pi
@@ -45,7 +36,7 @@ end
 local moveToWhileFacingDistanceProximityTolerance = 0.5
 
 function facePosition(positionToFace)
-  GMR.FaceDirection(positionToFace.x, positionToFace.y, positionToFace.z)
+  Movement.facePoint(positionToFace)
 end
 
 local moveDirections = {
@@ -86,49 +77,49 @@ end
 
 local function startMovingInDirection(moveDirection)
   if moveDirection == moveDirections.MoveForward then
-    GMR.MoveForwardStart()
+    Core.startMovingForward()
   elseif moveDirection == moveDirections.MoveForwardAndStrafeLeft then
-    GMR.MoveForwardStart()
-    GMR.StrafeLeftStart()
+    Core.startMovingForward()
+    Core.startStrafingLeft()
   elseif moveDirection == moveDirections.StrafeLeft then
-    GMR.StrafeLeftStart()
+    Core.startStrafingLeft()
   elseif moveDirection == moveDirections.MoveBackwardAndStrafeLeft then
-    GMR.MoveBackwardStart()
-    GMR.StrafeLeftStart()
+    Core.startMovingBackward()
+    Core.startStrafingLeft()
   elseif moveDirection == moveDirections.MoveBackward then
-    GMR.MoveBackwardStart()
+    Core.startMovingBackward()
   elseif moveDirection == moveDirections.MoveBackwardAndStrafeRight then
-    GMR.MoveBackwardStart()
-    GMR.StrafeRightStart()
+    Core.startMovingBackward()
+    Core.startStrafingRight()
   elseif moveDirection == moveDirections.StrafeRight then
-    GMR.StrafeRightStart()
+    Core.startStrafingRight()
   elseif moveDirection == moveDirections.MoveForwardAndStrafeRight then
-    GMR.MoveForwardStart()
-    GMR.StrafeRightStart()
+    Core.startMovingForward()
+    Core.startStrafingRight()
   end
 end
 
 local function stopMovingInDirection(moveDirection)
   if moveDirection == moveDirections.MoveForward then
-    GMR.MoveForwardStop()
+    Core.stopMovingForward()
   elseif moveDirection == moveDirections.MoveForwardAndStrafeLeft then
-    GMR.MoveForwardStop()
-    GMR.StrafeLeftStop()
+    Core.stopMovingForward()
+    Core.stopStrafingLeft()
   elseif moveDirection == moveDirections.StrafeLeft then
-    GMR.StrafeLeftStop()
+    Core.stopStrafingLeft()
   elseif moveDirection == moveDirections.MoveBackwardAndStrafeLeft then
-    GMR.MoveBackwardStop()
-    GMR.StrafeLeftStop()
+    Core.stopMovingBackward()
+    Core.stopStrafingLeft()
   elseif moveDirection == moveDirections.MoveBackward then
-    GMR.MoveBackwardStop()
+    Core.stopMovingBackward()
   elseif moveDirection == moveDirections.MoveBackwardAndStrafeRight then
-    GMR.MoveBackwardStop()
-    GMR.StrafeRightStop()
+    Core.stopMovingBackward()
+    Core.stopStrafingRight()
   elseif moveDirection == moveDirections.StrafeRight then
-    GMR.StrafeRightStop()
+    Core.stopStrafingRight()
   elseif moveDirection == moveDirections.MoveForwardAndStrafeRight then
-    GMR.MoveForwardStop()
-    GMR.StrafeRightStop()
+    Core.stopMovingForward()
+    Core.stopStrafingRight()
   end
 end
 
@@ -138,7 +129,7 @@ function moveToWithCurrentFacingDirection(position)
 
   local handler
   handler = C_Timer.NewTicker(1 / 60, function()
-    local playerPosition = retrieveObjectPosition('player')
+    local playerPosition = Core.retrieveObjectPosition('player')
     local distance = calculateDistance(
       playerPosition,
       position

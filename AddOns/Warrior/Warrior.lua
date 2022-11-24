@@ -2,7 +2,7 @@ function doWhenInCombat(fn)
   doWhenGMRIsFullyLoaded(function()
     local yielder = createYielder()
     while true do
-      if GMR.InCombat() then
+      if Bot.isCharacterInCombat() then
         fn()
       end
       yielder.yield()
