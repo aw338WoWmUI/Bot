@@ -1428,7 +1428,7 @@ function Movement.mountOnMount(mountID)
   if not Movement.isMountedOn(mountID) then
     local spellName = C_MountJournal.GetMountInfoByID(mountID)
     if spellName then
-      Core.CastSpellByName(spellName)
+      Core.castSpellByName(spellName)
       -- There seems to be some buildings where `IsOutdoors()` returns `true` and there cannot be flown (one found in Bastion).
       waitForDuration(1)
       -- With this check we check if the casting works.
@@ -1938,16 +1938,8 @@ function Movement.convertPointToArray(point)
   return { point.x, point.y, point.z }
 end
 
-function Movement.convertArrayToPoint(point)
-  return createPoint(unpack(point))
-end
-
 function Movement.convertPathToGMRPath(path)
   return Array.map(path, Movement.convertPointToArray)
-end
-
-function Movement.convertGMRPathToPath(path)
-  return Array.map(path, Movement.convertArrayToPoint)
 end
 
 function Movement.moveToSavedPath()
@@ -2141,28 +2133,25 @@ function Movement.initializeSavedVariables()
 end
 
 function findPathE()
-  Movement.path = Movement.convertGMRPathToPath(Core.FindPathFromCharacterTo(savedPosition))
+  Movement.path = Core.findPathFromCharacterTo(savedPosition)
   MovementPath = Movement.path
 end
 
 function findPathE2()
   local playerPosition = Movement.retrieveCharacterPosition()
-  Movement.path = Movement.convertGMRPathToPath(Core.FindPath(playerPosition, savedPosition))
+  Movement.path = Core.findPath(playerPosition, savedPosition)
   MovementPath = Movement.path
 end
 
 function findPathE3()
   local playerPosition = Movement.retrieveCharacterPosition()
-  Movement.path = Movement.convertGMRPathToPath(Core.FindPath(playerPosition, savedPosition))
+  Movement.path = Core.findPath(playerPosition, savedPosition)
   MovementPath = Movement.path
   return AStar.canPathBeMoved(Movement.path)
 end
 
 function findPathE4()
-  local path = Core.FindPathFromCharacterTo(QuestingPointToMove)
-  if path then
-    path = Movement.convertGMRPathToPath(path)
-  end
+  local path = Core.findPathFromCharacterTo(QuestingPointToMove)
   Movement.path = path
   MovementPath = Movement.path
 end
@@ -2175,17 +2164,14 @@ function findPathE5()
   local path = HWT.FindPath(continentID, start.x, start.y, start.z, QuestingPointToMove.x, QuestingPointToMove.y,
     QuestingPointToMove.z, false, 1024, 0, 1, false)
   if path then
-    path = Movement.convertGMRPathToPath(path)
+    path = Core.convertHWTPathToPath(path)
   end
   Movement.path = path
   MovementPath = Movement.path
 end
 
 function findPathE6()
-  local path = Core.FindPathFromCharacterTo(savedPosition)
-  if path then
-    path = Movement.convertGMRPathToPath(path)
-  end
+  local path = Core.findPathFromCharacterTo(savedPosition)
   Movement.path = path
   MovementPath = Movement.path
   print('path')

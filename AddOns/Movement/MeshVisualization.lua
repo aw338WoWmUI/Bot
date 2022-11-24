@@ -36,8 +36,6 @@ function MeshVisualization.visualizePolygon(polygon, options)
   local vertices = HWT.GetMeshPolygonVertices(continentID, polygon)
   if vertices then
     local points = Array.map(vertices, convertVertexToScreenPoint)
-    print('points')
-    DevTools_Dump(points)
     Draw.drawPolygon(points, options.fillColor)
 
     LibDraw.SetColorRaw(unpack(options.color))

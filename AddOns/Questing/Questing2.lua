@@ -958,26 +958,6 @@ function retrieveQuestObjectiveInfo(questID, objectiveIndex)
   return objectives[objectiveIndex]
 end
 
-function calculatePathLength(path)
-  local previousPoint = path[1]
-  return Array.reduce(Array.slice(path, 2), function(length, point)
-    length = length + Core.calculateDistanceBetweenPositions(
-      Core.createPosition(
-        previousPoint[1],
-        previousPoint[2],
-        previousPoint[3]
-      ),
-      Core.createPosition(
-        point[1],
-        point[2],
-        point[3]
-      )
-    )
-    previousPoint = point
-    return length
-  end, 0)
-end
-
 local function determineClosestPoint(points)
   local playerPosition = Core.retrieveCharacterPosition()
   return Array.min(points, function(point)
@@ -1449,7 +1429,7 @@ local function moveToPoint(point)
       waitForSpecialItemUsable(point)
       print('use after wait')
       local name = GetItemInfo(point.itemID)
-      Core.CastSpellByName(name)
+      Core.castSpellByName(name)
     end
   elseif point.type == 'objectToUseItemOnWhenDead' then
     print('objectToUseItemOnWhenDead')
@@ -1611,8 +1591,6 @@ function _.retrievePositionFromObjectID(objectID)
   end
 end
 
-local firstTime = true
-
 doWhenHWTIsLoaded(function()
   LibDraw.Sync(function()
     if QuestingPointToShow then
@@ -1627,8 +1605,7 @@ doWhenHWTIsLoaded(function()
       LibDraw.Circle(point.x, point.y, point.z, 0.75)
     end
 
-    if polygon and firstTime then
-      firstTime = false
+    if polygon then
       MeshVisualization.visualizePolygon(
         polygon,
         {

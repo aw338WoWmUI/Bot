@@ -256,10 +256,148 @@ function Core.retrieveWorldPositionFromMapPosition(mapPosition)
   return Core.createWorldPosition(continentID, worldPosition.x, worldPosition.y, z)
 end
 
+local function lessThan(a, b)
+  return a < b
+end
+
 function Core.retrieveZCoordinate(position)
+  local SMALL_OFFSET = 1
+
+  local searchSpaces = {
+    {
+      from = MIN_Z,
+      to = MAX_Z
+    }
+  }
+  local zCoordinates = BinaryHeap.minUnique(lessThan)
+  local numberOfZCoordinatesBefore = nil
+  while true do
+    local numberOfZCoordinatesBefore = zCoordinates:size()
+
+    local zCoordinatesOfIteration = BinaryHeap.minHeap(lessThan)
+
+    Array.forEach(searchSpaces, function(searchSpace)
+      local deltaZ = (searchSpace.to - searchSpace.from) / 2
+      local z = searchSpace.from + deltaZ
+      local polygon = Core.retrieveClosestMeshPolygon(Core.createWorldPosition(position.continentID, position.x,
+        position.y, z), 0, 0, deltaZ)
+      if polygon then
+        local z = Core.retrieveZCoordinateOnPolygon(position, polygon)
+        if not zCoordinates.reverse[z] then
+          zCoordinates:insert(z, z)
+          zCoordinatesOfIteration:insert(z)
+        end
+      end
+    end)
+
+    local numberOfZCoordinatesAfter = zCoordinates:size()
+
+    if numberOfZCoordinatesAfter == numberOfZCoordinatesBefore then
+      break
+    end
+
+    local zCoordinatesToConstructSearchSpacesFrom = zCoordinatesOfIteration
+
+    local smallestZCoordinateOfIteration = zCoordinatesOfIteration.values[1]
+    local indexOfSmallestZCoordinateInZCoordinates = zCoordinates.reverse[smallestZCoordinateOfIteration]
+    local smallerZCoordinateThanSmallestOneOfIteration
+    if indexOfSmallestZCoordinateInZCoordinates == 1 then
+      smallerZCoordinateThanSmallestOneOfIteration = MIN_Z
+    else
+      smallerZCoordinateThanSmallestOneOfIteration = zCoordinates.values[indexOfSmallestZCoordinateInZCoordinates - 1]
+    end
+    zCoordinatesToConstructSearchSpacesFrom:insert(smallerZCoordinateThanSmallestOneOfIteration)
+
+    local biggestZCoordinateOfIteration = zCoordinatesOfIteration.values[zCoordinatesOfIteration:size()]
+    local indexOfBiggerstZCoordinateInZCoordinates = zCoordinates.reverse[biggestZCoordinateOfIteration]
+    local biggerZCoordinateThanSmallestOneOfIteration
+    if indexOfBiggerstZCoordinateInZCoordinates == zCoordinates:size() then
+      biggerZCoordinateThanSmallestOneOfIteration = MAX_Z
+    else
+      biggerZCoordinateThanSmallestOneOfIteration = zCoordinates.values[indexOfBiggerstZCoordinateInZCoordinates + 1]
+    end
+    zCoordinatesToConstructSearchSpacesFrom:insert(biggerZCoordinateThanSmallestOneOfIteration)
+
+    searchSpaces = {}
+    for index = 2, zCoordinatesToConstructSearchSpacesFrom:size() - 1 do
+      local z = zCoordinatesToConstructSearchSpacesFrom.values[index]
+
+      local fromZ1 = zCoordinatesToConstructSearchSpacesFrom.values[index - 1]
+      local toZ1 = z - SMALL_OFFSET
+      if toZ1 > fromZ1 then
+        table.insert(searchSpaces, {
+          from = fromZ1,
+          to = toZ1
+        })
+      end
+
+      local fromZ2 = z + SMALL_OFFSET
+      local toZ2 = zCoordinatesToConstructSearchSpacesFrom.values[index + 1]
+      if fromZ2 < toZ2 then
+        table.insert(searchSpaces, {
+          from = fromZ2,
+          to = toZ2
+        })
+      end
+    end
+
+    if Array.isEmpty(searchSpaces) then
+      break
+    end
+  end
+
+  local positionAndPathObjects = Array.map(zCoordinates.values, function(z)
+    local to = Core.createWorldPosition(position.continentID, position.x, position.y, z)
+    local path = Core.findPathFromCharacterTo(to)
+    return {
+      position = to,
+      path = path
+    }
+  end)
+
+  local positionsWithPathsWherePathExistsTo = Array.filter(positionAndPathObjects, function(positionAndPath)
+    return positionAndPath.path
+  end)
+
+  local positionAndPath
+  if position.z then
+    positionAndPath = Array.min(positionsWithPathsWherePathExistsTo, function(positionAndPath)
+      return math.abs(position.z - positionAndPath.position.z)
+    end)
+  else
+    positionAndPath = Array.min(positionsWithPathsWherePathExistsTo, function(positionAndPath)
+      return Core.calculatePathLength(positionAndPath.path)
+    end)
+  end
+
+  if positionAndPath then
+    return positionAndPath.position.z
+  else
+    return nil
+  end
+end
+
+function Core.calculatePathLength(path)
+  local length = 0
+  for index = 1, #path - 1 do
+    length = length + Core.calculateDistanceBetweenPositions(path[index], path[index + 1])
+  end
+  return length
+end
+
+function Core.retrieveZCoordinate2(position, deltaZ)
   position = Core.createWorldPosition(position.continentID, position.x, position.y, position.z or 0)
-  polygon = Core.retrieveClosestMeshPolygon(position, 0, 0, 10000)
-  local vertexes = HWT.GetMeshPolygonVertices(position.continentID, polygon, 0, 0, 10000)
+  polygon = Core.retrieveClosestMeshPolygon(position, 0, 0, deltaZ)
+  if polygon then
+    return Core.retrieveZCoordinateOnPolygon(position, polygon)
+  else
+    return nil
+  end
+end
+
+function Core.retrieveZCoordinateOnPolygon(position, polygon)
+  Core.loadMapForContinentIfNotLoaded(position.continentID)
+  local vertexes = HWT.GetMeshPolygonVertices(position.continentID, polygon)
   local vertex1 = vertexes[1]
   local vertex2 = vertexes[2]
   local vector1 = Vector:new(
@@ -279,7 +417,14 @@ function Core.retrieveZCoordinate(position)
 
   local z = vertex1[3] + a * vector1.z + b * vector2.z
 
-  return z
+  local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(
+    Core.createWorldPosition(position.continentID, position.x, position.y, z)
+  )
+  if closestPositionOnMesh and Float.seemsCloseBy(closestPositionOnMesh.x, position.x) and Float.seemsCloseBy(closestPositionOnMesh.y, position.y) then
+    return closestPositionOnMesh.z
+  else
+    return z
+  end
 end
 
 function Core.retrieveClosestMeshPolygon(worldPosition, deltaX, deltaY, deltaZ, includeWater)
@@ -397,7 +542,7 @@ function Core.isAlive(objectIdentifier)
 end
 
 function Core.isDead(objectIdentifier)
-	return UnitIsDead(objectIdentifier)
+  return UnitIsDead(objectIdentifier)
 end
 
 function Core.isCharacterMoving()
@@ -425,10 +570,10 @@ function Core.stopMovingForward()
 end
 
 function Core.doesPathExistFromCharacterTo(to, options)
-  return toBoolean(Core.FindPathFromCharacterTo(to, options))
+  return toBoolean(Core.findPathFromCharacterTo(to, options))
 end
 
-function Core.FindPath(from, to, options)
+function Core.findPath(from, to, options)
   options = options or {}
 
   local includeWater
@@ -443,16 +588,30 @@ function Core.FindPath(from, to, options)
   local searchDeviation = options.searchDeviation or 3
   local isSmooth = options.isSmooth or false
 
-  return HWT.FindPath(from.continentID, from.x, from.y, from.z, to.x, to.y, to.z, not includeWater, searchCapacity,
+  local continentID = from.continentID
+  Core.loadMapForContinentIfNotLoaded(continentID)
+  local path = HWT.FindPath(continentID, from.x, from.y, from.z, to.x, to.y, to.z, not includeWater, searchCapacity,
     agentRadius, searchDeviation, isSmooth)
+  if path then
+    path = Core.convertHWTPathToPath(path)
+  end
+  return path
 end
 
-function Core.FindPathFromCharacterTo(to, options)
+function Core.findPathFromCharacterTo(to, options)
   local characterPosition = Core.retrieveCharacterPosition()
-  return Core.FindPath(characterPosition, to, options)
+  return Core.findPath(characterPosition, to, options)
 end
 
-function Core.CastSpellByName(name, target)
+function Core.convertHWTPathToPath(path)
+  return Array.map(path, Core.convertPositionArrayToPosition)
+end
+
+function Core.convertPositionArrayToPosition(positionArray)
+  return Core.createPosition(unpack(positionArray))
+end
+
+function Core.castSpellByName(name, target)
   return CastSpellByName(name, target)
 end
 
@@ -604,7 +763,7 @@ function Core.retrieveObjects()
 end
 
 function Core.retrieveObjectWhichAreCloseToTheCharacter(maximumDistance)
-	return Array.filter(Core.retrieveObjects(), function (object)
+  return Array.filter(Core.retrieveObjects(), function(object)
     return Core.isCharacterCloseToPosition(object, maximumDistance)
   end)
 end
@@ -654,5 +813,5 @@ function Core.clickPosition(position, rightClick)
 end
 
 function Core.retrieveCharacterCombatRange()
-	return HWT.UnitCombatReach('player')
+  return HWT.UnitCombatReach('player')
 end

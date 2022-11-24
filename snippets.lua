@@ -229,3 +229,15 @@ HWT.IsMapLoaded(Core.retrieveCurrentContinentID())
 HWT.LoadMap(Core.retrieveCurrentContinentID())
 
 HWT.UnloadMap(Core.retrieveCurrentContinentID())
+
+Core.retrieveZCoordinate(QuestingPointToShow)
+
+-- QuestingPointToShow.z
+
+Core.retrieveZCoordinate(Core.createWorldPosition(QuestingPointToShow.continentID, QuestingPointToShow.x, QuestingPointToShow.y, 0))
+
+Core.retrieveZCoordinate2(Core.createWorldPosition(QuestingPointToShow.continentID, QuestingPointToShow.x, QuestingPointToShow.y, QuestingPointToShow.z - 1), 1)
+
+Core.retrieveZCoordinate(Core.createWorldPosition(QuestingPointToShow.continentID, QuestingPointToShow.x, QuestingPointToShow.y, nil))
+
+Core.retrieveZCoordinate(Core.createWorldPosition(Core.retrieveCurrentContinentID(), savedPosition.x, savedPosition.y, nil))
