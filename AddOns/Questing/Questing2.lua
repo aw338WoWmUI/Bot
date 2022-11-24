@@ -1611,6 +1611,8 @@ function _.retrievePositionFromObjectID(objectID)
   end
 end
 
+local firstTime = true
+
 doWhenHWTIsLoaded(function()
   LibDraw.Sync(function()
     if QuestingPointToShow then
@@ -1625,7 +1627,8 @@ doWhenHWTIsLoaded(function()
       LibDraw.Circle(point.x, point.y, point.z, 0.75)
     end
 
-    if polygon then
+    if polygon and firstTime then
+      firstTime = false
       MeshVisualization.visualizePolygon(
         polygon,
         {
@@ -1794,7 +1797,7 @@ end
 function determineNumberOfFreeInventorySlots()
   local numberOfFreeSlots = 0
   for containerIndex = 0, NUM_BAG_SLOTS do
-    numberOfFreeSlots = numberOfFreeSlots + GetContainerNumFreeSlots(containerIndex)
+    numberOfFreeSlots = numberOfFreeSlots + Compatibility.Container.receiveNumberOfFreeSlotsInContainer(containerIndex)
   end
   return numberOfFreeSlots
 end

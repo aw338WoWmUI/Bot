@@ -2139,6 +2139,7 @@ end
 function Movement.onAddonLoaded(addonName)
   if addonName == 'Movement' then
     Movement.initializeSavedVariables()
+    _.doWhenAddOnHasBeenLoaded()
   end
 end
 
@@ -2172,10 +2173,6 @@ function Movement.initializeSavedVariables()
     MovementSavedVariables.nextPathIndex = 1
   end
 end
-
-Movement.frame = CreateFrame('Frame')
-Movement.frame:SetScript('OnEvent', Movement.onEvent)
-Movement.frame:RegisterEvent('ADDON_LOADED')
 
 function findPathE()
   Movement.path = Movement.convertGMRPathToPath(Core.FindPathFromCharacterTo(savedPosition))
@@ -2228,41 +2225,47 @@ end
 
 -- position2 = Movement.createPointWithZOffset(Movement.retrievePlayerPosition(), Movement.retrieveCharacterHeight())
 
--- TODO: Continent ID
+function _.doWhenAddOnHasBeenLoaded()
+  -- TODO: Continent ID
 
-Movement.addConnectionFromTo(
-  createPoint(
-    -1728,
-    1284,
-    5451.509765625
-  ),
-  createPoint(
-    -1728.5428466797,
-    1283.0802001953,
-    5451.509765625
-  ),
-  createPoint(
-    -4357.6801757812,
-    800.40002441406,
-    -40.990001678467
+  Movement.addConnectionFromTo(
+    createPoint(
+      -1728,
+      1284,
+      5451.509765625
+    ),
+    createPoint(
+      -1728.5428466797,
+      1283.0802001953,
+      5451.509765625
+    ),
+    createPoint(
+      -4357.6801757812,
+      800.40002441406,
+      -40.990001678467
+    )
   )
-)
 
-Movement.addConnectionFromToWithInteractable(
-  createPoint(
-    -4366,
-    814,
-    -40.849704742432
-  ),
-  createPoint(
-    -4366.2514648438,
-    813.20324707031,
-    -40.817531585693
-  ),
-  createPoint(
-    -4357.6801757812,
-    800.40002441406,
-    -40.990001678467
-  ),
-  373592
-)
+  Movement.addConnectionFromToWithInteractable(
+    createPoint(
+      -4366,
+      814,
+      -40.849704742432
+    ),
+    createPoint(
+      -4366.2514648438,
+      813.20324707031,
+      -40.817531585693
+    ),
+    createPoint(
+      -4357.6801757812,
+      800.40002441406,
+      -40.990001678467
+    ),
+    373592
+  )
+end
+
+Movement.frame = CreateFrame('Frame')
+Movement.frame:SetScript('OnEvent', Movement.onEvent)
+Movement.frame:RegisterEvent('ADDON_LOADED')

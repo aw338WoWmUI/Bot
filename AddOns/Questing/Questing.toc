@@ -5,7 +5,6 @@
 ## SavedVariablesPerCharacter: QuestingPointToMove, QuestingPointToShow, QuestingOptions, QuestingGoodsVendorNPCs, QuestingSellVendors, QuestingRepairerNPCs
 
 namespace.lua
-VendoringFix.lua
 data/retail/quests.lua
 data/retail/quest_giver_npc_ids.lua
 data/retail/flight_master_npc_ids.lua

@@ -39,3 +39,11 @@ function Compatibility.Container.UseContainerItem(containerIndex, slotIndex, uni
     return UseContainerItem(containerIndex, slotIndex, unitToken, reagentBankOpen)
   end
 end
+
+function Compatibility.Container.receiveNumberOfFreeSlotsInContainer(containerIndex)
+  if C_Container.GetContainerNumFreeSlots then
+    return C_Container.GetContainerNumFreeSlots(containerIndex)
+  else
+    return GetContainerNumFreeSlots(containerIndex)
+  end
+end

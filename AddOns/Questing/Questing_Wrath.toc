@@ -5,7 +5,6 @@
 ## SavedVariablesPerCharacter: QuestingPointToMove, QuestingPointToShow
 
 namespace.lua
-VendoringFix.lua
 Questie.lua
 Database_Classic.lua
 Questing.lua

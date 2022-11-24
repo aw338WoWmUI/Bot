@@ -24,10 +24,10 @@ local usedTextures = {}
 local function createTriangle(triangle, color)
   local texture = table.remove(reusableTextures) or frame:CreateTexture(nil, 'BACKGROUND')
   texture:SetColorTexture(unpack(color))
-  texture:SetVertexOffset(LOWER_LEFT_VERTEX, triangle[1][1], triangle[1][2])
-  texture:SetVertexOffset(UPPER_LEFT_VERTEX, triangle[2][1], triangle[2][2])
-  texture:SetVertexOffset(UPPER_RIGHT_VERTEX, triangle[3][1], triangle[3][2])
-  texture:SetVertexOffset(LOWER_RIGHT_VERTEX, triangle[1][1], triangle[1][2])
+  texture:SetVertexOffset(LOWER_LEFT_VERTEX, triangle[1].x, triangle[1].y)
+  texture:SetVertexOffset(UPPER_LEFT_VERTEX, triangle[2].x, triangle[2].y)
+  texture:SetVertexOffset(UPPER_RIGHT_VERTEX, triangle[3].x, triangle[3].y)
+  texture:SetVertexOffset(LOWER_RIGHT_VERTEX, triangle[1].x, triangle[1].y)
   texture:Show()
   table.insert(usedTextures, texture)
 end
@@ -62,31 +62,31 @@ function Draw.connectWithLibDraw(libDraw)
 end
 
 --createPolygon({
---  {0, 0},
---  {0, 100},
---  {100, 0}
+--  { x = 0, y = 0 },
+--  { x = 0, y = 100 },
+--  { x = 100, y = 0 }
 --})
 
 --createPolygon({
---  {0, 0},
---  {0, 100},
---  {100, 100},
---  {100, 0}
+--  { x = 0, y = 0 },
+--  { x = 0, y = 100 },
+--  { x = 100, y = 100 },
+--  { x = 100, y = 0 }
 --})
 
 --createPolygon({
---  {0, 0},
---  {0, 100},
---  {100, 100},
---  {150, 50},
---  {100, 0}
+--  { x = 0, y = 0 },
+--  { x = 0, y = 100 },
+--  { x = 100, y = 100 },
+--  { x = 150, y = 50 },
+--  { x = 100, y = 0 }
 --})
 
 --createPolygon({
---  {0, 0},
---  {0, 100},
---  {100, 100},
---  {150, 50},
---  {140, 25},
---  {100, 0}
+--  { x = 0, y = 0 },
+--  { x = 0, y = 100 },
+--  { x = 100, y = 100 },
+--  { x = 150, y = 50 },
+--  { x = 140, y = 25 },
+--  { x = 100, y = 0 }
 --})
