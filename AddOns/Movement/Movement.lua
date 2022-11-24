@@ -206,7 +206,6 @@ function Movement.canBeMovedFromPointToPoint(from, to)
   local a = Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
   local b = Movement.canBeJumpedFromPointToPoint(from, to)
   local c = Movement.canBeFlownFromPointToPoint(from, to)
-  print(a, b, c)
   return a or b or c
 end
 
@@ -285,8 +284,6 @@ Movement.JUMP_DETECTION_HEIGHT = Movement.MAXIMUM_WALK_UP_TO_HEIGHT + 0.01
 Movement.MAXIMUM_JUMP_HEIGHT = 1.675
 
 function Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
-  print('a', Movement.canPlayerStandOnPoint(to))
-  print('e', Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to))
   return (
     (Movement.isPointInDeepWater(to) or Movement.canPlayerStandOnPoint(to)) and
       Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
@@ -295,7 +292,6 @@ end
 
 function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   if from.x == to.x and from.y == to.y then
-    print(1)
     return (
       (to.z - from.z <= Movement.MAXIMUM_WALK_UP_TO_HEIGHT or (Movement.isPointInDeepWater(from) and Movement.isPointInDeepWater(to))) and
         Movement.thereAreZeroCollisions(Movement.createPointWithZOffset(from, 0.1), to)
@@ -315,7 +311,6 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
       local z = Movement.retrieveGroundZ(createPoint(point2.x, point2.y, point1.z))
 
       if not z then
-        print(2)
         return false
       end
 
@@ -324,12 +319,10 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
       local maximumDeltaZ = _.determineMaximumDeltaZ(point1, point2)
 
       if point1.x == x and point1.y == y then
-        print(3)
         return z - point1.z <= maximumDeltaZ
       end
 
       if not (z - point1.z <= maximumDeltaZ) then
-        print(4)
         return false
       end
     end
@@ -339,7 +332,6 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
       Movement.createPointWithZOffset(point2, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
       Movement.retrieveUnmountedCharacterHeightBestEffort() - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
     ) then
-      print(5)
       return false
     end
 
@@ -348,10 +340,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   end
 
   local maximumDeltaZ = _.determineMaximumDeltaZ(point1, to)
-  print(6, 1, to.z - point1.z, maximumDeltaZ)
-  print(6, 2, Movement.isPointInDeepWater(point1), Movement.isPointInDeepWater(to))
   if not (to.z - point1.z <= maximumDeltaZ or (Movement.isPointInDeepWater(point1) and Movement.isPointInDeepWater(to))) then
-    print(6)
     return false
   end
 
@@ -360,7 +349,6 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT),
     Movement.retrieveUnmountedCharacterHeightBestEffort() - Movement.MAXIMUM_WALK_UP_TO_HEIGHT
   ) then
-    print(7)
     return false
   end
 
@@ -369,8 +357,6 @@ end
 
 function _.determineMaximumDeltaZ(from, to)
   local maximumDeltaZ
-  print('Movement.isPointInWater(from)', Movement.isPointInOrSlightlyAboveWater(from))
-  print('Movement.isPointInWater(to)', Movement.isPointInOrSlightlyAboveWater(to))
   if Movement.isPointInOrSlightlyAboveWater(from) and Movement.isPointInOrSlightlyAboveWater(to) then
     maximumDeltaZ = Movement.retrieveCharacterHeight()
   else
@@ -433,22 +419,17 @@ function Movement.canPlayerBeOnPoint(point, options)
   local function areThereZeroCollisionsAround()
     local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight,
       Movement.retrieveCharacterBoundingRadius(), 8)
-    print('c', 1)
     return Array.all(points, function(point)
       return Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, point)
     end)
   end
 
-  print('D', Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver),
-    Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight),
-    areThereZeroCollisionsAround())
   local result = (
     Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) and
       Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) and
       areThereZeroCollisionsAround()
   )
 
-  print('c', 2)
   return result
 end
 
@@ -476,22 +457,17 @@ function _.canPlayerBeOnPoint2(point, options)
     local function areThereZeroCollisionsAround()
       local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight,
         Movement.retrieveCharacterBoundingRadius(), 8)
-      print('c', 1)
       return Array.all(points, function(point)
         return Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, point)
       end)
     end
 
-    print('D', Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver),
-      Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight),
-      areThereZeroCollisionsAround())
     local result = (
       Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) and
         Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) and
         areThereZeroCollisionsAround()
     )
 
-    print('c', 2)
     return result
   else
     local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(Movement.retrieveContinentID(),
@@ -517,13 +493,11 @@ function Movement.canPlayerStandOnPoint(point, options)
     if options.withMount then
       local value = canBeStoodWithMountOnPointCache:retrieveValue(point)
       if value ~= nil then
-        print(1)
         return value
       end
     else
       local value = canBeStoodOnPointCache:retrieveValue(point)
       if value ~= nil then
-        print(2)
         return value
       end
     end
@@ -545,7 +519,6 @@ function Movement.canPlayerStandOnPoint(point, options)
         local points = Movement.generatePointsAround(standOnPoint, Movement.retrieveCharacterBoundingRadius(), 8)
         return not Array.all(points, function(point)
           local point1 = Movement.createPointWithZOffset(point, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
-          print(3)
           return Movement.thereAreCollisions(
             point1,
             Movement.createPointWithZOffset(
@@ -555,12 +528,10 @@ function Movement.canPlayerStandOnPoint(point, options)
           )
         end)
       else
-        print(4)
         return false
       end
     end
 
-    print('b', _.canPlayerBeOnPoint2(point, options))
     local result = (
       _.canPlayerBeOnPoint2(point, options) and
         not canFallOff()
@@ -572,7 +543,6 @@ function Movement.canPlayerStandOnPoint(point, options)
       canBeStoodOnPointCache:setValue(point, result)
     end
 
-    print(5)
     return result
   else
     return nil
@@ -853,7 +823,6 @@ end
 
 function Movement.isPointSlightlyAboveWater(point)
   local waterSurfacePoint = Movement.receiveWaterSurfacePoint(point)
-  print('aa', waterSurfacePoint and point.z - waterSurfacePoint.z)
   return waterSurfacePoint and point.z - waterSurfacePoint.z <= 1
 end
 
@@ -1118,7 +1087,6 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       end
     end,
     onCancel = function(action, actionSequenceDoer)
-      print('Cancel')
       Core.stopMovingForward()
     end
   }
@@ -1202,7 +1170,6 @@ end
 
 function _.Mounter:mount()
   if not self:stopTryingToMount() and _.canCharacterMountOnBetterMount() then
-    print('mount')
     _.stopForwardMovement()
     local hasTriedToMount = false
     local wasAbleToMount = nil
@@ -1792,7 +1759,6 @@ end
 
 local function stopPathFinding()
   if pathFinder then
-    print('stop')
     pathFinder.stop()
     cleanUpPathFinding()
   end
@@ -1991,7 +1957,6 @@ end
 
 function Movement.traceLine(from, to, hitFlags)
   if Movement.isPositionInRangeForTraceLineChecks(from) then
-    print(1)
     local x, y, z = HWT.TraceLine(
       from.x,
       from.y,
@@ -2007,7 +1972,6 @@ function Movement.traceLine(from, to, hitFlags)
       return nil
     end
   else
-    print(2)
     return nil
   end
 end
@@ -2206,12 +2170,8 @@ function findPathE5()
   local playerPosition = Movement.retrieveCharacterPosition()
   local start = createPoint(HWT.GetClosestPositionOnMesh(continentID, playerPosition.x, playerPosition.y,
     playerPosition.z))
-  print('start')
-  DevTools_Dump(start)
   local path = HWT.FindPath(continentID, start.x, start.y, start.z, QuestingPointToMove.x, QuestingPointToMove.y,
     QuestingPointToMove.z, false, 1024, 0, 1, false)
-  print('path')
-  DevTools_Dump(path)
   if path then
     path = Movement.convertGMRPathToPath(path)
   end
