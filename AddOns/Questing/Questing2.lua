@@ -1284,33 +1284,38 @@ function acceptQuests(point)
         quests = availableQuests
       end
       local numberOfQuests = #quests
-      Array.forEach(quests, function(quest, index)
-        if isQuestToBeDone(quest.questID) then
-          local questIdentifier
-          if Compatibility.isRetail() and GossipFrame:IsShown() then
-            questIdentifier = quest.questID
-          else
-            questIdentifier = quest.index
-          end
-          Compatibility.Quests.selectAvailableQuest(questIdentifier)
-          local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
-          if wasSuccessful then
-            AcceptQuest()
-            waitForQuestHasBeenAccepted()
+      if numberOfQuests >= 1 then
+        Array.forEach(quests, function(quest, index)
+          if isQuestToBeDone(quest.questID) then
+            local questIdentifier
+            if Compatibility.isRetail() and GossipFrame:IsShown() then
+              questIdentifier = quest.questID
+            else
+              questIdentifier = quest.index
+            end
+            Compatibility.Quests.selectAvailableQuest(questIdentifier)
+            local wasSuccessful = Events.waitForEvent('QUEST_DETAIL')
+            if wasSuccessful then
+              AcceptQuest()
+              waitForQuestHasBeenAccepted()
 
-            if numberOfQuests >= 3 and index <= numberOfQuests - 2 then
-              if GossipFrame:IsShown() then
-                Events.waitForEvent('GOSSIP_SHOW')
-              else
-                -- the other frame type
+              if numberOfQuests >= 3 and index <= numberOfQuests - 2 then
+                if GossipFrame:IsShown() then
+                  Events.waitForEvent('GOSSIP_SHOW')
+                else
+                  -- the other frame type
 
+                end
+              elseif numberOfQuests >= 2 then
+                Events.waitForEvent('QUEST_DETAIL')
               end
-            elseif numberOfQuests >= 2 then
-              Events.waitForEvent('QUEST_DETAIL')
             end
           end
-        end
-      end)
+        end)
+      elseif QuestFrameDetailPanel:IsShown() then
+        AcceptQuest()
+        waitForQuestHasBeenAccepted()
+      end
       _.waitForNPCUpdate()
     else
       registerUnavailableQuests(questGiverPoint.objectID)
