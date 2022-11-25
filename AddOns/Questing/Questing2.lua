@@ -13,8 +13,6 @@ local recentlyVisitedObjectivePoints = {}
 
 local EXPLORE_QUESTS = true
 
-polygon = nil
-
 local questsThatWorked = Set.create()
 local questsThatFailedToWork = Set.create()
 local questBlacklist = Set.create({
@@ -1748,16 +1746,6 @@ doWhenHWTIsLoaded(function()
       LibDraw.Line(playerPosition.x, playerPosition.y, playerPosition.z, point.x, point.y, point.z)
       LibDraw.Circle(point.x, point.y, point.z, 0.75)
     end
-
-    if polygon then
-      MeshVisualization.visualizePolygon(
-        polygon,
-        {
-          color = { 0, 0, 1, 1 },
-          fillColor = { 0, 0, 1, 0.2 }
-        }
-      )
-    end
   end)
 end)
 
@@ -2234,21 +2222,6 @@ frame:RegisterEvent('QUEST_DETAIL')
 frame:SetScript('OnEvent', onEvent)
 
 Questing.convertMapPositionToWorldPosition = convertMapPositionToWorldPosition
-
-function showClosestMeshPolygonToPointToShow()
-  polygon = Core.retrieveClosestMeshPolygon(Core.createWorldPositionFromPosition(Core.retrieveCurrentContinentID(),
-    QuestingPointToShow), 1000, 1000, 1000)
-  return polygon
-end
-
-function removeClosestMeshPolygonToPointToShow()
-  local polygon = Core.retrieveClosestMeshPolygon(Core.createWorldPositionFromPosition(Core.retrieveCurrentContinentID(),
-    QuestingPointToShow), 1000, 1000, 1000)
-  print('polygon', polygon)
-  -- return HWT.SetMeshPolygonArea(select(8, GetInstanceInfo()), polygon, 9999999)
-  print('a', HWT.SetMeshPolygonFlags(select(8, GetInstanceInfo()), polygon, 0))
-  return HWT.GetMeshPolygonFlags(select(8, GetInstanceInfo()), polygon)
-end
 
 function testHandleObjective()
   local continentID = Movement.retrieveContinentID()

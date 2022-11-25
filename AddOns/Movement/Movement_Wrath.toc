@@ -1,6 +1,6 @@
 ## Title: Movement
 ## Interface: 30400
-## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Conditionals, Draw, Float, Bot, !LibDraw
+## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Conditionals, Draw, Float, Bot, !LibDraw, Core
 ## SavedVariables: savedPosition, position1, position2, from, to
 ## SavedVariablesPerCharacter: MovementCharacterHeight
 
@@ -15,3 +15,5 @@ MeshNet.lua
 MeshVisualization.lua
 OffMeshConnectionsDatabase.lua
 OffMeshConnections.lua
+RemovedMeshPolygonsDatabase.lua
+MeshPolygonRemoval.lua
