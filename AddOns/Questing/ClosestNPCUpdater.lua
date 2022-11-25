@@ -101,39 +101,46 @@ function _.isRepair(object)
 end
 
 function _.buildNPCsLookupTables()
-  local yielder = createYielderWithTimeTracking(1 / 60)
+  QuestingGoodsVendorNPCs = {}
+  QuestingSellVendors = {}
+  QuestingRepairerNPCs = {}
 
-  for NPC in Questing.Database.createNPCsIterator() do
-    local position = retrieveNPCPosition(NPC)
-    if position then
-      if NPC.isGoodsVendor or NPC.isVendor or NPC.canRepair then
-        local entry = {
-          objectID = NPC.id,
-          continentID = position.continentID,
-          x = position.x,
-          y = position.y,
-          z = position.z
-        }
-        if NPC.isGoodsVendor then
-          table.insert(QuestingGoodsVendorNPCs, entry)
-        end
-        if NPC.isVendor then
-          table.insert(QuestingSellVendors, entry)
-        end
-        if NPC.canRepair then
-          table.insert(QuestingRepairerNPCs, entry)
-        end
-      end
-    end
-
-    if yielder.hasRanOutOfTime() then
-      yielder.yield()
-    end
-  end
+  --print('Building NPC lookup tables...')
+  --local yielder = createYielderWithTimeTracking(1 / 60)
+  --
+  --for NPC in Questing.Database.createNPCsIterator() do
+  --  local position = retrieveNPCPosition(NPC)
+  --  if position then
+  --    if NPC.isGoodsVendor or NPC.isVendor or NPC.canRepair then
+  --      local entry = {
+  --        objectID = NPC.id,
+  --        continentID = position.continentID,
+  --        x = position.x,
+  --        y = position.y,
+  --        z = position.z
+  --      }
+  --      if NPC.isGoodsVendor then
+  --        table.insert(QuestingGoodsVendorNPCs, entry)
+  --      end
+  --      if NPC.isVendor then
+  --        table.insert(QuestingSellVendors, entry)
+  --      end
+  --      if NPC.canRepair then
+  --        table.insert(QuestingRepairerNPCs, entry)
+  --      end
+  --    end
+  --  end
+  --
+  --  if yielder.hasRanOutOfTime() then
+  --    yielder.yield()
+  --  end
+  --end
+  --
+  --print('buildNPCsLookupTables ---')
 end
 
 if not QuestingGoodsVendorNPCs or not QuestingSellVendors or not QuestingRepairerNPCs then
-  doWhenGMRIsFullyLoaded(_.buildNPCsLookupTables)
+  doWhenHWTIsLoaded(_.buildNPCsLookupTables)
 end
 
 doWhenHWTIsLoaded(function()

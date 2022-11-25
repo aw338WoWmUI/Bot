@@ -1,6 +1,6 @@
 ## Title: Movement
 ## Interface: 100002
-## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, GMR, Conditionals, Draw, Float, Bot, !LibDraw
+## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Conditionals, Draw, Float, Bot, !LibDraw
 ## SavedVariables: savedPosition, position1, position2, from, to, MovementPath
 ## SavedVariablesPerCharacter: MovementCharacterHeight
 

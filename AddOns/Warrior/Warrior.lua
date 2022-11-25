@@ -1,5 +1,5 @@
 function doWhenInCombat(fn)
-  doWhenGMRIsFullyLoaded(function()
+  doWhenHWTIsLoaded(function()
     local yielder = createYielder()
     while true do
       if Bot.isCharacterInCombat() then

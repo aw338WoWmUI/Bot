@@ -507,7 +507,7 @@ function Core.calculateDistanceFromCharacterToPosition(position)
   return Core.calculateDistanceBetweenPositions(characterPosition, position)
 end
 
-function Core.calculateDistanceToObject(objectIdentifier)
+function Core.calculateDistanceFromCharacterToObject(objectIdentifier)
   local characterPosition = Core.retrieveCharacterPosition()
   local objectPosition = Core.retrieveObjectPosition(objectIdentifier)
   return Core.calculateDistanceBetweenPositions(characterPosition, objectPosition)
@@ -734,11 +734,11 @@ end
 
 function Core.convertWorldPositionToScreenPosition(position)
   if not position.continentID or position.continentID == Core.retrieveCurrentContinentID() then
-    local x, y = select(2, HWT.WorldToScreen(position.x, position.y, position.z))
+    local isVisibleOnScreen, x, y = HWT.WorldToScreen(position.x, position.y, position.z)
     return Core.createScreenPosition(
       x * WorldFrame:GetWidth(),
       y * WorldFrame:GetHeight()
-    )
+    ), isVisibleOnScreen
   else
     return nil
   end

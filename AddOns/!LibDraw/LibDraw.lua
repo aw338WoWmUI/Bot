@@ -114,7 +114,6 @@ function LibDraw.Array(vectors, x, y, z, rotationX, rotationY, rotationZ)
 end
 
 function LibDraw.Draw2DLine(sx, sy, ex, ey)
-
 	if not sx or not sy or not ex or not ey then return end
 
 	local L = tremove(LibDraw.lines) or false
@@ -154,11 +153,10 @@ function LibDraw.Draw2DLine(sx, sy, ex, ey)
 	L.line:SetColorTexture(LibDraw.line.r, LibDraw.line.g, LibDraw.line.b, LibDraw.line.a)
 
 	L:Show()
-
 end
 
-local full_circle = rad(365)
-local small_circle_step = rad(10)
+local full_circle = rad(360)
+local small_circle_step = rad(360 / 20)
 
 function LibDraw.Circle(x, y, z, size)
 	local lx, ly, nx, ny, fx, fy = false, false, false, false, false, false
@@ -357,7 +355,7 @@ end
 
 function LibDraw.Camera()
 	local fX, fY, fZ = HWT.ObjectPosition("player")
-	local sX, sY, sZ = GetCameraPosition()
+	local sX, sY, sZ = HWT.GetCameraPosition()
 	return sX, sY, sZ, atan2(sY - fY, sX - fX), atan((sZ - fZ) / sqrt(((fX - sX) ^ 2) + ((fY - sY) ^ 2)))
 end
 
@@ -366,19 +364,23 @@ function LibDraw.Sync(callback)
 end
 
 function LibDraw.clearCanvas()
-	-- LibDraw.stats = #LibDraw.textures_used
-	for i = #LibDraw.textures_used, 1, -1 do
+	for i = 1, #LibDraw.textures_used do
 		LibDraw.textures_used[i]:Hide()
-		tinsert(LibDraw.textures, tremove(LibDraw.textures_used))
 	end
-	for i = #LibDraw.fontstrings_used, 1, -1 do
+  Array.append(LibDraw.textures, LibDraw.textures_used)
+  LibDraw.textures_used = {}
+
+	for i = 1, #LibDraw.fontstrings_used do
 		LibDraw.fontstrings_used[i]:Hide()
-		tinsert(LibDraw.fontstrings, tremove(LibDraw.fontstrings_used))
 	end
-  for i = #LibDraw.lines_used, 1, -1 do
+  Array.append(LibDraw.fontstrings, LibDraw.fontstrings_used)
+  LibDraw.fontstrings_used = {}
+
+  for i = 1, #LibDraw.lines_used do
 		LibDraw.lines_used[i]:Hide()
-		tinsert(LibDraw.lines, tremove(LibDraw.lines_used))
 	end
+  Array.append(LibDraw.lines, LibDraw.lines_used)
+  LibDraw.lines_used = {}
 end
 
 local function OnUpdate()
@@ -392,14 +394,29 @@ local function OnUpdate()
 	end
 end
 
-function LibDraw.Enable(interval)
-	local timer
-	if not interval then
-		timer = C_Timer.NewTicker(interval, OnUpdate)
-	else
-		timer = C_Timer.NewTicker(interval, OnUpdate)
-	end
-	return timer
+local isEnabled = false
+
+LibDraw.toggle = function ()
+  if isEnabled then
+    LibDraw.disable()
+  else
+    LibDraw.enable()
+  end
 end
 
-LibDraw.canvas:SetScript("OnUpdate", OnUpdate)
+LibDraw.enable = function ()
+  if not isEnabled then
+    isEnabled = true
+    LibDraw.canvas:SetScript("OnUpdate", OnUpdate)
+  end
+end
+
+LibDraw.disable = function ()
+  if isEnabled then
+    isEnabled = false
+    LibDraw.canvas:SetScript('OnUpdate', nil)
+    LibDraw.clearCanvas()
+  end
+end
+
+LibDraw.enable()

@@ -1,4 +1,5 @@
 ## Title: Draw
 ## Interface: 11403
+## Dependency: Array
 
 Draw.lua

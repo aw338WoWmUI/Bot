@@ -53,7 +53,7 @@ function Draw.connectWithLibDraw(libDraw)
       for _, usedTexture in ipairs(usedTextures) do
         usedTexture:Hide()
       end
-      reusableTextures = usedTextures
+      Array.append(reusableTextures, usedTextures)
       usedTextures = {}
       return clearCanvas(...)
     end

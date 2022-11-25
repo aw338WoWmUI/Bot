@@ -281,7 +281,7 @@ function Movement.thereAreZeroCollisions5(from, to, zHeight)
   return Movement.thereAreZeroCollisions2(from2, to2, zHeight, true)
 end
 
-Movement.MAXIMUM_WALK_UP_TO_HEIGHT = 0.94
+Movement.MAXIMUM_WALK_UP_TO_HEIGHT = 0.97314453125
 Movement.JUMP_DETECTION_HEIGHT = Movement.MAXIMUM_WALK_UP_TO_HEIGHT + 0.01
 Movement.MAXIMUM_JUMP_HEIGHT = 1.675
 
@@ -447,7 +447,6 @@ function _.canPlayerBeOnPoint2(point, options)
       point = pointALittleBitAbove
     end
 
-    local pointALittleBitOver = Movement.createPointWithZOffset(point, 0.1)
     local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(
       point,
       Movement.MAXIMUM_WALK_UP_TO_HEIGHT
@@ -465,8 +464,7 @@ function _.canPlayerBeOnPoint2(point, options)
     end
 
     local result = (
-      Movement.thereAreZeroCollisions(pointOnMaximumWalkUpToHeight, pointALittleBitOver) and
-        Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) and
+      Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, pointOnCharacterHeight) and
         areThereZeroCollisionsAround()
     )
 
@@ -1087,7 +1085,7 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
       if not lastJumpTime or GetTime() - lastJumpTime > 1 then
         if (Movement.isJumpSituation(waypoint)) then
           lastJumpTime = GetTime()
-          Core.jumpOrStartAscend()()
+          Core.jumpOrStartAscend()
         end
       end
 
@@ -1825,7 +1823,9 @@ function Movement.moveTo(to, options)
     Movement.path = path
     MovementPath = Movement.path
     if path then
-      pathMover = Movement.movePath(path, options.stop)
+      pathMover = Movement.movePath(path, function()
+        return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
+      end)
       cleanUpPathFindingAndMoving()
     end
   end
@@ -1903,7 +1903,7 @@ function Movement.face(retrieveTargetAngles, stop)
     HWT.SetPitch(pitch)
   end
 
-  waitUntil(function ()
+  waitUntil(function()
     return not HWT.IsFacingSmoothly()
   end)
 end

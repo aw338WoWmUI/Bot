@@ -1522,7 +1522,7 @@ function Questing.handleObjective(point)
       position = createPoint(point.x, point.y, point.z)
     end
 
-    local continentID = select(8, GetInstanceInfo())
+    local continentID = Core.retrieveCurrentContinentID()
     local position2 = Movement.createPositionFromPoint(continentID, position)
     local closesPointOnMeshWithPathTo = _.findClosestPointOnMeshWithPathTo(position2)
     if closesPointOnMeshWithPathTo then
@@ -1534,8 +1534,18 @@ function Questing.handleObjective(point)
 
   QuestingPointToMove = point
   QuestingPointToShow = QuestingPointToMove
+
   Questing.Coroutine.moveTo(point, {
-    additionalStopConditions = Core.isCharacterInCombat
+    additionalStopConditions = function ()
+      if objectID then
+        local object = Core.findClosestObject(objectID)
+        if object and Core.calculateDistanceFromCharacterToObject(object) <= INTERACT_DISTANCE then
+          return true
+        end
+      end
+
+      return Core.isCharacterInCombat()
+    end
   })
   if Core.isCharacterCloseToPosition(point, INTERACT_DISTANCE) then
     recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)] = {

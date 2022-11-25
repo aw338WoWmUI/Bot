@@ -202,7 +202,7 @@ C_QuestLog.GetQuestsOnMap(Core.receiveMapIDForWhereTheCharacterIsAt())
 
 pointer = HWT.GetObject('target')
 
-Core.calculateDistanceToObject(pointer)
+Core.calculateDistanceFromCharacterToObject(pointer)
 
 runAsCoroutine(function () DevTools_Dump(Questing_.retrieveQuestStartPointsFromQuestLines()) end)
 
@@ -261,3 +261,12 @@ Core.findClosestObject(63596)
 HWT.GetObjectCount(); print(HWT.GetObjectWithIndex(1))
 
 print(HWT.GetObjectWithIndex(1))
+
+select(2, C_Navigation.GetFrame():GetCenter())
+
+-- /script z2 = Core.retrieveCharacterPosition()
+
+Movement.canBeWalkedOrSwamFromPointToPoint(MovementPath[25], MovementPath[26])
+Movement.canPlayerStandOnPoint(MovementPath[26])
+Movement.canBeMovedFromPointToPointCheckingSubSteps(MovementPath[25], MovementPath[26])
+Movement_.canPlayerBeOnPoint2(MovementPath[26])
