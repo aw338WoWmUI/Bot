@@ -3,8 +3,6 @@ Questing.Coroutine = {}
 
 local _ = {}
 
-local MAXIMUM_OBJECT_LOAD_DISTANCE = 250
-
 local function moveTo(to, options)
   options = options or {}
 
@@ -33,7 +31,7 @@ function Questing.Coroutine.moveToUntil(point, stopCondition)
     point = createPoint(
       point.x,
       point.y,
-      Movement.retrieveGroundZ(point) or point.z
+      Core.retrieveZCoordinate(point) or point.z
     )
   end
 
@@ -123,16 +121,19 @@ function Questing.Coroutine.interactWithObjectWithObjectID(objectID, options)
 
   local pointer = Core.findClosestObject(objectID)
 
-  if not pointer then
+  if not pointer and options.fallbackPosition then
     Questing.Coroutine.moveTo(options.fallbackPosition, {
-      distance = MAXIMUM_OBJECT_LOAD_DISTANCE,
+      distance = Core.RANGE_IN_WHICH_OBJECTS_SEEM_TO_BE_SHOWN,
       additionalStopConditions = function()
         return Core.findClosestObject(objectID)
       end
     })
   end
 
-  pointer = Core.findClosestObject(objectID)
+  if not pointer then
+    pointer = Core.findClosestObject(objectID)
+  end
+
   if pointer then
     Questing.Coroutine.interactWithObject(pointer, options.distance, options.delay)
   end

@@ -17,7 +17,7 @@ Questing.closestNPCs = closestNPCs
 Q_ = _
 
 function _.updateNPCPositionsToClosest()
-  local continentID = select(8, GetInstanceInfo())
+  local continentID = Core.retrieveCurrentContinentID()
   if lastContinentID and continentID ~= lastContinentID then
     for key in pairs(closestNPCs) do
       closestNPCs[key] = nil
@@ -82,8 +82,8 @@ function _.findClosestNPC(matches, fallbackList)
   local npc = Array.min(NPCs, function(NPC)
     return Core.calculateDistanceFromCharacterToPosition(NPC)
   end)
-  if npc then
-    npc.continentID = select(8, GetInstanceInfo())
+  if npc and not npc.continentID then
+    npc.continentID = Core.retrieveCurrentContinentID()
   end
   return npc
 end
@@ -108,7 +108,7 @@ function _.buildNPCsLookupTables()
     if position then
       if NPC.isGoodsVendor or NPC.isVendor or NPC.canRepair then
         local entry = {
-          ID = NPC.id,
+          objectID = NPC.id,
           continentID = position.continentID,
           x = position.x,
           y = position.y,
@@ -136,6 +136,6 @@ if not QuestingGoodsVendorNPCs or not QuestingSellVendors or not QuestingRepaire
   doWhenGMRIsFullyLoaded(_.buildNPCsLookupTables)
 end
 
-doRegularlyWhenGMRIsFullyLoaded(function()
+doWhenHWTIsLoaded(function()
   _.updateNPCPositionsToClosest()
 end)

@@ -168,7 +168,7 @@ do
     function(self)
       local objects = Core.retrieveObjects()
       local object = Array.find(objects, function(object)
-        return Set.contains(objectIDs, object.ID) and Core.hasGossip(object.pointer)
+        return Set.contains(objectIDs, object.objectID) and Core.hasGossip(object.pointer)
       end)
       if object then
         Questing.Coroutine.gossipWithObject(object.pointer, 38008)
@@ -440,7 +440,7 @@ function _.retrieveQuestStartPointsFromObjects()
   Array.forEach(objects, function(object)
     if Set.contains(questGiverStatuses, Unlocker.retrieveQuestGiverStatus(object.pointer)) then
       local point = {
-        objectID = object.ID,
+        objectID = object.objectID,
         continentID = continentID,
         x = object.x,
         y = object.y,
@@ -922,7 +922,7 @@ local explorationObjectNameBlacklist = Set.create({
 function findClosestQuestGiver(point)
   local objects = Core.retrieveObjects()
   local object = Array.min(Array.filter(objects, function(object)
-    return Questing.Database.isQuestGiver(object.ID)
+    return Questing.Database.isQuestGiver(object.objectID)
   end), function(object)
     return Core.calculateDistanceBetweenPositions(point, object)
   end)
@@ -1258,7 +1258,7 @@ function acceptQuests(point)
     local object = findClosestQuestGiver(point)
     if object then
       questGiverPoint = {
-        objectID = object.ID,
+        objectID = object.objectID,
         x = object.x,
         y = object.y,
         z = object.z
@@ -1943,6 +1943,7 @@ function _.run ()
       elseif Questing.canLearnRiding() then
         Questing.learnRiding()
       elseif _.itSeemsMakeSenseToSell() then
+        print('Selling...')
         _.sell()
       else
         moveToClosestPoint()
@@ -1969,10 +1970,8 @@ end
 
 function _.sell()
   local sellNPC = Questing.closestNPCs.Sell
-  local point = createPoint(sellNPC[1], sellNPC[2], sellNPC[3])
-  local objectID = sellNPC[4]
-  Questing.Coroutine.interactWithObjectWithObjectID(objectID, {
-    fallbackPosition = point
+  Questing.Coroutine.interactWithObjectWithObjectID(sellNPC.objectID, {
+    fallbackPosition = sellNPC
   })
   if MerchantFrame:IsShown() then
     _.sellItemsAtVendor()

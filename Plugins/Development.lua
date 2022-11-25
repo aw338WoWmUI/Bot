@@ -106,7 +106,7 @@ function logObjectInfo(name)
     end
   )
   if object then
-    logToFile(object.x .. ',\n' .. object.y .. ',\n' .. object.z .. ',\n' .. object.ID)
+    logToFile(object.x .. ',\n' .. object.y .. ',\n' .. object.z .. ',\n' .. object.objectID)
   end
 end
 

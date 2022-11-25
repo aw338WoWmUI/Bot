@@ -779,7 +779,7 @@ function Core.retrieveObjects()
     local x, y, z = HWT.ObjectPosition(pointer)
     return {
       pointer = pointer,
-      ID = HWT.ObjectId(pointer),
+      objectID = HWT.ObjectId(pointer),
       x = x,
       y = y,
       z = z
