@@ -1,5 +1,7 @@
 Unlocker = {}
 
+local _ = {}
+
 Unlocker.QuestGiverStatuses = {
   DailyQuest = 9,
   Quest = 10
@@ -71,12 +73,36 @@ function Unlocker.ObjectQuests(object)
     return Set.toList(questIDs)
   elseif Unlocker.ObjectIsQuestObjective(object) then
     local gameObjectType = HWT.GameObjectType(object)
-    if gameObjectType == 4 or gameObjectType == 3 then -- for some containers and quest giver objects the game seems to crash when ObjectQuests is called with their pointer
+    if gameObjectType == 4 or gameObjectType == 3 then
+      -- for some containers and quest giver objects the game seems to crash when ObjectQuests is called with their pointer
       return {}
     else
       return { HWT.ObjectQuests(object) }
     end
   else
-    return {}
+    return _.retrieveQuestIDsFromTooltip(object)
   end
+end
+
+function _.retrieveQuestIDsFromTooltip(object)
+  local questIDs
+  local tooltip = C_TooltipInfo.GetUnit(object)
+  if tooltip then
+    questIDs = _.extractQuestIDsFromTooltip(tooltip)
+  else
+    questIDs = {}
+  end
+  return questIDs
+end
+
+function _.extractQuestIDsFromTooltip(tooltip)
+  local questIDs = {}
+  Array.forEach(tooltip.lines, function(line)
+    TooltipUtil.SurfaceArgs(line)
+    if line.type == 17 then
+      local questID = line.id
+      table.insert(questIDs, questID)
+    end
+  end)
+  return questIDs
 end

@@ -91,25 +91,6 @@ function logNearbyObjects()
   logToFile(tableToString(objects))
 end
 
-function logObjectInfo(name)
-  name = name or GameTooltipTextLeft1:GetText()
-  local objects = Core.retrieveObjects()
-  local object = Array.min(
-    Array.filter(
-      objects,
-      function(object)
-        return object.Name == name
-      end
-    ),
-    function(object)
-      return Core.retrieveDistanceBetweenObjects('player', object.pointer)
-    end
-  )
-  if object then
-    logToFile(object.x .. ',\n' .. object.y .. ',\n' .. object.z .. ',\n' .. object.objectID)
-  end
-end
-
 function logTargetInfo()
   local unit = 'target'
   local objectID = HWT.ObjectId(unit)
@@ -134,7 +115,7 @@ function logDistanceToObject(name)
   name = name or GameTooltipTextLeft1:GetText()
   local objects = Core.retrieveObjects()
   local object = Array.find(objects, function(object)
-    return object.Name == name
+    return Core.retrieveObjectName(object.pointer) == name
   end)
   if object then
     local distance = Core.retrieveDistanceBetweenObjects('player', object.pointer)

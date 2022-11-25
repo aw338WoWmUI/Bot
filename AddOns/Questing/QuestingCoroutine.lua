@@ -108,7 +108,7 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   end
 
   if Questing.isRunning() then
-    local pointer = Core.findClosestObject(objectID)
+    local pointer = Core.findClosestObjectToCharacter(objectID)
     if pointer then
       Core.interactWithObject(pointer)
       waitForDuration(2)
@@ -119,19 +119,19 @@ end
 function Questing.Coroutine.interactWithObjectWithObjectID(objectID, options)
   options = options or {}
 
-  local pointer = Core.findClosestObject(objectID)
+  local pointer = Core.findClosestObjectToCharacter(objectID)
 
   if not pointer and options.fallbackPosition then
     Questing.Coroutine.moveTo(options.fallbackPosition, {
       distance = Core.RANGE_IN_WHICH_OBJECTS_SEEM_TO_BE_SHOWN,
       additionalStopConditions = function()
-        return Core.findClosestObject(objectID)
+        return Core.findClosestObjectToCharacter(objectID)
       end
     })
   end
 
   if not pointer then
-    pointer = Core.findClosestObject(objectID)
+    pointer = Core.findClosestObjectToCharacter(objectID)
   end
 
   if pointer then
@@ -194,7 +194,7 @@ function Questing.Coroutine.useItemOnNPC(point, objectID, itemID, distance)
   end
 
   if Questing.isRunning() then
-    local pointer = Core.findClosestObject(objectID)
+    local pointer = Core.findClosestObjectToCharacter(objectID)
     Core.useItemByID(itemID, pointer)
   end
 end
@@ -259,7 +259,7 @@ function Questing.Coroutine.gossipWithObject(pointer, gossipOptionID)
 end
 
 local function gossipWithObjectWithObjectID(objectID, chooseOption)
-  local objectPointer = Core.findClosestObject(objectID)
+  local objectPointer = Core.findClosestObjectToCharacter(objectID)
 
   print('objectPointer', objectPointer, objectID)
 
@@ -290,7 +290,7 @@ local function gossipWithObjectWithObjectID(objectID, chooseOption)
       while closestPosition do
         Questing.Coroutine.moveTo(closestPosition)
         visitedPositions:add(closestPosition)
-        local objectPointer = Core.findClosestObject(objectID)
+        local objectPointer = Core.findClosestObjectToCharacter(objectID)
         if objectPointer then
           gossipWithObject(objectPointer, chooseOption)
           break

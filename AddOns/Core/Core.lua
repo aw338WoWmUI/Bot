@@ -469,27 +469,62 @@ function Core.retrieveObjectPosition(objectIdentifier)
   return Core.createWorldPosition(Core.retrieveCurrentContinentID(), HWT.ObjectPosition(objectIdentifier))
 end
 
-function Core.retrieveCharacterPosition()
-  return Core.retrieveObjectPosition('player')
-end
-
-function Core.findClosestObject(objectIDs)
+function Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, to, customDistance)
   if type(objectIDs) == 'number' then
     objectIDs = { objectIDs }
   end
 
   local objectIDsSet = Set.create(objectIDs)
 
-  local pointers = Core.retrieveObjectPointers()
-  local objectWithOneTheObjectIDs = Array.filter(pointers, function(pointer)
-    local objectID = HWT.ObjectId(pointer)
-    return Set.contains(objectIDsSet, objectID)
-  end)
+  return Core.findClosestObjectTo(
+    to,
+    function(pointer)
+      local objectID = HWT.ObjectId(pointer)
+      return Set.contains(objectIDsSet, objectID)
+    end,
+    customDistance
+  )
+end
 
+function Core.retrieveCharacterPosition()
+  return Core.retrieveObjectPosition('player')
+end
+
+function Core.findClosestObjectTo2D(objectIDs, to)
+  return Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, to, euclideanDistance2D)
+end
+
+function Core.findClosestObjectToCharacter(objectIDs)
   local characterPosition = Core.retrieveCharacterPosition()
-  local closestObject = Array.min(objectWithOneTheObjectIDs, function(pointer)
+  return Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, characterPosition)
+end
+
+function Core.findClosestQuestRelatedObjectTo(questID, to)
+  return Core.findClosestObjectTo(
+    to,
+    function(pointer)
+      local questIDs = Set.create(Unlocker.ObjectQuests(pointer))
+      return Set.contains(questIDs, questID)
+    end
+  )
+end
+
+function Core.findClosestObjectTo(to, customFilter, customDistance)
+  if type(objectIDs) == 'number' then
+    objectIDs = { objectIDs }
+  end
+
+  local filter = customFilter or Function.alwaysTrue
+  local calculateDistance = customDistance or euclideanDistance
+
+  local objectIDsSet = Set.create(objectIDs)
+
+  local pointers = Core.retrieveObjectPointers()
+  local filteredObjects = Array.filter(pointers, filter)
+
+  local closestObject = Array.min(filteredObjects, function(pointer)
     local position = Core.retrieveObjectPosition(pointer)
-    return euclideanDistance(position, characterPosition)
+    return calculateDistance(position, to)
   end)
 
   return closestObject

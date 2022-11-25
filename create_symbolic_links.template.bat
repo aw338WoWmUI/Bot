@@ -41,7 +41,7 @@ if exist "%path%\_retail_" (
 	mklink /D "%path%\_retail_\Interface\AddOns\!LibDraw" "%~dp0\AddOns\!LibDraw"
 	mklink /D "%path%\_retail_\Interface\AddOns\DisableGMR" "%~dp0\AddOns\DisableGMR"
 	mklink /D "%path%\_retail_\Interface\AddOns\Logging" "%~dp0\AddOns\Logging"
-	mklink /D "%path%\_retail_\Interface\AddOns\!Fixes" "%~dp0\retail\AddOns\!Fixes"
+	mklink /D "%path%\_retail_\Interface\AddOns\Development" "%~dp0\AddOns\Development"
 )
 
 if exist "%path%\_classic_" (
@@ -82,6 +82,7 @@ if exist "%path%\_classic_" (
 	mklink /D "%path%\_classic_\Interface\AddOns\!LibDraw" "%~dp0\AddOns\!LibDraw"
 	mklink /D "%path%\_classic_\Interface\AddOns\DisableGMR" "%~dp0\AddOns\DisableGMR"
 	mklink /D "%path%\_classic_\Interface\AddOns\Logging" "%~dp0\AddOns\Logging"
+	mklink /D "%path%\_classic_\Interface\AddOns\Development" "%~dp0\AddOns\Development"
 )
 
 if exist "%path%\_classic_era_" (
@@ -122,4 +123,5 @@ if exist "%path%\_classic_era_" (
 	mklink /D "%path%\_classic_era_\Interface\AddOns\!LibDraw" "%~dp0\AddOns\!LibDraw"
 	mklink /D "%path%\_classic_era_\Interface\AddOns\DisableGMR" "%~dp0\AddOns\DisableGMR"
 	mklink /D "%path%\_classic_era_\Interface\AddOns\Logging" "%~dp0\AddOns\Logging"
+	mklink /D "%path%\_classic_era_\Interface\AddOns\Development" "%~dp0\AddOns\Development"
 )
