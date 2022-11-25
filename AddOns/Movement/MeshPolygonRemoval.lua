@@ -60,9 +60,13 @@ function _.writeRemovedMeshPolygonsToFile()
 end
 
 doWhenHWTIsLoaded(function()
-  Array.forEach(AddOn.removedMeshPolygons, function (removedMeshPolygon)
-    _.removeClosestMeshPolygonToPositionFromMeshNet(removedMeshPolygon.position)
-  end)
+  local appSessionToken = HWT.GetAppSessionToken()
+  if appSessionToken ~= MovementLastPolygonRemovalAppSessionToken then
+    MovementLastPolygonRemovalAppSessionToken = appSessionToken
+    Array.forEach(AddOn.removedMeshPolygons, function (removedMeshPolygon)
+      _.removeClosestMeshPolygonToPositionFromMeshNet(removedMeshPolygon.position)
+    end)
+  end
 
   LibDraw.Sync(function()
     if polygon then
