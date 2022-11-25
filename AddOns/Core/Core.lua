@@ -75,6 +75,26 @@ function Core.retrieveObjectNPCFlags(object)
     HWT.GetValueTypesTable().ULong)
 end
 
+function Core.retrieveUnitDataFlags(object)
+  return HWT.ObjectDescriptor(object, HWT.GetObjectDescriptorsTable().CGUnitData__flags,
+    HWT.GetValueTypesTable().ULong)
+end
+
+function Core.retrieveUnitDataFlags2(object)
+  return HWT.ObjectDescriptor(object, HWT.GetObjectDescriptorsTable().CGUnitData__flags2,
+    HWT.GetValueTypesTable().ULong)
+end
+
+function Core.retrieveUnitDataFlags3(object)
+  return HWT.ObjectDescriptor(object, HWT.GetObjectDescriptorsTable().CGUnitData__flags3,
+    HWT.GetValueTypesTable().ULong)
+end
+
+function Core.retrieveObjectDataDynamicFlags(object)
+  return HWT.ObjectDescriptor(object, HWT.GetObjectDescriptorsTable().CGObjectData__m_dynamicFlags,
+    HWT.GetValueTypesTable().ULong)
+end
+
 function Core.isFoodVendor(object)
   return Core.isUnitNPCType(object, Core.NpcFlags.FoodVendor)
 end
@@ -466,7 +486,11 @@ function Core.retrieveObjectPointers()
 end
 
 function Core.retrieveObjectPosition(objectIdentifier)
-  return Core.createWorldPosition(Core.retrieveCurrentContinentID(), HWT.ObjectPosition(objectIdentifier))
+  local x, y, z = HWT.ObjectPosition(objectIdentifier)
+  if not x or not y or not z then
+    print('Core.retrieveObjectPosition', x, y, z)
+  end
+  return Core.createWorldPosition(Core.retrieveCurrentContinentID(), x, y, z)
 end
 
 function Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, to, customDistance)
@@ -494,7 +518,7 @@ function Core.findClosestObjectTo2D(objectIDs, to)
   return Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, to, euclideanDistance2D)
 end
 
-function Core.findClosestObjectToCharacter(objectIDs)
+function Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectIDs)
   local characterPosition = Core.retrieveCharacterPosition()
   return Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, characterPosition)
 end
@@ -515,7 +539,7 @@ function Core.findClosestObjectTo(to, customFilter, customDistance)
   end
 
   local filter = customFilter or Function.alwaysTrue
-  local calculateDistance = customDistance or euclideanDistance
+  local calculateDistance = customDistance or Core.calculateDistanceBetweenPositions
 
   local objectIDsSet = Set.create(objectIDs)
 
@@ -530,11 +554,24 @@ function Core.findClosestObjectTo(to, customFilter, customDistance)
   return closestObject
 end
 
+function Core.findClosestObjectToCharacter(customFilter)
+  local characterPosition = Core.retrieveCharacterPosition()
+  return Core.findClosestObjectTo(characterPosition, customFilter)
+end
+
 function Core.calculateDistanceBetweenPositions(a, b)
   if a.x == nil or a.y == nil or a.z == nil or b.x == nil or b.y == nil or b.z == nil then
     Logging.log(debugstack())
   end
-  return HWT.GetDistanceBetweenPositions(a.x, a.y, a.z, b.x, b.y, b.z)
+  if a.z and b.z then
+    return HWT.GetDistanceBetweenPositions(a.x, a.y, a.z, b.x, b.y, b.z)
+  else
+    return euclideanDistance2D(a, b)
+  end
+end
+
+function Core.calculate2DDistanceBetweenPositions(a, b)
+  return euclideanDistance2D(a, b)
 end
 
 function Core.calculateDistanceFromCharacterToPosition(position)
@@ -676,11 +713,17 @@ function Core.calculateAnglesBetweenTwoPoints(a, b)
   local vector = CreateVector3D(
     b.x - a.x,
     b.y - a.y,
-    b.z - a.z
+    (b.z or 0) - (a.z or 0)
   )
   vector:Normalize()
   local yaw, pitch = Vector3D_CalculateYawPitchFromNormalVector(vector)
-  return _.normalizeAngle(yaw), _.normalizeAngle(pitch)
+  yaw = _.normalizeAngle(yaw)
+  if a.z and b.z then
+    pitch = _.normalizeAngle(pitch)
+  else
+    pitch = nil
+  end
+  return yaw, pitch
 end
 
 function _.normalizeAngle(angle)
@@ -844,6 +887,10 @@ end
 function Core.useItemByID(itemID, target)
   local itemName = Core.retrieveItemName(itemID)
   Core.useItemByName(itemName, target)
+  waitForDuration(1)
+  waitFor(function()
+    return not Core.isCharacterCasting()
+  end)
 end
 
 function Core.useItemByName(itemName, target)

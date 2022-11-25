@@ -369,8 +369,8 @@ end
 
 function Movement.canBeJumpedFromPointToPoint(from, to)
   return (
-    Movement.isPointOnGround(from) and
-      (Movement.isPointInDeepWater(to) or (Movement.isPointOnGround(to) and Movement.canPlayerStandOnPoint(to))) and
+    Movement.isPointCloseToGround(from) and
+      (Movement.isPointInDeepWater(to) or (Movement.isPointCloseToGround(to) and Movement.canPlayerStandOnPoint(to))) and
       to.z - from.z <= Movement.MAXIMUM_JUMP_HEIGHT and
       not _.thereAreCollisions2(
         Movement.createPointWithZOffset(from, Movement.MAXIMUM_JUMP_HEIGHT),
@@ -932,10 +932,11 @@ function Movement.isPointInAir(point)
   return not z or point.z - z >= MINIMUM_LIFT_HEIGHT
 end
 
-function Movement.isPointOnGround(point)
+function Movement.isPointCloseToGround(point)
   local z = Movement.retrieveGroundZ(Movement.createPointWithZOffset(point, 0.25))
   if z then
-    return math.abs(z - point.z) <= 0.0002
+    local difference = math.abs(z - point.z)
+    return difference <= 0.15
   else
     return false
   end
@@ -954,7 +955,8 @@ function Movement.canMountOnFlyingMount()
     Core.isCharacterAlive() and
       Movement.canBeFlown() and
       Movement.isAFlyingMountAvailable() and
-      Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true })
+      Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) and
+      not Core.isCharacterInCombat()
   )
 end
 
@@ -963,7 +965,8 @@ function Movement.canMountOnGroundMount()
     Core.isCharacterAlive() and
       Movement.canBeGroundMounted() and
       Movement.isAGroundMountAvailable() and
-      Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true })
+      Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) and
+      not Core.isCharacterInCombat()
   )
 end
 
@@ -1036,7 +1039,7 @@ function Movement.isCharacterInTheAir()
   return Movement.isPositionInTheAir(playerPosition)
 end
 
-function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance, isLastWaypoint)
+function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance, isLastWaypoint, waypointIndex, path)
   local firstRun = true
   local initialDistance = nil
   local lastJumpTime = nil
@@ -1054,7 +1057,8 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
 
       local playerPosition = Movement.retrieveCharacterPosition()
 
-      if totalDistance > 10 and (not actionSequenceDoer.lastTimeDismounted or GetTime() - actionSequenceDoer.lastTimeDismounted >= 3) then
+      local remainingDistance = Core.calculateDistanceFromCharacterToPosition(waypoint) + Core.calculatePathLength(Array.slice(path, waypointIndex))
+      if remainingDistance > 10 and (not actionSequenceDoer.lastTimeDismounted or GetTime() - actionSequenceDoer.lastTimeDismounted >= 3) then
         actionSequenceDoer.mounter:mount()
       end
 
@@ -1063,7 +1067,7 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
         Movement.canBeFlown() and
           Movement.isMountedOnFlyingMount() and
           (totalDistance > 10 or Movement.isPositionInTheAir(waypoint)) and
-          (Movement.isPointOnGround(playerPosition) or (Movement.isPointInDeepWater(playerPosition) and not Movement.isPointInDeepWater(waypoint))) and
+          (Movement.isPointCloseToGround(playerPosition) or (Movement.isPointInDeepWater(playerPosition) and not Movement.isPointInDeepWater(waypoint))) and
           (not isLastWaypoint or Movement.isPositionInTheAir(waypoint))
       ) then
         Movement.liftUp()
@@ -1161,7 +1165,7 @@ function _.faceWaypoint(action, waypoint)
     Core.stopMovingForward()
   end
   local facingPoint
-  if Movement.isPointOnGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
+  if Movement.isPointCloseToGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
     facingPoint = Movement.createPointWithZOffset(waypoint, TARGET_LIFT_HEIGHT)
   else
     facingPoint = waypoint
@@ -1741,7 +1745,7 @@ function Movement.movePath(path, stop)
   local totalDistance = Core.calculatePathLength(path)
   pathMover = createActionSequenceDoer2(
     Array.map(path, function(waypoint, index)
-      return Movement.createMoveToAction3(waypoint, index < pathLength, a, totalDistance, index == pathLength)
+      return Movement.createMoveToAction3(waypoint, index < pathLength, a, totalDistance, index == pathLength, index, path)
     end),
     {
       onStop = function()
@@ -1806,9 +1810,19 @@ function Movement.moveTo(to, options)
   options = options or {}
 
   local from = Core.retrieveCharacterPosition()
-  local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(from)
-  if closestPositionOnMesh then
-    from = closestPositionOnMesh
+
+  do
+    local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(from)
+    if closestPositionOnMesh then
+      from = closestPositionOnMesh
+    end
+  end
+
+  do
+    local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(to)
+    if closestPositionOnMesh then
+      to = closestPositionOnMesh
+    end
   end
 
   if isDifferentPathFindingRequestThanRun(to) then

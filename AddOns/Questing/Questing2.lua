@@ -6,6 +6,8 @@ local _ = {}
 
 Questing_ = _
 
+local INFINITY = 1 / 0
+
 lootedObjects = Set.create()
 local recentlyVisitedObjectivePoints = {}
 
@@ -123,7 +125,7 @@ defineQuest3(
     )
 
     if self:isObjectiveOpen(1) then
-      if not Core.findClosestObjectToCharacter(57310) then
+      if not Core.findClosestObjectToCharacterWithOneOfObjectIDs(57310) then
         if Questing.isRunning() then
           Questing.Coroutine.gossipWith(58376, 40644)
         end
@@ -140,7 +142,7 @@ defineQuest3(
       end
       while Questing.isRunning() and self:isObjectiveOpen(1) do
         local npcID = 57310
-        local pointer = Core.findClosestObjectToCharacter(npcID)
+        local pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(npcID)
         if pointer then
           local npcPosition = Core.retrieveObjectPosition(pointer)
           local yaw = Core.calculateAnglesBetweenTwoPoints(targetLocation, npcPosition)
@@ -215,17 +217,44 @@ do
           41.904102325439
         ))
         waitFor(function()
-          local object = Core.findClosestObjectToCharacter(42387)
+          local object = Core.findClosestObjectToCharacterWithOneOfObjectIDs(42387)
           return object and Core.canUnitAttackOtherUnit('player', object)
         end)
         while not Compatibility.QuestLog.isComplete(questID) do
-          local object = Core.findClosestObjectToCharacter(42387)
+          local object = Core.findClosestObjectToCharacterWithOneOfObjectIDs(42387)
           if object then
             Questing.Coroutine.doMob(object)
           else
             yieldAndResume()
           end
         end
+      end
+    end
+  )
+end
+
+do
+  local objectIDs = Set.create({
+    42386,
+    42384
+  })
+  local itemID = 57991
+  defineQuest3(
+    26271,
+    function(self)
+      local fedNPCs = Set.create()
+      local filter = function(object)
+        return Set.contains(objectIDs, HWT.ObjectId(object)) and not Set.contains(fedNPCs, object)
+      end
+      while Questing.isRunning() and not self:isComplete() do
+        local object = Core.findClosestObjectToCharacter(filter)
+        if object then
+          local position = Core.retrieveObjectPosition(object)
+          Questing.Coroutine.waitForItemReady(itemID)
+          Questing.Coroutine.useItemOnPosition(position, itemID)
+          Set.add(fedNPCs, object)
+        end
+        yieldAndResume()
       end
     end
   )
@@ -364,7 +393,7 @@ local function generateQuestStartPointsFromStarters(quest)
       if starter.type == 'npc' then
         local npc = Questing.Database.retrieveNPC(starter.id)
         if npc then
-          local npcPointer = Core.findClosestObjectToCharacter(npc.id)
+          local npcPointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(npc.id)
           if npcPointer and not Set.contains(questGiverStatuses, Unlocker.retrieveQuestGiverStatus(npcPointer)) then
             return nil
           end
@@ -577,6 +606,18 @@ function retrieveQuestsOnMapThatTheCharacterIsOn()
   return _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
 end
 
+local MapIDs = {
+  Stormwind = 84,
+  ElwynnForest = 37,
+  --Ogrimmar = ,
+}
+
+local customParentMapIDs = {
+  [MapIDs.Stormwind] = MapIDs.ElwynnForest
+  --[MapI]
+  -- TODO: Mapping for other cities to their zone that they are in.
+}
+
 function _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
   local mapID = Core.receiveMapIDForWhereTheCharacterIsAt()
   if mapID then
@@ -587,7 +628,12 @@ function _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
         if Array.hasElements(quests) then
           return quests, mapID
         else
-          mapID = mapInfo.parentMapID
+          local customParentMapID = customParentMapIDs[mapID]
+          if customParentMapID then
+            mapID = customParentMapID
+          else
+            mapID = mapInfo.parentMapID
+          end
         end
       else
         return {}, nil
@@ -676,21 +722,22 @@ function retrieveObjectivePoints()
           local questObjectiveInfo = Array.create(retrieveQuestObjectiveInfo(questID, firstOpenObjectiveIndex))
           objectIDs = questObjectiveInfo
             :filter(
-              function(object)
-                return object.type == 'npc' or object.type == 'object'
-              end
-            )
+            function(object)
+              return object.type == 'npc' or object.type == 'object'
+            end
+          )
             :map(
-              function(object)
-                return object.id
-              end
-            )
+            function(object)
+              return object.id
+            end
+          )
         end
         local objectID
         if objectIDs then
           objectID = objectIDs[1]
           if objectID then
-            local objectPointer = Core.findClosestObjectWithOneOfObjectIDsTo(objectID) -- FIXME: Object with objectID which is the closest to position
+            local position = Core.createWorldPosition(continentID, x, y, z)
+            local objectPointer = Core.findClosestObjectWithOneOfObjectIDsTo(objectID, position)
             if objectPointer then
               local position = Core.retrieveObjectPosition(objectPointer)
               x, y, z = position.x, position.y, position.z
@@ -705,8 +752,6 @@ function retrieveObjectivePoints()
         if not objectID then
           local position = Core.createWorldPosition(continentID, x, y, z)
           local object = Core.findClosestQuestRelatedObjectTo(questID, position)
-          print('object')
-          DevTools_Dump(object)
           if object then
             objectID = HWT.ObjectId(object)
             pointer = object
@@ -888,10 +933,7 @@ function _.seemsToBeQuestObjective(object)
 end
 
 function doesPassObjectFilter(object)
-  return (
-    _.seemsToBeQuestObjective(object.pointer) or
-      seemsToBeQuestObject(object.pointer)
-  )
+  return _.seemsToBeQuestObjective(object.pointer) or seemsToBeQuestObject(object.pointer)
 end
 
 function retrieveObjectPoints()
@@ -971,11 +1013,16 @@ local function determineClosestPoint(points)
   local playerPosition = Core.retrieveCharacterPosition()
   return Array.min(points, function(point)
     if point then
-      local distance = Core.calculateDistanceBetweenPositions(playerPosition, point)
+      local distance
+      if point.z then
+        distance = Core.calculateDistanceBetweenPositions(playerPosition, point)
+      else
+        distance = Core.calculate2DDistanceBetweenPositions(playerPosition, point)
+      end
 
       return distance
     else
-      return 99999999999
+      return INFINITY
     end
   end)
 end
@@ -1147,7 +1194,7 @@ local function doSomethingWithObject(point)
   local objectID = point.objectID
   local pointer = point.pointer
   if not pointer and objectID then
-    pointer = Core.findClosestObjectToCharacter(objectID) -- FIXME: Object closest to point position which matches objectID
+    pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID) -- FIXME: Object closest to point position which matches objectID
   end
 
   if not pointer and objectID and Core.calculateDistanceFromCharacterToPosition(point) <= Core.RANGE_IN_WHICH_OBJECTS_SEEM_TO_BE_SHOWN then
@@ -1214,6 +1261,11 @@ function _.completeQuests()
     end
     Compatibility.Quests.selectActiveQuest(questIdentifier)
   end
+  _.completeQuest()
+  _.waitForNPCUpdate()
+end
+
+function _.completeQuest()
   if QuestFrameProgressPanel:IsShown() and IsQuestCompletable() then
     CompleteQuest()
   end
@@ -1230,7 +1282,6 @@ function _.completeQuests()
       GetQuestReward(1)
     end
   end
-  _.waitForNPCUpdate()
 end
 
 --function _.retrieveItemsToPickUp()
@@ -1368,6 +1419,9 @@ local function runQuestHandler(questHandler)
   local object
   object = {
     questID = questHandler.questID,
+    isComplete = function()
+      return Compatibility.QuestLog.isComplete(object.questID)
+    end,
     isObjectiveOpen = function(objectiveIndex)
       return not Core.isObjectiveComplete(object.questID, objectiveIndex)
     end,
@@ -1499,9 +1553,6 @@ function Questing.handleObjective(point)
     position = _.retrievePositionFromObjectID(objectID)
   end
 
-  print('position')
-  DevTools_Dump(position)
-
   if not position then
     local firstQuestID = point.questIDs[1]
     if firstQuestID then
@@ -1560,9 +1611,9 @@ function Questing.handleObjective(point)
   QuestingPointToShow = QuestingPointToMove
 
   Questing.Coroutine.moveTo(point, {
-    additionalStopConditions = function ()
+    additionalStopConditions = function()
       if objectID then
-        local object = Core.findClosestObjectToCharacter(objectID)
+        local object = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
         if object and Core.calculateDistanceFromCharacterToObject(object) <= INTERACT_DISTANCE then
           return true
         end
@@ -1574,7 +1625,7 @@ function Questing.handleObjective(point)
 
   local pointer = point.pointer
   if not pointer and objectID then
-    pointer = Core.findClosestObjectToCharacter(objectID)
+    pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
   end
   if pointer then
     Questing.Coroutine.interactWithObject(pointer)
@@ -1613,7 +1664,7 @@ function _.findMerchantItemWithName(name)
 end
 
 function _.retrieveObjectiveNameForQuestAndQuestObject(object, questID)
-	local questObjectiveName
+  local questObjectiveName
   local tooltip = C_TooltipInfo.GetUnit(object)
   if tooltip then
     questObjectiveName = _.extractQuestObjectiveNameForQuestFromTooltip(tooltip, questID)
@@ -1627,8 +1678,6 @@ function _.extractQuestObjectiveNameForQuestFromTooltip(tooltip, questID)
   local lines = tooltip.lines
   local questTitleLineIndex = Array.findIndex(lines, function(line)
     TooltipUtil.SurfaceArgs(line)
-    print('line')
-    DevTools_Dump(line)
     return line.type == 17 and line.id == questID
   end)
   print('questTitleLineIndex', questTitleLineIndex)
@@ -1647,7 +1696,6 @@ function _.extractQuestObjectiveNameForQuestFromTooltip(tooltip, questID)
 
   return nil
 end
-
 
 function _.findClosestPointOnMeshWithPathTo(position)
   local continentID = select(8, GetInstanceInfo())
@@ -1679,7 +1727,7 @@ function _.findClosestPointOnMeshWithPathTo(position)
 end
 
 function _.retrievePositionFromObjectID(objectID)
-  local object = Core.findClosestObjectToCharacter(objectID)
+  local object = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
   if object then
     return Core.retrieveObjectPosition(object)
   else
@@ -1858,10 +1906,7 @@ end
 
 function isIdle()
   return (
-    not Bot.isCharacterInCombat() and
-      not Bot.isCharacterInCombat() and
-      not Core.isCharacterAttacking() and
-      not Core.isCharacterDrinking() and
+    not Core.isCharacterDrinking() and
       not Core.isCharacterEating() and
       (not _G.isPathFinding or not isPathFinding())
   )
@@ -1924,9 +1969,6 @@ end
 
 function isAnyActiveQuestCompletable2()
   local activeQuests = Compatibility.GossipInfo.retrieveActiveQuests()
-  print('activeQuests')
-  DevTools_Dump(activeQuests)
-  print('--- activeQuests')
   return Array.any(activeQuests, function(quest)
     return Compatibility.QuestLog.isComplete(quest.questID)
   end)
@@ -1934,7 +1976,7 @@ end
 
 function registerUnavailableQuests(npcID)
   local questsThatShouldBeAvailableFromNPC = Questing.Database.retrieveQuestsThatShouldBeAvailableFromNPC(npcID)
-  local objectPointer = Core.findClosestObjectToCharacter(npcID)
+  local objectPointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(npcID)
   local availableQuestsSet
   if objectPointer and Core.retrieveObjectPointer('npc') == objectPointer then
     local availableQuests = Compatibility.Quests.retrieveAvailableQuests()
@@ -1971,10 +2013,6 @@ end
 
 function _.run ()
   local regularChecksTicker = C_Timer.NewTicker(0, function()
-    if Bot.isCharacterInCombat() then
-      Movement.stopPathMoving()
-    end
-
     if not Questing.isRunning() then
       Movement.stopPathFindingAndMoving()
     end
@@ -2004,12 +2042,10 @@ function _.run ()
       QuestingPointToMove = nil
 
       local quests = retrieveQuestLogQuests()
-      local quest = Array.find(quests, function(quest)
+      local autoCompleteQuests = Array.filter(quests, function(quest)
         return quest.isAutoComplete and Compatibility.QuestLog.isComplete(quest.questID)
       end)
-      if quest then
-        ShowQuestComplete(quest.questID)
-      end
+      Array.forEach(autoCompleteQuests, _.completeAutoCompleteQuest)
 
       local questIDs = retrieveQuestLogQuestIDs()
       Array.forEach(questIDs, function(questID)
@@ -2022,14 +2058,12 @@ function _.run ()
         for index = 1, GetNumAutoQuestPopUps() do
           local questID, popUpType = GetAutoQuestPopUp(index)
 
-          if popUpType == 'OFFER' then
+          if popUpType == 'OFFER' and not Compatibility.QuestLog.isOnQuest(questID) then
             ShowQuestOffer(questID)
-            local wasSuccessful = waitFor(function()
-              return QuestFrame:IsShown()
-            end, 1)
-            if wasSuccessful then
-              AcceptQuest()
-            end
+            AutoQuestPopupTracker_RemovePopUp(questID)
+            Events.waitForEvent('QUEST_DETAIL')
+            AcceptQuest()
+            waitForQuestHasBeenAccepted()
           end
         end
       end
@@ -2041,9 +2075,11 @@ function _.run ()
 
       if Core.isCharacterGhost() then
         local corpsePosition = createPoint(Core.receiveCorpsePosition())
-        Questing.Coroutine.moveToUntil(corpsePosition, function()
-          return StaticPopup1Button1:IsShown()
-        end)
+        Questing.Coroutine.moveToUntil(corpsePosition, {
+          stopCondition = function()
+            return StaticPopup1Button1:IsShown()
+          end
+        })
         StaticPopup1Button1:Click()
       elseif Questing.canLearnRiding() then
         Questing.learnRiding()
@@ -2065,6 +2101,12 @@ function _.run ()
   end
 end
 
+function _.completeAutoCompleteQuest(questID)
+  ShowQuestComplete(questID)
+  AutoQuestPopupTracker_RemovePopUp(questID)
+  _.completeQuest()
+end
+
 function _.itSeemsMakeSenseToSell()
   return Questing.areBagsFull() and _.isSellVendorSet()
 end
@@ -2075,9 +2117,7 @@ end
 
 function _.sell()
   local sellNPC = Questing.closestNPCs.Sell
-  Questing.Coroutine.interactWithObjectWithObjectID(sellNPC.objectID, {
-    fallbackPosition = sellNPC
-  })
+  Questing.Coroutine.gossipWithAt(sellNPC, sellNPC.objectID)
   if MerchantFrame:IsShown() then
     _.sellItemsAtVendor()
   else
@@ -2117,8 +2157,10 @@ function _.sellItemsAtVendor()
   for containerIndex = 0, NUM_BAG_SLOTS do
     for slotIndex = 1, Compatibility.Container.receiveNumberOfSlotsOfContainer(containerIndex) do
       local itemInfo = Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex)
+      local classID = select(6, GetItemInfoInstant(itemInfo.itemID))
       if itemInfo and (
         itemInfo.quality == Enum.ItemQuality.Poor or
+          (itemInfo.quality == Enum.ItemQuality.Common and (classID == Enum.ItemClass.Weapon or classID == Enum.ItemClass.Armor)) or
           (QuestingOptions.sellUncommon and itemInfo.quality == Enum.ItemQuality.Uncommon) or
           (QuestingOptions.sellRare and itemInfo.quality == Enum.ItemQuality.Rare)
       ) then
@@ -2176,6 +2218,8 @@ local function onEvent(self, event, ...)
     print('QUEST_ACCEPT_CONFIRM', Unlocker.retrieveQuestGiverStatus('target'))
   elseif event == 'QUEST_LOG_CRITERIA_UPDATE' then
     print('QUEST_LOG_CRITERIA_UPDATE', Unlocker.retrieveQuestGiverStatus('target'))
+  elseif event == 'QUEST_DETAIL' then
+    print('QUEST_DETAIL')
   end
 end
 
@@ -2186,6 +2230,7 @@ frame:RegisterEvent('GOSSIP_SHOW')
 frame:RegisterEvent('QUEST_ACCEPTED')
 frame:RegisterEvent('QUEST_ACCEPT_CONFIRM')
 frame:RegisterEvent('QUEST_LOG_CRITERIA_UPDATE')
+frame:RegisterEvent('QUEST_DETAIL')
 frame:SetScript('OnEvent', onEvent)
 
 Questing.convertMapPositionToWorldPosition = convertMapPositionToWorldPosition

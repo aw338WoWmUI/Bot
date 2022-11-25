@@ -86,10 +86,13 @@ end
 
 function _.retrieveQuestIDsFromTooltip(object)
   local questIDs
-  local tooltip = C_TooltipInfo.GetUnit(object)
-  if tooltip then
-    questIDs = _.extractQuestIDsFromTooltip(tooltip)
-  else
+  if Core.isUnit(object) then
+    local tooltip = C_TooltipInfo.GetUnit(object)
+    if tooltip then
+      questIDs = _.extractQuestIDsFromTooltip(tooltip)
+    end
+  end
+  if not questIDs then
     questIDs = {}
   end
   return questIDs

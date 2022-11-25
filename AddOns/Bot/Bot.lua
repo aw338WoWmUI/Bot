@@ -14,9 +14,9 @@ function Bot.start()
 
     isRunning = true
 
-    handler = Scheduling.doEachFrame(function()
-      Bot.Warrior.castSpell()
-    end)
+    --handler = Scheduling.doEachFrame(function()
+    --  Bot.Warrior.castSpell()
+    --end)
 
     Questing.start()
   end
@@ -26,7 +26,7 @@ function Bot.stop()
   if Bot.isRunning() then
     print('Stopping bot...')
     isRunning = false
-    handler:Cancel()
+    --handler:Cancel()
     Questing.stop()
   end
 end

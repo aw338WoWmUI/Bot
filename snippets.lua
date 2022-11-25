@@ -126,20 +126,20 @@ __A.ObjectQuests(Core.retrieveObjectPointer('target'))
  __A.ObjectQuestGiverStatus('target')
 -- __A.GetObjectQuestGiverStatusesTable()
 
-HWT.ObjectQuests(Core.findClosestObjectToCharacter(209436))
+HWT.ObjectQuests(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209436))
 
-HWT.GameObjectType(Core.findClosestObjectToCharacter(209436))
+HWT.GameObjectType(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209436))
 
 coroutine.wrap(function () DevTools_Dump(retrieveObjectivePoints()) end)()
 coroutine.wrap(function () DevTools_Dump(retrieveQuestStartPoints()) end)()
 coroutine.wrap(function () DevTools_Dump(retrieveObjectPoints()) end)()
-HWT.ObjectQuests(Core.findClosestObjectToCharacter(209463))
-HWT.GameObjectType(Core.findClosestObjectToCharacter(209463))
-HWT.ObjectTypeFlags(Core.findClosestObjectToCharacter(209463))
-HWT.ObjectIsQuestObjective(Core.findClosestObjectToCharacter(209463))
+HWT.ObjectQuests(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209463))
+HWT.GameObjectType(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209463))
+HWT.ObjectTypeFlags(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209463))
+HWT.ObjectIsQuestObjective(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209463))
 -- 209550
-HWT.ObjectIsQuestObjective(Core.findClosestObjectToCharacter(209550), false)
-seemsToBeQuestObject(Core.findClosestObjectToCharacter(209550))
+HWT.ObjectIsQuestObjective(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209550), false)
+seemsToBeQuestObject(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209550))
 
 coroutine.wrap(function () DevTools_Dump(retrieveFlightMasterDiscoveryPoints()) end)()
 
@@ -171,15 +171,15 @@ Movement.canBeJumpedFromPointToPoint(Movement.path[#Movement.path - 2], Movement
 
 HWT.ObjectFacing('player')
 
-HWT.ObjectQuests(Core.findClosestObjectToCharacter(42940))
+HWT.ObjectQuests(Core.findClosestObjectToCharacterWithOneOfObjectIDs(42940))
 
 Movement.canBeMovedFromPointToPointCheckingSubSteps(position1, position2)
 
 aaaaaaa2394ui2u32uio()
 
-HWT.ObjectTypeFlags(Core.findClosestObjectToCharacter(203972)) -- 257
-HWT.ObjectIsQuestObjective(Core.findClosestObjectToCharacter(203972), false)
-HWT.GameObjectType(Core.findClosestObjectToCharacter(203972))
+HWT.ObjectTypeFlags(Core.findClosestObjectToCharacterWithOneOfObjectIDs(203972)) -- 257
+HWT.ObjectIsQuestObjective(Core.findClosestObjectToCharacterWithOneOfObjectIDs(203972), false)
+HWT.GameObjectType(Core.findClosestObjectToCharacterWithOneOfObjectIDs(203972))
 
 Movement.isJumpSituation(savedPosition)
 
@@ -256,7 +256,7 @@ Movement.canReachWaypointWithCurrentMovementDirection(savedPosition)
 
 runAsCoroutine(function () Movement.facePoint(Core.retrieveObjectPosition('target')) end)
 
-Core.findClosestObjectToCharacter(63596)
+Core.findClosestObjectToCharacterWithOneOfObjectIDs(63596)
 
 HWT.GetObjectCount(); print(HWT.GetObjectWithIndex(1))
 
@@ -283,7 +283,7 @@ end
 
 Development.logObjectInfo()
 
-C_TooltipInfo.GetUnit(Core.findClosestObjectToCharacter(197008))
+C_TooltipInfo.GetUnit(Core.findClosestObjectToCharacterWithOneOfObjectIDs(197008))
 
 C_TooltipInfo.GetWorldCursor()
 
@@ -292,3 +292,38 @@ C_TooltipInfo.GetWorldCursor()
 p = Core.retrieveObjectPointer('target')
 
 C_TooltipInfo.GetUnit(p)
+
+runAsCoroutine(function () DevTools_Dump(retrieveObjectivePoints()) end)
+
+WorldMapFrame:GetMapID()
+
+IsSpellInRange(RecommendedSpellCaster.retrieveNextAbility().name)
+
+Movement.canBeJumpedFromPointToPoint(MovementPath[4], MovementPath[5])
+
+Movement.canPlayerStandOnPoint(MovementPath[5])
+Movement.isPointCloseToGround(MovementPath[5])
+Movement.isPointCloseToGround(MovementPath[4])
+
+Core.findClosestObjectToCharacterWithOneOfObjectIDs(203982)
+
+HWT.GameObjectIsUsable(Core.findClosestObjectToCharacterWithOneOfObjectIDs(203982), false)
+
+-- 4294901796
+-- 163184676
+
+Development.toBinary(4294901796, 32)
+Development.toBinary(163184676, 32)
+
+Unlocker.ObjectQuests('target')
+HWT.ObjectQuests('target')
+Unlocker.ObjectIsQuestObjective('target')
+
+HWT.GameObjectType(Core.findClosestObjectToCharacterWithOneOfObjectIDs(203982))
+Unlocker.ObjectQuests(Core.findClosestObjectToCharacterWithOneOfObjectIDs(203982))
+Unlocker.ObjectQuests('target')
+
+Development.logTargetInfo()
+
+HWT.ObjectDynamicFlags('target')
+HWT.UnitFlags('target')

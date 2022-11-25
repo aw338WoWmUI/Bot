@@ -23,10 +23,17 @@ function Questing.Coroutine.moveTo(point, options)
     return Core.isCharacterCloseToPosition(point, distance) or additionalStopConditions and additionalStopConditions()
   end
 
-  Questing.Coroutine.moveToUntil(point, hasArrived)
+  Questing.Coroutine.moveToUntil(point, {
+    toleranceDistance = distance,
+    stopCondition = hasArrived
+  })
 end
 
-function Questing.Coroutine.moveToUntil(point, stopCondition)
+function Questing.Coroutine.moveToUntil(point, options)
+  options = options or {}
+
+  local stopCondition = options.stopCondition
+
   if Movement.isPositionInTheAir(point) and not Movement.canCharacterFly() then
     point = createPoint(
       point.x,
@@ -38,6 +45,7 @@ function Questing.Coroutine.moveToUntil(point, stopCondition)
   while Questing.isRunning() and not stopCondition() do
     if isIdle() then
       moveTo(point, {
+        toleranceDistance = options.toleranceDistance,
         hasArrived = stopCondition
       })
       waitFor(function()
@@ -108,7 +116,7 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   end
 
   if Questing.isRunning() then
-    local pointer = Core.findClosestObjectToCharacter(objectID)
+    local pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
     if pointer then
       Core.interactWithObject(pointer)
       waitForDuration(2)
@@ -119,19 +127,19 @@ end
 function Questing.Coroutine.interactWithObjectWithObjectID(objectID, options)
   options = options or {}
 
-  local pointer = Core.findClosestObjectToCharacter(objectID)
+  local pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
 
   if not pointer and options.fallbackPosition then
     Questing.Coroutine.moveTo(options.fallbackPosition, {
       distance = Core.RANGE_IN_WHICH_OBJECTS_SEEM_TO_BE_SHOWN,
       additionalStopConditions = function()
-        return Core.findClosestObjectToCharacter(objectID)
+        return Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
       end
     })
   end
 
   if not pointer then
-    pointer = Core.findClosestObjectToCharacter(objectID)
+    pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
   end
 
   if pointer then
@@ -149,9 +157,13 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
 
   if Questing.isRunning() and HWT.ObjectExists(pointer) then
     Core.interactWithObject(pointer)
+    waitForDuration(1)
     waitFor(function()
-      return not UnitCastingInfo('player')
+      return not Core.isCharacterCasting()
     end)
+    if GetNumLootItems() >= 1 then
+      Events.waitForEvent('LOOT_CLOSED')
+    end
     return true
   else
     return false
@@ -194,7 +206,7 @@ function Questing.Coroutine.useItemOnNPC(point, objectID, itemID, distance)
   end
 
   if Questing.isRunning() then
-    local pointer = Core.findClosestObjectToCharacter(objectID)
+    local pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
     Core.useItemByID(itemID, pointer)
   end
 end
@@ -232,6 +244,14 @@ function Questing.Coroutine.useItem(itemID)
   end
 end
 
+function Questing.Coroutine.waitForItemReady(itemID)
+  local startTime, duration = C_Container.GetItemCooldown(itemID)
+  if startTime > 0 and duration > 0 then
+    local remainingCooldownTime = duration - (GetTime() - startTime)
+    waitForDuration(remainingCooldownTime)
+  end
+end
+
 local function selectOption(optionToSelect)
   if Questing.isRunning() then
     C_GossipInfo.SelectOption(optionToSelect)
@@ -259,7 +279,7 @@ function Questing.Coroutine.gossipWithObject(pointer, gossipOptionID)
 end
 
 local function gossipWithObjectWithObjectID(objectID, chooseOption)
-  local objectPointer = Core.findClosestObjectToCharacter(objectID)
+  local objectPointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
 
   print('objectPointer', objectPointer, objectID)
 
@@ -290,7 +310,7 @@ local function gossipWithObjectWithObjectID(objectID, chooseOption)
       while closestPosition do
         Questing.Coroutine.moveTo(closestPosition)
         visitedPositions:add(closestPosition)
-        local objectPointer = Core.findClosestObjectToCharacter(objectID)
+        local objectPointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
         if objectPointer then
           gossipWithObject(objectPointer, chooseOption)
           break
@@ -325,7 +345,7 @@ function Questing.Coroutine.gossipWithAt(point, objectID, optionToSelect)
   Questing.Coroutine.interactWithAt(point, objectID)
   Events.waitForEvent('GOSSIP_SHOW', 2)
   yieldAndResume()
-  if Questing.isRunning() then
+  if Questing.isRunning() and optionToSelect then
     selectOption(optionToSelect)
   end
 end
@@ -360,6 +380,7 @@ function Questing.Coroutine.doMob(pointer, options)
     if not Core.isCharacterCloseToPosition(position, distance) then
       Questing.Coroutine.moveToObject(pointer, distance)
     end
+    castRecommendedSpell()
     yieldAndResume()
   end
 

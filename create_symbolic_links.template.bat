@@ -42,6 +42,7 @@ if exist "%path%\_retail_" (
 	mklink /D "%path%\_retail_\Interface\AddOns\DisableGMR" "%~dp0\AddOns\DisableGMR"
 	mklink /D "%path%\_retail_\Interface\AddOns\Logging" "%~dp0\AddOns\Logging"
 	mklink /D "%path%\_retail_\Interface\AddOns\Development" "%~dp0\AddOns\Development"
+	mklink /D "%path%\_retail_\Interface\AddOns\RecommendedSpellCaster" "%~dp0\AddOns\RecommendedSpellCaster"
 )
 
 if exist "%path%\_classic_" (
