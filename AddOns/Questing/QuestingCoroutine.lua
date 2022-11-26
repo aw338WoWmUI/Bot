@@ -8,9 +8,10 @@ local function moveTo(to, options)
 
   Movement.moveTo(to, {
     stop = function()
-      return not Questing.isRunning() or (options.hasArrived and options.hasArrived())
+      return not Questing.isRunning() or (options.stop and options.stop())
     end,
-    toleranceDistance = options.toleranceDistance
+    toleranceDistance = options.toleranceDistance,
+    continueMoving = options.continueMoving
   })
 end
 
@@ -43,67 +44,67 @@ function Questing.Coroutine.moveToUntil(point, options)
   end
 
   while Questing.isRunning() and not stopCondition() do
-    if isIdle() then
-      moveTo(point, {
-        toleranceDistance = options.toleranceDistance,
-        hasArrived = stopCondition
-      })
-      waitFor(function()
-        return stopCondition() or isIdle()
-      end)
-    else
-      yieldAndResume()
-    end
-  end
-
-  if Questing.isRunning() then
-    Movement.stopMoving()
+    moveTo(point, {
+      toleranceDistance = options.toleranceDistance,
+      stop = stopCondition
+    })
+    yieldAndResume()
   end
 end
 
-function Questing.Coroutine.moveToObject(pointer, distance)
-  distance = distance or INTERACT_DISTANCE
+function Questing.Coroutine.moveToObject(pointer, options)
+  options = options or {}
+
+  local distance = options.distance or INTERACT_DISTANCE
+  local stop = options.stop or Function.alwaysFalse
 
   local function retrievePosition()
     local position = Core.retrieveObjectPosition(pointer)
 
     if Movement.isPositionInTheAir(position) and not Movement.canCharacterFly() then
-      position = createPoint(
+      position = Core.createWorldPosition(
+        position.continentID,
         position.x,
         position.y,
         Movement.retrieveGroundZ(position) or position.z
       )
     end
 
+    position = Core.retrieveClosestPositionWithPathTo(position, distance)
+
     return position
   end
 
-  local function isJobDone()
-    if not HWT.ObjectExists(pointer) then
-      return true
-    else
-      local position = retrievePosition()
-      return Core.isCharacterCloseToPosition(position, distance)
-    end
+  local function isJobDone(position)
+    return (
+      not position or
+      not HWT.ObjectExists(pointer) or
+        (stop and stop()) or
+        Core.isCharacterCloseToPosition(position, distance)
+    )
   end
 
-  while Questing.isRunning() and not isJobDone() do
-    if isIdle() then
-      local position = retrievePosition()
-      moveTo(position, {
-        toleranceDistance = distance
-      })
-      waitFor(function()
-        return isJobDone() or isIdle()
-      end)
-    else
-      yieldAndResume()
-    end
+  local lastMoveToPosition
+
+  local function isObjectUnreachableOrHasMoveToPostionChanged()
+    local moveToPostion = retrievePosition()
+    return not moveToPostion or moveToPostion:isDifferent(lastMoveToPosition)
   end
 
-  if Questing.isRunning() then
-    Movement.stopMoving()
+  local position = retrievePosition()
+  while Questing.isRunning() and not isJobDone(position) do
+    lastMoveToPosition = position
+    moveTo(position, {
+      toleranceDistance = distance,
+      stop = function()
+        return isJobDone(position) or isObjectUnreachableOrHasMoveToPostionChanged()
+      end,
+      continueMoving = true
+    })
+    position = retrievePosition()
   end
+
+  Core.stopMoving()
 end
 
 function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
@@ -152,7 +153,9 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
 
   local position = Core.retrieveObjectPosition(pointer)
   if not Core.isCharacterCloseToPosition(position, distance) then
-    Questing.Coroutine.moveToObject(pointer, distance)
+    Questing.Coroutine.moveToObject(pointer, {
+      distance = distance
+    })
   end
 
   if Questing.isRunning() and HWT.ObjectExists(pointer) then
@@ -364,7 +367,9 @@ function Questing.Coroutine.doMob(pointer, options)
 
   local position = Core.retrieveObjectPosition(pointer)
   if not Core.isCharacterCloseToPosition(position, distance) then
-    Questing.Coroutine.moveToObject(pointer, distance)
+    Questing.Coroutine.moveToObject(pointer, {
+      distance = distance
+    })
   end
 
   if IsMounted() then
@@ -378,7 +383,9 @@ function Questing.Coroutine.doMob(pointer, options)
   while Questing.isRunning() and not isJobDone() do
     local position = Core.retrieveObjectPosition(pointer)
     if not Core.isCharacterCloseToPosition(position, distance) then
-      Questing.Coroutine.moveToObject(pointer, distance)
+      Questing.Coroutine.moveToObject(pointer, {
+        distance = distance
+      })
     end
     castRecommendedSpell()
     yieldAndResume()

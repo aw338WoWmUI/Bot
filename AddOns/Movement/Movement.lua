@@ -32,10 +32,6 @@ local cache = {}
 local run = nil
 local pathFinder = nil
 
-function Movement.retrieveCharacterBoundingRadius()
-  return HWT.UnitBoundingRadius('player')
-end
-
 function Movement.retrieveCharacterHeight()
   return HWT.ObjectHeight('player')
 end
@@ -122,13 +118,13 @@ doWhenHWTIsLoaded(function()
           point.y,
           point.z
         )
-        LibDraw.Circle(point.x, point.y, point.z, Movement.retrieveCharacterBoundingRadius())
+        LibDraw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
         previousPoint = point
       end
       local firstPoint = path[1]
       local lastPoint = path[#path]
-      LibDraw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, Movement.retrieveCharacterBoundingRadius())
-      LibDraw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, Movement.retrieveCharacterBoundingRadius())
+      LibDraw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, Core.retrieveCharacterBoundingRadius())
+      LibDraw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, Core.retrieveCharacterBoundingRadius())
     end
 
     if DEVELOPMENT then
@@ -252,13 +248,13 @@ end
 function Movement.thereAreZeroCollisions4(from, to, zHeight)
   local from2 = Core.retrievePositionFromPosition(
     from,
-    Movement.retrieveCharacterBoundingRadius(),
+    Core.retrieveCharacterBoundingRadius(),
     Core.calculateAnglesBetweenTwoPoints(from, to) + 0.5 * PI,
     0
   )
   local to2 = Core.retrievePositionFromPosition(
     to,
-    Movement.retrieveCharacterBoundingRadius(),
+    Core.retrieveCharacterBoundingRadius(),
     Core.calculateAnglesBetweenTwoPoints(from, to) + 0.5 * PI,
     0
   )
@@ -268,13 +264,13 @@ end
 function Movement.thereAreZeroCollisions5(from, to, zHeight)
   local from2 = Core.retrievePositionFromPosition(
     from,
-    Movement.retrieveCharacterBoundingRadius(),
+    Core.retrieveCharacterBoundingRadius(),
     Core.calculateAnglesBetweenTwoPoints(from, to) - 0.5 * PI,
     0
   )
   local to2 = Core.retrievePositionFromPosition(
     to,
-    Movement.retrieveCharacterBoundingRadius(),
+    Core.retrieveCharacterBoundingRadius(),
     Core.calculateAnglesBetweenTwoPoints(from, to) - 0.5 * PI,
     0
   )
@@ -420,7 +416,7 @@ function Movement.canPlayerBeOnPoint(point, options)
 
   local function areThereZeroCollisionsAround()
     local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight,
-      Movement.retrieveCharacterBoundingRadius(), 8)
+      Core.retrieveCharacterBoundingRadius(), 8)
     return Array.all(points, function(point)
       return Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, point)
     end)
@@ -457,7 +453,7 @@ function _.canPlayerBeOnPoint2(point, options)
 
     local function areThereZeroCollisionsAround()
       local points = Movement.generatePointsAround(pointALittleBitOverMaximumWalkUpToHeight,
-        Movement.retrieveCharacterBoundingRadius(), 8)
+        Core.retrieveCharacterBoundingRadius(), 8)
       return Array.all(points, function(point)
         return Movement.thereAreZeroCollisions(pointALittleBitOverMaximumWalkUpToHeight, point)
       end)
@@ -516,7 +512,7 @@ function Movement.canPlayerStandOnPoint(point, options)
       )
       if standOnPoint then
         local MAXIMUM_STEEPNESS_HEIGHT = 0.55436325073242
-        local points = Movement.generatePointsAround(standOnPoint, Movement.retrieveCharacterBoundingRadius(), 8)
+        local points = Movement.generatePointsAround(standOnPoint, Core.retrieveCharacterBoundingRadius(), 8)
         return not Array.all(points, function(point)
           local point1 = Movement.createPointWithZOffset(point, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
           return Movement.thereAreCollisions(
@@ -956,7 +952,8 @@ function Movement.canMountOnFlyingMount()
       Movement.canBeFlown() and
       Movement.isAFlyingMountAvailable() and
       Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) and
-      not Core.isCharacterInCombat()
+      not Core.isCharacterInCombat() and
+      not UnitInVehicle('player')
   )
 end
 
@@ -966,7 +963,8 @@ function Movement.canMountOnGroundMount()
       Movement.canBeGroundMounted() and
       Movement.isAGroundMountAvailable() and
       Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) and
-      not Core.isCharacterInCombat()
+      not Core.isCharacterInCombat() and
+      not UnitInVehicle('player')
   )
 end
 
@@ -1039,7 +1037,7 @@ function Movement.isCharacterInTheAir()
   return Movement.isPositionInTheAir(playerPosition)
 end
 
-function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance, isLastWaypoint, waypointIndex, path)
+function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint, waypointIndex, path)
   local firstRun = true
   local initialDistance = nil
   local lastJumpTime = nil
@@ -1057,7 +1055,8 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
 
       local playerPosition = Movement.retrieveCharacterPosition()
 
-      local remainingDistance = Core.calculateDistanceFromCharacterToPosition(waypoint) + Core.calculatePathLength(Array.slice(path, waypointIndex))
+      local remainingDistance = Core.calculateDistanceFromCharacterToPosition(waypoint) + Core.calculatePathLength(Array.slice(path,
+        waypointIndex))
       if remainingDistance > 10 and (not actionSequenceDoer.lastTimeDismounted or GetTime() - actionSequenceDoer.lastTimeDismounted >= 3) then
         actionSequenceDoer.mounter:mount()
       end
@@ -1108,14 +1107,6 @@ function Movement.createMoveToAction3(waypoint, continueMoving, a, totalDistance
           not Movement.isPositionLessOffGroundThanTheMaximum(waypoint,
             TOLERANCE_RANGE) and not Movement.canMountOnFlyingMount()
       )
-    end,
-    whenIsDone = function(action, actionSequenceDoer)
-      if not continueMoving then
-        Core.stopMovingForward()
-      end
-    end,
-    onCancel = function(action, actionSequenceDoer)
-      Core.stopMovingForward()
     end
   }
 end
@@ -1246,25 +1237,25 @@ end
 function _.thereAreCollisions2(from, to)
   local from2 = Core.retrievePositionFromPosition(
     from,
-    Movement.retrieveCharacterBoundingRadius(),
+    Core.retrieveCharacterBoundingRadius(),
     Core.calculateAnglesBetweenTwoPoints(from, to) + 0.5 * PI,
     0
   )
   local to2 = Core.retrievePositionFromPosition(
     to,
-    Movement.retrieveCharacterBoundingRadius(),
+    Core.retrieveCharacterBoundingRadius(),
     Core.calculateAnglesBetweenTwoPoints(from, to) + 0.5 * PI,
     0
   )
   local from3 = Core.retrievePositionFromPosition(
     from,
-    Movement.retrieveCharacterBoundingRadius(),
+    Core.retrieveCharacterBoundingRadius(),
     Core.calculateAnglesBetweenTwoPoints(from, to) - 0.5 * PI,
     0
   )
   local to3 = Core.retrievePositionFromPosition(
     to,
-    Movement.retrieveCharacterBoundingRadius(),
+    Core.retrieveCharacterBoundingRadius(),
     Core.calculateAnglesBetweenTwoPoints(from, to) - 0.5 * PI,
     0
   )
@@ -1734,10 +1725,14 @@ function Movement.receiveNeighborPoints(point, distance)
   return neighborPoints
 end
 
-function Movement.movePath(path, stop)
-  Movement.stopMoving()
+function Movement.movePath(path, options)
+  options = options or {}
+
+  if not options.continueMoving then
+    Movement.stopMoving()
+  end
   local a = {
-    shouldStop = stop or function()
+    shouldStop = options.stop or function()
       return false
     end
   }
@@ -1745,11 +1740,14 @@ function Movement.movePath(path, stop)
   local totalDistance = Core.calculatePathLength(path)
   pathMover = createActionSequenceDoer2(
     Array.map(path, function(waypoint, index)
-      return Movement.createMoveToAction3(waypoint, index < pathLength, a, totalDistance, index == pathLength, index, path)
+      return Movement.createMoveToAction3(waypoint, a, totalDistance, index == pathLength, index,
+        path)
     end),
     {
       onStop = function()
-        Core.stopMovingForward()
+        if not options.continueMoving then
+          Core.stopMovingForward()
+        end
       end
     }
   )
@@ -1837,9 +1835,12 @@ function Movement.moveTo(to, options)
     Movement.path = path
     MovementPath = Movement.path
     if path then
-      pathMover = Movement.movePath(path, function()
-        return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
-      end)
+      pathMover = Movement.movePath(path, {
+        stop = function()
+          return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
+        end,
+        continueMoving = options.continueMoving
+      })
       cleanUpPathFindingAndMoving()
     end
   end
@@ -2060,7 +2061,7 @@ end
 
 function Movement.generateWalkToPointFromCollisionPoint(from, collisionPoint)
   local pointWithDistanceToCollisionPoint = Movement.retrievePositionBetweenPositions(collisionPoint, from,
-    Movement.retrieveCharacterBoundingRadius())
+    Core.retrieveCharacterBoundingRadius())
   local z = Movement.retrieveGroundZ(pointWithDistanceToCollisionPoint)
   return createPoint(pointWithDistanceToCollisionPoint.x, pointWithDistanceToCollisionPoint.y, z)
 end

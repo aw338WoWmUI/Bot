@@ -58,3 +58,9 @@ function Development.logUnitFlags(object)
   Logging.log('unit data flags 3', Development.toBinary(Core.retrieveUnitDataFlags3(object), 32))
   Logging.log('object data dynamic flags', Development.toBinary(Core.retrieveObjectDataDynamicFlags(object), 32))
 end
+
+
+function Development.logPlayerPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
+  Logging.logToFile(playerPosition.continentID .. ',\n' .. playerPosition.x .. ',\n' .. playerPosition.y .. ',\n' .. playerPosition.z)
+end

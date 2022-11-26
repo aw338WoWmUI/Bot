@@ -213,13 +213,30 @@ function Core.createPosition(x, y, z)
   }
 end
 
+Core.WorldPosition = {}
+
+function Core.WorldPosition:isEqual(otherPosition)
+  return (
+    self.continentID == otherPosition.continentID and
+    Float.seemsCloseBy(self.x, otherPosition.x) and
+    Float.seemsCloseBy(self.y, otherPosition.y) and
+    Float.seemsCloseBy(self.z, otherPosition.z)
+  )
+end
+
+function Core.WorldPosition:isDifferent(otherPosition)
+  return not Core.WorldPosition:isEqual(otherPosition)
+end
+
 function Core.createWorldPosition(continentID, x, y, z)
-  return {
+  local worldPosition = {
     continentID = continentID,
     x = x,
     y = y,
     z = z
   }
+  setmetatable(worldPosition, { __index = Core.WorldPosition })
+  return worldPosition
 end
 
 function Core.createScreenPosition(x, y)
@@ -674,7 +691,7 @@ function Core.findPath(from, to, options)
   end
 
   local searchCapacity = options.searchCapacity or 1024
-  local agentRadius = options.agentRadius or 0
+  local agentRadius = options.agentRadius or Core.retrieveCharacterBoundingRadius()
   local searchDeviation = options.searchDeviation or 3
   local isSmooth = options.isSmooth or false
 
@@ -686,6 +703,10 @@ function Core.findPath(from, to, options)
     path = Core.convertHWTPathToPath(path)
   end
   return path
+end
+
+function Core.retrieveCharacterBoundingRadius()
+  return HWT.UnitBoundingRadius('player')
 end
 
 function Core.findPathFromCharacterTo(to, options)
@@ -703,6 +724,10 @@ end
 
 function Core.castSpellByName(name, target)
   return CastSpellByName(name, target)
+end
+
+function Core.castSpellByID(spellID, target)
+  return CastSpellByID(spellID, target)
 end
 
 function Core.stopAscending()
@@ -835,7 +860,8 @@ function Core.retrieveObjectPointer(objectIdentifier)
 end
 
 function Core.isObjectiveComplete(questID, objectiveIndex)
-  local isObjectiveComplete = select(3, GetQuestObjectiveInfo(questID, objectiveIndex))
+  print(questID, objectiveIndex)
+  local isObjectiveComplete = select(3, GetQuestObjectiveInfo(questID, objectiveIndex, false))
   return isObjectiveComplete
 end
 
@@ -929,4 +955,33 @@ end
 
 function Core.isCharacterSwimming()
   return Core.areFlagsSet(HWT.UnitMovementFlags('player'), HWT.GetUnitMovementFlagsTable().Swimming)
+end
+
+function Core.retrieveClosestPositionWithPathTo(position, maximumDistance)
+  if Core.doesPathExistFromCharacterTo(position) then
+    return position
+  else
+    local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(position)
+    if closestPositionOnMesh and Core.doesPathExistFromCharacterTo(closestPositionOnMesh) then
+      return closestPositionOnMesh
+    else
+      local startAngle = math.rad(0)
+      local deltaAngle = math.rad(90)
+
+      for angle = startAngle, math.rad(360), deltaAngle do
+        local x = position.x + math.cos(angle) * maximumDistance
+        local y = position.y + math.sin(angle) * maximumDistance
+        local z = Core.retrieveZCoordinate(Core.createWorldPosition(position.continentID, x, y, position.z))
+        if z then
+          return Core.createWorldPosition(position.continentID, x, y, z)
+        end
+      end
+    end
+  end
+
+  return nil
+end
+
+function Core.stopMoving()
+	Core.stopMovingForward()
 end

@@ -258,6 +258,114 @@ do
   )
 end
 
+do
+  local ROCKET_BOOST_SPELL_ID = 79430
+  local filter = function(object)
+    return HWT.ObjectId(object) == 42342 and Core.isAlive(object)
+  end
+  defineQuest3(
+    26257,
+    function(self)
+      while not self:isComplete() and Questing.isRunning() do
+        if self:isObjectiveOpen(1) or not UnitInVehicle('player') then
+          Questing.Coroutine.useItemOnNPC(
+            Core.createWorldPosition(
+              0,
+              -10164.614257812,
+              1282.4930419922,
+              37.704322814941
+            ),
+            42381,
+            57954
+          )
+        elseif self:isObjectiveOpen(2) then
+          while UnitInVehicle('player') and Questing.isRunning() and not self:isComplete() do
+            if GetSpellCooldown(ROCKET_BOOST_SPELL_ID) == 0 then
+              Core.castSpellByID(ROCKET_BOOST_SPELL_ID)
+            end
+            local object = Core.findClosestObjectToCharacter(filter)
+            if object then
+              Questing.Coroutine.moveToObject(object, {
+                distance = 2,
+                stop = function()
+                  return Core.isDead(object)
+                end
+              })
+            else
+              Questing.Coroutine.moveTo(
+                Core.createWorldPosition(
+                  0,
+                  -10194.499023438,
+                  1380.3041992188,
+                  37.803089141846
+                )
+              )
+            end
+            yieldAndResume()
+          end
+        end
+      end
+    end
+  )
+end
+
+defineQuest3(
+  26290,
+  function(self)
+    if not self:isComplete() then
+      Questing.Coroutine.moveTo(
+        Core.createWorldPosition(
+          0,
+          -11109.7578125,
+          588.560546875,
+          35.322311401367
+        )
+      )
+      waitForDuration(2)
+      waitUntil(function()
+        return not Core.isCharacterInCombat()
+      end)
+
+      Questing.Coroutine.moveTo(
+        Core.createWorldPosition(
+          0,
+          -11126.299804688,
+          570.71563720703,
+          35.891700744629
+        )
+      )
+      waitForDuration(2)
+      waitUntil(function()
+        return not Core.isCharacterInCombat()
+      end)
+
+      Questing.Coroutine.moveTo(
+        Core.createWorldPosition(
+          0,
+          -11134.517578125,
+          557.58966064453,
+          35.960052490234
+        )
+      )
+
+      Questing.Coroutine.useItem(58112)
+
+      Questing.Coroutine.moveTo(
+        Core.createWorldPosition(
+          0,
+          -11135.608398438,
+          555.91906738281,
+          70.352745056152
+        )
+      )
+
+      waitUntil(function ()
+        return self:isComplete()
+      end)
+    end
+  end
+)
+
 local questGivers = {
   {
     objectID = 128229,
@@ -1417,14 +1525,14 @@ local function runQuestHandler(questHandler)
   local object
   object = {
     questID = questHandler.questID,
-    isComplete = function()
-      return Compatibility.QuestLog.isComplete(object.questID)
+    isComplete = function(self)
+      return Compatibility.QuestLog.isComplete(self.questID)
     end,
-    isObjectiveOpen = function(objectiveIndex)
-      return not Core.isObjectiveComplete(object.questID, objectiveIndex)
+    isObjectiveOpen = function(self, objectiveIndex)
+      return not Core.isObjectiveComplete(self.questID, objectiveIndex)
     end,
-    isObjectiveCompleted = function(objectiveIndex)
-      return Core.isObjectiveComplete(object.questID, objectiveIndex)
+    isObjectiveCompleted = function(self, objectiveIndex)
+      return Core.isObjectiveComplete(self.questID, objectiveIndex)
     end
   }
   questHandler.handler(object)
@@ -1546,7 +1654,6 @@ end
 function Questing.handleObjective(point)
   local objectID = point.objectID
   local position
-  print('objectID', objectID)
   if objectID then
     position = _.retrievePositionFromObjectID(objectID)
   end
@@ -1617,7 +1724,7 @@ function Questing.handleObjective(point)
         end
       end
 
-      return Core.isCharacterInCombat()
+      return false
     end
   })
 

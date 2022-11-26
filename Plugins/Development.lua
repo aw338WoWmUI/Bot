@@ -72,11 +72,6 @@ function logNearbyObjects()
   logToFile(tableToString(objects))
 end
 
-function logPlayerPosition()
-  local playerPosition = Core.retrieveCharacterPosition()
-  logToFile(playerPosition.continentID .. ',\n' .. playerPosition.x .. ',\n' .. playerPosition.y .. ',\n' .. playerPosition.z)
-end
-
 function logPlayerMapPosition()
   local mapID = C_Map.GetBestMapForUnit('player')
   local position = C_Map.GetPlayerMapPosition(mapID, 'player')

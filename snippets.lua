@@ -327,3 +327,15 @@ Development.logTargetInfo()
 
 HWT.ObjectDynamicFlags('target')
 HWT.UnitFlags('target')
+
+-- MovementPath[2]
+-- MovementPath[3]
+
+Movement.isPointCloseToGround(MovementPath[2])
+Movement.isPointInDeepWater(MovementPath[3])
+Movement.isPointCloseToGround(MovementPath[3])
+Movement.canPlayerStandOnPoint(MovementPath[3])
+
+Compatibility.QuestLog.isComplete(26290)
+
+Core.retrieveCurrentContinentID()
