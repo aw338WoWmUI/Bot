@@ -12,19 +12,32 @@ end
 
 local function visualizePolygons()
   local position = Core.retrieveCharacterPosition()
-  local polygon = Core.retrieveClosestMeshPolygon(position, RANGE, RANGE, RANGE)
+  local closestPolygon = Core.retrieveClosestMeshPolygon(position, RANGE, RANGE, RANGE)
 
-  if polygon then
-    local polygons = HWT.GetMeshPolygons(position.continentID, polygon, position.x, position.y, position.z, RANGE)
+  if closestPolygon then
+    local polygons = HWT.GetMeshPolygons(position.continentID, closestPolygon, position.x, position.y, position.z, RANGE)
 
     if polygons then
-      local options = {
-        color = { 0, 1, 0, 1 },
-        fillColor = { 0, 1, 0, 0.2 }
-      }
-      Array.forEach(polygons, function(polygon)
-        MeshVisualization.visualizePolygon(polygon, options)
-      end)
+      do
+        local options = {
+          color = { 0, 1, 0, 1 },
+          fillColor = { 0, 1, 0, 0.2 }
+        }
+        Array.forEach(polygons, function(polygon)
+          if polygon ~= closestPolygon and polygon ~= AddOn.firstOffMeshConnectionPolygon and polygon ~= AddOn.secondOffMeshConnectionPolygon then
+            MeshVisualization.visualizePolygon(polygon, options)
+          end
+        end)
+      end
+      do
+        if closestPolygon ~= AddOn.firstOffMeshConnectionPolygon and closestPolygon ~= AddOn.secondOffMeshConnectionPolygon then
+          local options = {
+            color = { 139 / 255, 195 / 255, 74 / 255, 1 },
+            fillColor = { 139 / 255, 195 / 255, 74 / 255, 0.2 }
+          }
+          MeshVisualization.visualizePolygon(closestPolygon, options)
+        end
+      end
     end
   end
 end
@@ -32,7 +45,7 @@ end
 function MeshVisualization.visualizePolygon(polygon, options)
   options = options or {}
 
-  local continentID = select(8, GetInstanceInfo())
+  local continentID = Core.retrieveCurrentContinentID()
   local vertices = HWT.GetMeshPolygonVertices(continentID, polygon)
   if vertices then
     local points = Array.map(vertices, convertVertexToScreenPoint)

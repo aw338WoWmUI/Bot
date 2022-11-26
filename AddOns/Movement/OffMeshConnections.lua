@@ -5,6 +5,10 @@ local _ = {}
 local firstOffMeshConnectionPoint = nil
 local secondOffMeshConnectionPoint = nil
 
+AddOn.firstOffMeshConnectionPolygon = nil
+AddOn.secondOffMeshConnectionPolygon = nil
+
+local RANGE = 5
 local CIRCLE_RADIUS = 0.5
 
 local function addOffMeshConnection(offMeshConnection)
@@ -49,6 +53,22 @@ doWhenHWTIsLoaded(function()
           secondOffMeshConnectionPoint.z, CIRCLE_RADIUS)
       end
     end
+
+    if AddOn.firstOffMeshConnectionPolygon then
+      local options = {
+        color = { 0, 0, 1, 1 },
+        fillColor = { 0, 0, 1, 0.2 }
+      }
+      MeshVisualization.visualizePolygon(AddOn.firstOffMeshConnectionPolygon, options)
+    end
+
+    if AddOn.secondOffMeshConnectionPolygon then
+      local options = {
+        color = { 0, 0, 1, 1 },
+        fillColor = { 0, 0, 1, 0.2 }
+      }
+      MeshVisualization.visualizePolygon(AddOn.secondOffMeshConnectionPolygon, options)
+    end
   end)
 end)
 
@@ -67,6 +87,10 @@ local function writeOffMeshConnectionsToFile()
 end
 
 function saveOffMeshConnection(isBidirectional, polygonFlags)
+  if isBidirectional == nil then
+    isBidirectional = true
+  end
+
   local continentID = select(8, GetInstanceInfo())
   local offMeshConnection = {
     continentID,
@@ -133,4 +157,53 @@ function _.removeOffMeshConnection(connection)
   end
 
   return HWT.RemoveOffmeshConnection(connection)
+end
+
+function setFirstOffMeshConnectionPolygon()
+  AddOn.firstOffMeshConnectionPolygon = _.retrieveClosestPolygon()
+end
+
+function setSecondOffMeshConnectionPolygon()
+  AddOn.secondOffMeshConnectionPolygon = _.retrieveClosestPolygon()
+end
+
+function connectPolygons(isBidirectional, polygonFlags)
+  if AddOn.firstOffMeshConnectionPolygon and AddOn.secondOffMeshConnectionPolygon then
+    local continentID = Core.retrieveCurrentContinentID()
+    local vertices1 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.firstOffMeshConnectionPolygon),
+      function(point)
+        return createPoint(unpack(point))
+      end)
+    if vertices1 then
+      local vertices2 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.secondOffMeshConnectionPolygon),
+        function(point)
+          return createPoint(unpack(point))
+        end)
+      if vertices2 then
+        local combinations = _.generateCombinations(vertices1, vertices2)
+        local shortestConnection = Array.min(combinations, function(combination)
+          return euclideanDistance(combination[1], combination[2])
+        end)
+        firstOffMeshConnectionPoint = shortestConnection[1]
+        secondOffMeshConnectionPoint = shortestConnection[2]
+        saveOffMeshConnection(isBidirectional, polygonFlags)
+      end
+    end
+  end
+end
+
+function _.generateCombinations(a, b)
+  local combinations = {}
+  Array.forEach(a, function(elementA)
+    Array.forEach(b, function(elementB)
+      local combination = { elementA, elementB }
+      table.insert(combinations, combination)
+    end)
+  end)
+  return combinations
+end
+
+function _.retrieveClosestPolygon()
+  local position = Core.retrieveCharacterPosition()
+  return Core.retrieveClosestMeshPolygon(position, RANGE, RANGE, RANGE)
 end
