@@ -1,6 +1,6 @@
 ## Title: Bot
 ## Interface: 30400
-## Dependencies: Boolean, Scheduling
+## Dependencies: Boolean, Scheduling, Questing
 
 Bot.lua
 Core.lua
