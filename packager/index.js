@@ -5,6 +5,7 @@ import * as path from 'path'
 // const entryPointAddOn = 'Bot'
 const entryPointAddOn = 'MeshNet'
 
+const dependencies = new Map()
 const loadOrder = []
 const alreadyLoadedAddOns = new Set()
 const resolvedAddOns = new Set()
@@ -20,16 +21,15 @@ async function resolveDependencies(addOn) {
   const content = await readTOCFile(addOn)
   const dependenciesRegExp = /## Dependencies: (.+)/
   const match = dependenciesRegExp.exec(content)
-  if (match) {
-    const addOnDependencies = match[1].split(', ')
-    for (const addOn of addOnDependencies) {
-      if (!resolvedAddOns.has(addOn)) {
-        await resolveDependencies(addOn)
-      }
+  const addOnDependencies = match ? match[1].split(', ') : []
+  dependencies.set(addOn, addOnDependencies)
+  for (const addOn of addOnDependencies) {
+    if (!resolvedAddOns.has(addOn)) {
+      await resolveDependencies(addOn)
     }
-    const addOnsStillToLoad = addOnDependencies.filter(addOn => !alreadyLoadedAddOns.has(addOn))
-    addOnsStillToLoad.forEach(addAddOnToLoadOrder)
   }
+  const addOnsStillToLoad = addOnDependencies.filter(addOn => !alreadyLoadedAddOns.has(addOn))
+  addOnsStillToLoad.forEach(addAddOnToLoadOrder)
   if (!alreadyLoadedAddOns.has(addOn)) {
     addAddOnToLoadOrder(addOn)
   }
@@ -45,17 +45,17 @@ await resolveDependencies(entryPointAddOn)
 async function generateFile() {
   const outputPath = 'output2.lua'
   await rm(outputPath, {
-    force: true
+    force: true,
   })
   const file = await open(outputPath, 'a')
   await file.appendFile('local modules = {};\n\n')
-  for (const addOn of loadOrder) {
-    const addOnPath = determineAddOnPath(addOn)
-    const modulesVariable = 'modules[\'' + addOn + '\']'
+  for (const addOnName of loadOrder) {
+    const addOnPath = determineAddOnPath(addOnName)
+    const modulesVariable = `modules['${ addOnName }']`
     await file.appendFile('-- ' + addOnPath + ':\n')
     await file.appendFile(modulesVariable + ' = {};\n')
     await file.appendFile('(function (...)\n')
-    const tocFileContent = await readTOCFile(addOn)
+    const tocFileContent = await readTOCFile(addOnName)
     const listedFiles = extractListedFiles(tocFileContent)
     for (const listedFile of listedFiles) {
       const filePath = path.join(addOnPath, listedFile)
@@ -66,7 +66,9 @@ async function generateFile() {
       const after = '\nend\n'
       await file.appendFile(after)
     }
-    await file.appendFile('end)(\'' + addOn + '\', {}, ' + modulesVariable + ', modules);\n\n')
+    const dependenciesList = dependencies.get(addOnName).map(addOnName => `['${addOnName}'] = modules['${addOnName}']`).join(', ')
+    const imports = dependenciesList.length >= 1 ? `{ ${dependenciesList} }` : '{}'
+    await file.appendFile('end)(\'' + addOnName + '\', {}, ' + modulesVariable + `, ${imports});\n\n`)
   }
   await file.close()
 }
