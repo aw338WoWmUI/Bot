@@ -74,26 +74,26 @@ function Movement.retrievePointFromCache(x, y, z)
 end
 
 doWhenHWTIsLoaded(function()
-  LibDraw.Sync(function()
+  Draw.Sync(function()
     Array.forEach(lines, function(line)
       local a = line[1]
       local b = line[2]
-      LibDraw.Line(a.x, a.y, a.z, b.x, b.y, b.z)
+      Draw.Line(a.x, a.y, a.z, b.x, b.y, b.z)
     end)
 
     if DEVELOPMENT then
       if savedPosition then
-        LibDraw.SetColorRaw(1, 1, 0, 1)
-        LibDraw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
+        Draw.SetColorRaw(1, 1, 0, 1)
+        Draw.Circle(savedPosition.x, savedPosition.y, savedPosition.z, 0.5)
       end
     end
     --      --if walkToPoint then
-    --      --  LibDraw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
+    --      --  Draw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
     --      --end
     if DEVELOPMENT then
       if position1 and position2 then
-        LibDraw.SetColorRaw(0, 1, 0, 1)
-        LibDraw.Line(
+        Draw.SetColorRaw(0, 1, 0, 1)
+        Draw.Line(
           position1.x,
           position1.y,
           position1.z,
@@ -106,11 +106,11 @@ doWhenHWTIsLoaded(function()
 
     local path = MovementPath
     if path then
-      LibDraw.SetColorRaw(0, 1, 0, 1)
+      Draw.SetColorRaw(0, 1, 0, 1)
       local previousPoint = path[1]
       for index = 2, #path do
         local point = path[index]
-        LibDraw.Line(
+        Draw.Line(
           previousPoint.x,
           previousPoint.y,
           previousPoint.z,
@@ -118,21 +118,21 @@ doWhenHWTIsLoaded(function()
           point.y,
           point.z
         )
-        LibDraw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
+        Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
         previousPoint = point
       end
       local firstPoint = path[1]
       local lastPoint = path[#path]
-      LibDraw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, Core.retrieveCharacterBoundingRadius())
-      LibDraw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, Core.retrieveCharacterBoundingRadius())
+      Draw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, Core.retrieveCharacterBoundingRadius())
+      Draw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, Core.retrieveCharacterBoundingRadius())
     end
 
     if DEVELOPMENT then
       if aStarPoints then
-        LibDraw.SetColorRaw(0, 1, 0, 1)
+        Draw.SetColorRaw(0, 1, 0, 1)
         local radius = GRID_LENGTH / 2
         Array.forEach(aStarPoints, function(point)
-          LibDraw.Circle(point.x, point.y, point.z, radius)
+          Draw.Circle(point.x, point.y, point.z, radius)
         end)
       end
     end
@@ -140,7 +140,7 @@ doWhenHWTIsLoaded(function()
 end)
 
 function drawLine(from, to)
-  LibDraw.Line(from.x, from.y, from.z, to.x, to.y, to.z)
+  Draw.Line(from.x, from.y, from.z, to.x, to.y, to.z)
 end
 
 function Movement.savePosition1()
@@ -296,7 +296,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     )
   end
 
-  local totalDistance = euclideanDistance(from, to)
+  local totalDistance = Math.euclideanDistance(from, to)
 
   local point1 = from
   local stepSize = 1
@@ -840,7 +840,7 @@ function Movement.determineWaterDepth(point)
   if waterSurfacePoint then
     local groundPoint = Movement.retrieveGroundPointInWater(waterSurfacePoint)
     if groundPoint then
-      return euclideanDistance(waterSurfacePoint, groundPoint)
+      return Math.euclideanDistance(waterSurfacePoint, groundPoint)
     end
   end
 
@@ -872,7 +872,7 @@ function Movement.generateNeighborPointsBasedOnNavMesh(fromPosition, distance)
   return Array.selectTrue(Array.map(points, function(point)
     local point = Core.retrieveClosestPositionOnMesh(Core.createWorldPositionFromPosition(continentID, point))
     if point then
-      if euclideanDistance2D(fromPosition, point) <= maxDistance and Movement.canBeMovedFromAToB(fromPosition,
+      if Math.euclideanDistance2D(fromPosition, point) <= maxDistance and Movement.canBeMovedFromAToB(fromPosition,
         point) then
         return point
       end
@@ -1114,7 +1114,7 @@ end
 function _.isPointCloseToCharacterWithZTolerance(point)
   local playerPosition = Movement.retrieveCharacterPosition()
   return (
-    euclideanDistance2D(playerPosition, point) <= TOLERANCE_RANGE and
+    Math.euclideanDistance2D(playerPosition, point) <= TOLERANCE_RANGE and
       point.z >= playerPosition.z and
       point.z <= playerPosition.z + Movement.retrieveCharacterHeight()
   )
@@ -1224,7 +1224,7 @@ end
 
 function Movement.determinePointHeighEnoughToStayInAir(waypoint)
   local playerPosition = Movement.retrieveCharacterPosition()
-  local length = euclideanDistance(playerPosition, waypoint)
+  local length = Math.euclideanDistance(playerPosition, waypoint)
   local traceLineTargetPoint = Movement.positionInFrontOfPlayer(length, 0)
   local point = Movement.traceLineCollision(playerPosition, traceLineTargetPoint)
   if point then
@@ -2064,7 +2064,7 @@ function Movement.generateWalkToPointFromCollisionPoint(from, collisionPoint)
 end
 
 function Movement.isFirstPointCloserToThanSecond(fromA, fromB, to)
-  return euclideanDistance(fromA, to) < euclideanDistance(fromB, to)
+  return Math.euclideanDistance(fromA, to) < Math.euclideanDistance(fromB, to)
 end
 
 function Movement.findClosestPointThatCanBeWalkedTo(from, to)

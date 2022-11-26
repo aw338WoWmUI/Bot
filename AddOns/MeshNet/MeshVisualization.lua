@@ -51,11 +51,11 @@ function MeshVisualization.visualizePolygon(polygon, options)
     local points = Array.map(vertices, convertVertexToScreenPoint)
     Draw.drawPolygon(points, options.fillColor)
 
-    LibDraw.SetColorRaw(unpack(options.color))
+    Draw.SetColorRaw(unpack(options.color))
     local previousPoint = vertices[1]
     for index = 2, #vertices do
       local point = vertices[index]
-      LibDraw.Line(
+      Draw.Line(
         previousPoint[1],
         previousPoint[2],
         previousPoint[3],
@@ -65,7 +65,7 @@ function MeshVisualization.visualizePolygon(polygon, options)
       )
       previousPoint = point
     end
-    LibDraw.Line(
+    Draw.Line(
       previousPoint[1],
       previousPoint[2],
       previousPoint[3],
@@ -77,7 +77,7 @@ function MeshVisualization.visualizePolygon(polygon, options)
 end
 
 local function setDrawColor(red, green, blue)
-  LibDraw.SetColorRaw(red / 255, green / 255, blue / 255, 1)
+  Draw.SetColorRaw(red / 255, green / 255, blue / 255, 1)
 end
 
 local function visualizeOffMeshConnections()
@@ -89,22 +89,22 @@ local function visualizeOffMeshConnections()
 
     local function drawConnection(connection)
       local x1, y1, z1, x2, y2, z2 = select(4, HWT.GetOffmeshConnectionDetails(connection))
-      local isPoint1InRange = Core.calculateDistanceFromCharacterToPosition(createPoint(x1, y1, z1)) <= RANGE
-      local isPoint2InRange = Core.calculateDistanceFromCharacterToPosition(createPoint(x2, y2, z2)) <= RANGE
+      local isPoint1InRange = Core.calculateDistanceFromCharacterToPosition(Core.createPosition(x1, y1, z1)) <= RANGE
+      local isPoint2InRange = Core.calculateDistanceFromCharacterToPosition(Core.createPosition(x2, y2, z2)) <= RANGE
       if isPoint1InRange or isPoint2InRange then
-        LibDraw.Line(x1, y1, z1, x2, y2, z2)
+        Draw.Line(x1, y1, z1, x2, y2, z2)
         if isPoint1InRange then
-          LibDraw.Circle(x1, y1, z1, radius)
+          Draw.Circle(x1, y1, z1, radius)
         end
         if isPoint2InRange then
-          LibDraw.Circle(x2, y2, z2, radius)
+          Draw.Circle(x2, y2, z2, radius)
         end
       end
     end
 
     local closestConnection = AddOn.findClosestOffMeshConnection()
 
-    LibDraw.SetColorRaw(0, 0, 1, 1)
+    Draw.SetColorRaw(0, 0, 1, 1)
     Array.forEach(connections, function(connection)
       if connection ~= closestConnection then
         drawConnection(connection)
@@ -120,9 +120,7 @@ end
 
 local isMeshVisualizationEnabled = false
 
-Draw.connectWithLibDraw(LibDraw)
-
-LibDraw.Sync(function()
+Draw.Sync(function()
   if isMeshVisualizationEnabled then
     visualizePolygons()
     visualizeOffMeshConnections()
@@ -141,7 +139,9 @@ function toggleMeshVisualization()
         function()
           return HWT.IsMapLoaded(continentID)
         end,
-        _.toggleMeshVisualization2
+        function ()
+          _.toggleMeshVisualization2()
+        end
       )
     else
       _.toggleMeshVisualization2()

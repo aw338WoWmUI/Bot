@@ -1,4 +1,4 @@
-Draw = {}
+Draw = Draw or {}
 
 local function splitIntoTriangles(points)
   local triangles = {}
@@ -44,21 +44,14 @@ function Draw.drawPolygon(points, color)
   createPolygon(points, color)
 end
 
-local hasBeenConnectedWithLibDraw = false
-
-function Draw.connectWithLibDraw(libDraw)
-  if not hasBeenConnectedWithLibDraw then
-    local clearCanvas = libDraw.clearCanvas
-    libDraw.clearCanvas = function (...)
-      for _, usedTexture in ipairs(usedTextures) do
-        usedTexture:Hide()
-      end
-      Array.append(reusableTextures, usedTextures)
-      usedTextures = {}
-      return clearCanvas(...)
-    end
-    hasBeenConnectedWithLibDraw = true
+local clearCanvas = Draw.clearCanvas
+Draw.clearCanvas = function (...)
+  for _, usedTexture in ipairs(usedTextures) do
+    usedTexture:Hide()
   end
+  Array.append(reusableTextures, usedTextures)
+  usedTextures = {}
+  return clearCanvas(...)
 end
 
 --createPolygon({

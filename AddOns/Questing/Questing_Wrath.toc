@@ -1,6 +1,6 @@
 ## Title: Questing
 ## Interface: 30400
-## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Function, Yielder, Bot, !LibDraw
+## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Function, Yielder, Bot, Draw, Math
 ## SavedVariables: exploredObjects
 ## SavedVariablesPerCharacter: QuestingPointToMove, QuestingPointToShow, QuestingOptions, QuestingGoodsVendorNPCs, QuestingSellVendors, QuestingRepairerNPCs
 

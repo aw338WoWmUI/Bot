@@ -1,5 +1,6 @@
 ## Title: Draw
 ## Interface: 30400
-## Dependency: Array
+## Dependency: HWT, Array
 
+LibDraw.lua
 Draw.lua

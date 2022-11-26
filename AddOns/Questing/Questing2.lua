@@ -1224,7 +1224,7 @@ function retrieveNavigationPosition()
       local deltaX = navigationX - x
       local deltaY = navigationY - y
 
-      local distance = euclideanDistance2D(
+      local distance = Math.euclideanDistance2D(
         { x = navigationX, y = navigationY },
         { x = x, y = y }
       )
@@ -1841,17 +1841,17 @@ function _.retrievePositionFromObjectID(objectID)
 end
 
 doWhenHWTIsLoaded(function()
-  LibDraw.Sync(function()
+  Draw.Sync(function()
     if QuestingPointToShow then
-      LibDraw.SetColorRaw(0, 1, 0, 1)
-      LibDraw.Circle(QuestingPointToShow.x, QuestingPointToShow.y, QuestingPointToShow.z, INTERACT_DISTANCE)
+      Draw.SetColorRaw(0, 1, 0, 1)
+      Draw.Circle(QuestingPointToShow.x, QuestingPointToShow.y, QuestingPointToShow.z, INTERACT_DISTANCE)
     end
 
     if point then
-      LibDraw.SetColorRaw(0, 1, 0, 1)
+      Draw.SetColorRaw(0, 1, 0, 1)
       local playerPosition = Movement.retrieveCharacterPosition()
-      LibDraw.Line(playerPosition.x, playerPosition.y, playerPosition.z, point.x, point.y, point.z)
-      LibDraw.Circle(point.x, point.y, point.z, 0.75)
+      Draw.Line(playerPosition.x, playerPosition.y, playerPosition.z, point.x, point.y, point.z)
+      Draw.Circle(point.x, point.y, point.z, 0.75)
     end
   end)
 end)

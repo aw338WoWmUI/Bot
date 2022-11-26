@@ -1,5 +1,0 @@
-## Title: !LibDraw
-## Interface: 100002
-## Dependencies: HWT, Array
-
-LibDraw.lua
