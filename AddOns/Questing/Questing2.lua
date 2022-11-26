@@ -2329,7 +2329,9 @@ frame:RegisterEvent('QUEST_TURNED_IN')
 frame:RegisterEvent('GOSSIP_SHOW')
 frame:RegisterEvent('QUEST_ACCEPTED')
 frame:RegisterEvent('QUEST_ACCEPT_CONFIRM')
-frame:RegisterEvent('QUEST_LOG_CRITERIA_UPDATE')
+if Compatibility.isRetail() then
+  frame:RegisterEvent('QUEST_LOG_CRITERIA_UPDATE')
+end
 frame:RegisterEvent('QUEST_DETAIL')
 frame:SetScript('OnEvent', onEvent)
 
