@@ -1,4 +1,0 @@
-## Title: AutoGear
-## Interface: 100002
-
-AutoGear.lua
