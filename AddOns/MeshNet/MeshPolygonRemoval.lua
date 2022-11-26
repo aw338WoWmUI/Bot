@@ -54,21 +54,21 @@ function _.writeRemovedMeshPolygonToFile(position)
 end
 
 function _.writeRemovedMeshPolygonsToFile()
-  local filePath = HWT.GetWoWDirectory() .. '/Interface/AddOns/Movement/RemovedMeshPolygonsDatabase.lua'
+  local filePath = HWT.GetWoWDirectory() .. '/Interface/AddOns/MeshNet/RemovedMeshPolygonsDatabase.lua'
   HWT.WriteFile(filePath,
     'local addOnName, AddOn = ...\n\nAddOn.removedMeshPolygons = ' .. Serialization.valueToString(AddOn.removedMeshPolygons) .. '\n')
 end
 
 doWhenHWTIsLoaded(function()
   local appSessionToken = HWT.GetAppSessionToken()
-  if appSessionToken ~= MovementLastPolygonRemovalAppSessionToken then
-    MovementLastPolygonRemovalAppSessionToken = appSessionToken
+  if appSessionToken ~= MeshNetLastPolygonRemovalAppSessionToken then
+    MeshNetLastPolygonRemovalAppSessionToken = appSessionToken
     Array.forEach(AddOn.removedMeshPolygons, function (removedMeshPolygon)
       _.removeClosestMeshPolygonToPositionFromMeshNet(removedMeshPolygon.position)
     end)
   end
 
-  LibDraw.Sync(function()
+  Draw.Sync(function()
     if polygon then
       MeshVisualization.visualizePolygon(
         polygon,

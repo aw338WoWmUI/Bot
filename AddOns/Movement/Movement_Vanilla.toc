@@ -1,7 +1,7 @@
 ## Title: Movement
 ## Interface: 11403
-## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Conditionals, Draw, Float, Bot, !LibDraw, Core
-## SavedVariables: savedPosition, position1, position2, from, to, MovementLastPolygonRemovalAppSessionToken
+## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Conditionals, Draw, Float, Bot, Core
+## SavedVariables: savedPosition, position1, position2, from, to
 ## SavedVariablesPerCharacter: MovementCharacterHeight
 
 ObjectToValueLookup.lua
@@ -10,10 +10,3 @@ PointFlyweight.lua
 PointWithPathToFlyweight.lua
 Moving.lua
 Movement.lua
-Meshing.lua
-MeshNet.lua
-MeshVisualization.lua
-OffMeshConnectionsDatabase.lua
-OffMeshConnections.lua
-RemovedMeshPolygonsDatabase.lua
-MeshPolygonRemoval.lua

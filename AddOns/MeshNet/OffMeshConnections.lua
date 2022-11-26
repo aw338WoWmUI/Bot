@@ -36,21 +36,21 @@ doWhenHWTIsLoaded(function()
     end
   )
 
-  LibDraw.Sync(function()
+  Draw.Sync(function()
     if firstOffMeshConnectionPoint or secondOffMeshConnectionPoint then
-      LibDraw.SetColorRaw(0, 0, 1, 1)
+      Draw.SetColorRaw(0, 0, 1, 1)
       if firstOffMeshConnectionPoint and secondOffMeshConnectionPoint then
-        LibDraw.Line(
+        Draw.Line(
           firstOffMeshConnectionPoint.x, firstOffMeshConnectionPoint.y, firstOffMeshConnectionPoint.z,
           secondOffMeshConnectionPoint.x, secondOffMeshConnectionPoint.y, secondOffMeshConnectionPoint.z
         )
       end
       if firstOffMeshConnectionPoint then
-        LibDraw.Circle(firstOffMeshConnectionPoint.x, firstOffMeshConnectionPoint.y, firstOffMeshConnectionPoint.z,
+        Draw.Circle(firstOffMeshConnectionPoint.x, firstOffMeshConnectionPoint.y, firstOffMeshConnectionPoint.z,
           CIRCLE_RADIUS)
       end
       if secondOffMeshConnectionPoint then
-        LibDraw.Circle(secondOffMeshConnectionPoint.x, secondOffMeshConnectionPoint.y,
+        Draw.Circle(secondOffMeshConnectionPoint.x, secondOffMeshConnectionPoint.y,
           secondOffMeshConnectionPoint.z, CIRCLE_RADIUS)
       end
     end
@@ -82,7 +82,7 @@ function setSecondOffMeshConnectionPoint()
 end
 
 local function writeOffMeshConnectionsToFile()
-  local filePath = HWT.GetWoWDirectory() .. '/Interface/AddOns/Movement/OffMeshConnectionsDatabase.lua'
+  local filePath = HWT.GetWoWDirectory() .. '/Interface/AddOns/MeshNet/OffMeshConnectionsDatabase.lua'
   HWT.WriteFile(filePath,
     'local addOnName, AddOn = ...\n\nAddOn.offMeshConnections = ' .. Serialization.valueToString(AddOn.offMeshConnections) .. '\n')
 end
@@ -130,8 +130,8 @@ function AddOn.findClosestOffMeshConnection()
     return Array.min(connections, function(connection)
       local x1, y1, z1, x2, y2, z2 = select(4, HWT.GetOffmeshConnectionDetails(connection))
       return math.min(
-        Core.calculateDistanceFromCharacterToPosition(createPoint(x1, y1, z1)),
-        Core.calculateDistanceFromCharacterToPosition(createPoint(x2, y2, z2))
+        Core.calculateDistanceFromCharacterToPosition(Core.createPosition(x1, y1, z1)),
+        Core.calculateDistanceFromCharacterToPosition(Core.createPosition(x2, y2, z2))
       )
     end)
   else
@@ -173,17 +173,17 @@ function connectPolygons(isBidirectional, polygonFlags)
     local continentID = Core.retrieveCurrentContinentID()
     local vertices1 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.firstOffMeshConnectionPolygon),
       function(point)
-        return createPoint(unpack(point))
+        return Core.createPosition(unpack(point))
       end)
     if vertices1 then
       local vertices2 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.secondOffMeshConnectionPolygon),
         function(point)
-          return createPoint(unpack(point))
+          return Core.createPosition(unpack(point))
         end)
       if vertices2 then
         local combinations = _.generateCombinations(vertices1, vertices2)
         local shortestConnection = Array.min(combinations, function(combination)
-          return euclideanDistance(combination[1], combination[2])
+          return Math.euclideanDistance(combination[1], combination[2])
         end)
         firstOffMeshConnectionPoint = shortestConnection[1]
         secondOffMeshConnectionPoint = shortestConnection[2]

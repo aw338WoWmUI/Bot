@@ -274,7 +274,7 @@ function Core.retrieveWorldPositionFromMapPosition(mapPosition)
   local continentID, worldPosition = C_Map.GetWorldPosFromMapPos(mapPosition.mapID, mapPosition)
   local z
   local playerPosition = Movement.retrieveCharacterPosition()
-  if euclideanDistance2D(playerPosition, worldPosition) <= MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS then
+  if Math.euclideanDistance2D(playerPosition, worldPosition) <= MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS then
     local collisionPoint = Movement.traceLineCollision(
       Core.createPosition(worldPosition.x, worldPosition.y, MAX_Z),
       Core.createPosition(worldPosition.x, worldPosition.y, MIN_Z)
@@ -532,7 +532,7 @@ function Core.retrieveCharacterPosition()
 end
 
 function Core.findClosestObjectTo2D(objectIDs, to)
-  return Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, to, euclideanDistance2D)
+  return Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, to, Math.euclideanDistance2D)
 end
 
 function Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectIDs)
@@ -583,12 +583,12 @@ function Core.calculateDistanceBetweenPositions(a, b)
   if a.z and b.z then
     return HWT.GetDistanceBetweenPositions(a.x, a.y, a.z, b.x, b.y, b.z)
   else
-    return euclideanDistance2D(a, b)
+    return Math.euclideanDistance2D(a, b)
   end
 end
 
 function Core.calculate2DDistanceBetweenPositions(a, b)
-  return euclideanDistance2D(a, b)
+  return Math.euclideanDistance2D(a, b)
 end
 
 function Core.calculateDistanceFromCharacterToPosition(position)
@@ -670,7 +670,7 @@ function Core.isCharacterCloseToPosition(position, maximumDistance)
   local characterPosition = Core.retrieveCharacterPosition()
   return (
     (not position.continentID or position.continentID == characterPosition.continentID) and
-      euclideanDistance(position, characterPosition) <= maximumDistance
+      Math.euclideanDistance(position, characterPosition) <= maximumDistance
   )
 end
 
@@ -995,3 +995,4 @@ end
 function Core.stopMoving()
 	Core.stopMovingForward()
 end
+
