@@ -76,6 +76,7 @@ function Questing.Coroutine.moveToObject(pointer, options)
   end
 
   local function isJobDone(position)
+    print('a', position)
     return (
       not position or
       not HWT.ObjectExists(pointer) or
@@ -158,7 +159,7 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
     })
   end
 
-  if Questing.isRunning() and HWT.ObjectExists(pointer) then
+  if Questing.isRunning() and HWT.ObjectExists(pointer) and Core.isCharacterCloseToPosition(position, distance) then
     Core.interactWithObject(pointer)
     waitForDuration(1)
     waitFor(function()
@@ -391,7 +392,7 @@ function Questing.Coroutine.doMob(pointer, options)
     yieldAndResume()
   end
 
-  if not Bot.isCharacterInCombat() then
+  if not Core.isCharacterInCombat() then
     local position = Core.retrieveObjectPosition(pointer)
     if Core.isCharacterCloseToPosition(position, INTERACT_DISTANCE) then
       Questing.Coroutine.lootObject(pointer)

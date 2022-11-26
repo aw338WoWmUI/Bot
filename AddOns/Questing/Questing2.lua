@@ -359,7 +359,7 @@ defineQuest3(
         )
       )
 
-      waitUntil(function ()
+      waitUntil(function()
         return self:isComplete()
       end)
     end
@@ -1844,7 +1844,7 @@ doWhenHWTIsLoaded(function()
   LibDraw.Sync(function()
     if QuestingPointToShow then
       LibDraw.SetColorRaw(0, 1, 0, 1)
-      LibDraw.Circle(QuestingPointToShow.x, QuestingPointToShow.y, QuestingPointToShow.z, 3)
+      LibDraw.Circle(QuestingPointToShow.x, QuestingPointToShow.y, QuestingPointToShow.z, INTERACT_DISTANCE)
     end
 
     if point then
@@ -1881,9 +1881,14 @@ function retrievePoints()
   if yielder.hasRanOutOfTime() then
     yielder.yield()
   end
-  local lootPoints = retrieveLootPoints()
-  if yielder.hasRanOutOfTime() then
-    yielder.yield()
+  local lootPoints
+  if Core.isCharacterInCombat() then
+    lootPoints = {}
+  else
+    lootPoints = retrieveLootPoints()
+    if yielder.hasRanOutOfTime() then
+      yielder.yield()
+    end
   end
   local points = {
     questStartPoints = questStartPoints,

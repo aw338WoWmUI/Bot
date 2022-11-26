@@ -617,7 +617,7 @@ function Core.loadMapForContinentIfNotLoaded(continentID)
   end
 end
 
-function Core.isMapLoadedForCurrentCotinent()
+function Core.isMapLoadedForCurrentContinent()
   return HWT.IsMapLoaded(Core.retrieveCurrentContinentID())
 end
 
@@ -658,10 +658,12 @@ end
 
 function Core.startMovingForward()
   MoveForwardStart()
+  HWT.ResetAfk()
 end
 
 function Core.jumpOrStartAscend()
   JumpOrAscendStart()
+  HWT.ResetAfk()
 end
 
 function Core.isCharacterCloseToPosition(position, maximumDistance)
@@ -674,6 +676,7 @@ end
 
 function Core.stopMovingForward()
   MoveForwardStop()
+  HWT.ResetAfk()
 end
 
 function Core.doesPathExistFromCharacterTo(to, options)
@@ -732,6 +735,7 @@ end
 
 function Core.stopAscending()
   AscendStop()
+  HWT.ResetAfk()
 end
 
 function Core.calculateAnglesBetweenTwoPoints(a, b)
@@ -761,26 +765,32 @@ end
 
 function Core.startStrafingLeft()
   StrafeLeftStart()
+  HWT.ResetAfk()
 end
 
 function Core.startMovingBackward()
   MoveBackwardStart()
+  HWT.ResetAfk()
 end
 
 function Core.startStrafingRight()
   StrafeRightStart()
+  HWT.ResetAfk()
 end
 
 function Core.stopStrafingLeft()
   StrafeLeftStop()
+  HWT.ResetAfk()
 end
 
 function Core.stopMovingBackward()
   MoveBackwardStop()
+  HWT.ResetAfk()
 end
 
 function Core.stopStrafingRight()
   StrafeRightStop()
+  HWT.ResetAfk()
 end
 
 function Core.isTrainerFrameShown()

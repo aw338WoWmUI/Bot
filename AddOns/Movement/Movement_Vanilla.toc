@@ -1,7 +1,7 @@
 ## Title: Movement
 ## Interface: 11403
 ## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Conditionals, Draw, Float, Bot, !LibDraw, Core
-## SavedVariables: savedPosition, position1, position2, from, to, MovementLastPolygonRemovalAppSessionToken, MovementLastOffMeshConnectionAddingAppSessionToken
+## SavedVariables: savedPosition, position1, position2, from, to, MovementLastPolygonRemovalAppSessionToken
 ## SavedVariablesPerCharacter: MovementCharacterHeight
 
 ObjectToValueLookup.lua

@@ -22,18 +22,19 @@ end
 doWhenHWTIsLoaded(function()
   Core.loadMapForCurrentContinentIfNotLoaded()
 
-  local appSessionToken = HWT.GetAppSessionToken()
-  if appSessionToken ~= MovementLastOffMeshConnectionAddingAppSessionToken then
-    Conditionals.doOnceWhen(
-      function()
-        return Core.isMapLoadedForCurrentCotinent()
-      end,
-      function()
-        MovementLastOffMeshConnectionAddingAppSessionToken = appSessionToken
-        addOffMeshConnections(AddOn.offMeshConnections)
+  Conditionals.doOnceWhen(
+    Core.isMapLoadedForCurrentContinent,
+    function()
+      local continentID = Core.retrieveCurrentContinentID()
+      local offMeshConnectionsForContinent = Array.filter(AddOn.offMeshConnections, function (offMeshConnection)
+        local offMeshConnectionContinentID = offMeshConnection[1]
+        return offMeshConnectionContinentID == continentID
+      end)
+      if #HWT.GetOffmeshConnections(continentID) < #offMeshConnectionsForContinent then
+        addOffMeshConnections(offMeshConnectionsForContinent)
       end
-    )
-  end
+    end
+  )
 
   LibDraw.Sync(function()
     if firstOffMeshConnectionPoint or secondOffMeshConnectionPoint then

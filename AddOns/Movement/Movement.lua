@@ -1262,18 +1262,15 @@ function _.thereAreCollisions2(from, to)
   lines = {}
   local a = Movement.thereAreCollisions(
     from,
-    to,
-    true
+    to
   )
   local b = Movement.thereAreCollisions(
     from2,
-    to2,
-    true
+    to2
   )
   local c = Movement.thereAreCollisions(
     from3,
-    to3,
-    true
+    to3
   )
   return a or b or c
 end
