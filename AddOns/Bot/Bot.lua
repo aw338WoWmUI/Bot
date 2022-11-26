@@ -1,4 +1,7 @@
-Bot = {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Bot = Modules.determineExportsVariable(addOnName, exports)
+local Questing = Modules.determineImportVariable('Questing', imports)
 
 local isRunning = false
 

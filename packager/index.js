@@ -1,7 +1,3 @@
-// TODO: SavedVariables
-// * PLAYER_LOGOUT (see https://wowwiki-archive.fandom.com/wiki/Events/System)
-// * PLAYER_LOGIN (see https://wowwiki-archive.fandom.com/wiki/Events/System)
-
 import { readFile } from '@sanjo/read-file'
 import { open, rm } from 'node:fs/promises'
 import * as path from 'path'
@@ -52,21 +48,25 @@ async function generateFile() {
     force: true
   })
   const file = await open(outputPath, 'a')
+  await file.appendFile('local modules = {};\n\n')
   for (const addOn of loadOrder) {
-    await file.appendFile('\n(function (...)\n')
     const addOnPath = determineAddOnPath(addOn)
+    const modulesVariable = 'modules[\'' + addOn + '\']'
+    await file.appendFile('-- ' + addOnPath + ':\n')
+    await file.appendFile(modulesVariable + ' = {};\n')
+    await file.appendFile('(function (...)\n')
     const tocFileContent = await readTOCFile(addOn)
     const listedFiles = extractListedFiles(tocFileContent)
     for (const listedFile of listedFiles) {
       const filePath = path.join(addOnPath, listedFile)
       const content = await readFile(filePath)
-      const before = '\ndo\n-- ' + filePath + ':\n'
+      const before = 'do\n-- ' + filePath + ':\n'
       await file.appendFile(before)
       await file.appendFile(content)
       const after = '\nend\n'
       await file.appendFile(after)
     }
-    await file.appendFile('\nend)(' + "'" + addOn + "'" + ', {});\n')
+    await file.appendFile('end)(\'' + addOn + '\', {}, ' + modulesVariable + ', modules);\n\n')
   }
   await file.close()
 }

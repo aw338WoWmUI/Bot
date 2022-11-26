@@ -25,3 +25,9 @@ GMR.AbandonQuest(questID)
 /dump Movement.canBeMovedFromPointToPointCheckingSubSteps(MovementPath[5], MovementPath[6])
 
 /dump Movement.receiveWaterSurfacePoint(MovementPath[6])
+
+/dump HWT.RunScript('test.lua', 'function test()\nreturn "a"\nend\n')
+
+/dump HWT.RunScript('test.lua', 'print("a")')
+
+/dump HWT.LoadScript('test.lua', 'return "a"')
