@@ -2156,6 +2156,7 @@ end
 
 HWT.doWhenHWTIsLoaded(function()
   AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
+  Movement.savedVariables = AddOn.savedVariables
 
   SavedVariables.registerAccountWideSavedVariables(
     addOnName,
