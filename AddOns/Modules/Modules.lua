@@ -17,7 +17,15 @@ local Modules = determineExportsVariable(addOnName, exports)
 Modules.determineExportsVariable = determineExportsVariable
 
 function Modules.determineImportVariable(importAddOnName, imports)
-  return (imports or _G)[importAddOnName]
+  if imports and imports[importAddOnName] and next(imports[importAddOnName]) then
+    return imports[importAddOnName]
+  elseif _G[importAddOnName] then
+    return _G[importAddOnName]
+  elseif imports and imports[importAddOnName] and imports[importAddOnName] then
+    return imports[importAddOnName]
+  else
+    return nil
+  end
 end
 
 function Modules.determineImportVariables(...)

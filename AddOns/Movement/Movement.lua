@@ -1,7 +1,7 @@
 local addOnName, AddOn, exports, imports = ...
 local Modules = imports and imports.Modules or _G.Modules
 local Movement = Modules.determineExportsVariable(addOnName, exports)
-local Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Draw, Float, Core = Modules.determineImportVariables('Boolean', 'ActionSequenceDoer', 'Array', 'Coroutine', 'Math', 'Vector', 'HWT', 'Draw', 'Float', 'Core', imports)
+local Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Draw, Float, Core, AStar = Modules.determineImportVariables('Boolean', 'ActionSequenceDoer', 'Array', 'Coroutine', 'Math', 'Vector', 'HWT', 'Draw', 'Float', 'Core', 'AStar', imports)
 
 local _ = {}
 

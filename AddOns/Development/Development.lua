@@ -67,3 +67,11 @@ function Development.logPlayerPosition()
   local playerPosition = Core.retrieveCharacterPosition()
   Logging.logToFile(playerPosition.continentID .. ',\n' .. playerPosition.x .. ',\n' .. playerPosition.y .. ',\n' .. playerPosition.z)
 end
+
+function test()
+  local a = setfenv(function ()
+    print('WorldFrame', _G.WorldFrame)
+    print('b', b)
+  end, Object.assign({}, _G, {b = 'aaa'}))
+  a()
+end

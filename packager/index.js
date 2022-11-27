@@ -21,13 +21,13 @@ async function readTOCFile(addOn) {
 async function resolveDependencies(addOn) {
   resolvedAddOns.add(addOn)
   const content = await readTOCFile(addOn)
-  const dependenciesRegExp = /## Dependencies: (.+)/
+  const dependenciesRegExp = /^## (?:Dep\w*|RequireDeps): *(.+) *$/m
   const match = dependenciesRegExp.exec(content)
   const addOnDependencies = match ? match[1].split(', ') : []
   dependencies.set(addOn, addOnDependencies)
-  for (const addOn of addOnDependencies) {
-    if (!resolvedAddOns.has(addOn)) {
-      await resolveDependencies(addOn)
+  for (const addOnDependencyName of addOnDependencies) {
+    if (!resolvedAddOns.has(addOnDependencyName)) {
+      await resolveDependencies(addOnDependencyName)
     }
   }
   const addOnsStillToLoad = addOnDependencies.filter(addOn => !alreadyLoadedAddOns.has(addOn))
@@ -52,12 +52,16 @@ async function generateFile() {
     force: true,
   })
   const file = await open(outputPath, 'a')
-  await file.appendFile('local modules = {};\n\n')
+  // await file.appendFile('local modules = {};\n')
+  await file.appendFile('local modules = _G;\n')
+  for (const addOnName of loadOrder) {
+    await file.appendFile(`modules['${addOnName}'] = {};\n`)
+  }
+  await file.appendFile('\n')
   for (const addOnName of loadOrder) {
     const addOnPath = determineAddOnPath(addOnName)
     const modulesVariable = `modules['${ addOnName }']`
     await file.appendFile('-- ' + addOnPath + ':\n')
-    await file.appendFile(modulesVariable + ' = {};\n')
     await file.appendFile('(function (...)\n')
     const tocFileContent = await readTOCFile(addOnName)
     const listedFiles = extractListedFiles(tocFileContent)
