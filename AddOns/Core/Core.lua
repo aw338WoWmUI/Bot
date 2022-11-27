@@ -49,6 +49,22 @@ Core.NpcFlags = {
   BlackMarket = 0x80000000,
 }
 
+Core.ClassID = {
+  Warrior = 1,
+  Paladin = 2,
+  Hunter = 3,
+  Rogue = 4,
+  Priest = 5,
+  DeathKnight = 6,
+  Shaman = 7,
+  Mage = 8,
+  Warlock = 9,
+  Monk = 10,
+  Druid = 11,
+  DemonHunter = 12,
+  Evoker = 13
+}
+
 function Core.isUnit(object)
   return HWT.ObjectIsType(object, HWT.GetObjectTypeFlagsTable().Unit)
 end
@@ -511,7 +527,11 @@ function Core.retrieveObjectPosition(objectIdentifier)
   if not x or not y or not z then
     print('Core.retrieveObjectPosition', x, y, z)
   end
-  return Core.createWorldPosition(Core.retrieveCurrentContinentID(), x, y, z)
+  if x and y and z then
+    return Core.createWorldPosition(Core.retrieveCurrentContinentID(), x, y, z)
+  else
+    return nil
+  end
 end
 
 function Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, to, customDistance)

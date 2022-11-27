@@ -1,6 +1,6 @@
 ## Title: Bot
 ## Interface: 11403
-## Dependencies: Modules, Boolean, Questing
+## Dependencies: Modules, Boolean, Questing, RecommendedSpellCaster
 
-Bot.lua
 Warrior.lua
+Bot.lua

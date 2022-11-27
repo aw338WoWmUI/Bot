@@ -1,7 +1,10 @@
 local addOnName, AddOn, exports, imports = ...
 local Modules = imports and imports.Modules or _G.Modules
+--- @class Bot
 local Bot = Modules.determineExportsVariable(addOnName, exports)
 local Questing = Modules.determineImportVariables('Questing', imports)
+--- @type RecommendedSpellCaster
+local RecommendedSpellCaster = Modules.determineImportVariable('RecommendedSpellCaster', imports)
 
 local isRunning = false
 
@@ -32,6 +35,15 @@ function Bot.toggle()
     Bot.stop()
   else
     Bot.start()
+  end
+end
+
+function Bot.castCombatRotationSpell()
+  local classID = select(2, UnitClassBase('player'))
+  if classID == Core.ClassID.Warrior then
+    Bot.Warrior.castSpell()
+  else
+    RecommendedSpellCaster.castRecommendedSpell()
   end
 end
 

@@ -1687,13 +1687,13 @@ function Questing.handleObjective(point)
             MoveViewDownStart()
             Coroutine.waitUntil(function()
               return not C_Navigation.WasClampedToScreen()
-            end, 5)
+            end, 2)
             MoveViewDownStop()
           else
             MoveViewUpStart()
             Coroutine.waitUntil(function()
               return not C_Navigation.WasClampedToScreen()
-            end, 5)
+            end, 2)
             MoveViewUpStop()
           end
         end

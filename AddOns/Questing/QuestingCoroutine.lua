@@ -2,6 +2,8 @@ local addOnName, AddOn, exports, imports = ...
 local Modules = imports and imports.Modules or _G.Modules
 local Questing = Modules.determineExportsVariable(addOnName, exports)
 local Array, Set, Coroutine, Movement, Events, HWT, Core, Function, Yielder = Modules.determineImportVariables('Array', 'Set', 'Coroutine', 'Movement', 'Events', 'HWT', 'Core', 'Function', 'Yielder', imports)
+--- @type Bot
+local Bot = Modules.determineImportVariable('Bot', imports)
 
 Questing.Coroutine = {}
 
@@ -90,7 +92,7 @@ function Questing.Coroutine.moveToObject(pointer, options)
 
   local lastMoveToPosition
 
-  local function isObjectUnreachableOrHasMoveToPostionChanged()
+  local function isObjectUnreachableOrHasMoveToPositionChanged()
     local moveToPostion = retrievePosition()
     return not moveToPostion or moveToPostion:isDifferent(lastMoveToPosition)
   end
@@ -101,7 +103,7 @@ function Questing.Coroutine.moveToObject(pointer, options)
     moveTo(position, {
       toleranceDistance = distance,
       stop = function()
-        return isJobDone(position) or isObjectUnreachableOrHasMoveToPostionChanged()
+        return isJobDone(position) or isObjectUnreachableOrHasMoveToPositionChanged()
       end,
       continueMoving = true
     })
@@ -391,7 +393,7 @@ function Questing.Coroutine.doMob(pointer, options)
         distance = distance
       })
     end
-    RecommendedSpellCaster.castRecommendedSpell()
+    Bot.castCombatRotationSpell()
     Yielder.yieldAndResume()
   end
 

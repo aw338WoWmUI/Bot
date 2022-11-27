@@ -583,16 +583,24 @@ function Movement.isGroundMount(mountID)
 end
 
 function Movement.retrieveGroundZ(position)
-  local position1 = Movement.createPoint(position.x, position.y, position.z + Movement.MAXIMUM_JUMP_HEIGHT)
+  return Movement.retrieveZ(position, Core.TraceLineHitFlags.COLLISION)
+end
+
+function Movement.receiveSurfaceZ(position)
+  return Movement.retrieveZ(position, bit.bor(Core.TraceLineHitFlags.COLLISION, Core.TraceLineHitFlags.WATER))
+end
+
+function Movement.retrieveZ(position, traceLineHitFlags)
+	local position1 = Movement.createPoint(position.x, position.y, position.z + Movement.MAXIMUM_JUMP_HEIGHT)
   local position2 = Movement.createPoint(position.x, position.y, position.z - 10)
-  local collisionPoint = Movement.traceLineCollisionWithFallback(position1, position2)
+  local collisionPoint = Movement.traceLineWithFallback(position1, position2, traceLineHitFlags)
   if not collisionPoint then
     -- There seemed to be one case where no z was returned at a position, even though it looked like that there was
     -- a surface.
     local offset = 0.6
     position1 = Movement.createPoint(position1.x + offset, position1.y + offset, position.z)
     position2 = Movement.createPoint(position2.x + offset, position2.y + offset, position2.z)
-    collisionPoint = Movement.traceLineCollisionWithFallback(position1, position2)
+    collisionPoint = Movement.traceLineWithFallback(position1, position2, traceLineHitFlags)
   end
 
   if collisionPoint then
@@ -868,6 +876,11 @@ function Movement.isPositionLessOffGroundThanTheMaximum(position, maximumOffGrou
   return not groundZ or position.z - groundZ <= maximumOffGroundDistance
 end
 
+function Movement.isPositionInTheAirWhereAFlyingMountSeemsRequired(position)
+  local z = Movement.receiveSurfaceZ(position)
+  return not z or position.z - z > Movement.MAXIMUM_WALK_UP_TO_HEIGHT
+end
+
 function Movement.isPointInAir(point)
   local z = Movement.retrieveGroundZ(Movement.createPointWithZOffset(point, 0.25))
   return not z or point.z - z >= MINIMUM_LIFT_HEIGHT
@@ -1048,12 +1061,15 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     shouldCancel = function()
       return (
         a.shouldStop() or
-          Core.calculateDistanceFromCharacterToPosition(waypoint) > initialDistance + 5 or
-          not Movement.isPositionLessOffGroundThanTheMaximum(waypoint,
-            TOLERANCE_RANGE) and not Movement.canMountOnFlyingMount()
+          Core.calculateDistanceFromCharacterToPosition(waypoint) > math.max(initialDistance + 5, Movement.retrieveCharacterHeight()) or
+          _.isPositionUnreachable(waypoint)
       )
     end
   }
+end
+
+function _.isPositionUnreachable(position)
+  return Movement.isPositionInTheAirWhereAFlyingMountSeemsRequired(position) and not Movement.canMountOnFlyingMount()
 end
 
 function _.isPointCloseToCharacterWithZTolerance(point)
@@ -1924,13 +1940,18 @@ function Movement.moveToSavedPath()
 end
 
 function Movement.traceLineCollisionWithFallback(from, to)
+  return Movement.traceLineWithFallback(from, to, Core.TraceLineHitFlags.COLLISION)
+end
+
+function Movement.traceLineWithFallback(from, to, traceLineHitFlags)
   if Core.isPositionInRangeForTraceLineChecks(from) and Core.isPositionInRangeForTraceLineChecks(from) then
-    return Core.traceLine(from, to, Core.TraceLineHitFlags.COLLISION)
+    return Core.traceLine(from, to, traceLineHitFlags)
   elseif Float.seemsCloseBy(from.x, to.x) and Float.seemsCloseBy(from.y, to.y) then
     local x = from.x
     local y = from.y
+    local includeWater = Core.areFlagsSet(traceLineHitFlags, Core.TraceLineHitFlags.WATER) or Core.areFlagsSet(traceLineHitFlags, Core.TraceLineHitFlags.WATER2)
     local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(Movement.retrieveContinentID(),
-      from))
+      from), includeWater)
     local minZ = math.min(from.z, to.z)
     local maxZ = math.max(from.z, to.z)
     if (
@@ -1955,8 +1976,11 @@ function Movement.createPositionFromPoint(continentID, point)
   }
 end
 
-function Movement.retrieveClosestPointOnMesh(position)
-  local x, y, z = HWT.GetClosestPositionOnMesh(position.continentID, position.x, position.y, position.z)
+function Movement.retrieveClosestPointOnMesh(position, includeWater)
+  if includeWater == nil then
+    includeWater = true
+  end
+  local x, y, z = HWT.GetClosestPositionOnMesh(position.continentID, position.x, position.y, position.z, not includeWater)
   if x and y and z then
     return Movement.createPoint(x, y, z)
   else

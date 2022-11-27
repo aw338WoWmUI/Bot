@@ -1,7 +1,8 @@
 local addOnName, AddOn, exports, imports = ...
 local Modules = imports and imports.Modules or _G.Modules
 local Bot = Modules.determineExportsVariable(addOnName, exports)
-local Boolean, Core = Modules.determineImportVariables('Boolean', 'Core', imports)
+local Boolean = Modules.determineImportVariables('Boolean', imports)
+local RecommendedSpellCaster = Modules.determineImportVariable('RecommendedSpellCaster', imports)
 
 Bot.Warrior = {}
 
@@ -17,29 +18,31 @@ local HEROIC_STRIKE_RANK_1 = 78
 local BATTLE_SHOUT_RANK_1 = 6673
 local REND_RANK_1 = 772
 local CHARGE_RANK_1 = 100
+local VICTORY_RUSH_RANK_1 = 34428
 
 local HEROIC_STRIKE = retrieveHighestRankSpellID(HEROIC_STRIKE_RANK_1)
 local BATTLE_SHOUT = retrieveHighestRankSpellID(BATTLE_SHOUT_RANK_1)
 local REND = retrieveHighestRankSpellID(REND_RANK_1)
 local CHARGE = retrieveHighestRankSpellID(CHARGE_RANK_1)
+local VICTORY_RUSH = retrieveHighestRankSpellID(VICTORY_RUSH_RANK_1)
 
 local HEROIC_STRIKE_NAME = GetSpellInfo(HEROIC_STRIKE)
 local REND_NAME = GetSpellInfo(REND)
 
 function Bot.Warrior.castSpell()
-  if _.areConditionsMetToCastCharge() then
-    print('cast charge')
-    CastSpellByID(CHARGE)
-  elseif _.areConditionsMetToCastBattleShout() then
-    print('cast battle shout')
-    CastSpellByID(BATTLE_SHOUT)
-  elseif _.areConditionsMetToCastRend() then
-    print('cast rend')
-    CastSpellByID(REND)
-  elseif _.areConditionsMetToCastHeroicStrike() then
-    print('cast heroic strike')
-    CastSpellByID(HEROIC_STRIKE)
+  if _.areConditionsMetToCastVictoryRush() then
+    CastSpellByID(VICTORY_RUSH)
+  else
+    RecommendedSpellCaster.castRecommendedSpell()
   end
+end
+
+function _.areConditionsMetToCastVictoryRush()
+  local characterHealthInPercent = UnitHealth('player') / UnitHealthMax('player')
+  return (
+    _.canBeCasted(VICTORY_RUSH) and
+    characterHealthInPercent <= 0.8
+  )
 end
 
 local function IDPredicate(spellIDToFind, _, _, _, _, _, _, _, _, _, _, _, spellID)

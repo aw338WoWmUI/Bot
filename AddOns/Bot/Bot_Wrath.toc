@@ -1,6 +1,6 @@
 ## Title: Bot
 ## Interface: 30400
-## Dependencies: Modules, Boolean, Questing, Core
+## Dependencies: Modules, Boolean, Questing, RecommendedSpellCaster
 
-Bot.lua
 Warrior.lua
+Bot.lua
