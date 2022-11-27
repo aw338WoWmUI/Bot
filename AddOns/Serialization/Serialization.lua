@@ -1,5 +1,13 @@
 Serialization = {}
 
+function Serialization.serialize(value)
+  return Serialization.serializeTable(value)
+end
+
+function Serialization.serializeTable(table)
+  return Serialization.serializeTableWithIndention(table, 1, nil, nil)
+end
+
 function Serialization.valueToString(value)
   local valueType = type(value)
   if valueType == 'table' then
@@ -58,8 +66,10 @@ function Serialization.arrayToStringWithIndention(table, depth, maxDepth, refere
     local inside = ''
     for key, value in pairs(table) do
       if type(value) == 'table' then
-        if (not maxDepth or depth <= maxDepth) and not references[value] then
-          references[value] = true
+        if (not maxDepth or depth <= maxDepth) and (not references or not references[value]) then
+          if references then
+            references[value] = true
+          end
           inside = inside .. Serialization.tableToStringWithIndention(value, nextDepth, maxDepth, references)
         else
           inside = inside .. tostring(value)
@@ -100,13 +110,15 @@ function Serialization.keyValueTableToStringWithIndention(table, depth, maxDepth
         outputtedKey = '[' .. tostring(key) .. ']'
       end
       if type(value) == 'table' then
-        if (not maxDepth or depth <= maxDepth) and not references[value] then
+        if (not maxDepth or depth <= maxDepth) and (not references or not references[value]) then
+          if references then
+            references[value] = true
+          end
           inside = inside .. outputtedKey .. '=' .. '\n'
           inside = inside .. Serialization.tableToStringWithIndention(value, nextDepth, maxDepth, references)
         else
           inside = inside .. outputtedKey .. '=' .. tostring(value)
         end
-        -- references[value] = true
       else
         inside = inside .. outputtedKey .. '=' .. Serialization.valueToString(value)
       end

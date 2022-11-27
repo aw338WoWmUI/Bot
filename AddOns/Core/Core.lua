@@ -1,5 +1,6 @@
 local addOnName, AddOn, exports, imports = ...
 local Modules = imports and imports.Modules or _G.Modules
+--- @class Core
 local Core = Modules.determineExportsVariable(addOnName, exports)
 local HWT, Boolean, Compatibility, Set, Vector, Array, Logging, Math, BinaryHeap = Modules.determineImportVariables('HWT', 'Boolean', 'Compatibility', 'Set', 'Vector', 'Array', 'Logging', 'Math', 'BinaryHeap', imports)
 
@@ -640,7 +641,16 @@ function Core.retrievePositionFromPosition(position, distance, facing, pitch)
 end
 
 function Core.retrievePositionBetweenPositions(from, to, distance)
-  return Core.createPosition(HWT.GetPositionBetweenPositions(from.x, from.y, from.z, to.x, to.y, to.z, distance))
+  local vector = CreateVector3D(
+    to.x - from.x,
+    to.y - from.y,
+    to.z - from.z
+  )
+  vector:Normalize()
+  local x = from.x + distance * vector.x
+  local y = from.y + distance * vector.y
+  local z = from.z + distance * vector.z
+  return Core.createPosition(x, y, z)
 end
 
 function Core.isCharacterAlive()

@@ -347,3 +347,12 @@ GMR.RunString(GMR.ReadFile('E:/Bot/output2.lua'))
 HWT.LoadScript('C:/a/test.lua', 'print("a")')()
 
 local p = GMR.GetPlayerPosition(); print('is position underwater', GMR.IsPositionUnderwater(p.x, p.y, p.z))
+
+Movement.canPlayerStandOnPoint(Movement.savedVariables.perCharacter.MovementPath[4])
+Movement.canBeMovedFromPointToPointCheckingSubSteps(Movement.savedVariables.perCharacter.MovementPath[3], Movement.savedVariables.perCharacter.MovementPath[4])
+
+Movement.canBeMovedFromPointToPointCheckingSubSteps(Movement.savedVariables.perCharacter.MovementPath[7], Movement.savedVariables.perCharacter.MovementPath[8])
+Movement.isPointInDeepWater(Movement.savedVariables.perCharacter.MovementPath[8])
+Movement.canPlayerStandOnPoint(Movement.savedVariables.perCharacter.MovementPath[8])
+Movement.isPointInWater(Movement.savedVariables.perCharacter.MovementPath[8])
+Movement.canPlayerStandOnPoint(Movement.savedVariables.perCharacter.MovementPath[8])

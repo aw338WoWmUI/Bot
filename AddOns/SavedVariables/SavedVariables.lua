@@ -112,7 +112,7 @@ function _.writeVariablesTable(variablesTable, filePath)
   end
 
   if variablesTable then
-    local serializedContent = Serialization.tableToString(variablesTable)
+    local serializedContent = Serialization.serialize(variablesTable)
     _.writeFile(filePath, serializedContent)
   end
 end

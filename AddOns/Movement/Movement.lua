@@ -1,11 +1,16 @@
 local addOnName, AddOn, exports, imports = ...
 local Modules = imports and imports.Modules or _G.Modules
+--- @class Movement
 local Movement = Modules.determineExportsVariable(addOnName, exports)
-local Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Draw, Float, Core, AStar, SavedVariables = Modules.determineImportVariables('Boolean',
-  'ActionSequenceDoer', 'Array', 'Coroutine', 'Math', 'Vector', 'HWT', 'Draw', 'Float', 'Core', 'AStar',
+--- @type Core
+local Core = Modules.determineImportVariable('Core', imports)
+local Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Draw, Float, AStar, SavedVariables = Modules.determineImportVariables('Boolean',
+  'ActionSequenceDoer', 'Array', 'Coroutine', 'Math', 'Vector', 'HWT', 'Draw', 'Float', 'AStar',
   'SavedVariables', imports)
 
 local _ = {}
+
+local points = {}
 
 -- Movement_ = _
 
@@ -81,11 +86,11 @@ function drawLine(from, to)
 end
 
 function Movement.savePosition1()
-  AddOn.savedVariables.accountWide.position1 = Core.retrieveCharacterPosition()
+  AddOn.savedVariables.perCharacter.position1 = Core.retrieveCharacterPosition()
 end
 
 function Movement.savePosition2()
-  AddOn.savedVariables.accountWide.position2 = Core.retrieveCharacterPosition()
+  AddOn.savedVariables.perCharacter.position2 = Core.retrieveCharacterPosition()
 end
 
 function Movement.savePosition()
@@ -119,14 +124,13 @@ function Movement.calculateIsObstacleInFrontToPosition(position)
 end
 
 function Movement.isObstacleInFront(position)
-  AddOn.savedVariables.accountWide.position1 = Movement.createPoint(
+  local position1 = Movement.createPoint(
     position.x,
     position.y,
     position.z + zOffset
   )
-  AddOn.savedVariables.accountWide.position2 = Movement.calculateIsObstacleInFrontToPosition(AddOn.savedVariables.accountWide.position1)
-  return not Movement.thereAreZeroCollisions(AddOn.savedVariables.accountWide.position1,
-    AddOn.savedVariables.accountWide.position2)
+  local position2 = Movement.calculateIsObstacleInFrontToPosition(position1)
+  return not Movement.thereAreZeroCollisions(position1, position2)
 end
 
 function Movement.canWalkTo(position)
@@ -222,9 +226,13 @@ Movement.MAXIMUM_JUMP_HEIGHT = 1.675
 
 function Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
   return (
-    (Movement.isPointInDeepWater(to) or Movement.canPlayerStandOnPoint(to)) and
+    (Movement.isPointInDeepWater(to) or Movement.canPlayerStandOnPoint(to) or Movement.canPlayerSwimOnPoint(to)) and
       Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   )
+end
+
+function Movement.canPlayerSwimOnPoint(point)
+	return Movement.isPointInDeepWater(point)
 end
 
 function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
@@ -241,6 +249,7 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   local stepSize = 1
   local distance = stepSize
   while distance < totalDistance do
+    --table.insert(points, point1)
     local point2 = Core.retrievePositionBetweenPositions(from, to, distance)
     local x, y, z = point2.x, point2.y, point2.z
 
@@ -277,6 +286,8 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
   end
 
   local maximumDeltaZ = _.determineMaximumDeltaZ(point1, to)
+  AddOn.savedVariables.perCharacter.position1 = point1
+  AddOn.savedVariables.perCharacter.position2 = to
   if not (to.z - point1.z <= maximumDeltaZ or (Movement.isPointInDeepWater(point1) and Movement.isPointInDeepWater(to))) then
     return false
   end
@@ -469,7 +480,8 @@ function Movement.canPlayerStandOnPoint(point, options)
 
     local result = (
       _.canPlayerBeOnPoint2(point, options) and
-        not canFallOff()
+        not canFallOff() and
+      not Movement.isPointInDeepWater(point)
     )
 
     if options.withMount then
@@ -578,10 +590,8 @@ function Movement.retrieveGroundZ(position)
     -- There seemed to be one case where no z was returned at a position, even though it looked like that there was
     -- a surface.
     local offset = 0.6
-    AddOn.savedVariables.accountWide.position1 = Movement.createPoint(AddOn.savedVariables.accountWide.position1.x + offset,
-      AddOn.savedVariables.accountWide.position1.y + offset, position.z)
-    AddOn.savedVariables.accountWide.position2 = Movement.createPoint(AddOn.savedVariables.accountWide.position2.x + offset,
-      AddOn.savedVariables.accountWide.position2.y + offset, AddOn.savedVariables.accountWide.position2.z)
+    position1 = Movement.createPoint(position1.x + offset, position1.y + offset, position.z)
+    position2 = Movement.createPoint(position2.x + offset, position2.y + offset, position2.z)
     collisionPoint = Movement.traceLineCollisionWithFallback(position1, position2)
   end
 
@@ -739,8 +749,6 @@ function Movement.receiveWaterSurfacePoint(point)
   if waterSurfacePoint then
     return waterSurfacePoint
   else
-    AddOn.savedVariables.accountWide.position1 = point
-    AddOn.savedVariables.accountWide.position2 = Movement.createPointWithZOffset(point, -Movement.MAXIMUM_AIR_HEIGHT)
     return Core.traceLineWater(point, Movement.createPointWithZOffset(point, -Movement.MAXIMUM_AIR_HEIGHT))
   end
 end
@@ -1034,7 +1042,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     isDone = function()
       return (
         Core.isCharacterCloseToPosition(waypoint, TOLERANCE_RANGE) or
-          (isLastWaypoint and _.isPointCloseToCharacterWithZTolerance(waypoint))
+          ((isLastWaypoint or Core.isCharacterSwimming()) and _.isPointCloseToCharacterWithZTolerance(waypoint))
       )
     end,
     shouldCancel = function()
@@ -1065,8 +1073,6 @@ function _.thereSeemsToBeSomethingInFrontOfTheCharacterForWhichTheCharacterSeems
   local characterHeight = Movement.retrieveCharacterHeightForHeightCheck()
   local positionA = Movement.positionInFrontOfPlayer2(-1, characterHeight)
   local positionB = Movement.positionInFrontOfPlayer2(0.5, characterHeight)
-  AddOn.savedVariables.accountWide.position1 = positionA
-  AddOn.savedVariables.accountWide.position2 = positionB
   return _.thereAreCollisions2(positionA, positionB)
 end
 
@@ -1220,8 +1226,6 @@ function Movement.isJumpSituation(to)
   local playerPosition = Movement.retrieveCharacterPosition()
   local positionA = Movement.createPointWithZOffset(playerPosition, Movement.JUMP_DETECTION_HEIGHT)
   local positionB = Movement.positionInFrontOfPlayer2(0.5, Movement.JUMP_DETECTION_HEIGHT)
-  --AddOn.savedVariables.accountWide.position1 = positionA
-  --AddOn.savedVariables.accountWide.position2 = positionB
 
   return _.thereAreCollisions2(positionA, positionB)
 end
@@ -1232,14 +1236,14 @@ local function findPathToSavedPosition2()
   pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
   Movement.path = path
-  AddOn.savedVariables.accountWide.MovementPath = Movement.path
+  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
   return path
 end
 
 function Movement.findPathToSavedPosition()
   local thread = coroutine.create(function()
     Movement.path = findPathToSavedPosition2()
-    AddOn.savedVariables.accountWide.MovementPath = Movement.path
+    AddOn.savedVariables.perCharacter.MovementPath = Movement.path
   end)
   return Coroutine.resumeWithShowingError(thread)
 end
@@ -1247,7 +1251,7 @@ end
 function Movement.findPathToQuestingPointToMove()
   local thread = coroutine.create(function()
     Movement.path = _.findPathToSavedPosition3()
-    AddOn.savedVariables.accountWide.MovementPath = Movement.path
+    AddOn.savedVariables.perCharacter.MovementPath = Movement.path
   end)
   return Coroutine.resumeWithShowingError(thread)
 end
@@ -1258,7 +1262,7 @@ function _.findPathToSavedPosition3()
   pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
   Movement.path = path
-  AddOn.savedVariables.accountWide.MovementPath = Movement.path
+  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
   return path
 end
 
@@ -1266,7 +1270,7 @@ function Movement.moveToSavedPosition()
   local thread = coroutine.create(function()
     local path = findPathToSavedPosition2()
     Movement.path = path
-    AddOn.savedVariables.accountWide.MovementPath = Movement.path
+    AddOn.savedVariables.perCharacter.MovementPath = Movement.path
     if path then
       Movement.movePath(path)
     end
@@ -1617,7 +1621,7 @@ function Movement.findPathInner(from, to, toleranceDistance, a)
   )
 
   Movement.path = path
-  AddOn.savedVariables.accountWide.MovementPath = Movement.path
+  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 
   if subPathWhichHasBeenGeneratedFromMovementPoints then
     Movement.storeConnection(subPathWhichHasBeenGeneratedFromMovementPoints)
@@ -1694,7 +1698,7 @@ local function cleanUpPathFinding()
   run = nil
   aStarPoints = nil
   -- Movement.path = nil
-  -- AddOn.savedVariables.accountWide.MovementPath = Movement.path
+  -- AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 end
 
 local function cleanUpPathMoving()
@@ -1767,7 +1771,7 @@ function Movement.moveTo(to, options)
     local path = pathFinder.start(from, to, options.toleranceDistance)
     pathFinder = nil
     Movement.path = path
-    AddOn.savedVariables.accountWide.MovementPath = Movement.path
+    AddOn.savedVariables.perCharacter.MovementPath = Movement.path
     if path then
       pathMover = Movement.movePath(path, {
         stop = function()
@@ -2026,7 +2030,7 @@ function Movement.stopMoving()
     pathMover.stop()
     pathMover = nil
     Movement.path = nil
-    AddOn.savedVariables.accountWide.MovementPath = Movement.path
+    AddOn.savedVariables.perCharacter.MovementPath = Movement.path
   end
 end
 
@@ -2063,26 +2067,26 @@ end
 
 function findPathE()
   Movement.path = Core.findPathFromCharacterTo(AddOn.savedVariables.accountWide.savedPosition)
-  AddOn.savedVariables.accountWide.MovementPath = Movement.path
+  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 end
 
 function findPathE2()
   local playerPosition = Movement.retrieveCharacterPosition()
   Movement.path = Core.findPath(playerPosition, AddOn.savedVariables.accountWide.savedPosition)
-  AddOn.savedVariables.accountWide.MovementPath = Movement.path
+  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 end
 
 function findPathE3()
   local playerPosition = Movement.retrieveCharacterPosition()
   Movement.path = Core.findPath(playerPosition, AddOn.savedVariables.accountWide.savedPosition)
-  AddOn.savedVariables.accountWide.MovementPath = Movement.path
+  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
   return AStar.canPathBeMoved(Movement.path)
 end
 
 function findPathE4()
   local path = Core.findPathFromCharacterTo(Questing.savedVariables.perCharacter.QuestingPointToMove)
   Movement.path = path
-  AddOn.savedVariables.accountWide.MovementPath = Movement.path
+  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 end
 
 function findPathE5()
@@ -2090,28 +2094,24 @@ function findPathE5()
   local playerPosition = Movement.retrieveCharacterPosition()
   local start = Movement.createPoint(HWT.GetClosestPositionOnMesh(continentID, playerPosition.x, playerPosition.y,
     playerPosition.z))
-  local path = HWT.FindPath(continentID, start.x, start.y, start.z, Questing.savedVariables.perCharacter.QuestingPointToMove.x, Questing.savedVariables.perCharacter.QuestingPointToMove.y,
+  local path = HWT.FindPath(continentID, start.x, start.y, start.z,
+    Questing.savedVariables.perCharacter.QuestingPointToMove.x,
+    Questing.savedVariables.perCharacter.QuestingPointToMove.y,
     Questing.savedVariables.perCharacter.QuestingPointToMove.z, false, 1024, 0, 1, false)
   if path then
     path = Core.convertHWTPathToPath(path)
   end
   Movement.path = path
-  AddOn.savedVariables.accountWide.MovementPath = Movement.path
+  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 end
 
 function findPathE6()
   local path = Core.findPathFromCharacterTo(AddOn.savedVariables.accountWide.savedPosition)
   Movement.path = path
-  AddOn.savedVariables.accountWide.MovementPath = Movement.path
+  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
   print('path')
   DevTools_Dump(path)
 end
-
-function aaaaaaa2394ui2u32uio()
-  return Movement.canPlayerStandOnPoint(AddOn.savedVariables.accountWide.position1)
-end
-
--- AddOn.savedVariables.accountWide.position2 = Movement.createPointWithZOffset(Movement.retrievePlayerPosition(), Movement.retrieveCharacterHeight())
 
 function _.doWhenAddOnHasBeenLoaded()
   -- TODO: Continent ID
@@ -2168,13 +2168,16 @@ HWT.doWhenHWTIsLoaded(function()
     AddOn.savedVariables.perCharacter
   )
 
-  AddOn.savedVariables.accountWide.position1 = nil
-  AddOn.savedVariables.accountWide.position2 = nil
-
   Movement.initializeSavedVariables()
   _.doWhenAddOnHasBeenLoaded()
 
   Draw.Sync(function()
+    Draw.SetColorRaw(0, 0, 1, 1)
+    Array.forEach(points, function(point)
+      Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
+    end)
+
+    Draw.SetColorRaw(0, 1, 0, 1)
     Array.forEach(lines, function(line)
       local a = line[1]
       local b = line[2]
@@ -2192,40 +2195,45 @@ HWT.doWhenHWTIsLoaded(function()
     --      --  Draw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
     --      --end
     if DEVELOPMENT then
-      if AddOn.savedVariables.accountWide.position1 and AddOn.savedVariables.accountWide.position2 then
+      if AddOn.savedVariables.perCharacter.position1 and AddOn.savedVariables.perCharacter.position2 then
         Draw.SetColorRaw(0, 1, 0, 1)
         Draw.Line(
-          AddOn.savedVariables.accountWide.position1.x,
-          AddOn.savedVariables.accountWide.position1.y,
-          AddOn.savedVariables.accountWide.position1.z,
-          AddOn.savedVariables.accountWide.position2.x,
-          AddOn.savedVariables.accountWide.position2.y,
-          AddOn.savedVariables.accountWide.position2.z
+          AddOn.savedVariables.perCharacter.position1.x,
+          AddOn.savedVariables.perCharacter.position1.y,
+          AddOn.savedVariables.perCharacter.position1.z,
+          AddOn.savedVariables.perCharacter.position2.x,
+          AddOn.savedVariables.perCharacter.position2.y,
+          AddOn.savedVariables.perCharacter.position2.z
         )
       end
     end
 
-    local path = AddOn.savedVariables.accountWide.MovementPath
+    local path = AddOn.savedVariables.perCharacter.MovementPath
     if path then
       Draw.SetColorRaw(0, 1, 0, 1)
-      local previousPoint = path[1]
-      for index = 2, #path do
+      for index = 1, #path - 1 do
         local point = path[index]
+        local point2 = path[index + 1]
         Draw.Line(
-          previousPoint.x,
-          previousPoint.y,
-          previousPoint.z,
           point.x,
           point.y,
-          point.z
+          point.z,
+          point2.x,
+          point2.y,
+          point2.z
         )
-        Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
-        previousPoint = point
       end
-      local firstPoint = path[1]
-      local lastPoint = path[#path]
-      Draw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, Core.retrieveCharacterBoundingRadius())
-      Draw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, Core.retrieveCharacterBoundingRadius())
+      for index = 1, #path do
+        local color
+        if index == 3 or index == 4 then
+          color = { 3 / 255, 169 / 255, 244 / 255, 1 }
+        else
+          color = { 0, 1, 0, 1 }
+        end
+        Draw.SetColorRaw(unpack(color))
+        local point = path[index]
+        Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
+      end
     end
 
     if DEVELOPMENT then
