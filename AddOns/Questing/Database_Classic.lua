@@ -1,4 +1,8 @@
-Questing = Questing or {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Bot = Modules.determineExportsVariable(addOnName, exports)
+local Array, Object, Boolean, Compatibility = Modules.determineImportVariables('Array', 'Object', 'Boolean', 'Compatibility', imports)
+
 Questing.Database = {}
 
 local addOnName, AddOn = ...
@@ -402,5 +406,5 @@ end
 function Questing.Database.isQuestGiver(npcID)
   local npc = QuestieDB:GetNPC(npcID)
   local questIDs = npc.questStarts
-  return toBoolean(next(questIDs))
+  return Boolean.toBoolean(next(questIDs))
 end

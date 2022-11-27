@@ -1,41 +1,44 @@
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local HWT = Modules.determineExportsVariable(addOnName, exports)
+local Conditionals, HWTRetriever, Boolean, Array, Coroutine, Object = Modules.determineImportVariables('Conditionals', 'HWTRetriever', 'Boolean', 'Array', 'Coroutine', 'Object', imports)
+
 local _ = {}
 
+local isHWTLoaded = false
 local functionsToRunWhenHWTIsLoaded = {}
 
 Conditionals.doOnceWhen(
   function ()
     return _G.GMR and GMR.RunString
   end,
-  HWTRetriever.putHWTOnTheGlobalScope
+  function ()
+    local HWT2 = HWTRetriever.retrieveHWT()
+    if HWT2 then
+      Object.assign(HWT, HWT2)
+      isHWTLoaded = true
+      _.runFunctions(functionsToRunWhenHWTIsLoaded)
+    end
+  end
 )
 
-local function runFunctions(functions)
-  runAsCoroutine(function()
+function _.runFunctions(functions)
+  Coroutine.runAsCoroutine(function()
     Array.forEach(functions, function(fn)
       fn()
-      yieldAndResume()
+      Yielder.yieldAndResume()
     end)
   end)
 end
 
-local runFunctionsWhenHWTIsLoaded = Function.once(function()
-  Conditionals.doOnceWhen(
-    _.isHWTLoaded,
-    function()
-      runFunctions(functionsToRunWhenHWTIsLoaded)
-    end
-  )
-end)
-
-function doWhenHWTIsLoaded(fn)
-  if _.isHWTLoaded() then
-    runAsCoroutine(fn)
+function HWT.doWhenHWTIsLoaded(fn)
+  if isHWTLoaded then
+    Coroutine.runAsCoroutine(fn)
   else
     table.insert(functionsToRunWhenHWTIsLoaded, fn)
-    runFunctionsWhenHWTIsLoaded()
   end
 end
 
 function _.isHWTLoaded()
-  return toBoolean(_G.HWT)
+  return isHWTLoaded
 end

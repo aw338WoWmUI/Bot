@@ -1,4 +1,7 @@
-GMRHelpers = {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local GMRHelpers = Modules.determineExportsVariable(addOnName, exports)
+local Function, Array, Yielder, Coroutine, Conditionals = Modules.determineImportVariables('Function', 'Array', 'Yielder', 'Coroutine', 'Conditionals', imports)
 
 local functionsToRunWhenGMRIsLoaded = {}
 local functionsToRunWhenGMRIsFullyLoaded = {}
@@ -8,10 +11,10 @@ function GMRHelpers.isFullyLoaded()
 end
 
 local function runFunctions(functions)
-  runAsCoroutine(function()
+  Coroutine.runAsCoroutine(function()
     Array.forEach(functions, function(fn)
       fn()
-      yieldAndResume()
+      Yielder.yieldAndResume()
     end)
   end)
 end
@@ -38,7 +41,7 @@ end)
 
 function doWhenGMRIsLoaded(fn)
   if GMRHelpers.isFullyLoaded() then
-    runAsCoroutine(fn)
+    Coroutine.runAsCoroutine(fn)
   else
     table.insert(functionsToRunWhenGMRIsLoaded, fn)
     runFunctionsWhenGMRIsLoaded()
@@ -47,7 +50,7 @@ end
 
 function doWhenGMRIsFullyLoaded(fn)
   if GMRHelpers.isFullyLoaded() then
-    runAsCoroutine(fn)
+    Coroutine.runAsCoroutine(fn)
   else
     table.insert(functionsToRunWhenGMRIsFullyLoaded, fn)
     runFunctionsWhenGMRIsFullyLoaded()
@@ -56,10 +59,10 @@ end
 
 function doRegularlyWhenGMRIsFullyLoaded(fn)
   doWhenGMRIsFullyLoaded(function()
-    runAsCoroutine(function()
+    Coroutine.runAsCoroutine(function()
       while true do
         fn()
-        yieldAndResume()
+        Yielder.yieldAndResume()
       end
     end)
   end)

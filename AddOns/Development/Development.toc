@@ -1,5 +1,5 @@
 ## Title: Development
 ## Interface: 100002
-## Dependencies: Core, Logging
+## Dependencies: Modules, Core, Logging
 
 Development.lua

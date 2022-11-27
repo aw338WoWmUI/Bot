@@ -1,4 +1,7 @@
-Draw = Draw or {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Draw = Modules.determineExportsVariable(addOnName, exports)
+local Array = Modules.determineImportVariables('Array', imports)
 
 local function splitIntoTriangles(points)
   local triangles = {}

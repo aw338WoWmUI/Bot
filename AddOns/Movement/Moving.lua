@@ -1,3 +1,10 @@
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Movement = Modules.determineExportsVariable(addOnName, exports)
+local HWT, Core = Modules.determineImportVariables('HWT', 'Core', imports)
+
+Movement.Moving = {}
+
 local function calculateDistance(a, b)
   return math.sqrt(math.pow(b.x - a.x, 2) + math.pow(b.y - a.y, 2) + math.pow(b.z - a.z, 2))
 end
@@ -35,7 +42,7 @@ end
 
 local moveToWhileFacingDistanceProximityTolerance = 0.5
 
-function facePosition(positionToFace)
+function Movement.Moving.facePosition(positionToFace)
   Movement.facePoint(positionToFace)
 end
 
@@ -123,7 +130,7 @@ local function stopMovingInDirection(moveDirection)
   end
 end
 
-function moveToWithCurrentFacingDirection(position)
+function Movement.Moving.moveToWithCurrentFacingDirection(position)
   local moveDirection = getDirectionToMoveTowards(position)
   startMovingInDirection(moveDirection)
 
@@ -158,11 +165,11 @@ local function isFacingPosition(positionToFace)
   )
 end
 
-function moveToWhileFacing(moveToPosition, positionToFace)
+function Movement.Moving.moveToWhileFacing(moveToPosition, positionToFace)
   local hasStopped = false
 
-  facePosition(positionToFace)
-  moveToWithCurrentFacingDirection(moveToPosition)
+  Movement.Moving.facePosition(positionToFace)
+  Movement.Moving.moveToWithCurrentFacingDirection(moveToPosition)
   local handler
   handler = C_Timer.NewTicker(1 / 60, function()
     if hasStopped then
@@ -182,16 +189,16 @@ function moveToWhileFacing(moveToPosition, positionToFace)
   }
 end
 
-function moveTo3(moveToPosition)
-  return moveToWhileFacing(moveToPosition, moveToPosition)
+function Movement.Moving.moveTo3(moveToPosition)
+  return Movement.Moving.moveToWhileFacing(moveToPosition, moveToPosition)
 end
 
-function testMoveTo3()
-  local position = createPoint(
+function Movement.Moving.testMoveTo3()
+  local position = Movement.createPoint(
     -3459.1276855469,
     712.71026611328,
     2.9626386165619
   )
   savedPosition = position
-  moveTo3(position)
+  Movement.Moving.moveTo3(position)
 end

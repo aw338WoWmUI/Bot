@@ -1,6 +1,7 @@
-MeshVisualization = {}
-
-local addOnName, AddOn = ...
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local MeshNet = Modules.determineExportsVariable(addOnName, exports)
+local Core, HWT, Array, Draw, Conditionals = Modules.determineImportVariables('Core', 'HWT', 'Array', 'Draw', 'Conditionals', imports)
 
 local _ = {}
 
@@ -25,7 +26,7 @@ local function visualizePolygons()
         }
         Array.forEach(polygons, function(polygon)
           if polygon ~= closestPolygon and polygon ~= AddOn.firstOffMeshConnectionPolygon and polygon ~= AddOn.secondOffMeshConnectionPolygon then
-            MeshVisualization.visualizePolygon(polygon, options)
+            MeshNet.visualizePolygon(polygon, options)
           end
         end)
       end
@@ -35,14 +36,14 @@ local function visualizePolygons()
             color = { 139 / 255, 195 / 255, 74 / 255, 1 },
             fillColor = { 139 / 255, 195 / 255, 74 / 255, 0.2 }
           }
-          MeshVisualization.visualizePolygon(closestPolygon, options)
+          MeshNet.visualizePolygon(closestPolygon, options)
         end
       end
     end
   end
 end
 
-function MeshVisualization.visualizePolygon(polygon, options)
+function MeshNet.visualizePolygon(polygon, options)
   options = options or {}
 
   local continentID = Core.retrieveCurrentContinentID()
@@ -127,8 +128,7 @@ Draw.Sync(function()
   end
 end)
 
--- FIXME: Enabling mesh visualization seems to crash the game sometimes.
-function toggleMeshVisualization()
+function MeshNet.toggleMeshVisualization()
   local isEnablingMeshVisualization = not isMeshVisualizationEnabled
 
   if isEnablingMeshVisualization then

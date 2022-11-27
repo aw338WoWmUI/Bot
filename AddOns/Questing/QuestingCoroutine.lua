@@ -1,4 +1,8 @@
-Questing = Questing or {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Questing = Modules.determineExportsVariable(addOnName, exports)
+local Array, Set, Coroutine, Movement, Events, HWT, Core, Function, Yielder = Modules.determineImportVariables('Array', 'Set', 'Coroutine', 'Movement', 'Events', 'HWT', 'Core', 'Function', 'Yielder', imports)
+
 Questing.Coroutine = {}
 
 local _ = {}
@@ -36,7 +40,7 @@ function Questing.Coroutine.moveToUntil(point, options)
   local stopCondition = options.stopCondition
 
   if Movement.isPositionInTheAir(point) and not Movement.canCharacterFly() then
-    point = createPoint(
+    point = Movement.createPoint(
       point.x,
       point.y,
       Core.retrieveZCoordinate(point) or point.z
@@ -48,7 +52,7 @@ function Questing.Coroutine.moveToUntil(point, options)
       toleranceDistance = options.toleranceDistance,
       stop = stopCondition
     })
-    yieldAndResume()
+    Yielder.yieldAndResume()
   end
 end
 
@@ -76,7 +80,6 @@ function Questing.Coroutine.moveToObject(pointer, options)
   end
 
   local function isJobDone(position)
-    print('a', position)
     return (
       not position or
       not HWT.ObjectExists(pointer) or
@@ -121,7 +124,7 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
     local pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
     if pointer then
       Core.interactWithObject(pointer)
-      waitForDuration(2)
+      Coroutine.waitForDuration(2)
     end
   end
 end
@@ -161,8 +164,8 @@ function Questing.Coroutine.interactWithObject(pointer, distance, delay)
 
   if Questing.isRunning() and HWT.ObjectExists(pointer) and Core.isCharacterCloseToPosition(position, distance) then
     Core.interactWithObject(pointer)
-    waitForDuration(1)
-    waitFor(function()
+    Coroutine.waitForDuration(1)
+    Coroutine.waitFor(function()
       return not Core.isCharacterCasting()
     end)
     if GetNumLootItems() >= 1 then
@@ -252,7 +255,7 @@ function Questing.Coroutine.waitForItemReady(itemID)
   local startTime, duration = C_Container.GetItemCooldown(itemID)
   if startTime > 0 and duration > 0 then
     local remainingCooldownTime = duration - (GetTime() - startTime)
-    waitForDuration(remainingCooldownTime)
+    Coroutine.waitForDuration(remainingCooldownTime)
   end
 end
 
@@ -268,7 +271,7 @@ local function gossipWithObject(pointer, chooseOption)
   while Questing.isRunning() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
     Questing.Coroutine.interactWithObject(pointer)
     Events.waitForEvent('GOSSIP_SHOW', 2)
-    yieldAndResume()
+    Yielder.yieldAndResume()
   end
   if Questing.isRunning() then
     local gossipOptionID = chooseOption()
@@ -348,7 +351,7 @@ end
 function Questing.Coroutine.gossipWithAt(point, objectID, optionToSelect)
   Questing.Coroutine.interactWithAt(point, objectID)
   Events.waitForEvent('GOSSIP_SHOW', 2)
-  yieldAndResume()
+  Yielder.yieldAndResume()
   if Questing.isRunning() and optionToSelect then
     selectOption(optionToSelect)
   end
@@ -388,8 +391,8 @@ function Questing.Coroutine.doMob(pointer, options)
         distance = distance
       })
     end
-    castRecommendedSpell()
-    yieldAndResume()
+    RecommendedSpellCaster.castRecommendedSpell()
+    Yielder.yieldAndResume()
   end
 
   if not Core.isCharacterInCombat() then

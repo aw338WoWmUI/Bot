@@ -1,10 +1,11 @@
-Questing = Questing or {}
-
-local addOnName, AddOn = ...
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Questing = Modules.determineExportsVariable(addOnName, exports)
+local Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Yielder, Draw, Math = Modules.determineImportVariables('Array', 'Set', 'Object', 'Coroutine', 'Boolean', 'Movement', 'Tooltips', 'Events', 'Compatibility', 'HWT', 'Unlocker', 'Core', 'Yielder', 'Draw', 'Math', imports)
 
 local _ = {}
 
-Questing_ = _
+-- Questing_ = _
 
 local INFINITY = 1 / 0
 
@@ -100,12 +101,12 @@ function defineQuest3(questID, handler)
 end
 
 local function waitForGossipOptionToBeAvailable(gossipOptionID, timeout)
-  waitFor(function()
+  Coroutine.waitFor(function()
     local options = C_GossipInfo.GetOptions()
     local option = Array.find(options, function(option)
       return option.gossipOptionID == gossipOptionID
     end)
-    return toBoolean(option)
+    return Boolean.toBoolean(option)
   end, timeout)
 end
 
@@ -116,7 +117,7 @@ end
 defineQuest3(
   30082,
   function(self)
-    local targetLocation = createPoint(
+    local targetLocation = Movement.createPoint(
       -354.69952392578,
       -632.87860107422,
       118.35806274414
@@ -151,7 +152,7 @@ defineQuest3(
           })
           Questing.Coroutine.interactWithObjectWithObjectID(npcID)
         end
-        yieldAndResume()
+        Yielder.yieldAndResume()
       end
     end
   end
@@ -184,7 +185,7 @@ do
     questID,
     function(self)
       Questing.Coroutine.useItemOnPosition(
-        createPoint(
+        Movement.createPoint(
           -9849.0380859375,
           1398.9611816406,
           52.249256134033
@@ -192,7 +193,7 @@ do
         57761,
         1
       )
-      waitFor(function()
+      Coroutine.waitFor(function()
         return Compatibility.QuestLog.isComplete(questID)
       end)
       if Core.isCharacterInVehicle() then
@@ -209,12 +210,12 @@ do
     function(self)
       if self:isObjectiveOpen(1) then
         print(1)
-        Questing.Coroutine.moveTo(createPoint(
+        Questing.Coroutine.moveTo(Movement.createPoint(
           -9861.0556640625,
           1333.9146728516,
           41.904102325439
         ))
-        waitFor(function()
+        Coroutine.waitFor(function()
           local object = Core.findClosestObjectToCharacterWithOneOfObjectIDs(42387)
           return object and Core.canUnitAttackOtherUnit('player', object)
         end)
@@ -223,7 +224,7 @@ do
           if object then
             Questing.Coroutine.doMob(object)
           else
-            yieldAndResume()
+            Yielder.yieldAndResume()
           end
         end
       end
@@ -252,7 +253,7 @@ do
           Questing.Coroutine.useItemOnPosition(position, itemID)
           Set.add(fedNPCs, object)
         end
-        yieldAndResume()
+        Yielder.yieldAndResume()
       end
     end
   )
@@ -301,7 +302,7 @@ do
                 )
               )
             end
-            yieldAndResume()
+            Yielder.yieldAndResume()
           end
         end
       end
@@ -321,8 +322,8 @@ defineQuest3(
           35.322311401367
         )
       )
-      waitForDuration(2)
-      waitUntil(function()
+      Coroutine.waitForDuration(2)
+      Coroutine.waitUntil(function()
         return not Core.isCharacterInCombat()
       end)
 
@@ -334,8 +335,8 @@ defineQuest3(
           35.891700744629
         )
       )
-      waitForDuration(2)
-      waitUntil(function()
+      Coroutine.waitForDuration(2)
+      Coroutine.waitUntil(function()
         return not Core.isCharacterInCombat()
       end)
 
@@ -359,7 +360,7 @@ defineQuest3(
         )
       )
 
-      waitUntil(function()
+      Coroutine.waitUntil(function()
         return self:isComplete()
       end)
     end
@@ -492,7 +493,7 @@ local questGiverStatuses = Set.create({
 
 local function generateQuestStartPointsFromStarters(quest)
   if quest.starters then
-    local yielder = createYielderWithTimeTracking(1 / 60)
+    local yielder = Yielder.createYielderWithTimeTracking(1 / 60)
 
     return Array.selectTrue(Array.map(quest.starters, function(starter)
       -- TODO: Seems to make sense to also include other types.
@@ -784,7 +785,7 @@ function retrieveWorldPositionFromMapPosition(mapID, mapX, mapY)
       x = mapX,
       y = mapY
     })
-    return position.continentID, createPoint(position.x, position.y, position.z)
+    return position.continentID, Movement.createPoint(position.x, position.y, position.z)
   else
     return nil, nil
   end
@@ -884,7 +885,7 @@ function retrieveObjectivePoints()
 
   points = Array.filter(points, function(point)
     return (
-      not recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)]
+      not recentlyVisitedObjectivePoints[Movement.createPoint(point.x, point.y, point.z)]
         and Array.any(point.questIDs, _.hasEnoughFreeSlotsToCompleteQuest)
     )
   end)
@@ -1169,7 +1170,7 @@ function isSpecialItemUsable(point)
 end
 
 function waitForSpecialItemUsable(point)
-  return waitFor(function()
+  return Coroutine.waitFor(function()
     Core.targetUnit(point.pointer)
     return isSpecialItemUsable(point)
   end, 10)
@@ -1187,7 +1188,7 @@ function retrieveNavigationPosition()
     frame2:Show()
     frame3:Show()
 
-    local yielder = createYielderWithTimeTracking(1 / 60)
+    local yielder = Yielder.createYielderWithTimeTracking(1 / 60)
 
     local lastDistance = nil
     local lastPosition = nil
@@ -1210,7 +1211,7 @@ function retrieveNavigationPosition()
         navigationPointDistance * math.sin(yaw) * math.cos(pitch),
         navigationPointDistance * math.sin(pitch)
       )
-      local position = createPoint(
+      local position = Movement.createPoint(
         playerPosition.x + vector.x,
         playerPosition.y + vector.y,
         playerPosition.z + vector.z
@@ -1279,7 +1280,7 @@ local function retrieveQuestSpecialItem(questID)
 end
 
 local function hasQuestSpecialItem(questID)
-  return toBoolean(retrieveQuestSpecialItem(questID))
+  return Boolean.toBoolean(retrieveQuestSpecialItem(questID))
 end
 
 local function hasSomeQuestASpecialItem(questIDs)
@@ -1414,13 +1415,13 @@ end
 --end
 
 function _.waitForNPCUpdate()
-  return waitForDuration(1)
+  return Coroutine.waitForDuration(1)
 end
 
 function _.doMob(pointer)
   return Questing.Coroutine.doMob(pointer, {
     additionalStopConditions = function()
-      return Bot.isCharacterInCombat() and not Core.isUnitAttackingTheCharacter(pointer)
+      return Core.isCharacterInCombat() and not Core.isUnitAttackingTheCharacter(pointer)
     end
   })
 end
@@ -1670,25 +1671,25 @@ function Questing.handleObjective(point)
 
         if C_Navigation.WasClampedToScreen() then
           local lastAngle = nil
-          waitFor(function()
+          Coroutine.waitFor(function()
             local angle = HWT.ObjectFacing('player')
             local result = lastAngle and angle == lastAngle
             lastAngle = angle
             return result
           end)
-          yieldAndResume()
+          Yielder.yieldAndResume()
           local navigationY = select(2, frame:GetCenter())
           local scale = UIParent:GetEffectiveScale()
           local navigationY = navigationY * scale
           if navigationY >= 0.5 * 768 then
             MoveViewDownStart()
-            waitUntil(function()
+            Coroutine.waitUntil(function()
               return not C_Navigation.WasClampedToScreen()
             end, 5)
             MoveViewDownStop()
           else
             MoveViewUpStart()
-            waitUntil(function()
+            Coroutine.waitUntil(function()
               return not C_Navigation.WasClampedToScreen()
             end, 5)
             MoveViewUpStop()
@@ -1699,7 +1700,7 @@ function Questing.handleObjective(point)
     end
 
     if not position then
-      position = createPoint(point.x, point.y, point.z)
+      position = Movement.createPoint(point.x, point.y, point.z)
     end
 
     local continentID = Core.retrieveCurrentContinentID()
@@ -1752,7 +1753,7 @@ function Questing.handleObjective(point)
   end
 
   if Core.isCharacterCloseToPosition(point, INTERACT_DISTANCE) then
-    recentlyVisitedObjectivePoints[createPoint(point.x, point.y, point.z)] = {
+    recentlyVisitedObjectivePoints[Movement.createPoint(point.x, point.y, point.z)] = {
       time = GetTime()
     }
   end
@@ -1810,13 +1811,13 @@ function _.findClosestPointOnMeshWithPathTo(position)
     if Core.doesPathExistFromCharacterTo(closestPointOnMesh) then
       return closestPointOnMesh
     else
-      local point = Movement.traceLineCollision(
+      local point = Core.traceLineCollision(
         Movement.createPointWithZOffset(closestPointOnMesh, 0.1),
         Movement.createPointWithZOffset(closestPointOnMesh, Movement.MAXIMUM_AIR_HEIGHT)
       )
       previousClosesPointOnMesh = closestPointOnMesh
       if point then
-        local point2 = Movement.traceLineCollision(
+        local point2 = Core.traceLineCollision(
           Movement.createPointWithZOffset(point, 0.1),
           Movement.createPointWithZOffset(point, -0.1)
         )
@@ -1840,7 +1841,7 @@ function _.retrievePositionFromObjectID(objectID)
   end
 end
 
-doWhenHWTIsLoaded(function()
+HWT.doWhenHWTIsLoaded(function()
   Draw.Sync(function()
     if QuestingPointToShow then
       Draw.SetColorRaw(0, 1, 0, 1)
@@ -1867,7 +1868,7 @@ function seemToBeSamePoints(a, b)
 end
 
 function retrievePoints()
-  local yielder = createYielderWithTimeTracking(1 / 60)
+  local yielder = Yielder.createYielderWithTimeTracking(1 / 60)
 
   local questStartPoints = retrieveQuestStartPoints()
   if yielder.hasRanOutOfTime() then
@@ -1947,19 +1948,19 @@ function waitForGossipDialog()
 end
 
 function waitForPlayerFacingObject(object)
-  return waitFor(function()
+  return Coroutine.waitFor(function()
     return Movement.isCharacterFacingObject(object)
   end, 5)
 end
 
 function waitForSoftInteract()
-  return waitFor(function()
+  return Coroutine.waitFor(function()
     return Core.retrieveObjectPointer('softinteract')
   end, 2)
 end
 
 function waitForSoftInteractNamePlate()
-  return waitFor(function()
+  return Coroutine.waitFor(function()
     return C_NamePlate.GetNamePlateForUnit('softinteract', issecure())
   end, 2)
 end
@@ -1985,7 +1986,7 @@ function Questing.start()
     print('Starting questing...')
     isRunning = true
 
-    runAsCoroutine(_.run)
+    Coroutine.runAsCoroutine(_.run)
   end
 end
 
@@ -2118,7 +2119,7 @@ function _.run ()
     end
   end)
 
-  local yielder = createYielder()
+  local yielder = Yielder.createYielder()
 
   while true do
     local time = GetTime()
@@ -2128,7 +2129,7 @@ function _.run ()
       end
     end
 
-    if Questing.isRunning() and Bot.isCharacterInCombat() and not Core.isCharacterAttacking() then
+    if Questing.isRunning() and Core.isCharacterInCombat() and not Core.isCharacterAttacking() then
       local pointer = Core.receiveUnitsThatAttackTheCharacter()[1] -- TODO: Improve targeting (i.e. the one that can go down fastes when targeted, the one which can relatively go done fast when targeted and does a lot of damage (lowest HP first, squishiest first))
       if pointer then
         local point = Core.retrieveObjectPosition(pointer)
@@ -2174,7 +2175,7 @@ function _.run ()
       end
 
       if Core.isCharacterGhost() then
-        local corpsePosition = createPoint(Core.receiveCorpsePosition())
+        local corpsePosition = Movement.createPoint(Core.receiveCorpsePosition())
         Questing.Coroutine.moveToUntil(corpsePosition, {
           stopCondition = function()
             return StaticPopup1Button1:IsShown()
@@ -2212,7 +2213,7 @@ function _.itSeemsMakeSenseToSell()
 end
 
 function _.isSellVendorSet()
-  return toBoolean(Questing.closestNPCs.Sell)
+  return Boolean.toBoolean(Questing.closestNPCs.Sell)
 end
 
 function _.sell()
@@ -2233,7 +2234,7 @@ function _.sell()
 end
 
 function _.hasSellingGossipOption()
-  return toBoolean(_.retrieveSellingGossipOption())
+  return Boolean.toBoolean(_.retrieveSellingGossipOption())
 end
 
 function _.isSellingGossipOption(option)

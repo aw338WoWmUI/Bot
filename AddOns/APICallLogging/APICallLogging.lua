@@ -1,9 +1,14 @@
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local APICallLogging = Modules.determineExportsVariable(addOnName, exports)
+local Serialization, Hooking, HWT, String = Modules.determineImportVariables('Serialization', 'Hooking', 'HWT', 'String', imports)
+
 local _ = {}
 
 local IS_LOGGING_ENABLED = true
 
-function logAPICalls(apiName)
-  local parts = splitString(apiName, '.')
+function APICallLogging.logAPICalls(apiName)
+  local parts = String.split(apiName, '.')
   local table = _G
   for index = 1, #parts - 1 do
     table = table[parts[index]]
@@ -47,8 +52,8 @@ local function createLogFunction(apiName, originalFunction)
   end
 end
 
-function logAPICalls2(apiName)
-  local parts = splitString(apiName, '.')
+function APICallLogging.logAPICalls2(apiName)
+  local parts = String.split(apiName, '.')
   local table = _G
   for index = 1, #parts - 1 do
     table = table[parts[index]]
@@ -57,8 +62,8 @@ function logAPICalls2(apiName)
   table[parts[#parts]] = createLogFunction(apiName, originalFunction)
 end
 
-function logApiCalls3(apiName)
-  local parts = splitString(apiName, '.')
+function APICallLogging.logApiCalls3(apiName)
+  local parts = String.split(apiName, '.')
   if #parts == 2 then
     Hooking.hookFunctionOnGlobalTable(parts[1], parts[2], function(originalFunction)
       return createLogFunction(apiName, originalFunction)
@@ -68,41 +73,24 @@ function logApiCalls3(apiName)
   end
 end
 
-function logAllAPICalls()
+function APICallLogging.logAllAPICalls()
   for key in pairs(GMR) do
     if type(GMR[key]) == 'function' then
       if key ~= 'WriteFile' then
-        logAPICalls2('GMR.' .. key)
+        APICallLogging.logAPICalls2('GMR.' .. key)
       end
     end
   end
 end
 
-function logAPICallsOfAPIsWhichMatch(doesMatch)
+function APICallLogging.logAPICallsOfAPIsWhichMatch(doesMatch)
   for key in pairs(GMR) do
     local apiName = 'GMR.' .. key
     if type(GMR[key]) == 'function' and doesMatch(apiName) then
       print('Logging API calls to: ' .. apiName)
-      logAPICalls2(apiName)
+      APICallLogging.logAPICalls2(apiName)
     end
   end
-end
-
-function splitString(text, splitString)
-  local parts = {}
-  local startIndex
-  local endIndex
-
-  startIndex, endIndex = string.find(text, splitString, 1, true)
-  while startIndex ~= nil do
-    local part = string.sub(text, 1, startIndex - 1)
-    table.insert(parts, part)
-    text = string.sub(text, endIndex + 1)
-    startIndex, endIndex = string.find(text, splitString, 1, true)
-  end
-
-  table.insert(parts, text)
-  return parts
 end
 
 function _.outputList(list)

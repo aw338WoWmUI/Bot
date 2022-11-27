@@ -1,18 +1,20 @@
-function yieldAndResume()
+Yielder = {}
+
+function Yielder.yieldAndResume()
   local thread = coroutine.running()
   C_Timer.After(0, function ()
-    resumeWithShowingError(thread)
+    Coroutine.resumeWithShowingError(thread)
   end)
   coroutine.yield()
 end
 
-function createYielder()
+function Yielder.createYielder()
   local yielder
   yielder = {
     thread = coroutine.running(),
     resume = function(...)
       if coroutine.status(yielder.thread) == 'suspended' then
-        return resumeWithShowingError(yielder.thread, ...)
+        return Coroutine.resumeWithShowingError(yielder.thread, ...)
       end
     end,
     yield = function()
@@ -23,8 +25,8 @@ function createYielder()
   return yielder
 end
 
-function createYielderWithTimeTracking(timePerRun)
-  local yielder = createYielder()
+function Yielder.createYielderWithTimeTracking(timePerRun)
+  local yielder = Yielder.createYielder()
 
   timePerRun = (timePerRun or 1 / 60) * 1000
   local start = debugprofilestop()

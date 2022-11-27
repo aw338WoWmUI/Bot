@@ -1,4 +1,6 @@
-function createActionSequenceDoer(actions)
+ActionSequenceDoer = {}
+
+function ActionSequenceDoer.createActionSequenceDoer(actions)
   local index = 1
 
   return {
@@ -23,7 +25,7 @@ function createActionSequenceDoer(actions)
   }
 end
 
-function createActionSequenceDoer2(actions, options)
+function ActionSequenceDoer.createActionSequenceDoer2(actions, options)
   options = options or {}
   local isRunning = false
   local isActionRunning = false
@@ -36,7 +38,7 @@ function createActionSequenceDoer2(actions, options)
       if not isRunning then
         isRunning = true
 
-        local yielder = createYielder()
+        local yielder = Yielder.createYielder()
 
         while not _hasStopped do
           while index <= #actions do

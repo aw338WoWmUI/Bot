@@ -1,5 +1,10 @@
-Bot = Bot or {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Bot = Modules.determineExportsVariable(addOnName, exports)
+local Boolean, Core = Modules.determineImportVariables('Boolean', 'Core', imports)
+
 Bot.Warrior = {}
+
 local _ = {}
 
 local function retrieveHighestRankSpellID(spellID)
@@ -62,7 +67,7 @@ function _.areConditionsMetToCastCharge()
 end
 
 function _.areConditionsMetToCastBattleShout()
-  local hasBattleShoutBuff = toBoolean(_.retrievePlayerAuraBySpellID(BATTLE_SHOUT))
+  local hasBattleShoutBuff = Boolean.toBoolean(_.retrievePlayerAuraBySpellID(BATTLE_SHOUT))
   return (
     not hasBattleShoutBuff and _.canBeCasted(BATTLE_SHOUT)
   )

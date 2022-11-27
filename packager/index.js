@@ -2,8 +2,10 @@ import { readFile } from '@sanjo/read-file'
 import { open, rm } from 'node:fs/promises'
 import * as path from 'path'
 
-// const entryPointAddOn = 'Bot'
-const entryPointAddOn = 'MeshNet'
+const entryPoints = [
+  'Bot',
+  'MeshNet'
+]
 
 const dependencies = new Map()
 const loadOrder = []
@@ -40,10 +42,12 @@ function addAddOnToLoadOrder(addOn) {
   alreadyLoadedAddOns.add(addOn)
 }
 
-await resolveDependencies(entryPointAddOn)
+for (const entryPointAddOnName of entryPoints) {
+  await resolveDependencies(entryPointAddOnName)
+}
 
 async function generateFile() {
-  const outputPath = 'output2.lua'
+  const outputPath = 'output.lua'
   await rm(outputPath, {
     force: true,
   })

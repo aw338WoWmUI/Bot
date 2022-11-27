@@ -1,5 +1,5 @@
 ## Title: HWT
 ## Interface: 100002
-## Dependencies: Conditionals, HWTRetriever, Boolean, Array, Coroutine
+## Dependencies: Modules, Conditionals, HWTRetriever, Boolean, Array, Coroutine, Object
 
 HWT.lua

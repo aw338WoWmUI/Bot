@@ -1,26 +1,30 @@
-local addOnName, AddOn = ...
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local MeshNet = Modules.determineExportsVariable(addOnName, exports)
+local Core, Function, HWT, Array, Draw = Modules.determineImportVariables('Core', 'Function', 'HWT', 'Array', 'Draw', imports)
 
 local _ = {}
 
+-- TODO: Make variable non-global
 polygon = nil
 
-function showClosestMeshPolygonToPointToShow()
+function MeshNet.showClosestMeshPolygonToPointToShow()
   polygon = Core.retrieveClosestMeshPolygon(Core.createWorldPositionFromPosition(Core.retrieveCurrentContinentID(),
     QuestingPointToShow), 1000, 1000, 1000)
   return polygon
 end
 
-function removeClosestMeshPolygonToPointToShow()
+function MeshNet.removeClosestMeshPolygonToPointToShow()
   _.removeClosestMeshPolygonTo(Core.createWorldPositionFromPosition(Core.retrieveCurrentContinentID(),
     QuestingPointToShow))
 end
 
-function showClosestMeshPolygonToCharacter()
+function MeshNet.showClosestMeshPolygonToCharacter()
   polygon = Core.retrieveClosestMeshPolygon(Core.retrieveCharacterPosition(), 1000, 1000, 1000)
   return polygon
 end
 
-function removeClosestMeshPolygonToCharacter()
+function MeshNet.removeClosestMeshPolygonToCharacter()
   _.removeClosestMeshPolygonTo(Core.retrieveCharacterPosition())
 end
 
@@ -59,7 +63,7 @@ function _.writeRemovedMeshPolygonsToFile()
     'local addOnName, AddOn = ...\n\nAddOn.removedMeshPolygons = ' .. Serialization.valueToString(AddOn.removedMeshPolygons) .. '\n')
 end
 
-doWhenHWTIsLoaded(function()
+HWT.doWhenHWTIsLoaded(function()
   local appSessionToken = HWT.GetAppSessionToken()
   if appSessionToken ~= MeshNetLastPolygonRemovalAppSessionToken then
     MeshNetLastPolygonRemovalAppSessionToken = appSessionToken
@@ -70,7 +74,7 @@ doWhenHWTIsLoaded(function()
 
   Draw.Sync(function()
     if polygon then
-      MeshVisualization.visualizePolygon(
+      MeshNet.visualizePolygon(
         polygon,
         {
           color = { 0, 0, 1, 1 },

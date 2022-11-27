@@ -73,7 +73,7 @@ Movement.canBeFlownFromPointToPoint(Movement.path[18], Movement.path[19])
 
 Movement.canPlayerStandOnPoint(Movement.path[19], { withMount = true })
 
-p = PointToValueMap:new()
+p = Movement.PointToValueMap:new()
 
 p:retrieveValue({ x = 0, y = 0, z = 0})
 
@@ -147,13 +147,13 @@ coroutine.wrap(function () DevTools_Dump(retrievePoints()) end)()
 
 coroutine.wrap(function () Movement.mountOnFlyingMount() end)()
 
-runAsCoroutine(function () DevTools_Dump(retrieveObjectivePoints()) end)
+Coroutine.runAsCoroutine(function () DevTools_Dump(retrieveObjectivePoints()) end)
 
-runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)
+Coroutine.runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)
 
-runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)
+Coroutine.runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)
 
-runAsCoroutine(function () DevTools_Dump(retrieveObjectPoints()) end)
+Coroutine.runAsCoroutine(function () DevTools_Dump(retrieveObjectPoints()) end)
 
 log(QuestieDB:GetQuest(6).Objectives)
 
@@ -185,7 +185,7 @@ Movement.isJumpSituation(savedPosition)
 
 AStar.canPathBeMoved(Movement.path)
 
-Movement.traceLineCollision(Movement.createPointWithZOffset(MovementPath[10], 1), Movement.createPointWithZOffset(MovementPath[10], -1000))
+Core.traceLineCollision(Movement.createPointWithZOffset(MovementPath[10], 1), Movement.createPointWithZOffset(MovementPath[10], -1000))
 
 -- z
 
@@ -204,7 +204,7 @@ pointer = HWT.GetObject('target')
 
 Core.calculateDistanceFromCharacterToObject(pointer)
 
-runAsCoroutine(function () DevTools_Dump(Questing_.retrieveQuestStartPointsFromQuestLines()) end)
+Coroutine.runAsCoroutine(function () DevTools_Dump(Questing_.retrieveQuestStartPointsFromQuestLines()) end)
 
 HWT.IsMapLoaded(Core.receiveMapIDForWhereTheCharacterIsAt())
 
@@ -254,7 +254,7 @@ Movement.canReachWaypointWithCurrentMovementDirection(MovementPath[1])
 
 Movement.canReachWaypointWithCurrentMovementDirection(savedPosition)
 
-runAsCoroutine(function () Movement.facePoint(Core.retrieveObjectPosition('target')) end)
+Coroutine.runAsCoroutine(function () Movement.facePoint(Core.retrieveObjectPosition('target')) end)
 
 Core.findClosestObjectToCharacterWithOneOfObjectIDs(63596)
 
@@ -293,7 +293,7 @@ p = Core.retrieveObjectPointer('target')
 
 C_TooltipInfo.GetUnit(p)
 
-runAsCoroutine(function () DevTools_Dump(retrieveObjectivePoints()) end)
+Coroutine.runAsCoroutine(function () DevTools_Dump(retrieveObjectivePoints()) end)
 
 WorldMapFrame:GetMapID()
 

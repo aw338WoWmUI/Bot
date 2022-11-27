@@ -1,4 +1,7 @@
-local addOnName, AddOn = ...
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local MeshNet = Modules.determineExportsVariable(addOnName, exports)
+local Core, Function, HWT, Array, Draw, Conditionals, Math = Modules.determineImportVariables('Core', 'Function', 'HWT', 'Array', 'Draw', 'Conditionals', 'Math', imports)
 
 local _ = {}
 
@@ -19,7 +22,7 @@ local function addOffMeshConnections(offMeshConnections)
   Array.forEach(offMeshConnections, addOffMeshConnection)
 end
 
-doWhenHWTIsLoaded(function()
+HWT.doWhenHWTIsLoaded(function()
   Core.loadMapForCurrentContinentIfNotLoaded()
 
   Conditionals.doOnceWhen(
@@ -60,7 +63,7 @@ doWhenHWTIsLoaded(function()
         color = { 0, 0, 1, 1 },
         fillColor = { 0, 0, 1, 0.2 }
       }
-      MeshVisualization.visualizePolygon(AddOn.firstOffMeshConnectionPolygon, options)
+      MeshNet.visualizePolygon(AddOn.firstOffMeshConnectionPolygon, options)
     end
 
     if AddOn.secondOffMeshConnectionPolygon then
@@ -68,16 +71,16 @@ doWhenHWTIsLoaded(function()
         color = { 0, 0, 1, 1 },
         fillColor = { 0, 0, 1, 0.2 }
       }
-      MeshVisualization.visualizePolygon(AddOn.secondOffMeshConnectionPolygon, options)
+      MeshNet.visualizePolygon(AddOn.secondOffMeshConnectionPolygon, options)
     end
   end)
 end)
 
-function setFirstOffMeshConnectionPoint()
+function MeshNet.setFirstOffMeshConnectionPoint()
   firstOffMeshConnectionPoint = Core.retrieveCharacterPosition()
 end
 
-function setSecondOffMeshConnectionPoint()
+function MeshNet.setSecondOffMeshConnectionPoint()
   secondOffMeshConnectionPoint = Core.retrieveCharacterPosition()
 end
 
@@ -87,7 +90,7 @@ local function writeOffMeshConnectionsToFile()
     'local addOnName, AddOn = ...\n\nAddOn.offMeshConnections = ' .. Serialization.valueToString(AddOn.offMeshConnections) .. '\n')
 end
 
-function saveOffMeshConnection(isBidirectional, polygonFlags)
+function MeshNet.saveOffMeshConnection(isBidirectional, polygonFlags)
   if isBidirectional == nil then
     isBidirectional = true
   end
@@ -111,7 +114,7 @@ function saveOffMeshConnection(isBidirectional, polygonFlags)
   secondOffMeshConnectionPoint = nil
 end
 
-function removeClosestOffMeshConnection()
+function MeshNet.removeClosestOffMeshConnection()
   local closestOffMeshConnection = AddOn.findClosestOffMeshConnection()
   if closestOffMeshConnection then
     return _.removeOffMeshConnection(closestOffMeshConnection)
@@ -160,15 +163,15 @@ function _.removeOffMeshConnection(connection)
   return HWT.RemoveOffmeshConnection(connection)
 end
 
-function setFirstOffMeshConnectionPolygon()
+function MeshNet.setFirstOffMeshConnectionPolygon()
   AddOn.firstOffMeshConnectionPolygon = _.retrieveClosestPolygon()
 end
 
-function setSecondOffMeshConnectionPolygon()
+function MeshNet.setSecondOffMeshConnectionPolygon()
   AddOn.secondOffMeshConnectionPolygon = _.retrieveClosestPolygon()
 end
 
-function connectPolygons(isBidirectional, polygonFlags)
+function MeshNet.connectPolygons(isBidirectional, polygonFlags)
   if AddOn.firstOffMeshConnectionPolygon and AddOn.secondOffMeshConnectionPolygon then
     local continentID = Core.retrieveCurrentContinentID()
     local vertices1 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.firstOffMeshConnectionPolygon),
@@ -187,7 +190,7 @@ function connectPolygons(isBidirectional, polygonFlags)
         end)
         firstOffMeshConnectionPoint = shortestConnection[1]
         secondOffMeshConnectionPoint = shortestConnection[2]
-        saveOffMeshConnection(isBidirectional, polygonFlags)
+        MeshNet.saveOffMeshConnection(isBidirectional, polygonFlags)
       end
     end
   end

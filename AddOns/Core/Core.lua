@@ -1,4 +1,7 @@
-Core = {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Core = Modules.determineExportsVariable(addOnName, exports)
+local HWT, Boolean, Compatibility, Set, Vector, Array, Logging, Math = Modules.determineImportVariables('HWT', 'Boolean', 'Compatibility', 'Set', 'Vector', 'Array', 'Logging', 'Math', imports)
 
 Core.RANGE_IN_WHICH_OBJECTS_SEEM_TO_BE_SHOWN = 50
 
@@ -163,7 +166,7 @@ function Core.includePointerInObject(objects)
 end
 
 function Core.isCharacterCasting()
-  return toBoolean(UnitCastingInfo('player'))
+  return Boolean.toBoolean(UnitCastingInfo('player'))
 end
 
 local AUTO_ATTACK_SPELL_ID = 6603
@@ -175,7 +178,7 @@ end
 local DRINK_ICON_ID = 132794
 
 function Core.isCharacterDrinking()
-  return toBoolean(Core.findAuraByIcon(DRINK_ICON_ID, 'player'))
+  return Boolean.toBoolean(Core.findAuraByIcon(DRINK_ICON_ID, 'player'))
 end
 
 function Core.findAuraByIcon(icon, unit, filter)
@@ -189,11 +192,11 @@ end
 local FOOD_ICON_ID = 134062
 
 function Core.isCharacterEating()
-  return toBoolean(Core.findAuraByIcon(FOOD_ICON_ID, 'player'))
+  return Boolean.toBoolean(Core.findAuraByIcon(FOOD_ICON_ID, 'player'))
 end
 
 function Core.isCharacterGhost()
-  return toBoolean(UnitIsGhost('player'))
+  return Boolean.toBoolean(UnitIsGhost('player'))
 end
 
 function Core.receiveMapIDForWhereTheCharacterIsAt()
@@ -273,9 +276,9 @@ function Core.retrieveWorldPositionFromMapPosition(mapPosition)
   end
   local continentID, worldPosition = C_Map.GetWorldPosFromMapPos(mapPosition.mapID, mapPosition)
   local z
-  local playerPosition = Movement.retrieveCharacterPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   if Math.euclideanDistance2D(playerPosition, worldPosition) <= MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS then
-    local collisionPoint = Movement.traceLineCollision(
+    local collisionPoint = Core.traceLineCollision(
       Core.createPosition(worldPosition.x, worldPosition.y, MAX_Z),
       Core.createPosition(worldPosition.x, worldPosition.y, MIN_Z)
     )
@@ -680,7 +683,7 @@ function Core.stopMovingForward()
 end
 
 function Core.doesPathExistFromCharacterTo(to, options)
-  return toBoolean(Core.findPathFromCharacterTo(to, options))
+  return Boolean.toBoolean(Core.findPathFromCharacterTo(to, options))
 end
 
 function Core.findPath(from, to, options)
@@ -923,8 +926,8 @@ end
 function Core.useItemByID(itemID, target)
   local itemName = Core.retrieveItemName(itemID)
   Core.useItemByName(itemName, target)
-  waitForDuration(1)
-  waitFor(function()
+  Coroutine.waitForDuration(1)
+  Coroutine.waitFor(function()
     return not Core.isCharacterCasting()
   end)
 end
@@ -996,3 +999,37 @@ function Core.stopMoving()
 	Core.stopMovingForward()
 end
 
+Core.MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS = 330
+
+function Core.isPositionInRangeForTraceLineChecks(position)
+  return Core.calculateDistanceFromCharacterToPosition(position) <= Core.MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS
+end
+
+function Core.traceLine(from, to, hitFlags)
+  if Core.isPositionInRangeForTraceLineChecks(from) then
+    local x, y, z = HWT.TraceLine(
+      from.x,
+      from.y,
+      from.z,
+      to.x,
+      to.y,
+      to.z,
+      hitFlags
+    )
+    if x then
+      return Core.createPosition(x, y, z)
+    else
+      return nil
+    end
+  else
+    return nil
+  end
+end
+
+function Core.traceLineCollision(from, to)
+  return Core.traceLine(from, to, Core.TraceLineHitFlags.COLLISION)
+end
+
+function Core.traceLineWater(from, to)
+  return Core.traceLine(from, to, Core.TraceLineHitFlags.WATER)
+end

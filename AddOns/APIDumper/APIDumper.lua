@@ -1,32 +1,35 @@
-local addOnName, AddOn = ...
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local APIDumper = Modules.determineExportsVariable(addOnName, exports)
+local Serialization, Object, HWTRetriever = Modules.determineImportVariables('Serialization', 'Object', 'HWTRetriever', imports)
 
 local _ = {}
 
 local directory = 'C:/documentation'
 
-function dumpGMRAPIRetail()
+function APIDumper.dumpGMRAPIRetail()
   _.dumpForVersion(GMR, 'GMR', 'documentation_gmr_retail.lua')
 end
 
-function dumpGMRAPIWotLK()
+function APIDumper.dumpGMRAPIWotLK()
   _.dumpForVersion(GMR, 'GMR', 'documentation_gmr_wotlk.lua')
 end
 
-function dumpGMRAPIVanilla()
+function APIDumper.dumpGMRAPIVanilla()
   _.dumpForVersion(GMR, 'GMR', 'documentation_gmr_vanilla.lua')
 end
 
-function dumpHWTAPIRetail()
+function APIDumper.dumpHWTAPIRetail()
   HWTRetriever.putHWTOnTheGlobalScope()
   _.dumpForVersion(HWT, 'HWT', 'documentation_hwt_retail.lua')
 end
 
-function dumpHWTAPIWotLK()
+function APIDumper.dumpHWTAPIWotLK()
   HWTRetriever.putHWTOnTheGlobalScope()
   _.dumpForVersion(HWT, 'HWT', 'documentation_hwt_wotlk.lua')
 end
 
-function dumpHWTAPIVanilla()
+function APIDumper.dumpHWTAPIVanilla()
   HWTRetriever.putHWTOnTheGlobalScope()
    _.dumpForVersion(HWT, 'HWT', 'documentation_hwt_vanilla.lua')
 end

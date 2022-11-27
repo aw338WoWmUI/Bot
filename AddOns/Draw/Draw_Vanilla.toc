@@ -1,6 +1,6 @@
 ## Title: Draw
 ## Interface: 11403
-## Dependency: HWT, Array
+## Dependency: Modules, HWT, Array
 
 LibDraw.lua
 Draw.lua

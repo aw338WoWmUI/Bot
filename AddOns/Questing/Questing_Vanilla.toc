@@ -1,10 +1,9 @@
 ## Title: Questing
 ## Interface: 11403
-## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Function, Yielder, Bot, Draw, Math
+## Dependencies: Modules, Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Function, Yielder, Draw, Math
 ## SavedVariables: exploredObjects
 ## SavedVariablesPerCharacter: QuestingPointToMove, QuestingPointToShow, QuestingOptions, QuestingGoodsVendorNPCs, QuestingSellVendors, QuestingRepairerNPCs
 
-namespace.lua
 Questie.lua
 Database_Classic.lua
 Questing.lua

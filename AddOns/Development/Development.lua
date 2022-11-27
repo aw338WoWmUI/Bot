@@ -1,4 +1,7 @@
-Development = {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Development = Modules.determineExportsVariable(addOnName, exports)
+local Core, Logging = Modules.determineImportVariables('Core', 'Logging', imports)
 
 function Development.logObjectInfo(name)
   name = name or GameTooltipTextLeft1:GetText()

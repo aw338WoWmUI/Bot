@@ -1,5 +1,5 @@
 ## Title: Core
 ## Interface: 30400
-## Dependencies: HWT, Boolean, Compatibility, Movement, AStar, Set, Vector, Array, Logging, Math
+## Dependencies: Modules, HWT, Boolean, Compatibility, Set, Vector, Array, Logging, Math
 
 Core.lua

@@ -1,4 +1,7 @@
-Questing = Questing or {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Questing = Modules.determineExportsVariable(addOnName, exports)
+local Array, Object, Coroutine, Movement, Compatibility, HWT, Core = Modules.determineImportVariables('Array', 'Object', 'Coroutine', 'Movement', 'Compatibility', 'HWT', 'Core', imports)
 
 INTERACT_DISTANCE = 5.3
 
@@ -196,7 +199,7 @@ function waitForPlayerToHaveArrivedAtDockInStormwind()
 end
 
 function waitForShipToHaveArrivedAtStormwind()
-  waitFor(function()
+  Coroutine.waitFor(function()
     local objectGUID = Core.findClosestObjectToCharacterWithOneOfObjectIDs(25013)
     if objectGUID then
       local position = Core.retrieveObjectPosition(objectGUID)

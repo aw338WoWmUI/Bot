@@ -1,4 +1,8 @@
-Questing = Questing or {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Questing = Modules.determineExportsVariable(addOnName, exports)
+local Array, Set, Boolean = Modules.determineImportVariables('Array', 'Set', 'Boolean', imports)
+
 Questing.Database = {}
 
 questLookup = {}
@@ -61,7 +65,7 @@ end
 local questGiverIDsSet = Set.create(questGiverIDs)
 
 function Questing.Database.isQuestGiver(npcID)
-  return toBoolean(questGiverIDsSet[npcID])
+  return Boolean.toBoolean(questGiverIDsSet[npcID])
 end
 
 local turnInNPCIDs = Set.create(Array.map(quests, function(quest)
@@ -69,7 +73,7 @@ local turnInNPCIDs = Set.create(Array.map(quests, function(quest)
 end))
 
 function Questing.Database.isTurnInNPC(npcID)
-  return toBoolean(turnInNPCIDs[npcID])
+  return Boolean.toBoolean(turnInNPCIDs[npcID])
 end
 
 local npcLocations = {}

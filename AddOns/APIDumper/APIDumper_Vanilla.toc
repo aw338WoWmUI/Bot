@@ -1,6 +1,6 @@
 ## Title: API Dumper
 ## Interface: 11403
-## Dependencies: Serialization, Object, HWTRetriever
+## Dependencies: Modules, Serialization, Object, HWTRetriever
 
 APIDocumentation.lua
 APIDumper.lua

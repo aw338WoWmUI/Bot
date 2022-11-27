@@ -1,9 +1,13 @@
-Movement = {}
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Movement = Modules.determineExportsVariable(addOnName, exports)
+local Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Draw, Float, Core = Modules.determineImportVariables('Boolean', 'ActionSequenceDoer', 'Array', 'Coroutine', 'Math', 'Vector', 'HWT', 'Draw', 'Float', 'Core', imports)
 
 local _ = {}
 
-Movement_ = _
+-- Movement_ = _
 
+-- TODO: Remove globals
 position1 = nil
 position2 = nil
 aStarPoints = nil
@@ -20,11 +24,10 @@ local TARGET_LIFT_HEIGHT = TOLERANCE_RANGE
 Movement.MAXIMUM_AIR_HEIGHT = 5000
 local walkToPoint = nil
 local MAXIMUM_WATER_DEPTH_FOR_WALKING = 1.4872055053711
-canBeStoodOnPointCache = PointToValueMap:new()
-local canBeStoodWithMountOnPointCache = PointToValueMap:new()
+canBeStoodOnPointCache = Movement.PointToValueMap:new()
+local canBeStoodWithMountOnPointCache = Movement.PointToValueMap:new()
 local DISTANCE = GRID_LENGTH
 local FEMALE_HUMAN_CHARACTER_HEIGHT = 1.970519900322
-Movement.MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS = 330
 lines = {}
 
 local cache = {}
@@ -73,7 +76,7 @@ function Movement.retrievePointFromCache(x, y, z)
   end
 end
 
-doWhenHWTIsLoaded(function()
+HWT.doWhenHWTIsLoaded(function()
   Draw.Sync(function()
     Array.forEach(lines, function(line)
       local a = line[1]
@@ -153,7 +156,7 @@ end
 
 function Movement.savePosition()
   local playerPosition = Core.retrieveCharacterPosition()
-  savedPosition = createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
+  savedPosition = Movement.createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
 function Movement.positionInFrontOfPlayer(distance, deltaZ)
@@ -181,7 +184,7 @@ function Movement.calculateIsObstacleInFrontToPosition(position)
 end
 
 function Movement.isObstacleInFront(position)
-  position1 = createPoint(
+  position1 = Movement.createPoint(
     position.x,
     position.y,
     position.z + zOffset
@@ -192,7 +195,7 @@ end
 
 function Movement.canWalkTo(position)
   local playerPosition = Core.retrieveCharacterPosition()
-  local fromPosition = createPoint(
+  local fromPosition = Movement.createPoint(
     playerPosition.x,
     playerPosition.y,
     playerPosition.z + zOffset
@@ -306,13 +309,13 @@ function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
     local x, y, z = point2.x, point2.y, point2.z
 
     if not (Movement.isPointInDeepWater(point1) and Movement.isPointInDeepWater(point2)) then
-      local z = Movement.retrieveGroundZ(createPoint(point2.x, point2.y, point1.z))
+      local z = Movement.retrieveGroundZ(Movement.createPoint(point2.x, point2.y, point1.z))
 
       if not z then
         return false
       end
 
-      point2 = createPoint(x, y, z)
+      point2 = Movement.createPoint(x, y, z)
 
       local maximumDeltaZ = _.determineMaximumDeltaZ(point1, point2)
 
@@ -378,7 +381,7 @@ end
 function Movement.retrieveCharacterPosition()
   local characterPosition = Core.retrieveCharacterPosition()
   if characterPosition then
-    return createPoint(characterPosition.x, characterPosition.y, characterPosition.z)
+    return Movement.createPoint(characterPosition.x, characterPosition.y, characterPosition.z)
   else
     return nil
   end
@@ -434,7 +437,7 @@ end
 function _.canPlayerBeOnPoint2(point, options)
   options = options or {}
 
-  if Movement.isPositionInRangeForTraceLineChecks(point) then
+  if Core.isPositionInRangeForTraceLineChecks(point) then
     local pointALittleBitAbove = Movement.traceLineCollisionWithFallback(
       Movement.createPointWithZOffset(point, TOLERANCE_RANGE),
       point
@@ -485,7 +488,7 @@ end
 function Movement.canPlayerStandOnPoint(point, options)
   options = options or {}
 
-  if Movement.isPositionInRangeForTraceLineChecks(point) then
+  if Core.isPositionInRangeForTraceLineChecks(point) then
     if options.withMount then
       local value = canBeStoodWithMountOnPointCache:retrieveValue(point)
       if value ~= nil then
@@ -552,7 +555,7 @@ end
 local EXPERT_RIDING = 34092
 
 function Movement.canCharacterFly()
-  return toBoolean(IsSpellKnown(EXPERT_RIDING) and Movement.isAFlyingMountAvailable())
+  return Boolean.toBoolean(IsSpellKnown(EXPERT_RIDING) and Movement.isAFlyingMountAvailable())
 end
 
 function Movement.receiveAvailableMountIDs()
@@ -632,15 +635,15 @@ function Movement.isGroundMount(mountID)
 end
 
 function Movement.retrieveGroundZ(position)
-  local position1 = createPoint(position.x, position.y, position.z + Movement.MAXIMUM_JUMP_HEIGHT)
-  local position2 = createPoint(position.x, position.y, position.z - 10)
+  local position1 = Movement.createPoint(position.x, position.y, position.z + Movement.MAXIMUM_JUMP_HEIGHT)
+  local position2 = Movement.createPoint(position.x, position.y, position.z - 10)
   local collisionPoint = Movement.traceLineCollisionWithFallback(position1, position2)
   if not collisionPoint then
     -- There seemed to be one case where no z was returned at a position, even though it looked like that there was
     -- a surface.
     local offset = 0.6
-    position1 = createPoint(position1.x + offset, position1.y + offset, position.z)
-    position2 = createPoint(position2.x + offset, position2.y + offset, position2.z)
+    position1 = Movement.createPoint(position1.x + offset, position1.y + offset, position.z)
+    position2 = Movement.createPoint(position2.x + offset, position2.y + offset, position2.z)
     collisionPoint = Movement.traceLineCollisionWithFallback(position1, position2)
   end
 
@@ -652,11 +655,7 @@ function Movement.retrieveGroundZ(position)
 end
 
 function Movement.isPositionFarerAwayThanMaxiumRangeForTraceLineChecks(position)
-  return not Movement.isPositionInRangeForTraceLineChecks(position)
-end
-
-function Movement.isPositionInRangeForTraceLineChecks(position)
-  return Core.calculateDistanceFromCharacterToPosition(position) <= Movement.MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS
+  return not Core.isPositionInRangeForTraceLineChecks(position)
 end
 
 function Movement.retrieveGroundZ2(position)
@@ -674,7 +673,7 @@ function Movement.thereAreCollisions(a, b, track)
     table.insert(lines, { a, b })
   end
   local collisionPoint = Movement.traceLineCollisionWithFallback(a, b)
-  return toBoolean(collisionPoint)
+  return Boolean.toBoolean(collisionPoint)
 end
 
 function Movement.thereAreZeroCollisions(a, b, track)
@@ -748,7 +747,7 @@ end
 
 function Movement.generateMiddlePoint(fromPosition, offsetX, offsetY)
   local point2 = Movement.closestPointOnGrid(
-    createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
+    Movement.createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
   local isInAir = Movement.isPointInAir(point2)
   if isInAir and Movement.canCharacterFly() then
@@ -763,18 +762,18 @@ function Movement.generateMiddlePoint(fromPosition, offsetX, offsetY)
     return point2
   else
     local point = Movement.closestPointOnGridWithZLeft(
-      createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
+      Movement.createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
     )
     local z2 = Movement.retrieveGroundZ(point)
     if z2 == nil then
       return nil
     end
-    return createPoint(point.x, point.y, z2)
+    return Movement.createPoint(point.x, point.y, z2)
   end
 end
 
 function Movement.generateAbovePoint(fromPosition, offsetX, offsetY)
-  local point = createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
+  local point = Movement.createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   return {
     x = point.x,
     y = point.y,
@@ -784,7 +783,7 @@ function Movement.generateAbovePoint(fromPosition, offsetX, offsetY)
 end
 
 function Movement.generateBelowPoint(fromPosition, offsetX, offsetY)
-  local point = createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
+  local point = Movement.createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   return {
     x = point.x,
     y = point.y,
@@ -798,19 +797,19 @@ function Movement.generatePoint(fromPosition, distance, angle)
 end
 
 function Movement.receiveWaterSurfacePoint(point)
-  local waterSurfacePoint = Movement.traceLineWater(Movement.createPointWithZOffset(point, MAXIMUM_WATER_DEPTH), point)
+  local waterSurfacePoint = Core.traceLineWater(Movement.createPointWithZOffset(point, MAXIMUM_WATER_DEPTH), point)
   if waterSurfacePoint then
     return waterSurfacePoint
   else
     position1 = point
     position2 = Movement.createPointWithZOffset(point, -Movement.MAXIMUM_AIR_HEIGHT)
-    return Movement.traceLineWater(point, Movement.createPointWithZOffset(point, -Movement.MAXIMUM_AIR_HEIGHT))
+    return Core.traceLineWater(point, Movement.createPointWithZOffset(point, -Movement.MAXIMUM_AIR_HEIGHT))
   end
 end
 
 function Movement.isPointInWater(point)
   local waterSurfacePoint = Movement.receiveWaterSurfacePoint(point)
-  return toBoolean(waterSurfacePoint and waterSurfacePoint.z >= point.z)
+  return Boolean.toBoolean(waterSurfacePoint and waterSurfacePoint.z >= point.z)
 end
 
 function Movement.isPointInOrSlightlyAboveWater(point)
@@ -849,7 +848,7 @@ end
 
 function Movement.retrieveGroundPointInWater(point)
   local deepPoint = Movement.createPointWithZOffset(point, -MAXIMUM_WATER_DEPTH)
-  local collisionPoint = Movement.traceLineCollision(point, deepPoint)
+  local collisionPoint = Core.traceLineCollision(point, deepPoint)
   if collisionPoint then
     return collisionPoint
   else
@@ -899,7 +898,7 @@ function Movement.generatePointsAround(position, distance, numberOfAngles)
 end
 
 function Movement.createPointWithZOffset(point, zOffset)
-  return createPoint(point.x, point.y, point.z + zOffset)
+  return Movement.createPoint(point.x, point.y, point.z + zOffset)
 end
 
 function Movement.generateNeighborPointsAround(position, distance)
@@ -947,7 +946,7 @@ function Movement.canBeGroundMounted()
 end
 
 function Movement.canMountOnFlyingMount()
-  return toBoolean(
+  return Boolean.toBoolean(
     Core.isCharacterAlive() and
       Movement.canBeFlown() and
       Movement.isAFlyingMountAvailable() and
@@ -958,7 +957,7 @@ function Movement.canMountOnFlyingMount()
 end
 
 function Movement.canMountOnGroundMount()
-  return toBoolean(
+  return Boolean.toBoolean(
     Core.isCharacterAlive() and
       Movement.canBeGroundMounted() and
       Movement.isAGroundMountAvailable() and
@@ -1226,7 +1225,7 @@ function Movement.determinePointHeighEnoughToStayInAir(waypoint)
   local playerPosition = Movement.retrieveCharacterPosition()
   local length = Math.euclideanDistance(playerPosition, waypoint)
   local traceLineTargetPoint = Movement.positionInFrontOfPlayer(length, 0)
-  local point = Movement.traceLineCollision(playerPosition, traceLineTargetPoint)
+  local point = Core.traceLineCollision(playerPosition, traceLineTargetPoint)
   if point then
     return Movement.createPointWithZOffset(point, TARGET_LIFT_HEIGHT)
   else
@@ -1304,7 +1303,7 @@ function Movement.findPathToSavedPosition()
     Movement.path = findPathToSavedPosition2()
     MovementPath = Movement.path
   end)
-  return resumeWithShowingError(thread)
+  return Coroutine.resumeWithShowingError(thread)
 end
 
 function Movement.findPathToQuestingPointToMove()
@@ -1312,7 +1311,7 @@ function Movement.findPathToQuestingPointToMove()
     Movement.path = _.findPathToSavedPosition3()
     MovementPath = Movement.path
   end)
-  return resumeWithShowingError(thread)
+  return Coroutine.resumeWithShowingError(thread)
 end
 
 function _.findPathToSavedPosition3()
@@ -1334,7 +1333,7 @@ function Movement.moveToSavedPosition()
       Movement.movePath(path)
     end
   end)
-  return resumeWithShowingError(thread)
+  return Coroutine.resumeWithShowingError(thread)
 end
 
 function Movement.moveCloserTo(x, y, z)
@@ -1355,7 +1354,7 @@ end
 
 function Movement.determineStartPosition()
   local playerPosition = Core.retrieveCharacterPosition()
-  return createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
+  return Movement.createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
 local pathMover = nil
@@ -1391,11 +1390,11 @@ function Movement.isMountedOn(mountID)
 end
 
 function Movement.waitForDismounted()
-  return waitFor(Movement.isDismounted)
+  return Coroutine.waitFor(Movement.isDismounted)
 end
 
 function Movement.waitForMounted()
-  waitFor(function()
+  Coroutine.waitFor(function()
     return IsMounted()
   end)
 end
@@ -1446,9 +1445,9 @@ function Movement.mountOnMount(mountID)
     if spellName then
       Core.castSpellByName(spellName)
       -- There seems to be some buildings where `IsOutdoors()` returns `true` and there cannot be flown (one found in Bastion).
-      waitForDuration(1)
+      Coroutine.waitForDuration(1)
       -- With this check we check if the casting works.
-      local isCasting = toBoolean(UnitCastingInfo('player'))
+      local isCasting = Boolean.toBoolean(UnitCastingInfo('player'))
       if isCasting then
         Movement.waitForMounted()
       end
@@ -1457,11 +1456,11 @@ function Movement.mountOnMount(mountID)
 end
 
 function Movement.waitForIsInAir()
-  return waitFor(Movement.isCharacterInTheAir)
+  return Coroutine.waitFor(Movement.isCharacterInTheAir)
 end
 
 function Movement.waitForIsInAirOrDismounted(timeout)
-  return waitFor(function()
+  return Coroutine.waitFor(function()
     return Movement.isCharacterInTheAir() or Movement.isDismounted()
   end, timeout)
 end
@@ -1495,7 +1494,7 @@ function Movement.createPathFinder()
 end
 
 function Movement.waitForPlayerStandingStill()
-  return waitFor(function()
+  return Coroutine.waitFor(function()
     return not Core.isCharacterMoving()
   end)
 end
@@ -1518,7 +1517,7 @@ end
 
 local function retrievePoint(pointIndex)
   local point = MovementSavedVariables.points[pointIndex]
-  return createPoint(point.x, point.y, point.z)
+  return Movement.createPoint(point.x, point.y, point.z)
 end
 
 local function _retrieveNeighbor(pointIndex)
@@ -1532,9 +1531,9 @@ function Movement.retrieveConnections(pointIndex)
       local point = retrievePoint(connection[1])
       if connection[2] then
         if connection[3] then
-          return createPointWithPathToAndObjectID(point.x, point.y, point.z, connection[2], connection[3])
+          return Movement.createPointWithPathToAndObjectID(point.x, point.y, point.z, connection[2], connection[3])
         else
-          return createPointWithPathTo(point.x, point.y, point.z, connection[2])
+          return Movement.createPointWithPathTo(point.x, point.y, point.z, connection[2])
         end
       end
     end)
@@ -1663,14 +1662,14 @@ function Movement.findPathInner(from, to, toleranceDistance, a)
   --DevTools_Dump(points)
   --aStarPoints = points
 
-  -- local yielder = createYielder()
-  local yielder = createYielderWithTimeTracking(1 / 60)
+  -- local yielder = Yielder.createYielder()
+  local yielder = Yielder.createYielderWithTimeTracking(1 / 60)
   Movement.yielder = yielder
 
   local path = nil
   local subPathWhichHasBeenGeneratedFromMovementPoints = nil
 
-  path, subPathWhichHasBeenGeneratedFromMovementPoints = findPath(
+  path, subPathWhichHasBeenGeneratedFromMovementPoints = AStar.findPath(
     from,
     to,
     receiveNeighborPoints,
@@ -1705,7 +1704,7 @@ function Movement.receiveNeighborPoints(point, distance)
     neighborPointsRetrievedFromInGameMesh = Movement.generateNeighborPoints(point, distance)
     Movement.storeNeighbors(pointIndex, neighborPointsRetrievedFromInGameMesh)
   end
-  local pointToConnectionPoint = PointToValueMap:new()
+  local pointToConnectionPoint = Movement.PointToValueMap:new()
   Array.forEach(connections2, function(point)
     pointToConnectionPoint:setValue(point, point)
   end)
@@ -1735,7 +1734,7 @@ function Movement.movePath(path, options)
   }
   local pathLength = #path
   local totalDistance = Core.calculatePathLength(path)
-  pathMover = createActionSequenceDoer2(
+  pathMover = ActionSequenceDoer.createActionSequenceDoer2(
     Array.map(path, function(waypoint, index)
       return Movement.createMoveToAction3(waypoint, a, totalDistance, index == pathLength, index,
         path)
@@ -1794,7 +1793,7 @@ function Movement.stopPathFindingAndMoving()
 end
 
 local function isPathFinding()
-  return toBoolean(pathFinder)
+  return Boolean.toBoolean(pathFinder)
 end
 
 local function isDifferentPathFindingRequestThanRun(to)
@@ -1844,8 +1843,8 @@ function Movement.moveTo(to, options)
 end
 
 local function moveToFromNonCoroutine(x, y, z)
-  runAsCoroutine(function()
-    Movement.moveTo(createPoint(x, y, z))
+  Coroutine.runAsCoroutine(function()
+    Movement.moveTo(Movement.createPoint(x, y, z))
   end)
 end
 
@@ -1854,7 +1853,7 @@ end
 
 function Movement.waitForPlayerToBeOnPosition(position, radius)
   radius = radius or 3
-  waitFor(function()
+  Coroutine.waitFor(function()
     return Core.isCharacterCloseToPosition(position, radius)
   end)
 end
@@ -1915,7 +1914,7 @@ function Movement.face(retrieveTargetAngles, stop)
     HWT.SetPitch(pitch)
   end
 
-  waitUntil(function()
+  Coroutine.waitUntil(function()
     return not HWT.IsFacingSmoothly()
   end)
 end
@@ -1923,7 +1922,7 @@ end
 function _.waitForCharacterToHaveStoppedRotating()
   local previousCharacterYaw = nil
   local previousCharacterPitch = nil
-  waitFor(function()
+  Coroutine.waitFor(function()
     local characterYaw = HWT.ObjectFacing('player')
     local characterPitch = HWT.UnitPitch('player')
 
@@ -1939,7 +1938,7 @@ function _.waitForCharacterToHaveStoppedRotating()
 end
 
 function Movement.closestPointOnGrid(point)
-  return createPoint(
+  return Movement.createPoint(
     Movement.closestCoordinateOnGrid(point.x),
     Movement.closestCoordinateOnGrid(point.y),
     Movement.closestCoordinateOnGrid(point.z)
@@ -1947,7 +1946,7 @@ function Movement.closestPointOnGrid(point)
 end
 
 function Movement.closestPointOnGridWithZLeft(point)
-  return createPoint(
+  return Movement.createPoint(
     Movement.closestCoordinateOnGrid(point.x),
     Movement.closestCoordinateOnGrid(point.y),
     point.z
@@ -1956,7 +1955,7 @@ end
 
 function Movement.closestPointOnGridWithZOnGround(point)
   point = Movement.closestPointOnGridWithZLeft(point)
-  return createPoint(
+  return Movement.createPoint(
     point.x,
     point.y,
     Movement.retrieveGroundZ(point)
@@ -1979,33 +1978,12 @@ function Movement.moveToSavedPath()
   local thread = coroutine.create(function()
     Movement.movePath(path)
   end)
-  return resumeWithShowingError(thread)
-end
-
-function Movement.traceLine(from, to, hitFlags)
-  if Movement.isPositionInRangeForTraceLineChecks(from) then
-    local x, y, z = HWT.TraceLine(
-      from.x,
-      from.y,
-      from.z,
-      to.x,
-      to.y,
-      to.z,
-      hitFlags
-    )
-    if x then
-      return createPoint(x, y, z)
-    else
-      return nil
-    end
-  else
-    return nil
-  end
+  return Coroutine.resumeWithShowingError(thread)
 end
 
 function Movement.traceLineCollisionWithFallback(from, to)
-  if Movement.isPositionInRangeForTraceLineChecks(from) and Movement.isPositionInRangeForTraceLineChecks(from) then
-    return Movement.traceLine(from, to, Core.TraceLineHitFlags.COLLISION)
+  if Core.isPositionInRangeForTraceLineChecks(from) and Core.isPositionInRangeForTraceLineChecks(from) then
+    return Core.traceLine(from, to, Core.TraceLineHitFlags.COLLISION)
   elseif Float.seemsCloseBy(from.x, to.x) and Float.seemsCloseBy(from.y, to.y) then
     local x = from.x
     local y = from.y
@@ -2038,18 +2016,10 @@ end
 function Movement.retrieveClosestPointOnMesh(position)
   local x, y, z = HWT.GetClosestPositionOnMesh(position.continentID, position.x, position.y, position.z)
   if x and y and z then
-    return createPoint(x, y, z)
+    return Movement.createPoint(x, y, z)
   else
     return nil
   end
-end
-
-function Movement.traceLineCollision(from, to)
-  return Movement.traceLine(from, to, Core.TraceLineHitFlags.COLLISION)
-end
-
-function Movement.traceLineWater(from, to)
-  return Movement.traceLine(from, to, Core.TraceLineHitFlags.WATER)
 end
 
 function Movement.retrievePositionBetweenPositions(a, b, distanceFromA)
@@ -2060,7 +2030,7 @@ function Movement.generateWalkToPointFromCollisionPoint(from, collisionPoint)
   local pointWithDistanceToCollisionPoint = Movement.retrievePositionBetweenPositions(collisionPoint, from,
     Core.retrieveCharacterBoundingRadius())
   local z = Movement.retrieveGroundZ(pointWithDistanceToCollisionPoint)
-  return createPoint(pointWithDistanceToCollisionPoint.x, pointWithDistanceToCollisionPoint.y, z)
+  return Movement.createPoint(pointWithDistanceToCollisionPoint.x, pointWithDistanceToCollisionPoint.y, z)
 end
 
 function Movement.isFirstPointCloserToThanSecond(fromA, fromB, to)
@@ -2073,7 +2043,7 @@ function Movement.findClosestPointThatCanBeWalkedTo(from, to)
     local pointOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(walkToPoint,
       Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
     local destinationOnMaximumWalkUpToHeight = Movement.createPointWithZOffset(to, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
-    local collisionPoint = Movement.traceLineCollision(pointOnMaximumWalkUpToHeight, destinationOnMaximumWalkUpToHeight)
+    local collisionPoint = Core.traceLineCollision(pointOnMaximumWalkUpToHeight, destinationOnMaximumWalkUpToHeight)
     if collisionPoint then
       local potentialWalkToPoint = Movement.generateWalkToPointFromCollisionPoint(pointOnMaximumWalkUpToHeight,
         collisionPoint)
@@ -2093,7 +2063,7 @@ end
 
 function Movement.moveTowards(x, y, z)
   local playerPosition = Movement.retrieveCharacterPosition()
-  local destination = createPoint(x, y, z)
+  local destination = Movement.createPoint(x, y, z)
   local walkToPoint = Movement.findClosestPointThatCanBeWalkedTo(playerPosition, destination)
 
   if walkToPoint ~= playerPosition then
@@ -2105,7 +2075,7 @@ function Movement.moveTowardsSavedPosition()
   local thread = coroutine.create(function()
     Movement.moveTowards(savedPosition.x, savedPosition.y, savedPosition.z)
   end)
-  return resumeWithShowingError(thread)
+  return Coroutine.resumeWithShowingError(thread)
 end
 
 function Movement.havePointsSameCoordinates(a, b)
@@ -2145,10 +2115,10 @@ function Movement.initializeSavedVariables()
     MovementSavedVariables.points = {}
   end
   if not MovementSavedVariables.pointIndexes then
-    MovementSavedVariables.pointIndexes = PointToValueMap:new()
+    MovementSavedVariables.pointIndexes = Movement.PointToValueMap:new()
   else
     local pointIndexes = MovementSavedVariables.pointIndexes
-    MovementSavedVariables.pointIndexes = PointToValueMap:new()
+    MovementSavedVariables.pointIndexes = Movement.PointToValueMap:new()
     MovementSavedVariables.pointIndexes._values = pointIndexes._values
   end
   if not MovementSavedVariables.nextPointIndex then
@@ -2192,7 +2162,7 @@ end
 function findPathE5()
   local continentID = Movement.retrieveContinentID()
   local playerPosition = Movement.retrieveCharacterPosition()
-  local start = createPoint(HWT.GetClosestPositionOnMesh(continentID, playerPosition.x, playerPosition.y,
+  local start = Movement.createPoint(HWT.GetClosestPositionOnMesh(continentID, playerPosition.x, playerPosition.y,
     playerPosition.z))
   local path = HWT.FindPath(continentID, start.x, start.y, start.z, QuestingPointToMove.x, QuestingPointToMove.y,
     QuestingPointToMove.z, false, 1024, 0, 1, false)
@@ -2221,17 +2191,17 @@ function _.doWhenAddOnHasBeenLoaded()
   -- TODO: Continent ID
 
   Movement.addConnectionFromTo(
-    createPoint(
+    Movement.createPoint(
       -1728,
       1284,
       5451.509765625
     ),
-    createPoint(
+    Movement.createPoint(
       -1728.5428466797,
       1283.0802001953,
       5451.509765625
     ),
-    createPoint(
+    Movement.createPoint(
       -4357.6801757812,
       800.40002441406,
       -40.990001678467
@@ -2239,17 +2209,17 @@ function _.doWhenAddOnHasBeenLoaded()
   )
 
   Movement.addConnectionFromToWithInteractable(
-    createPoint(
+    Movement.createPoint(
       -4366,
       814,
       -40.849704742432
     ),
-    createPoint(
+    Movement.createPoint(
       -4366.2514648438,
       813.20324707031,
       -40.817531585693
     ),
-    createPoint(
+    Movement.createPoint(
       -4357.6801757812,
       800.40002441406,
       -40.990001678467

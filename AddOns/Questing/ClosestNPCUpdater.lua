@@ -1,3 +1,8 @@
+local addOnName, AddOn, exports, imports = ...
+local Modules = imports and imports.Modules or _G.Modules
+local Questing = Modules.determineExportsVariable(addOnName, exports)
+local Array, Set, Movement, HWT, Core = Modules.determineImportVariables('Array', 'Set', 'Movement', 'HWT', 'Core', imports)
+
 local _ = {}
 
 local unavailableGoodsVendorNPCs = Set.create()
@@ -106,7 +111,7 @@ function _.buildNPCsLookupTables()
   QuestingRepairerNPCs = {}
 
   --print('Building NPC lookup tables...')
-  --local yielder = createYielderWithTimeTracking(1 / 60)
+  --local yielder = Yielder.createYielderWithTimeTracking(1 / 60)
   --
   --for NPC in Questing.Database.createNPCsIterator() do
   --  local position = retrieveNPCPosition(NPC)
@@ -140,9 +145,9 @@ function _.buildNPCsLookupTables()
 end
 
 if not QuestingGoodsVendorNPCs or not QuestingSellVendors or not QuestingRepairerNPCs then
-  doWhenHWTIsLoaded(_.buildNPCsLookupTables)
+  HWT.doWhenHWTIsLoaded(_.buildNPCsLookupTables)
 end
 
-doWhenHWTIsLoaded(function()
+HWT.doWhenHWTIsLoaded(function()
   _.updateNPCPositionsToClosest()
 end)
