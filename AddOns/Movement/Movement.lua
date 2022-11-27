@@ -2256,7 +2256,7 @@ HWT.doWhenHWTIsLoaded(function()
         end
         Draw.SetColorRaw(unpack(color))
         local point = path[index]
-        Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
+        Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius() or 0.5)
       end
     end
 
