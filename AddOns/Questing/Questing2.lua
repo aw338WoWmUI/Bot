@@ -1,8 +1,11 @@
 local addOnName, AddOn, exports, imports = ...
 local Modules = imports and imports.Modules or _G.Modules
+--- @class Questing
 local Questing = Modules.determineExportsVariable(addOnName, exports)
-local Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Yielder, Draw, Math = Modules.determineImportVariables('Array',
-  'Set', 'Object', 'Coroutine', 'Boolean', 'Movement', 'Tooltips', 'Events', 'Compatibility', 'HWT', 'Unlocker', 'Core',
+--- @type Core
+local Core = Modules.determineImportVariable('Core', imports)
+local Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Yielder, Draw, Math = Modules.determineImportVariables('Array',
+  'Set', 'Object', 'Coroutine', 'Boolean', 'Movement', 'Tooltips', 'Events', 'Compatibility', 'HWT', 'Unlocker',
   'Yielder', 'Draw', 'Math', imports)
 
 local _ = {}
@@ -552,6 +555,11 @@ local function generateQuestStartPointsFromStarters(quest)
     -- print('Missing quest starter IDs for quest "' .. quest.id .. '".')
     return {}
   end
+end
+
+local function retrieveAttackerPoints()
+  local attackers = Array.filter(Core.retrieveObjectPointers(), Core.isUnitAttackingTheCharacter)
+  return convertObjectPointersToObjectPoints(attackers, 'attacker')
 end
 
 function retrieveQuestStartPoints()
@@ -1137,6 +1145,10 @@ local function determineClosestPoint(points)
 end
 
 local function determinePointToGo(points)
+  if Array.hasElements(points.attackerPoints) then
+    return determineClosestPoint(points.attackerPoints)
+  end
+
   local maxCloseDistance = 50
 
   local function isPointClose(point)
@@ -1647,6 +1659,8 @@ local function moveToPoint(point)
   elseif point.type == 'discoverFlightMaster' then
     AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
     Questing.Coroutine.interactWithObject(point.pointer)
+  elseif point.type == 'attacker' then
+    Questing.Coroutine.doMob(point.pointer)
   else
     print('moveToPoint', point.x, point.y, point.z)
     AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
@@ -1884,6 +1898,10 @@ end
 function retrievePoints()
   local yielder = Yielder.createYielderWithTimeTracking(1 / 60)
 
+  local attackerPoints = retrieveAttackerPoints()
+  if yielder.hasRanOutOfTime() then
+    yielder.yield()
+  end
   local questStartPoints = retrieveQuestStartPoints()
   if yielder.hasRanOutOfTime() then
     yielder.yield()
@@ -1906,6 +1924,7 @@ function retrievePoints()
     end
   end
   local points = {
+    attackerPoints = attackerPoints,
     questStartPoints = questStartPoints,
     objectivePoints = objectivePoints,
     objectPoints = objectPoints,
@@ -2136,6 +2155,8 @@ function _.run ()
   local yielder = Yielder.createYielder()
 
   while true do
+    _.talents()
+
     local time = GetTime()
     for key, value in pairs(recentlyVisitedObjectivePoints) do
       if time - value.time > 60 then
@@ -2354,4 +2375,10 @@ function testHandleObjective()
     questIDs = {}
   }
   return Questing.handleObjective(point)
+end
+
+function _.talents()
+  if not Core.isCharacterInCombat and C_ClassTalents.GetNextStarterBuildPurchase() then
+    ClassTalentFrame.TalentsTab:LoadConfigInternal(Constants.TraitConsts.STARTER_BUILD_TRAIT_CONFIG_ID, true, true)
+  end
 end

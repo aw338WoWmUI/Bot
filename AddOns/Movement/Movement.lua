@@ -1055,7 +1055,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     isDone = function()
       return (
         Core.isCharacterCloseToPosition(waypoint, TOLERANCE_RANGE) or
-          ((isLastWaypoint or Core.isCharacterSwimming()) and _.isPointCloseToCharacterWithZTolerance(waypoint))
+          _.isPointCloseToCharacterWithZTolerance(waypoint)
       )
     end,
     shouldCancel = function()

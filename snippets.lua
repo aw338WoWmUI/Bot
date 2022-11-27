@@ -356,3 +356,5 @@ Movement.isPointInDeepWater(Movement.savedVariables.perCharacter.MovementPath[8]
 Movement.canPlayerStandOnPoint(Movement.savedVariables.perCharacter.MovementPath[8])
 Movement.isPointInWater(Movement.savedVariables.perCharacter.MovementPath[8])
 Movement.canPlayerStandOnPoint(Movement.savedVariables.perCharacter.MovementPath[8])
+
+Coroutine.runAsCoroutine(function () print(talents()) end)
