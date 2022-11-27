@@ -1254,7 +1254,7 @@ end
 
 function _.findPathToSavedPosition3()
   local from = Movement.retrieveCharacterPosition()
-  local to = QuestingPointToMove
+  local to = Questing.savedVariables.perCharacter.Questing.savedVariables.perCharacter.QuestingPointToMove
   pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
   Movement.path = path
@@ -2080,7 +2080,7 @@ function findPathE3()
 end
 
 function findPathE4()
-  local path = Core.findPathFromCharacterTo(QuestingPointToMove)
+  local path = Core.findPathFromCharacterTo(Questing.savedVariables.perCharacter.QuestingPointToMove)
   Movement.path = path
   AddOn.savedVariables.accountWide.MovementPath = Movement.path
 end
@@ -2090,8 +2090,8 @@ function findPathE5()
   local playerPosition = Movement.retrieveCharacterPosition()
   local start = Movement.createPoint(HWT.GetClosestPositionOnMesh(continentID, playerPosition.x, playerPosition.y,
     playerPosition.z))
-  local path = HWT.FindPath(continentID, start.x, start.y, start.z, QuestingPointToMove.x, QuestingPointToMove.y,
-    QuestingPointToMove.z, false, 1024, 0, 1, false)
+  local path = HWT.FindPath(continentID, start.x, start.y, start.z, Questing.savedVariables.perCharacter.QuestingPointToMove.x, Questing.savedVariables.perCharacter.QuestingPointToMove.y,
+    Questing.savedVariables.perCharacter.QuestingPointToMove.z, false, 1024, 0, 1, false)
   if path then
     path = Core.convertHWTPathToPath(path)
   end

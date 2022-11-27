@@ -1845,6 +1845,7 @@ end
 
 HWT.doWhenHWTIsLoaded(function()
   AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
+  Questing.savedVariables = AddOn.savedVariables
 
   SavedVariables.registerSavedVariablesPerCharacter(
     addOnName,
