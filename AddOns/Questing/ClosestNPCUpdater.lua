@@ -1,7 +1,8 @@
 local addOnName, AddOn, exports, imports = ...
 local Modules = imports and imports.Modules or _G.Modules
 local Questing = Modules.determineExportsVariable(addOnName, exports)
-local Array, Set, Movement, HWT, Core = Modules.determineImportVariables('Array', 'Set', 'Movement', 'HWT', 'Core', imports)
+local Array, Set, Movement, HWT, Core = Modules.determineImportVariables('Array', 'Set', 'Movement', 'HWT', 'Core',
+  imports)
 
 local _ = {}
 
@@ -144,10 +145,10 @@ function _.buildNPCsLookupTables()
   --print('buildNPCsLookupTables ---')
 end
 
-if not AddOn.savedVariables.perCharacter.QuestingGoodsVendorNPCs or not AddOn.savedVariables.perCharacter.QuestingSellVendors or not AddOn.savedVariables.perCharacter.QuestingRepairerNPCs then
-  HWT.doWhenHWTIsLoaded(_.buildNPCsLookupTables)
-end
-
 HWT.doWhenHWTIsLoaded(function()
+  if not AddOn.savedVariables.perCharacter.QuestingGoodsVendorNPCs or not AddOn.savedVariables.perCharacter.QuestingSellVendors or not AddOn.savedVariables.perCharacter.QuestingRepairerNPCs then
+    _.buildNPCsLookupTables()
+  end
+
   _.updateNPCPositionsToClosest()
 end)

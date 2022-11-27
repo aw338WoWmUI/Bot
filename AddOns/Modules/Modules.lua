@@ -1,5 +1,7 @@
 local addOnName, AddOn, exports, imports = ...
 
+local _ = {}
+
 local function determineExportsVariable(addOnName, exports)
   if exports then
     return exports
@@ -17,6 +19,17 @@ local Modules = determineExportsVariable(addOnName, exports)
 Modules.determineExportsVariable = determineExportsVariable
 
 function Modules.determineImportVariable(importAddOnName, imports)
+  local importVariable = {}
+  setmetatable(importVariable, {
+    __index = function(table, key)
+      local importVariable = _.retrieveImportVariable(importAddOnName, imports)
+      return importVariable[key]
+    end
+  })
+  return importVariable
+end
+
+function _.retrieveImportVariable(importAddOnName, imports)
   if imports and imports[importAddOnName] and next(imports[importAddOnName]) then
     return imports[importAddOnName]
   elseif _G[importAddOnName] then

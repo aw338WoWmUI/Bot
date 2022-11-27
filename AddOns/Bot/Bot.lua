@@ -34,3 +34,8 @@ function Bot.toggle()
     Bot.start()
   end
 end
+
+local button = CreateFrame('Button', nil, nil, 'UIPanelButtonNoTooltipTemplate')
+button:SetText('Start')
+button:SetSize(130, 20)
+button:SetScript('OnClick', Bot.start)

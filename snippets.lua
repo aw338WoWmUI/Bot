@@ -345,3 +345,5 @@ HWT.LoadScript('test.lua', HWT.ReadFile('E:/Bot/output2.lua'))()
 GMR.RunString(GMR.ReadFile('E:/Bot/output2.lua'))
 
 HWT.LoadScript('C:/a/test.lua', 'print("a")')()
+
+local p = GMR.GetPlayerPosition(); print('is position underwater', GMR.IsPositionUnderwater(p.x, p.y, p.z))

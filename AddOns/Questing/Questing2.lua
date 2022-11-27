@@ -1,16 +1,11 @@
 local addOnName, AddOn, exports, imports = ...
 local Modules = imports and imports.Modules or _G.Modules
 local Questing = Modules.determineExportsVariable(addOnName, exports)
-local Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Yielder, Draw, Math = Modules.determineImportVariables('Array', 'Set', 'Object', 'Coroutine', 'Boolean', 'Movement', 'Tooltips', 'Events', 'Compatibility', 'HWT', 'Unlocker', 'Core', 'Yielder', 'Draw', 'Math', imports)
+local Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Yielder, Draw, Math = Modules.determineImportVariables('Array',
+  'Set', 'Object', 'Coroutine', 'Boolean', 'Movement', 'Tooltips', 'Events', 'Compatibility', 'HWT', 'Unlocker', 'Core',
+  'Yielder', 'Draw', 'Math', imports)
 
 local _ = {}
-
-AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
-
-SavedVariables.registerSavedVariablesPerCharacter(
-  addOnName,
-  savedVariables.perCharacter
-)
 
 -- Questing_ = _
 
@@ -1849,10 +1844,21 @@ function _.retrievePositionFromObjectID(objectID)
 end
 
 HWT.doWhenHWTIsLoaded(function()
+  AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
+
+  SavedVariables.registerSavedVariablesPerCharacter(
+    addOnName,
+    AddOn.savedVariables.perCharacter
+  )
+
+  _.initializeSavedVariables()
+
   Draw.Sync(function()
     if AddOn.savedVariables.perCharacter.QuestingPointToShow then
       Draw.SetColorRaw(0, 1, 0, 1)
-      Draw.Circle(AddOn.savedVariables.perCharacter.QuestingPointToShow.x, AddOn.savedVariables.perCharacter.QuestingPointToShow.y, AddOn.savedVariables.perCharacter.QuestingPointToShow.z, INTERACT_DISTANCE)
+      Draw.Circle(AddOn.savedVariables.perCharacter.QuestingPointToShow.x,
+        AddOn.savedVariables.perCharacter.QuestingPointToShow.y,
+        AddOn.savedVariables.perCharacter.QuestingPointToShow.z, INTERACT_DISTANCE)
     end
 
     if point then
@@ -2292,7 +2298,7 @@ function aaaaaaa()
   end
 end
 
-local function initializeSavedVariables()
+function _.initializeSavedVariables()
   if exploredObjects == nil then
     -- objectID to flags
     exploredObjects = {}
@@ -2303,20 +2309,12 @@ local function initializeSavedVariables()
   end
 end
 
-local function onAddonLoaded(name)
-  if name == 'Questing' then
-    initializeSavedVariables()
-  end
-end
-
 local function onQuestTurnedIn()
   objectIDsOfObjectsWhichCurrentlySeemAbsent = Set.create()
 end
 
 local function onEvent(self, event, ...)
-  if event == 'ADDON_LOADED' then
-    onAddonLoaded(...)
-  elseif event == 'QUEST_TURNED_IN' then
+  if event == 'QUEST_TURNED_IN' then
     onQuestTurnedIn(...)
   elseif event == 'GOSSIP_SHOW' then
     print('GOSSIP_SHOW')
@@ -2332,7 +2330,6 @@ local function onEvent(self, event, ...)
 end
 
 local frame = CreateFrame('Frame')
-frame:RegisterEvent('ADDON_LOADED')
 frame:RegisterEvent('QUEST_TURNED_IN')
 frame:RegisterEvent('GOSSIP_SHOW')
 frame:RegisterEvent('QUEST_ACCEPTED')

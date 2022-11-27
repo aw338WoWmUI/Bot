@@ -1,27 +1,15 @@
 local addOnName, AddOn, exports, imports = ...
 local Modules = imports and imports.Modules or _G.Modules
 local Movement = Modules.determineExportsVariable(addOnName, exports)
-local Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Draw, Float, Core, AStar = Modules.determineImportVariables('Boolean', 'ActionSequenceDoer', 'Array', 'Coroutine', 'Math', 'Vector', 'HWT', 'Draw', 'Float', 'Core', 'AStar', imports)
+local Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Draw, Float, Core, AStar, SavedVariables = Modules.determineImportVariables('Boolean',
+  'ActionSequenceDoer', 'Array', 'Coroutine', 'Math', 'Vector', 'HWT', 'Draw', 'Float', 'Core', 'AStar',
+  'SavedVariables', imports)
 
 local _ = {}
-
-AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
-
-SavedVariables.registerAccountWideSavedVariables(
-  addOnName,
-  AddOn.savedVariables.accountWide
-)
-
-SavedVariables.registerSavedVariablesPerCharacter(
-  addOnName,
-  AddOn.savedVariables.perCharacter
-)
 
 -- Movement_ = _
 
 -- TODO: Remove globals
-AddOn.savedVariables.accountWide.position1 = nil
-AddOn.savedVariables.accountWide.position2 = nil
 aStarPoints = nil
 aStarPoints2 = nil
 
@@ -88,72 +76,6 @@ function Movement.retrievePointFromCache(x, y, z)
   end
 end
 
-HWT.doWhenHWTIsLoaded(function()
-  Draw.Sync(function()
-    Array.forEach(lines, function(line)
-      local a = line[1]
-      local b = line[2]
-      Draw.Line(a.x, a.y, a.z, b.x, b.y, b.z)
-    end)
-
-    if DEVELOPMENT then
-      if AddOn.savedVariables.accountWide.savedPosition then
-        Draw.SetColorRaw(1, 1, 0, 1)
-        Draw.Circle(AddOn.savedVariables.accountWide.savedPosition.x, AddOn.savedVariables.accountWide.savedPosition.y, AddOn.savedVariables.accountWide.savedPosition.z, 0.5)
-      end
-    end
-    --      --if walkToPoint then
-    --      --  Draw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
-    --      --end
-    if DEVELOPMENT then
-      if AddOn.savedVariables.accountWide.position1 and AddOn.savedVariables.accountWide.position2 then
-        Draw.SetColorRaw(0, 1, 0, 1)
-        Draw.Line(
-          AddOn.savedVariables.accountWide.position1.x,
-          AddOn.savedVariables.accountWide.position1.y,
-          AddOn.savedVariables.accountWide.position1.z,
-          AddOn.savedVariables.accountWide.position2.x,
-          AddOn.savedVariables.accountWide.position2.y,
-          AddOn.savedVariables.accountWide.position2.z
-        )
-      end
-    end
-
-    local path = AddOn.savedVariables.accountWide.MovementPath
-    if path then
-      Draw.SetColorRaw(0, 1, 0, 1)
-      local previousPoint = path[1]
-      for index = 2, #path do
-        local point = path[index]
-        Draw.Line(
-          previousPoint.x,
-          previousPoint.y,
-          previousPoint.z,
-          point.x,
-          point.y,
-          point.z
-        )
-        Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
-        previousPoint = point
-      end
-      local firstPoint = path[1]
-      local lastPoint = path[#path]
-      Draw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, Core.retrieveCharacterBoundingRadius())
-      Draw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, Core.retrieveCharacterBoundingRadius())
-    end
-
-    if DEVELOPMENT then
-      if aStarPoints then
-        Draw.SetColorRaw(0, 1, 0, 1)
-        local radius = GRID_LENGTH / 2
-        Array.forEach(aStarPoints, function(point)
-          Draw.Circle(point.x, point.y, point.z, radius)
-        end)
-      end
-    end
-  end)
-end)
-
 function drawLine(from, to)
   Draw.Line(from.x, from.y, from.z, to.x, to.y, to.z)
 end
@@ -168,7 +90,8 @@ end
 
 function Movement.savePosition()
   local playerPosition = Core.retrieveCharacterPosition()
-  AddOn.savedVariables.accountWide.savedPosition = Movement.createPoint(playerPosition.x, playerPosition.y, playerPosition.z)
+  AddOn.savedVariables.accountWide.savedPosition = Movement.createPoint(playerPosition.x, playerPosition.y,
+    playerPosition.z)
 end
 
 function Movement.positionInFrontOfPlayer(distance, deltaZ)
@@ -202,7 +125,8 @@ function Movement.isObstacleInFront(position)
     position.z + zOffset
   )
   AddOn.savedVariables.accountWide.position2 = Movement.calculateIsObstacleInFrontToPosition(AddOn.savedVariables.accountWide.position1)
-  return not Movement.thereAreZeroCollisions(AddOn.savedVariables.accountWide.position1, AddOn.savedVariables.accountWide.position2)
+  return not Movement.thereAreZeroCollisions(AddOn.savedVariables.accountWide.position1,
+    AddOn.savedVariables.accountWide.position2)
 end
 
 function Movement.canWalkTo(position)
@@ -654,8 +578,10 @@ function Movement.retrieveGroundZ(position)
     -- There seemed to be one case where no z was returned at a position, even though it looked like that there was
     -- a surface.
     local offset = 0.6
-    AddOn.savedVariables.accountWide.position1 = Movement.createPoint(AddOn.savedVariables.accountWide.position1.x + offset, AddOn.savedVariables.accountWide.position1.y + offset, position.z)
-    AddOn.savedVariables.accountWide.position2 = Movement.createPoint(AddOn.savedVariables.accountWide.position2.x + offset, AddOn.savedVariables.accountWide.position2.y + offset, AddOn.savedVariables.accountWide.position2.z)
+    AddOn.savedVariables.accountWide.position1 = Movement.createPoint(AddOn.savedVariables.accountWide.position1.x + offset,
+      AddOn.savedVariables.accountWide.position1.y + offset, position.z)
+    AddOn.savedVariables.accountWide.position2 = Movement.createPoint(AddOn.savedVariables.accountWide.position2.x + offset,
+      AddOn.savedVariables.accountWide.position2.y + offset, AddOn.savedVariables.accountWide.position2.z)
     collisionPoint = Movement.traceLineCollisionWithFallback(position1, position2)
   end
 
@@ -2085,7 +2011,8 @@ end
 
 function Movement.moveTowardsSavedPosition()
   local thread = coroutine.create(function()
-    Movement.moveTowards(AddOn.savedVariables.accountWide.savedPosition.x, AddOn.savedVariables.accountWide.savedPosition.y, AddOn.savedVariables.accountWide.savedPosition.z)
+    Movement.moveTowards(AddOn.savedVariables.accountWide.savedPosition.x,
+      AddOn.savedVariables.accountWide.savedPosition.y, AddOn.savedVariables.accountWide.savedPosition.z)
   end)
   return Coroutine.resumeWithShowingError(thread)
 end
@@ -2100,19 +2027,6 @@ function Movement.stopMoving()
     pathMover = nil
     Movement.path = nil
     AddOn.savedVariables.accountWide.MovementPath = Movement.path
-  end
-end
-
-function Movement.onEvent(self, event, ...)
-  if event == 'ADDON_LOADED' then
-    Movement.onAddonLoaded(...)
-  end
-end
-
-function Movement.onAddonLoaded(addonName)
-  if addonName == 'Movement' then
-    Movement.initializeSavedVariables()
-    _.doWhenAddOnHasBeenLoaded()
   end
 end
 
@@ -2240,6 +2154,87 @@ function _.doWhenAddOnHasBeenLoaded()
   )
 end
 
-Movement.frame = CreateFrame('Frame')
-Movement.frame:SetScript('OnEvent', Movement.onEvent)
-Movement.frame:RegisterEvent('ADDON_LOADED')
+HWT.doWhenHWTIsLoaded(function()
+  AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
+
+  SavedVariables.registerAccountWideSavedVariables(
+    addOnName,
+    AddOn.savedVariables.accountWide
+  )
+
+  SavedVariables.registerSavedVariablesPerCharacter(
+    addOnName,
+    AddOn.savedVariables.perCharacter
+  )
+
+  AddOn.savedVariables.accountWide.position1 = nil
+  AddOn.savedVariables.accountWide.position2 = nil
+
+  Movement.initializeSavedVariables()
+  _.doWhenAddOnHasBeenLoaded()
+
+  Draw.Sync(function()
+    Array.forEach(lines, function(line)
+      local a = line[1]
+      local b = line[2]
+      Draw.Line(a.x, a.y, a.z, b.x, b.y, b.z)
+    end)
+
+    if DEVELOPMENT then
+      if AddOn.savedVariables.accountWide.savedPosition then
+        Draw.SetColorRaw(1, 1, 0, 1)
+        Draw.Circle(AddOn.savedVariables.accountWide.savedPosition.x, AddOn.savedVariables.accountWide.savedPosition.y,
+          AddOn.savedVariables.accountWide.savedPosition.z, 0.5)
+      end
+    end
+    --      --if walkToPoint then
+    --      --  Draw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
+    --      --end
+    if DEVELOPMENT then
+      if AddOn.savedVariables.accountWide.position1 and AddOn.savedVariables.accountWide.position2 then
+        Draw.SetColorRaw(0, 1, 0, 1)
+        Draw.Line(
+          AddOn.savedVariables.accountWide.position1.x,
+          AddOn.savedVariables.accountWide.position1.y,
+          AddOn.savedVariables.accountWide.position1.z,
+          AddOn.savedVariables.accountWide.position2.x,
+          AddOn.savedVariables.accountWide.position2.y,
+          AddOn.savedVariables.accountWide.position2.z
+        )
+      end
+    end
+
+    local path = AddOn.savedVariables.accountWide.MovementPath
+    if path then
+      Draw.SetColorRaw(0, 1, 0, 1)
+      local previousPoint = path[1]
+      for index = 2, #path do
+        local point = path[index]
+        Draw.Line(
+          previousPoint.x,
+          previousPoint.y,
+          previousPoint.z,
+          point.x,
+          point.y,
+          point.z
+        )
+        Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
+        previousPoint = point
+      end
+      local firstPoint = path[1]
+      local lastPoint = path[#path]
+      Draw.Circle(firstPoint.x, firstPoint.y, firstPoint.z, Core.retrieveCharacterBoundingRadius())
+      Draw.Circle(lastPoint.x, lastPoint.y, lastPoint.z, Core.retrieveCharacterBoundingRadius())
+    end
+
+    if DEVELOPMENT then
+      if aStarPoints then
+        Draw.SetColorRaw(0, 1, 0, 1)
+        local radius = GRID_LENGTH / 2
+        Array.forEach(aStarPoints, function(point)
+          Draw.Circle(point.x, point.y, point.z, radius)
+        end)
+      end
+    end
+  end)
+end)

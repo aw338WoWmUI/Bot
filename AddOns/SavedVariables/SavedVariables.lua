@@ -37,7 +37,7 @@ end
 
 function _.ensureEntryForAddOn(addOnName)
   if not savedVariables[addOnName] then
-    _.ensureEntryForAddOn(addOnName)
+    _.createEntryForAddOn(addOnName)
   end
 end
 
@@ -71,7 +71,7 @@ end
 function _.loadSavedVariables(filePath)
   if HWT.FileExists(filePath) then
     local content = HWT.ReadFile(filePath)
-    local result = HWT.LoadScript(filePath, content)
+    local result = HWT.LoadScript(filePath, 'return ' .. content)
     if type(result) == 'function' then
       return result()
     else
