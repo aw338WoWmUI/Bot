@@ -199,6 +199,6 @@ function Movement.Moving.testMoveTo3()
     712.71026611328,
     2.9626386165619
   )
-  savedPosition = position
+  AddOn.savedVariables.accountWide.savedPosition = position
   Movement.Moving.moveTo3(position)
 end

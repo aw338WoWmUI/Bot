@@ -5,6 +5,13 @@ local Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compat
 
 local _ = {}
 
+AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
+
+SavedVariables.registerSavedVariablesPerCharacter(
+  addOnName,
+  savedVariables.perCharacter
+)
+
 -- Questing_ = _
 
 local INFINITY = 1 / 0
@@ -1557,7 +1564,7 @@ local function convertQuestIDsToString(questIDs)
 end
 
 local function moveToPoint(point)
-  QuestingPointToShow = nil
+  AddOn.savedVariables.perCharacter.QuestingPointToShow = nil
 
   if point.type == 'acceptQuests' then
     local questNamesString
@@ -1570,7 +1577,7 @@ local function moveToPoint(point)
       questIDsString = ''
     end
     print('acceptQuests', point.x, point.y, point.z, point.objectID, questIDsString, questNamesString)
-    QuestingPointToShow = QuestingPointToMove
+    AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
     acceptQuests(point)
   elseif point.type == 'object' then
     local questHandler = retrieveQuestHandlerForOneOfQuests(point.questIDs)
@@ -1578,12 +1585,12 @@ local function moveToPoint(point)
     if questHandler then
       runQuestHandler(questHandler)
     else
-      QuestingPointToShow = QuestingPointToMove
+      AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
       doSomethingWithObject(point)
     end
   elseif point.type == 'endQuest' then
     print('end quest')
-    QuestingPointToShow = QuestingPointToMove
+    AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
     Questing.Coroutine.interactWithAt(point, point.objectID)
   elseif point.type == 'objectToUseItemOn' then
     print('quest log special item')
@@ -1591,11 +1598,11 @@ local function moveToPoint(point)
     if isSpecialItemUsable(point) then
       print('use')
       local distance = Core.retrieveDistanceBetweenObjects('player', point.pointer)
-      QuestingPointToShow = QuestingPointToMove
+      AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
       Questing.Coroutine.useItemOnNPC(point, point.objectID, point.itemID, distance)
     else
       print('move to')
-      QuestingPointToShow = QuestingPointToMove
+      AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
       Questing.Coroutine.useItemOnNPC(point, point.objectID, point.itemID)
       waitForSpecialItemUsable(point)
       print('use after wait')
@@ -1605,7 +1612,7 @@ local function moveToPoint(point)
   elseif point.type == 'objectToUseItemOnWhenDead' then
     print('objectToUseItemOnWhenDead')
     if Core.isAlive(point.pointer) then
-      QuestingPointToShow = QuestingPointToMove
+      AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
       _.doMob(point.pointer)
     end
     Core.targetUnit(point.pointer)
@@ -1617,11 +1624,11 @@ local function moveToPoint(point)
     end
   elseif point.type == 'objectToUseItemAtPosition' then
     print('quest log special item at position')
-    QuestingPointToShow = QuestingPointToMove
+    AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
     Questing.Coroutine.useItemOnGround(point, point.itemID, 3)
   elseif point.type == 'gossipWith' then
     print('gossip with')
-    QuestingPointToShow = QuestingPointToMove
+    AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
     Questing.Coroutine.gossipWithAt(point, point.objectID, point.optionToSelect)
   elseif point.type == 'objective' then
     print('objective')
@@ -1638,16 +1645,16 @@ local function moveToPoint(point)
       end
     end
   elseif point.type == 'loot' then
-    QuestingPointToShow = QuestingPointToMove
+    AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
     if Questing.Coroutine.lootObject(point.pointer) then
       Set.add(lootedObjects, point.pointer)
     end
   elseif point.type == 'discoverFlightMaster' then
-    QuestingPointToShow = QuestingPointToMove
+    AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
     Questing.Coroutine.interactWithObject(point.pointer)
   else
     print('moveToPoint', point.x, point.y, point.z)
-    QuestingPointToShow = QuestingPointToMove
+    AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
     Questing.Coroutine.moveTo(point)
   end
 end
@@ -1713,8 +1720,8 @@ function Questing.handleObjective(point)
 
   Object.assign(point, position)
 
-  QuestingPointToMove = point
-  QuestingPointToShow = QuestingPointToMove
+  AddOn.savedVariables.perCharacter.QuestingPointToMove = point
+  AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
 
   Questing.Coroutine.moveTo(point, {
     additionalStopConditions = function()
@@ -1843,9 +1850,9 @@ end
 
 HWT.doWhenHWTIsLoaded(function()
   Draw.Sync(function()
-    if QuestingPointToShow then
+    if AddOn.savedVariables.perCharacter.QuestingPointToShow then
       Draw.SetColorRaw(0, 1, 0, 1)
-      Draw.Circle(QuestingPointToShow.x, QuestingPointToShow.y, QuestingPointToShow.z, INTERACT_DISTANCE)
+      Draw.Circle(AddOn.savedVariables.perCharacter.QuestingPointToShow.x, AddOn.savedVariables.perCharacter.QuestingPointToShow.y, AddOn.savedVariables.perCharacter.QuestingPointToShow.z, INTERACT_DISTANCE)
     end
 
     if point then
@@ -1924,7 +1931,7 @@ function moveToClosestPoint()
       previousPointsToGo[1] = pointToGo
     end
 
-    QuestingPointToMove = pointToGo
+    AddOn.savedVariables.perCharacter.QuestingPointToMove = pointToGo
     moveToPoint(pointToGo)
   else
     if not isPlayerOnMeshPoint() then
@@ -1934,7 +1941,7 @@ function moveToClosestPoint()
       pathFinder = Movement.createPathFinder()
       local path = pathFinder.start(playerPosition, to)
       if path then
-        QuestingPointToMove = path[#path]
+        AddOn.savedVariables.perCharacter.QuestingPointToMove = path[#path]
         print('m1')
         Movement.movePath(path)
         print('m2')
@@ -2140,7 +2147,7 @@ function _.run ()
       end
     end
     if Questing.isRunning() and isIdle() then
-      QuestingPointToMove = nil
+      AddOn.savedVariables.perCharacter.QuestingPointToMove = nil
 
       local quests = retrieveQuestLogQuests()
       local autoCompleteQuests = Array.filter(quests, function(quest)
@@ -2262,8 +2269,8 @@ function _.sellItemsAtVendor()
       if itemInfo and (
         itemInfo.quality == Enum.ItemQuality.Poor or
           (itemInfo.quality == Enum.ItemQuality.Common and (classID == Enum.ItemClass.Weapon or classID == Enum.ItemClass.Armor)) or
-          (QuestingOptions.sellUncommon and itemInfo.quality == Enum.ItemQuality.Uncommon) or
-          (QuestingOptions.sellRare and itemInfo.quality == Enum.ItemQuality.Rare)
+          (AddOn.savedVariables.perCharacter.QuestingOptions.sellUncommon and itemInfo.quality == Enum.ItemQuality.Uncommon) or
+          (AddOn.savedVariables.perCharacter.QuestingOptions.sellRare and itemInfo.quality == Enum.ItemQuality.Rare)
       ) then
         Compatibility.Container.UseContainerItem(containerIndex, slotIndex)
         Events.waitForEvent('BAG_UPDATE_DELAYED')
@@ -2291,8 +2298,8 @@ local function initializeSavedVariables()
     exploredObjects = {}
   end
 
-  if QuestingOptions == nil then
-    QuestingOptions = {}
+  if AddOn.savedVariables.perCharacter.QuestingOptions == nil then
+    AddOn.savedVariables.perCharacter.QuestingOptions = {}
   end
 end
 

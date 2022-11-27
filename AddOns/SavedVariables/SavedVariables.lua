@@ -7,9 +7,7 @@ local _ = {}
 
 local savedVariables = {}
 
-local directory = 'C:/a__'
-
-function SavedVariables.registerSavedVariables(addOnName, variablesTable)
+function SavedVariables.registerAccountWideSavedVariables(addOnName, variablesTable)
   _.ensureEntryForAddOn(addOnName)
   savedVariables[addOnName].accountWide = variablesTable
 end
@@ -17,24 +15,6 @@ end
 function SavedVariables.registerSavedVariablesPerCharacter(addOnName, variablesTable)
   _.ensureEntryForAddOn(addOnName)
   savedVariables[addOnName].perCharacter = variablesTable
-end
-
-function _.ensureEntryForAddOn(addOnName)
-  if not savedVariables[addOnName] then
-    _.ensureEntryForAddOn(addOnName)
-  end
-end
-
-function _.createEntryForAddOn(addOnName)
-  savedVariables[addOnName] = {
-    accountWide = nil,
-    perCharacter = nil
-  }
-end
-
-function _.generateAccountDirectory()
-  local account = HWT.GetCurrentAccount()
-  return directory .. '/Account/' .. account
 end
 
 function SavedVariables.saveSavedVariables()
@@ -53,6 +33,29 @@ function SavedVariables.loadSavedVariablesOfAddOn(addOnName)
     accountWide = _.loadAccountWideSavedVariables(addOnName),
     perCharacter = _.loadPerCharacterSavedVariables(addOnName)
   }
+end
+
+function _.ensureEntryForAddOn(addOnName)
+  if not savedVariables[addOnName] then
+    _.ensureEntryForAddOn(addOnName)
+  end
+end
+
+function _.createEntryForAddOn(addOnName)
+  savedVariables[addOnName] = {
+    accountWide = nil,
+    perCharacter = nil
+  }
+end
+
+function _.generateAccountDirectory()
+  local account = HWT.GetCurrentAccount()
+  local appDirectory = HWT.GetAppDirectory()
+  appDirectory = string.gsub(appDirectory, '\\', '/')
+  if string.sub(appDirectory, string.len(appDirectory)) ~= '/' then
+    appDirectory = appDirectory + '/'
+  end
+  return appDirectory .. 'Account/' .. account
 end
 
 function _.loadAccountWideSavedVariables(addOnName)

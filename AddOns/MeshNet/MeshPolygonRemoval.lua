@@ -65,8 +65,10 @@ end
 
 HWT.doWhenHWTIsLoaded(function()
   local appSessionToken = HWT.GetAppSessionToken()
-  if appSessionToken ~= MeshNetLastPolygonRemovalAppSessionToken then
-    MeshNetLastPolygonRemovalAppSessionToken = appSessionToken
+  local savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
+  if appSessionToken ~= savedVariables.accountWide.MeshNetLastPolygonRemovalAppSessionToken then
+    savedVariables.accountWide.MeshNetLastPolygonRemovalAppSessionToken = appSessionToken
+    SavedVariables.registerAccountWideSavedVariables(addOnName, savedVariables.accountWide)
     Array.forEach(AddOn.removedMeshPolygons, function (removedMeshPolygon)
       _.removeClosestMeshPolygonToPositionFromMeshNet(removedMeshPolygon.position)
     end)

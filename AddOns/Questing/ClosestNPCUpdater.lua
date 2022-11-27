@@ -62,15 +62,15 @@ function _.updateNPCPositionToClosest(find, update)
 end
 
 function _.findClosestGoodsVendor()
-  return _.findClosestNPC(_.isGoodsVendor, QuestingGoodsVendorNPCs)
+  return _.findClosestNPC(_.isGoodsVendor, AddOn.savedVariables.perCharacter.QuestingGoodsVendorNPCs)
 end
 
 function _.findClosestSellVendor()
-  return _.findClosestNPC(_.isSellVendor, QuestingSellVendors)
+  return _.findClosestNPC(_.isSellVendor, AddOn.savedVariables.perCharacter.QuestingSellVendors)
 end
 
 function _.findClosestCanRepairNPC()
-  return _.findClosestNPC(_.isRepair, QuestingRepairerNPCs)
+  return _.findClosestNPC(_.isRepair, AddOn.savedVariables.perCharacter.QuestingRepairerNPCs)
 end
 
 function _.findClosestNPC(matches, fallbackList)
@@ -106,9 +106,9 @@ function _.isRepair(object)
 end
 
 function _.buildNPCsLookupTables()
-  QuestingGoodsVendorNPCs = {}
-  QuestingSellVendors = {}
-  QuestingRepairerNPCs = {}
+  AddOn.savedVariables.perCharacter.QuestingGoodsVendorNPCs = {}
+  AddOn.savedVariables.perCharacter.QuestingSellVendors = {}
+  AddOn.savedVariables.perCharacter.QuestingRepairerNPCs = {}
 
   --print('Building NPC lookup tables...')
   --local yielder = Yielder.createYielderWithTimeTracking(1 / 60)
@@ -125,13 +125,13 @@ function _.buildNPCsLookupTables()
   --        z = position.z
   --      }
   --      if NPC.isGoodsVendor then
-  --        table.insert(QuestingGoodsVendorNPCs, entry)
+  --        table.insert(AddOn.savedVariables.perCharacter.QuestingGoodsVendorNPCs, entry)
   --      end
   --      if NPC.isVendor then
-  --        table.insert(QuestingSellVendors, entry)
+  --        table.insert(AddOn.savedVariables.perCharacter.QuestingSellVendors, entry)
   --      end
   --      if NPC.canRepair then
-  --        table.insert(QuestingRepairerNPCs, entry)
+  --        table.insert(AddOn.savedVariables.perCharacter.QuestingRepairerNPCs, entry)
   --      end
   --    end
   --  end
@@ -144,7 +144,7 @@ function _.buildNPCsLookupTables()
   --print('buildNPCsLookupTables ---')
 end
 
-if not QuestingGoodsVendorNPCs or not QuestingSellVendors or not QuestingRepairerNPCs then
+if not AddOn.savedVariables.perCharacter.QuestingGoodsVendorNPCs or not AddOn.savedVariables.perCharacter.QuestingSellVendors or not AddOn.savedVariables.perCharacter.QuestingRepairerNPCs then
   HWT.doWhenHWTIsLoaded(_.buildNPCsLookupTables)
 end
 

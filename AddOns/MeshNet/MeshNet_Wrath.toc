@@ -1,7 +1,6 @@
 ## Title: Mesh Net
 ## Interface: 30400
-## SavedVariables: MeshNetLastPolygonRemovalAppSessionToken
-## Dependencies: Modules, Core, Function, HWT, Array, Draw, Conditionals, Math
+## Dependencies: Modules, Core, Function, HWT, Array, Draw, Conditionals, Math, SavedVariables
 
 MeshVisualization.lua
 OffMeshConnectionsDatabase.lua
