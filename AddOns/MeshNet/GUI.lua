@@ -111,3 +111,23 @@ local button10 = createButton(10, '/script MeshNet.removeClosestOffMeshConnectio
 button10:SetPoint('LEFT', button6, 'RIGHT', 6, 0)
 
 print('button')
+
+function meshNetBarButtonDown(bar, id)
+  local button = _G[bar .. 'Button' .. id]
+  if button:GetButtonState() == 'NORMAL' then
+    button:SetButtonState('PUSHED')
+  end
+  if GetCVarBool('ActionButtonUseKeyDown') then
+    SecureActionButton_OnClick(button, 'LeftButton')
+  end
+end
+
+function meshNetBarButtonUp(bar, id)
+  local button = _G[bar .. 'Button' .. id]
+  if button:GetButtonState() == 'PUSHED' then
+    button:SetButtonState('NORMAL')
+    if not GetCVarBool('ActionButtonUseKeyDown') then
+      SecureActionButton_OnClick(button, 'LeftButton')
+    end
+  end
+end
