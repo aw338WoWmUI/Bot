@@ -1,0 +1,5 @@
+## Title: ObjectQuests
+## Interface: 100002
+## Dependencies: PackageInitialization, Unlocker, Compatibility
+
+ObjectQuests.lua

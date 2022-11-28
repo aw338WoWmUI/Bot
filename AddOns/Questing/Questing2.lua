@@ -913,7 +913,7 @@ local isObjectRelatedToActiveQuestLookup = {}
 
 local function retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
   if Compatibility.isRetail() then
-    return Unlocker.ObjectQuests(object)
+    return ObjectQuests.ObjectQuests(object)
     --local questIDs = Set.create()
     --local objectID = HWT.ObjectId(object)
     --
@@ -1037,7 +1037,7 @@ function _.seemsToBeQuestObjective(object)
   local canQuestBeTurnedIn = Set.contains(turnInQuestGiverStatuses, Unlocker.retrieveQuestGiverStatus(object))
   if Compatibility.isRetail() then
     -- FIXME: Make work for quests with quest objectives which are not alive.
-    return (canQuestBeTurnedIn or Unlocker.ObjectIsQuestObjective(object)) and Core.isAlive(object)
+    return (canQuestBeTurnedIn or ObjectQuests.ObjectIsQuestObjective(object)) and Core.isAlive(object)
   else
     return canQuestBeTurnedIn or Array.hasElements(retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object))
   end

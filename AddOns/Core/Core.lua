@@ -566,7 +566,7 @@ function Core.findClosestQuestRelatedObjectTo(questID, to)
   return Core.findClosestObjectTo(
     to,
     function(pointer)
-      local questIDs = Set.create(Unlocker.ObjectQuests(pointer))
+      local questIDs = Set.create(ObjectQuests.ObjectQuests(pointer))
       return Set.contains(questIDs, questID)
     end
   )

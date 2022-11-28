@@ -28,15 +28,3 @@ Compatibility.determineMajorVersion = Caching.cached(function ()
   local majorVersion = tonumber(majorVersionString, 10)
   return majorVersion
 end)
-
-function testPerformance()
-  local n = 1000
-  local b = {}
-  for i = 1, n do
-    debugprofilestart()
-    Compatibility.determineMajorVersion()
-    local bi = debugprofilestop()
-    table.insert(b, bi)
-  end
-  print(Math.sum(b) / n)
-end

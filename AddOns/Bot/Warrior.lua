@@ -29,7 +29,7 @@ local REND_NAME = GetSpellInfo(REND)
 function Bot.Warrior.castSpell()
   if _.areConditionsMetToCastVictoryRush() then
     CastSpellByID(VICTORY_RUSH)
-  else
+  elseif _G.RecommendedSpellCaster then
     RecommendedSpellCaster.castRecommendedSpell()
   end
 end

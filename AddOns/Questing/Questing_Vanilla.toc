@@ -1,6 +1,6 @@
 ## Title: Questing
 ## Interface: 11403
-## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Function, Yielder, Draw, Math, SavedVariables, Bot, Stoppable
+## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Function, Yielder, Draw, Math, SavedVariables, Bot, Stoppable, ObjectQuests
 
 Questie.lua
 Database_Classic.lua

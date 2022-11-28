@@ -19,7 +19,6 @@ await mkdir(addOnPath, {
   const content =
 `## Title: ${addOnName}
 ## Interface: 100002
-## Dependencies: Modules
 
 ${addOnName}.lua
 `
@@ -30,7 +29,6 @@ ${addOnName}.lua
   const content =
 `## Title: ${addOnName}
 ## Interface: 30400
-## Dependencies: Modules
 
 ${addOnName}.lua
 `
@@ -41,7 +39,6 @@ ${addOnName}.lua
   const content =
 `## Title: ${addOnName}
 ## Interface: 30400
-## Dependencies: Modules
 
 ${addOnName}.lua
 `
@@ -50,11 +47,9 @@ ${addOnName}.lua
 
 {
   const content =
-`local addOnName, AddOn, exports, imports = ...
---- @type Modules
-local Modules = imports and imports.Modules or _G.Modules
---- @class ${addOnName}
-local ${addOnName} = Modules.determineExportsVariable(addOnName, exports)
+`local addOnName, AddOn = ...
+${addOnName} = ${addOnName} or {}
+local _ = {}
 `
   await writeFile(join(addOnPath, `${addOnName}.lua`), content)
 }
