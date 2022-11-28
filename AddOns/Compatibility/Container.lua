@@ -2,7 +2,7 @@ Compatibility = Compatibility or {}
 Compatibility.Container = {}
 
 function Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex)
-  if C_Container.GetContainerItemInfo then
+  if _G.C_Container and C_Container.GetContainerItemInfo then
     return C_Container.GetContainerItemInfo(containerIndex, slotIndex)
   else
     local iconFileID, stackCount, isLocked, quality, isReadable, hasLoot, hyperlink, isFiltered, hasNoValue, itemID, isBound = GetContainerItemInfo(containerIndex,
@@ -25,7 +25,7 @@ function Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex)
 end
 
 function Compatibility.Container.receiveNumberOfSlotsOfContainer(containerIndex)
-  if C_Container.GetContainerNumSlots then
+  if _G.C_Container and C_Container.GetContainerNumSlots then
     return C_Container.GetContainerNumSlots(containerIndex)
   else
     return GetContainerNumSlots(containerIndex)
@@ -33,7 +33,7 @@ function Compatibility.Container.receiveNumberOfSlotsOfContainer(containerIndex)
 end
 
 function Compatibility.Container.UseContainerItem(containerIndex, slotIndex, unitToken, reagentBankOpen)
-  if C_Container.UseContainerItem then
+  if _G.C_Container and C_Container.UseContainerItem then
     return C_Container.UseContainerItem(containerIndex, slotIndex, unitToken, reagentBankOpen)
   else
     return UseContainerItem(containerIndex, slotIndex, unitToken, reagentBankOpen)
@@ -41,7 +41,7 @@ function Compatibility.Container.UseContainerItem(containerIndex, slotIndex, uni
 end
 
 function Compatibility.Container.receiveNumberOfFreeSlotsInContainer(containerIndex)
-  if C_Container.GetContainerNumFreeSlots then
+  if _G.C_Container and C_Container.GetContainerNumFreeSlots then
     return C_Container.GetContainerNumFreeSlots(containerIndex)
   else
     return GetContainerNumFreeSlots(containerIndex)

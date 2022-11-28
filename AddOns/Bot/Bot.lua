@@ -42,8 +42,10 @@ function Bot.castCombatRotationSpell()
   local classID = select(2, UnitClassBase('player'))
   if classID == Core.ClassID.Warrior then
     Bot.Warrior.castSpell()
-  else
+  elseif RecommendedSpellCaster then
     RecommendedSpellCaster.castRecommendedSpell()
+  elseif _G.GMR and GMR.ClassRotation then
+    GMR.ClassRotation()
   end
 end
 
