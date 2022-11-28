@@ -1,12 +1,6 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
+local addOnName, AddOn = ...
 --- @class Movement
-local Movement = Modules.determineExportsVariable(addOnName, exports)
---- @type Core
-local Core = Modules.determineImportVariable('Core', imports)
-local Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Draw, Float, AStar, SavedVariables = Modules.determineImportVariables('Boolean',
-  'ActionSequenceDoer', 'Array', 'Coroutine', 'Math', 'Vector', 'HWT', 'Draw', 'Float', 'AStar',
-  'SavedVariables', imports)
+Movement = Movement or {}
 
 local _ = {}
 

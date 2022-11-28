@@ -1,5 +1,5 @@
 ## Title: API Call Logging
 ## Interface: 100002
-## Dependencies: Modules, Serialization, Hooking, HWT, String
+## Dependencies: Serialization, Hooking, HWT, String
 
 APICallLogging.lua

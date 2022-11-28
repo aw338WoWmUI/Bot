@@ -3,10 +3,8 @@
 
 -- LubDraw orginally by docbrown on fh-wow.com
 
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local Draw = Modules.determineExportsVariable(addOnName, exports)
-local HWT, Array = Modules.determineImportVariables('HWT', 'Array', imports)
+local addOnName, AddOn = ...
+Draw = Draw or {}
 
 local sin, cos, atan, atan2, sqrt, rad = math.sin, math.cos, math.atan, math.atan2, math.sqrt, math.rad
 local tinsert, tremove = tinsert, tremove

@@ -1,5 +1,4 @@
 ## Title: Stoppable
 ## Interface: 100002
-## Dependencies: Modules
 
 Stoppable.lua

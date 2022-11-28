@@ -1,12 +1,8 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
+local addOnName, AddOn = ...
 --- @class Questing
-local Questing = Modules.determineExportsVariable(addOnName, exports)
-local Array, Set, Coroutine, Movement, Events, HWT, Core, Function, Yielder = Modules.determineImportVariables('Array', 'Set', 'Coroutine', 'Movement', 'Events', 'HWT', 'Core', 'Function', 'Yielder', imports)
+Questing = Questing or {}
 --- @type Bot
-local Bot = Modules.determineImportVariable('Bot', imports)
 --- @type Stoppable
-local Stoppable = Modules.determineImportVariable('Stoppable', imports)
 
 --- @class Questing.Coroutine
 Questing.Coroutine = {}

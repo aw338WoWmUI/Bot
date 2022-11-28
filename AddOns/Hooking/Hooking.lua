@@ -7,7 +7,7 @@ function Hooking.hookSettingOnTable(table, fieldName, predicate)
   end
   table[fieldName] = nil
 
-  local metatable = getmetatable(table) or {}
+  metatable = getmetatable(table) or {}
 
   local originalNewindex = metatable.__newindex
   metatable.__newindex = function(table, key, value)

@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local ObjectToValueLookup = Modules.determineExportsVariable(addOnName, exports)
-local Array = Modules.determineImportVariables('Array', imports)
+local addOnName, AddOn = ...
+ObjectToValueLookup = ObjectToValueLookup or {}
 
 local NIL_KEY = '__N'
 local VALUE_KEY = '__V'

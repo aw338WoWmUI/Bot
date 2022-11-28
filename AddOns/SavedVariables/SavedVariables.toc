@@ -1,5 +1,5 @@
 ## Title: SavedVariables
 ## Interface: 100002
-## Dependencies: Modules, Serialization
+## Dependencies: Serialization
 
 SavedVariables.lua

@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local Questing = Modules.determineExportsVariable(addOnName, exports)
-local Core = Modules.determineImportVariables('Core', imports)
+local addOnName, AddOn = ...
+Questing = Questing or {}
 
 local _ = {}
 

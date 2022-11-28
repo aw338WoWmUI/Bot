@@ -1,6 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local HWTRetriever = Modules.determineExportsVariable(addOnName, exports)
+local addOnName, AddOn = ...
+HWTRetriever = HWTRetriever or {}
 
 local _ = {}
 

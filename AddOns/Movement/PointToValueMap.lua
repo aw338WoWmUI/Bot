@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local Movement = Modules.determineExportsVariable(addOnName, exports)
-local ObjectToValueLookup = Modules.determineImportVariables('ObjectToValueLookup', imports)
+local addOnName, AddOn = ...
+Movement = Movement or {}
 
 local function convertPointToArray(point)
   return { point.x, point.y, point.z }

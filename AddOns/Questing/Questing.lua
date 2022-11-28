@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local Questing = Modules.determineExportsVariable(addOnName, exports)
-local Array, Object, Coroutine, Movement, Compatibility, HWT, Core = Modules.determineImportVariables('Array', 'Object', 'Coroutine', 'Movement', 'Compatibility', 'HWT', 'Core', imports)
+local addOnName, AddOn = ...
+Questing = Questing or {}
 
 INTERACT_DISTANCE = 5.3
 
@@ -328,7 +326,7 @@ function findRelationsToQuests(tooltipBaseName, unitID)
       local questID = questNameToId[text]
       if questID then
         local questObjectives = questIdToObjectives[questID]
-        local questObjectiveToIsRelatedTo = relations[questID] or {}
+        questObjectiveToIsRelatedTo = relations[questID] or {}
         lineIndex = lineIndex + 1
         while lineIndex <= 18 do
           local textLeft = _G[tooltipBaseName .. 'TextLeft' .. lineIndex]

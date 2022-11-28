@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local Movement = Modules.determineExportsVariable(addOnName, exports)
-local HWT, Core = Modules.determineImportVariables('HWT', 'Core', imports)
+local addOnName, AddOn = ...
+Movement = Movement or {}
 
 Movement.Moving = {}
 

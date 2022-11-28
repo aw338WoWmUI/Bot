@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local APIDumper = Modules.determineExportsVariable(addOnName, exports)
-local Serialization, Object, HWTRetriever = Modules.determineImportVariables('Serialization', 'Object', 'HWTRetriever', imports)
+local addOnName, AddOn = ...
+APIDumper = APIDumper or {}
 
 local _ = {}
 

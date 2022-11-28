@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local HWT = Modules.determineExportsVariable(addOnName, exports)
-local Conditionals, HWTRetriever, Boolean, Array, Coroutine, Object = Modules.determineImportVariables('Conditionals', 'HWTRetriever', 'Boolean', 'Array', 'Coroutine', 'Object', imports)
+local addOnName, AddOn = ...
+HWT = HWT or {}
 
 local _ = {}
 

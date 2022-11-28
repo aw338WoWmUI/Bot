@@ -1,11 +1,7 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local Bot = Modules.determineExportsVariable(addOnName, exports)
-local Array, Object, Boolean, Compatibility = Modules.determineImportVariables('Array', 'Object', 'Boolean', 'Compatibility', imports)
+local addOnName, AddOn = ...
+Questing = Questing or {}
 
 Questing.Database = {}
-
-local addOnName, AddOn = ...
 
 local _ = {}
 

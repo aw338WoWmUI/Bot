@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local GMRHelpers = Modules.determineExportsVariable(addOnName, exports)
-local Function, Array, Yielder, Coroutine, Conditionals = Modules.determineImportVariables('Function', 'Array', 'Yielder', 'Coroutine', 'Conditionals', imports)
+local addOnName, AddOn = ...
+GMRHelpers = GMRHelpers or {}
 
 local functionsToRunWhenGMRIsLoaded = {}
 local functionsToRunWhenGMRIsFullyLoaded = {}

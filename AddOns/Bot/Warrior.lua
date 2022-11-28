@@ -1,8 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local Bot = Modules.determineExportsVariable(addOnName, exports)
-local Boolean = Modules.determineImportVariables('Boolean', imports)
-local RecommendedSpellCaster = Modules.determineImportVariable('RecommendedSpellCaster', imports)
+local addOnName, AddOn = ...
+Bot = Bot or {}
 
 Bot.Warrior = {}
 

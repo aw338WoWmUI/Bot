@@ -1,10 +1,7 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
+local addOnName, AddOn = ...
 --- @class Bot
-local Bot = Modules.determineExportsVariable(addOnName, exports)
-local Questing = Modules.determineImportVariables('Questing', imports)
+Bot = Bot or {}
 --- @type RecommendedSpellCaster
-local RecommendedSpellCaster = Modules.determineImportVariable('RecommendedSpellCaster', imports)
 
 local isRunning = false
 

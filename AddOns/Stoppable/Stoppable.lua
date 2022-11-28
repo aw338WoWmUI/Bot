@@ -1,8 +1,7 @@
-local addOnName, AddOn, exports, imports = ...
+local addOnName, AddOn = ...
 --- @type Modules
-local Modules = imports and imports.Modules or _G.Modules
 --- @class Stoppable
-local Stoppable = Modules.determineExportsVariable(addOnName, exports)
+Stoppable = Stoppable or {}
 
 Stoppable.Stoppable = {}
 

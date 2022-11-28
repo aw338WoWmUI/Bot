@@ -1,6 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local Movement = Modules.determineExportsVariable(addOnName, exports)
+local addOnName, AddOn = ...
+Movement = Movement or {}
 
 local points = Movement.PointToValueMap:new()
 

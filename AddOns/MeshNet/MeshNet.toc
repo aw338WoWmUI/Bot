@@ -1,6 +1,6 @@
 ## Title: Mesh Net
 ## Interface: 100002
-## Dependencies: Modules, Core, Function, HWT, Array, Draw, Conditionals, Math, SavedVariables
+## Dependencies: Core, Function, HWT, Array, Draw, Conditionals, Math, SavedVariables
 
 MeshVisualization.lua
 OffMeshConnectionsDatabase.lua

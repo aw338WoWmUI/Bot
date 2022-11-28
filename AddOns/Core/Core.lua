@@ -1,8 +1,6 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
+local addOnName, AddOn = ...
 --- @class Core
-local Core = Modules.determineExportsVariable(addOnName, exports)
-local HWT, Boolean, Compatibility, Set, Vector, Array, Logging, Math, BinaryHeap = Modules.determineImportVariables('HWT', 'Boolean', 'Compatibility', 'Set', 'Vector', 'Array', 'Logging', 'Math', 'BinaryHeap', imports)
+Core = Core or {}
 
 Core.RANGE_IN_WHICH_OBJECTS_SEEM_TO_BE_SHOWN = 50
 

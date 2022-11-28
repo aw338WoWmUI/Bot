@@ -1,12 +1,6 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
+local addOnName, AddOn = ...
 --- @class Questing
-local Questing = Modules.determineExportsVariable(addOnName, exports)
---- @type Core
-local Core = Modules.determineImportVariable('Core', imports)
-local Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Yielder, Draw, Math = Modules.determineImportVariables('Array',
-  'Set', 'Object', 'Coroutine', 'Boolean', 'Movement', 'Tooltips', 'Events', 'Compatibility', 'HWT', 'Unlocker',
-  'Yielder', 'Draw', 'Math', imports)
+Questing = Questing or {}
 
 local _ = {}
 

@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local APICallLogging = Modules.determineExportsVariable(addOnName, exports)
-local Serialization, Hooking, HWT, String = Modules.determineImportVariables('Serialization', 'Hooking', 'HWT', 'String', imports)
+local addOnName, AddOn = ...
+APICallLogging = APICallLogging or {}
 
 local _ = {}
 

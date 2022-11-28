@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local MeshNet = Modules.determineExportsVariable(addOnName, exports)
-local Core, Function, HWT, Array, Draw, Conditionals, Math = Modules.determineImportVariables('Core', 'Function', 'HWT', 'Array', 'Draw', 'Conditionals', 'Math', imports)
+local addOnName, AddOn = ...
+MeshNet = MeshNet or {}
 
 local _ = {}
 

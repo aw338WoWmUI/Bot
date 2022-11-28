@@ -1,5 +1,5 @@
 ## Title: Development
 ## Interface: 30400
-## Dependencies: Modules, Core, Logging, Object
+## Dependencies: Core, Logging, Object
 
 Development.lua

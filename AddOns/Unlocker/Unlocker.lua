@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local Unlocker = Modules.determineExportsVariable(addOnName, exports)
-local HWT, Set, Array, Compatibility = Modules.determineImportVariables('HWT', 'Set', 'Array', 'Compatibility', imports)
+local addOnName, AddOn = ...
+Unlocker = Unlocker or {}
 
 local _ = {}
 

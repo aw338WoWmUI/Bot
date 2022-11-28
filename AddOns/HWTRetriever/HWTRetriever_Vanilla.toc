@@ -1,5 +1,4 @@
 ## Title: HWT Retriever
 ## Interface: 11403
-## Dependencies: Modules
 
 HWTRetriever.lua

@@ -1,7 +1,5 @@
-local addOnName, AddOn, exports, imports = ...
-local Modules = imports and imports.Modules or _G.Modules
-local SavedVariables = Modules.determineExportsVariable(addOnName, exports)
-local Serialization = Modules.determineImportVariables('Serialization', imports)
+local addOnName, AddOn = ...
+SavedVariables = SavedVariables or {}
 
 local _ = {}
 
