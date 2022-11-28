@@ -5,6 +5,8 @@ local Questing = Modules.determineExportsVariable(addOnName, exports)
 local Array, Set, Coroutine, Movement, Events, HWT, Core, Function, Yielder = Modules.determineImportVariables('Array', 'Set', 'Coroutine', 'Movement', 'Events', 'HWT', 'Core', 'Function', 'Yielder', imports)
 --- @type Bot
 local Bot = Modules.determineImportVariable('Bot', imports)
+--- @type Stoppable
+local Stoppable = Modules.determineImportVariable('Stoppable', imports)
 
 --- @class Questing.Coroutine
 Questing.Coroutine = {}
@@ -14,13 +16,17 @@ local _ = {}
 local function moveTo(to, options)
   options = options or {}
 
+  local stoppable = Stoppable.Stoppable:new()
+
   Movement.moveTo(to, {
     stop = function()
-      return not Questing.isRunning() or (options.stop and options.stop())
+      return not Questing.isRunning() or (options.stop and options.stop()) or stoppable.isStopped
     end,
     toleranceDistance = options.toleranceDistance,
     continueMoving = options.continueMoving
   })
+
+  return stoppable
 end
 
 function Questing.Coroutine.moveTo(point, options)
@@ -32,7 +38,7 @@ function Questing.Coroutine.moveTo(point, options)
     return Core.isCharacterCloseToPosition(point, distance) or additionalStopConditions and additionalStopConditions()
   end
 
-  Questing.Coroutine.moveToUntil(point, {
+  return Questing.Coroutine.moveToUntil(point, {
     toleranceDistance = distance,
     stopCondition = hasArrived
   })

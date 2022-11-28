@@ -1144,6 +1144,14 @@ local function determineClosestPoint(points)
   end)
 end
 
+local function retrieveDynamicPoints()
+  return Array.concat(
+    retrieveAttackerPoints(),
+    retrieveObjectPoints(),
+    retrieveLootPoints()
+  )
+end
+
 local function determinePointToGo(points)
   if Array.hasElements(points.attackerPoints) then
     return determineClosestPoint(points.attackerPoints)
@@ -1441,6 +1449,8 @@ function _.doMob(pointer)
 end
 
 function acceptQuests(point)
+  local stoppable = Stoppable:new()
+
   print(1)
   local questGiverPoint
   if point.objectID then
@@ -1519,6 +1529,8 @@ function acceptQuests(point)
       acceptQuests(point)
     end
   end
+
+  return stoppable
 end
 
 local function retrieveQuestHandler(questID)
@@ -1570,7 +1582,16 @@ local function convertQuestIDsToString(questIDs)
   return strjoin(', ', unpack(questIDs))
 end
 
-local function moveToPoint(point)
+local activity = nil
+
+local function doPoint(point)
+  activity = {
+    point = point,
+    Cancel = function()
+      -- TODO
+    end
+  }
+
   AddOn.savedVariables.perCharacter.QuestingPointToShow = nil
 
   if point.type == 'acceptQuests' then
@@ -1958,7 +1979,10 @@ function moveToClosestPoint()
     end
 
     AddOn.savedVariables.perCharacter.QuestingPointToMove = pointToGo
-    moveToPoint(pointToGo)
+    if activity then
+      activity:Cancel()
+    end
+    activity = doPoint(pointToGo)
   else
     if not isPlayerOnMeshPoint() then
       local continentID = select(8, GetInstanceInfo())
@@ -1969,7 +1993,10 @@ function moveToClosestPoint()
       if path then
         AddOn.savedVariables.perCharacter.QuestingPointToMove = path[#path]
         print('m1')
-        Movement.movePath(path)
+        if activity then
+          activity:Cancel()
+        end
+        activity = Movement.movePath(path)
         print('m2')
       end
     end
@@ -2145,11 +2172,28 @@ function registerUnavailableQuests(npcID)
   end)
 end
 
+function _.isClosestPointDifferentThanCurrentActivityPoint(closestPoint)
+  return not activity or activity.point.pointer ~= closestPoint.pointer
+end
+
 function _.run ()
   local regularChecksTicker = C_Timer.NewTicker(0, function()
-    if not Questing.isRunning() then
-      Movement.stopPathFindingAndMoving()
-    end
+    Coroutine.runAsCoroutine(function()
+      if not Questing.isRunning() then
+        Movement.stopPathFindingAndMoving()
+      end
+
+      if Questing.isRunning() then
+        local points = retrieveDynamicPoints()
+        local closestPoint = determineClosestPoint(points)
+        if closestPoint and _.isClosestPointDifferentThanCurrentActivityPoint(closestPoint) then
+          if activity then
+            activity:Cancel()
+          end
+          doPoint(closestPoint)
+        end
+      end
+    end)
   end)
 
   local yielder = Yielder.createYielder()

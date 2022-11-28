@@ -1,0 +1,5 @@
+## Title: Stoppable
+## Interface: 30400
+## Dependencies: Modules
+
+Stoppable.lua

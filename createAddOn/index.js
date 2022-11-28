@@ -51,9 +51,9 @@ ${addOnName}.lua
 {
   const content =
 `local addOnName, AddOn, exports, imports = ...
--- @type Modules
+--- @type Modules
 local Modules = imports and imports.Modules or _G.Modules
--- @class ${addOnName}
+--- @class ${addOnName}
 local ${addOnName} = Modules.determineExportsVariable(addOnName, exports)
 `
   await writeFile(join(addOnPath, `${addOnName}.lua`), content)
