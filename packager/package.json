@@ -1,6 +1,0 @@
-{
-  "type": "module",
-  "dependencies": {
-    "@sanjo/read-file": "^2.0.0"
-  }
-}
