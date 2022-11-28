@@ -38,7 +38,7 @@ ${addOnName}.lua
 {
   const content =
 `## Title: ${addOnName}
-## Interface: 30400
+## Interface: 11403
 
 ${addOnName}.lua
 `

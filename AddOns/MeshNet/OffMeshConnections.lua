@@ -6,11 +6,44 @@ local _ = {}
 local firstOffMeshConnectionPoint = nil
 local secondOffMeshConnectionPoint = nil
 
-AddOn.firstOffMeshConnectionPolygon = nil
-AddOn.secondOffMeshConnectionPolygon = nil
+MeshNet.firstOffMeshConnectionPolygon = nil
+MeshNet.secondOffMeshConnectionPolygon = nil
 
 local RANGE = 5
 local CIRCLE_RADIUS = 0.5
+
+function MeshNet.setFirstOffMeshConnectionPolygon()
+  MeshNet.firstOffMeshConnectionPolygon = _.retrieveClosestPolygon()
+end
+
+function MeshNet.setSecondOffMeshConnectionPolygon()
+  MeshNet.secondOffMeshConnectionPolygon = _.retrieveClosestPolygon()
+end
+
+function MeshNet.connectPolygons(isBidirectional, polygonFlags)
+  if MeshNet.firstOffMeshConnectionPolygon and MeshNet.secondOffMeshConnectionPolygon then
+    local continentID = Core.retrieveCurrentContinentID()
+    local vertices1 = Array.map(HWT.GetMeshPolygonVertices(continentID, MeshNet.firstOffMeshConnectionPolygon),
+      function(point)
+        return Core.createPosition(unpack(point))
+      end)
+    if vertices1 then
+      local vertices2 = Array.map(HWT.GetMeshPolygonVertices(continentID, MeshNet.secondOffMeshConnectionPolygon),
+        function(point)
+          return Core.createPosition(unpack(point))
+        end)
+      if vertices2 then
+        local combinations = _.generateCombinations(vertices1, vertices2)
+        local shortestConnection = Array.min(combinations, function(combination)
+          return Math.euclideanDistance(combination[1], combination[2])
+        end)
+        firstOffMeshConnectionPoint = shortestConnection[1]
+        secondOffMeshConnectionPoint = shortestConnection[2]
+        MeshNet.saveOffMeshConnection(isBidirectional, polygonFlags)
+      end
+    end
+  end
+end
 
 function MeshNet.setFirstOffMeshConnectionPoint()
   firstOffMeshConnectionPoint = Core.retrieveCharacterPosition()
@@ -44,39 +77,6 @@ function MeshNet.saveOffMeshConnection(isBidirectional, polygonFlags)
   secondOffMeshConnectionPoint = nil
 end
 
-function MeshNet.setFirstOffMeshConnectionPolygon()
-  AddOn.firstOffMeshConnectionPolygon = _.retrieveClosestPolygon()
-end
-
-function MeshNet.setSecondOffMeshConnectionPolygon()
-  AddOn.secondOffMeshConnectionPolygon = _.retrieveClosestPolygon()
-end
-
-function MeshNet.connectPolygons(isBidirectional, polygonFlags)
-  if AddOn.firstOffMeshConnectionPolygon and AddOn.secondOffMeshConnectionPolygon then
-    local continentID = Core.retrieveCurrentContinentID()
-    local vertices1 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.firstOffMeshConnectionPolygon),
-      function(point)
-        return Core.createPosition(unpack(point))
-      end)
-    if vertices1 then
-      local vertices2 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.secondOffMeshConnectionPolygon),
-        function(point)
-          return Core.createPosition(unpack(point))
-        end)
-      if vertices2 then
-        local combinations = _.generateCombinations(vertices1, vertices2)
-        local shortestConnection = Array.min(combinations, function(combination)
-          return Math.euclideanDistance(combination[1], combination[2])
-        end)
-        firstOffMeshConnectionPoint = shortestConnection[1]
-        secondOffMeshConnectionPoint = shortestConnection[2]
-        MeshNet.saveOffMeshConnection(isBidirectional, polygonFlags)
-      end
-    end
-  end
-end
-
 function MeshNet.removeClosestOffMeshConnection()
   local closestOffMeshConnection = AddOn.findClosestOffMeshConnection()
   if closestOffMeshConnection then
@@ -101,7 +101,7 @@ HWT.doWhenHWTIsLoaded(function()
     Core.isMapLoadedForCurrentContinent,
     function()
       local continentID = Core.retrieveCurrentContinentID()
-      local offMeshConnectionsForContinent = Array.filter(AddOn.offMeshConnections, function (offMeshConnection)
+      local offMeshConnectionsForContinent = Array.filter(AddOn.offMeshConnections, function(offMeshConnection)
         local offMeshConnectionContinentID = offMeshConnection[1]
         return offMeshConnectionContinentID == continentID
       end)
@@ -130,20 +130,20 @@ HWT.doWhenHWTIsLoaded(function()
       end
     end
 
-    if AddOn.firstOffMeshConnectionPolygon then
+    if MeshNet.firstOffMeshConnectionPolygon then
       local options = {
         color = { 0, 0, 1, 1 },
         fillColor = { 0, 0, 1, 0.2 }
       }
-      MeshNet.visualizePolygon(AddOn.firstOffMeshConnectionPolygon, options)
+      MeshNet.visualizePolygon(MeshNet.firstOffMeshConnectionPolygon, options)
     end
 
-    if AddOn.secondOffMeshConnectionPolygon then
+    if MeshNet.secondOffMeshConnectionPolygon then
       local options = {
         color = { 0, 0, 1, 1 },
         fillColor = { 0, 0, 1, 0.2 }
       }
-      MeshNet.visualizePolygon(AddOn.secondOffMeshConnectionPolygon, options)
+      MeshNet.visualizePolygon(MeshNet.secondOffMeshConnectionPolygon, options)
     end
   end)
 end)

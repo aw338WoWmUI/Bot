@@ -1,5 +1,5 @@
 ## Title: ObjectToValueLookup
-## Interface: 30400
+## Interface: 11403
 ## Dependencies: Array
 
 ObjectToValueLookup.lua

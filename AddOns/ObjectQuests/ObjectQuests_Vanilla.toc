@@ -1,5 +1,5 @@
 ## Title: ObjectQuests
-## Interface: 30400
+## Interface: 11403
 ## Dependencies: PackageInitialization, Unlocker, Compatibility, Questie, HWT
 
 ObjectQuests.lua

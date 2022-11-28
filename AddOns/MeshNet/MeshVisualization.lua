@@ -23,13 +23,13 @@ local function visualizePolygons()
           fillColor = { 0, 1, 0, 0.2 }
         }
         Array.forEach(polygons, function(polygon)
-          if polygon ~= closestPolygon and polygon ~= AddOn.firstOffMeshConnectionPolygon and polygon ~= AddOn.secondOffMeshConnectionPolygon then
+          if polygon ~= closestPolygon and polygon ~= MeshNet.firstOffMeshConnectionPolygon and polygon ~= MeshNet.secondOffMeshConnectionPolygon then
             MeshNet.visualizePolygon(polygon, options)
           end
         end)
       end
       do
-        if closestPolygon ~= AddOn.firstOffMeshConnectionPolygon and closestPolygon ~= AddOn.secondOffMeshConnectionPolygon then
+        if closestPolygon ~= MeshNet.firstOffMeshConnectionPolygon and closestPolygon ~= MeshNet.secondOffMeshConnectionPolygon then
           local options = {
             color = { 139 / 255, 195 / 255, 74 / 255, 1 },
             fillColor = { 139 / 255, 195 / 255, 74 / 255, 0.2 }
@@ -145,6 +145,10 @@ function MeshNet.toggleMeshVisualization()
   else
     _.toggleMeshVisualization2()
   end
+end
+
+function MeshNet.isMeshVisualizationEnabled()
+  return isMeshVisualizationEnabled
 end
 
 function _.toggleMeshVisualization2()

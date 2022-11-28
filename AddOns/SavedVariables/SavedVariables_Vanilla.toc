@@ -1,5 +1,5 @@
 ## Title: SavedVariables
-## Interface: 30400
+## Interface: 11403
 ## Dependencies: Serialization, HWT
 
 SavedVariables.lua
