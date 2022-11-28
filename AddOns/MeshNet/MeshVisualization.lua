@@ -87,15 +87,13 @@ local function visualizeOffMeshConnections()
     local radius = 0.5
 
     local function drawConnection(connection)
-      local x1, y1, z1, x2, y2, z2 = select(4, HWT.GetOffmeshConnectionDetails(connection))
+      local x1, y1, z1, x2, y2, z2, isBidirectional = select(4, HWT.GetOffmeshConnectionDetails(connection))
       local isPoint1InRange = Core.calculateDistanceFromCharacterToPosition(Core.createPosition(x1, y1, z1)) <= RANGE
       local isPoint2InRange = Core.calculateDistanceFromCharacterToPosition(Core.createPosition(x2, y2, z2)) <= RANGE
       if isPoint1InRange or isPoint2InRange then
         Draw.Line(x1, y1, z1, x2, y2, z2)
-        if isPoint1InRange then
-          Draw.Circle(x1, y1, z1, radius)
-        end
-        if isPoint2InRange then
+        Draw.Circle(x1, y1, z1, radius)
+        if isBidirectional then
           Draw.Circle(x2, y2, z2, radius)
         end
       end

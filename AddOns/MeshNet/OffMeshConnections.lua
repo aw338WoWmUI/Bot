@@ -12,12 +12,86 @@ AddOn.secondOffMeshConnectionPolygon = nil
 local RANGE = 5
 local CIRCLE_RADIUS = 0.5
 
-local function addOffMeshConnection(offMeshConnection)
+function MeshNet.setFirstOffMeshConnectionPoint()
+  firstOffMeshConnectionPoint = Core.retrieveCharacterPosition()
+end
+
+function MeshNet.setSecondOffMeshConnectionPoint()
+  secondOffMeshConnectionPoint = Core.retrieveCharacterPosition()
+end
+
+function MeshNet.saveOffMeshConnection(isBidirectional, polygonFlags)
+  if isBidirectional == nil then
+    isBidirectional = true
+  end
+
+  local continentID = select(8, GetInstanceInfo())
+  local offMeshConnection = {
+    continentID,
+    firstOffMeshConnectionPoint.x,
+    firstOffMeshConnectionPoint.y,
+    firstOffMeshConnectionPoint.z,
+    secondOffMeshConnectionPoint.x,
+    secondOffMeshConnectionPoint.y,
+    secondOffMeshConnectionPoint.z,
+    isBidirectional,
+    polygonFlags
+  }
+  table.insert(AddOn.offMeshConnections, offMeshConnection)
+  _.addOffMeshConnection(offMeshConnection)
+  _.writeOffMeshConnectionsToFile()
+  firstOffMeshConnectionPoint = nil
+  secondOffMeshConnectionPoint = nil
+end
+
+function MeshNet.setFirstOffMeshConnectionPolygon()
+  AddOn.firstOffMeshConnectionPolygon = _.retrieveClosestPolygon()
+end
+
+function MeshNet.setSecondOffMeshConnectionPolygon()
+  AddOn.secondOffMeshConnectionPolygon = _.retrieveClosestPolygon()
+end
+
+function MeshNet.connectPolygons(isBidirectional, polygonFlags)
+  if AddOn.firstOffMeshConnectionPolygon and AddOn.secondOffMeshConnectionPolygon then
+    local continentID = Core.retrieveCurrentContinentID()
+    local vertices1 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.firstOffMeshConnectionPolygon),
+      function(point)
+        return Core.createPosition(unpack(point))
+      end)
+    if vertices1 then
+      local vertices2 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.secondOffMeshConnectionPolygon),
+        function(point)
+          return Core.createPosition(unpack(point))
+        end)
+      if vertices2 then
+        local combinations = _.generateCombinations(vertices1, vertices2)
+        local shortestConnection = Array.min(combinations, function(combination)
+          return Math.euclideanDistance(combination[1], combination[2])
+        end)
+        firstOffMeshConnectionPoint = shortestConnection[1]
+        secondOffMeshConnectionPoint = shortestConnection[2]
+        MeshNet.saveOffMeshConnection(isBidirectional, polygonFlags)
+      end
+    end
+  end
+end
+
+function MeshNet.removeClosestOffMeshConnection()
+  local closestOffMeshConnection = AddOn.findClosestOffMeshConnection()
+  if closestOffMeshConnection then
+    return _.removeOffMeshConnection(closestOffMeshConnection)
+  else
+    return false
+  end
+end
+
+function _.addOffMeshConnection(offMeshConnection)
   HWT.AddOffmeshConnection(unpack(offMeshConnection))
 end
 
-local function addOffMeshConnections(offMeshConnections)
-  Array.forEach(offMeshConnections, addOffMeshConnection)
+function _.addOffMeshConnections(offMeshConnections)
+  Array.forEach(offMeshConnections, _.addOffMeshConnection)
 end
 
 HWT.doWhenHWTIsLoaded(function()
@@ -32,7 +106,7 @@ HWT.doWhenHWTIsLoaded(function()
         return offMeshConnectionContinentID == continentID
       end)
       if #HWT.GetOffmeshConnections(continentID) < #offMeshConnectionsForContinent then
-        addOffMeshConnections(offMeshConnectionsForContinent)
+        _.addOffMeshConnections(offMeshConnectionsForContinent)
       end
     end
   )
@@ -74,51 +148,10 @@ HWT.doWhenHWTIsLoaded(function()
   end)
 end)
 
-function MeshNet.setFirstOffMeshConnectionPoint()
-  firstOffMeshConnectionPoint = Core.retrieveCharacterPosition()
-end
-
-function MeshNet.setSecondOffMeshConnectionPoint()
-  secondOffMeshConnectionPoint = Core.retrieveCharacterPosition()
-end
-
-local function writeOffMeshConnectionsToFile()
+function _.writeOffMeshConnectionsToFile()
   local filePath = HWT.GetWoWDirectory() .. '/Interface/AddOns/MeshNet/OffMeshConnectionsDatabase.lua'
   HWT.WriteFile(filePath,
     'local addOnName, AddOn = ...\n\nAddOn.offMeshConnections = ' .. Serialization.valueToString(AddOn.offMeshConnections) .. '\n')
-end
-
-function MeshNet.saveOffMeshConnection(isBidirectional, polygonFlags)
-  if isBidirectional == nil then
-    isBidirectional = true
-  end
-
-  local continentID = select(8, GetInstanceInfo())
-  local offMeshConnection = {
-    continentID,
-    firstOffMeshConnectionPoint.x,
-    firstOffMeshConnectionPoint.y,
-    firstOffMeshConnectionPoint.z,
-    secondOffMeshConnectionPoint.x,
-    secondOffMeshConnectionPoint.y,
-    secondOffMeshConnectionPoint.z,
-    isBidirectional,
-    polygonFlags
-  }
-  table.insert(AddOn.offMeshConnections, offMeshConnection)
-  addOffMeshConnection(offMeshConnection)
-  writeOffMeshConnectionsToFile()
-  firstOffMeshConnectionPoint = nil
-  secondOffMeshConnectionPoint = nil
-end
-
-function MeshNet.removeClosestOffMeshConnection()
-  local closestOffMeshConnection = AddOn.findClosestOffMeshConnection()
-  if closestOffMeshConnection then
-    return _.removeOffMeshConnection(closestOffMeshConnection)
-  else
-    return false
-  end
 end
 
 function AddOn.findClosestOffMeshConnection()
@@ -155,43 +188,10 @@ function _.removeOffMeshConnection(connection)
     findConnection(AddOn.offMeshConnections, connection))
   if index ~= -1 then
     table.remove(AddOn.offMeshConnections, index)
-    writeOffMeshConnectionsToFile()
+    _.writeOffMeshConnectionsToFile()
   end
 
   return HWT.RemoveOffmeshConnection(connection)
-end
-
-function MeshNet.setFirstOffMeshConnectionPolygon()
-  AddOn.firstOffMeshConnectionPolygon = _.retrieveClosestPolygon()
-end
-
-function MeshNet.setSecondOffMeshConnectionPolygon()
-  AddOn.secondOffMeshConnectionPolygon = _.retrieveClosestPolygon()
-end
-
-function MeshNet.connectPolygons(isBidirectional, polygonFlags)
-  if AddOn.firstOffMeshConnectionPolygon and AddOn.secondOffMeshConnectionPolygon then
-    local continentID = Core.retrieveCurrentContinentID()
-    local vertices1 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.firstOffMeshConnectionPolygon),
-      function(point)
-        return Core.createPosition(unpack(point))
-      end)
-    if vertices1 then
-      local vertices2 = Array.map(HWT.GetMeshPolygonVertices(continentID, AddOn.secondOffMeshConnectionPolygon),
-        function(point)
-          return Core.createPosition(unpack(point))
-        end)
-      if vertices2 then
-        local combinations = _.generateCombinations(vertices1, vertices2)
-        local shortestConnection = Array.min(combinations, function(combination)
-          return Math.euclideanDistance(combination[1], combination[2])
-        end)
-        firstOffMeshConnectionPoint = shortestConnection[1]
-        secondOffMeshConnectionPoint = shortestConnection[2]
-        MeshNet.saveOffMeshConnection(isBidirectional, polygonFlags)
-      end
-    end
-  end
 end
 
 function _.generateCombinations(a, b)
