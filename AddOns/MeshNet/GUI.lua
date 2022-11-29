@@ -44,9 +44,10 @@ function createButton(id, macroText, tooltipText, postClick)
   end)
 
   button:SetScript('PostClick', function (self, button, down)
-    self:SetChecked(false)
     if postClick then
       postClick(self, button, down)
+    else
+      self:SetChecked(false)
     end
   end)
 
@@ -74,9 +75,7 @@ local function createTooltipText(header, name)
   end
 end
 
-local button1 = createButton(1, '/script MeshNet.toggleMeshVisualization()', createTooltipText(nil, BINDING_NAME_MESHNETBARBUTTON1), function (self)
-  self:SetChecked(MeshNet.isMeshVisualizationEnabled())
-end)
+local button1 = createButton(1, '/script MeshNet.toggleMeshVisualization()', createTooltipText(nil, BINDING_NAME_MESHNETBARBUTTON1), Function.noOperation)
 button1:SetPoint('BOTTOMLEFT', 0, 0)
 
 local button2 = createButton(2, '/script MeshNet.setFirstOffMeshConnectionPolygon()', createTooltipText(BINDING_HEADER_CONNECTING_TWO_POLYGONS, BINDING_NAME_MESHNETBARBUTTON2), function (self)
@@ -109,6 +108,14 @@ button9:SetPoint('TOPLEFT', button8, 'BOTTOMLEFT', 0, -6)
 
 local button10 = createButton(10, '/script MeshNet.removeClosestOffMeshConnection()', createTooltipText(nil, BINDING_NAME_MESHNETBARBUTTON10))
 button10:SetPoint('LEFT', button6, 'RIGHT', 6, 0)
+
+MeshNet.onMeshVisualizationToggled(function ()
+  button1:SetChecked(MeshNet.isMeshVisualizationEnabled())
+end)
+
+MeshNet.onFirstOffMeshConnectionPolygonSet(function ()
+  button2:SetChecked(Boolean.toBoolean(MeshNet.firstOffMeshConnectionPolygon))
+end)
 
 print('button')
 

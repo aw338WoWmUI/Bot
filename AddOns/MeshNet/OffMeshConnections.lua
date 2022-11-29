@@ -6,6 +6,8 @@ local _ = {}
 local firstOffMeshConnectionPoint = nil
 local secondOffMeshConnectionPoint = nil
 
+local firstOffMeshConnectionPolygonSetHook = Hook.Hook:new()
+
 MeshNet.firstOffMeshConnectionPolygon = nil
 MeshNet.secondOffMeshConnectionPolygon = nil
 
@@ -14,6 +16,7 @@ local CIRCLE_RADIUS = 0.5
 
 function MeshNet.setFirstOffMeshConnectionPolygon()
   MeshNet.firstOffMeshConnectionPolygon = _.retrieveClosestPolygon()
+  firstOffMeshConnectionPolygonSetHook:runCallbacks()
 end
 
 function MeshNet.setSecondOffMeshConnectionPolygon()
@@ -84,6 +87,10 @@ function MeshNet.removeClosestOffMeshConnection()
   else
     return false
   end
+end
+
+function MeshNet.onFirstOffMeshConnectionPolygonSet(callback)
+  firstOffMeshConnectionPolygonSetHook:registerCallback(callback)
 end
 
 function _.addOffMeshConnection(offMeshConnection)

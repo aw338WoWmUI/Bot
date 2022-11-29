@@ -1,6 +1,6 @@
 ## Title: Mesh Net
 ## Interface: 30400
-## Dependencies: Core, Function, HWT, Array, Draw, Conditionals, Math, SavedVariables, Boolean
+## Dependencies: Core, Function, HWT, Array, Draw, Conditionals, Math, SavedVariables, Boolean, Hook
 
 MeshVisualization.lua
 OffMeshConnectionsDatabase.lua

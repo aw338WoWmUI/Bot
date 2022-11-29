@@ -75,6 +75,41 @@ function MeshNet.visualizePolygon(polygon, options)
   end
 end
 
+local meshVisualizationToggledHook = Hook.Hook:new()
+
+function MeshNet.onMeshVisualizationToggled(callback)
+  print('meshVisualizationToggledHook')
+  DevTools_Dump(meshVisualizationToggledHook)
+  meshVisualizationToggledHook:registerCallback(callback)
+end
+
+function MeshNet.toggleMeshVisualization()
+  local isEnablingMeshVisualization = not isMeshVisualizationEnabled
+
+  if isEnablingMeshVisualization then
+    local continentID = Core.retrieveCurrentContinentID()
+    if not HWT.IsMapLoaded(continentID) then
+      HWT.LoadMap(continentID)
+      Conditionals.doOnceWhen(
+        function()
+          return HWT.IsMapLoaded(continentID)
+        end,
+        function ()
+          _.toggleMeshVisualization2()
+        end
+      )
+    else
+      _.toggleMeshVisualization2()
+    end
+  else
+    _.toggleMeshVisualization2()
+  end
+end
+
+function MeshNet.isMeshVisualizationEnabled()
+  return isMeshVisualizationEnabled
+end
+
 local function setDrawColor(red, green, blue)
   Draw.SetColorRaw(red / 255, green / 255, blue / 255, 1)
 end
@@ -124,33 +159,7 @@ Draw.Sync(function()
   end
 end)
 
-function MeshNet.toggleMeshVisualization()
-  local isEnablingMeshVisualization = not isMeshVisualizationEnabled
-
-  if isEnablingMeshVisualization then
-    local continentID = Core.retrieveCurrentContinentID()
-    if not HWT.IsMapLoaded(continentID) then
-      HWT.LoadMap(continentID)
-      Conditionals.doOnceWhen(
-        function()
-          return HWT.IsMapLoaded(continentID)
-        end,
-        function ()
-          _.toggleMeshVisualization2()
-        end
-      )
-    else
-      _.toggleMeshVisualization2()
-    end
-  else
-    _.toggleMeshVisualization2()
-  end
-end
-
-function MeshNet.isMeshVisualizationEnabled()
-  return isMeshVisualizationEnabled
-end
-
 function _.toggleMeshVisualization2()
   isMeshVisualizationEnabled = not isMeshVisualizationEnabled
+  meshVisualizationToggledHook:runCallbacks()
 end
