@@ -96,5 +96,5 @@ async function downloadQuest(id) {
   return hasBeenDownloaded
 }
 
-const baseURL = 'https://www.wowhead.com/quests'
+const baseURL = 'https://www.wowhead.com/quests/dragonflight'
 await downloadAllQuests(baseURL, 1)
