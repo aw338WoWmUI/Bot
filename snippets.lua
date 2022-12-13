@@ -358,3 +358,7 @@ Movement.isPointInWater(Movement.savedVariables.perCharacter.MovementPath[8])
 Movement.canPlayerStandOnPoint(Movement.savedVariables.perCharacter.MovementPath[8])
 
 Coroutine.runAsCoroutine(function () print(talents()) end)
+
+Compatibility.QuestLog.SetAbandonQuest(C_SuperTrack.GetSuperTrackedQuestID())
+Compatibility.QuestLog.AbandonQuest()
+

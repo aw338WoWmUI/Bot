@@ -2331,15 +2331,17 @@ function _.sellItemsAtVendor()
   for containerIndex = 0, NUM_BAG_SLOTS do
     for slotIndex = 1, Compatibility.Container.receiveNumberOfSlotsOfContainer(containerIndex) do
       local itemInfo = Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex)
-      local classID = select(6, GetItemInfoInstant(itemInfo.itemID))
-      if itemInfo and (
-        itemInfo.quality == Enum.ItemQuality.Poor or
-          (itemInfo.quality == Enum.ItemQuality.Common and (classID == Enum.ItemClass.Weapon or classID == Enum.ItemClass.Armor)) or
-          (AddOn.savedVariables.perCharacter.QuestingOptions.sellUncommon and itemInfo.quality == Enum.ItemQuality.Uncommon) or
-          (AddOn.savedVariables.perCharacter.QuestingOptions.sellRare and itemInfo.quality == Enum.ItemQuality.Rare)
-      ) then
-        Compatibility.Container.UseContainerItem(containerIndex, slotIndex)
-        Events.waitForEvent('BAG_UPDATE_DELAYED')
+      if itemInfo then
+        local classID = select(6, GetItemInfoInstant(itemInfo.itemID))
+        if itemInfo and (
+          itemInfo.quality == Enum.ItemQuality.Poor or
+            (itemInfo.quality == Enum.ItemQuality.Common and (classID == Enum.ItemClass.Weapon or classID == Enum.ItemClass.Armor)) or
+            (AddOn.savedVariables.perCharacter.QuestingOptions.sellUncommon and itemInfo.quality == Enum.ItemQuality.Uncommon) or
+            (AddOn.savedVariables.perCharacter.QuestingOptions.sellRare and itemInfo.quality == Enum.ItemQuality.Rare)
+        ) then
+          Compatibility.Container.UseContainerItem(containerIndex, slotIndex)
+          Events.waitForEvent('BAG_UPDATE_DELAYED')
+        end
       end
     end
   end
