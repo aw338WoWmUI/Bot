@@ -2,22 +2,26 @@ export function concurrent(things, numberOfSimultaneousRuns, run) {
   return new Promise(resolve => {
     let nextIndex = 0
     let numberOfRunning = 0
-    let hasResolved = false
 
     function runNext() {
       if (nextIndex < things.length) {
         const thing = things[nextIndex]
         nextIndex++
-        run(thing).finally(runNext)
-      } else if (!hasResolved) {
-        hasResolved = true
+        numberOfRunning++
+        run(thing).finally(onFinished)
+      } else if (numberOfRunning === 0) {
         resolve()
       }
     }
 
-    while (numberOfRunning < numberOfSimultaneousRuns) {
+    function onFinished() {
+      numberOfRunning--
       runNext()
-      numberOfRunning++
+    }
+
+    const numberOfInitialRuns = Math.min(things.length, numberOfSimultaneousRuns)
+    for (let i = 1; i <= numberOfInitialRuns; i++) {
+      runNext()
     }
   })
 }

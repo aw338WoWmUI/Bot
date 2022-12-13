@@ -3,7 +3,7 @@ import { readFile } from '@sanjo/read-file'
 import { writeFile } from '@sanjo/write-file'
 import { parse } from 'node-html-parser'
 import { readdir } from 'node:fs/promises'
-import { convertToLua, sortIDs } from './lib.js'
+import { concurrent, convertToLua, sortIDs } from './lib.js'
 
 const infoBoxContentRegExp = /WH\.markup\.printHtml.+?;/s
 const requiresLevelRegExp = /Requires level (\d+)/
@@ -292,15 +292,10 @@ for (const file of files) {
 sortIDs(IDs)
 
 const quests = []
-// await concurrent(IDs, 1000, async function (ID) {
-//   const quest = await processQuest(ID)
-//   quests.push(quest)
-// })
-
-for (const ID of IDs) {
+await concurrent(IDs, 1000, async function (ID) {
   const quest = await processQuest(ID)
   quests.push(quest)
-}
+})
 
 const content = 'quests = ' + convertToLua(quests)
 await writeFile('quests.lua', content)

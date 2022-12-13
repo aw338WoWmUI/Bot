@@ -1,6 +1,7 @@
 node_modules
 *.lua
 npcs/*.html
+npcs_/*.html
 quests/*.html
 quests_/*.html
 quest_items/*.html
