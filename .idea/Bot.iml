@@ -2,10 +2,13 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <excludeFolder url="file://$MODULE_DIR$/data_copier/npcs" />
-      <excludeFolder url="file://$MODULE_DIR$/data_copier/quests" />
       <excludeFolder url="file://$MODULE_DIR$/AddOns/Questing/data" />
       <excludeFolder url="file://$MODULE_DIR$/data_copier/quest_items" />
+      <excludeFolder url="file://$MODULE_DIR$/data_copier/quests_" />
+      <excludeFolder url="file://$MODULE_DIR$/data_copier/quests" />
+      <excludeFolder url="file://$MODULE_DIR$/data_copier/npcs_" />
+      <excludeFolder url="file://$MODULE_DIR$/data_copier/npcs" />
+      <excludeFolder url="file://$MODULE_DIR$/data_copier/npcs2" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

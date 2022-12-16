@@ -46,7 +46,17 @@ async function determineTotalNumberOfNPCs(baseURL) {
   const content = response.body
 
   const match = numberOfNPCsFoundRegExp.exec(content)
-  const numberOfNPCs = parseNumber(match[1])
+  let numberOfNPCs
+  if (match) {
+    numberOfNPCs = parseNumber(match[1])
+  } else {
+    const match = /"numberOfItems":(\d+)/.exec(content)
+    if (match) {
+      numberOfNPCs = parseNumber(match[1])
+    } else {
+      numberOfNPCs = undefined
+    }
+  }
 
   return numberOfNPCs
 }
@@ -89,4 +99,4 @@ async function downloadNPC(id) {
 
 const baseURL = 'https://www.wowhead.com/npcs'
 startTime = Date.now()
-await downloadAllNPCs(baseURL, 199026)
+await downloadAllNPCs(baseURL)

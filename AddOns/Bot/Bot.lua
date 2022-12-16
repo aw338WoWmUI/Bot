@@ -1,7 +1,7 @@
 local addOnName, AddOn = ...
+local _ = {}
 --- @class Bot
 Bot = Bot or {}
---- @type RecommendedSpellCaster
 
 local isRunning = false
 
@@ -43,6 +43,36 @@ function Bot.castCombatRotationSpell()
     RecommendedSpellCaster.castRecommendedSpell()
   elseif _G.GMR and GMR.ClassRotation then
     GMR.ClassRotation()
+  end
+end
+
+function _.castRecommendedSpell()
+  local ability = AddOn.retrieveNextAbility()
+  if RecommendedSpellCaster.isItem(ability) then
+    RecommendedSpellCaster.castItem(ability)
+  else
+    AddOn.castSpell(ability)
+  end
+
+  if HWT.IsAoEPending() then
+    local position
+    local targetPosition = Core.retrieveObjectPosition('target')
+    if targetPosition then
+      position = targetPosition
+    else
+      position = Core.retrieveCharacterPosition()
+    end
+    Core.clickPosition(position)
+  end
+end
+
+function _.castSpell(ability)
+  if (
+    not IsCurrentSpell(ability.id) and
+      AddOn.canBeCasted(ability.id) and
+      IsSpellInRange(ability.name, 'target') ~= 0
+  ) then
+    CastSpellByName(ability.name)
   end
 end
 

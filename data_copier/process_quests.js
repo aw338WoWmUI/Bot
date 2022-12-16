@@ -1,9 +1,9 @@
+import { escapeForRegExp } from '@sanjo/escape-for-reg-exp'
 import { readFile } from '@sanjo/read-file'
 import { writeFile } from '@sanjo/write-file'
-import { escapeForRegExp } from '@sanjo/escape-for-reg-exp'
+import { parse } from 'node-html-parser'
 import { readdir } from 'node:fs/promises'
 import { concurrent, convertToLua, sortIDs } from './lib.js'
-import { parse } from 'node-html-parser'
 
 const infoBoxContentRegExp = /WH\.markup\.printHtml.+?;/s
 const requiresLevelRegExp = /Requires level (\d+)/
@@ -16,6 +16,11 @@ const storylineRegExp = /<div class="quick-facts-storyline-list">(.*?)<\/div>/s
 
 async function processQuest(id) {
   const content = await readFile('quests/' + id + '.html')
+
+  const questDoesNotExistRegExp = new RegExp(`Quest #${id} doesn't exist.`)
+  if (questDoesNotExistRegExp.test(content)) {
+    return null
+  }
 
   const quest = {
     id,
@@ -70,11 +75,55 @@ async function processQuest(id) {
     }
   }
 
-  quest.preQuestIDs = extractPreQuestIDs(content)
+  quest.preQuestIDs = extractSeriesPreQuestIDs(content)
   quest.storylinePreQuestIDs = extractStorylinePreQuestIDs(content)
+  quest.followUpQuestIDs = extractSeriesFollowUpQuestIDs(content)
+  quest.storylineFollowUpQuestIDs = extractStorylineFollowUpQuestIDs(content)
+  quest.requiresQuestIDs = extractRequiresQuestIDs(content)
+  quest.unlockedQuestIDs = extractUnlockedQuestIDs(content)
   quest.objectives = extractObjectives(content)
 
+  const ISKAARA_TUSKARR = 2511
+  const VALDRAKKEN_ACCORD = 2510
+  const DRAGONSCALE_EXPEDITION = 2507
+
+  quest.reputation = {
+    [ISKAARA_TUSKARR]: extractReputationForIskaaraTuskarr(content),
+    [VALDRAKKEN_ACCORD]: extractReputationForValdrakkenAccord(content),
+    [DRAGONSCALE_EXPEDITION]: extractReputationForDragonscaleExpedition(content),
+  }
+
   return quest
+}
+
+function extractReputationForIskaaraTuskarr(content) {
+  const regExp = /<span>(\d+)<\/span> reputation with <a href="\/faction=2511\/iskaara-tuskarr">Iskaara Tuskarr/
+  const match = regExp.exec(content)
+  if (match) {
+    return parseInt(match[1], 10)
+  } else {
+    return 0
+  }
+}
+
+function extractReputationForValdrakkenAccord(content) {
+  const regExp = /<span>(\d+)<\/span> reputation with <a href="\/faction=2510\/valdrakken-accord">Valdrakken Accord/
+  const match = regExp.exec(content)
+  if (match) {
+    return parseInt(match[1], 10)
+  } else {
+    return 0
+  }
+}
+
+function extractReputationForDragonscaleExpedition(content) {
+  const regExp = /<span>(\d+)<\/span> reputation with <a href="\/faction=2507\/dragonscale-expedition">Dragonscale Expedition/
+  const match = regExp.exec(content)
+  if (match) {
+    return parseInt(match[1], 10)
+  } else {
+    return 0
+  }
 }
 
 function extractObjects(content, label) {
@@ -88,14 +137,14 @@ function extractObjects(content, label) {
       const id = parseInt(match2[2], 10)
       IDs.push({
         type: match2[1],
-        id
+        id,
       })
     }
   }
   return IDs
 }
 
-function extractPreQuestIDs(content) {
+function extractSeriesPreQuestIDs(content) {
   const preQuestIDs = []
   const match = seriesRegExp.exec(content)
   if (match) {
@@ -115,6 +164,31 @@ function extractPreQuestIDs(content) {
   }
 
   return preQuestIDs
+}
+
+function extractSeriesFollowUpQuestIDs(content) {
+  const followUpQuestIDs = []
+  const match = seriesRegExp.exec(content)
+  let hasQuestBeenFound = false
+  if (match) {
+    const content2 = match[1]
+    const regExp2 = /<td>(.*?)<\/td>/g
+    let match2
+    while (match2 = regExp2.exec(content2)) {
+      const content3 = match2[1]
+      const match = questRegExp.exec(content3)
+      if (match) {
+        if (hasQuestBeenFound) {
+          const id = parseInt(match[1], 10)
+          followUpQuestIDs.push(id)
+        }
+      } else {
+        hasQuestBeenFound = true
+      }
+    }
+  }
+
+  return followUpQuestIDs
 }
 
 function extractStorylinePreQuestIDs(content) {
@@ -139,6 +213,65 @@ function extractStorylinePreQuestIDs(content) {
   return storylinePreQuestIDs
 }
 
+function extractStorylineFollowUpQuestIDs(content) {
+  const storylineFollowUpQuestIDs = []
+  const match = storylineRegExp.exec(content)
+  if (match) {
+    const regExp3 = /<li class="current">(.*?)<\/li>/
+    const content2 = match[1]
+    const match3 = regExp3.exec(content2)
+    if (match3) {
+      const content3 = content2.substr(match3.index + match3[0].length)
+      const regExp2 = /<li.*?>(.*?)<\/li>/g
+      let match2
+      while (match2 = regExp2.exec(content3)) {
+        const content3 = match2[1]
+        const match = questRegExp.exec(content3)
+        if (match) {
+          const id = parseInt(match[1], 10)
+          storylineFollowUpQuestIDs.push(id)
+        } else {
+          break
+        }
+      }
+    }
+  }
+
+  return storylineFollowUpQuestIDs
+}
+
+function extractRequiresQuestIDs(content) {
+  const questIDs = []
+  const infoBoxContent1RegExp = /WH\.markup\.printHtml.+?infobox-contents-1/
+  const match = infoBoxContent1RegExp.exec(content)
+  if (match) {
+    const content2 = match[0]
+    const questRegExp = /quest=(\d+)/g
+    let match2
+    while (match2 = questRegExp.exec(content2)) {
+      const questID = parseInt(match2[1], 10)
+      questIDs.push(questID)
+    }
+  }
+  return questIDs
+}
+
+function extractUnlockedQuestIDs(content) {
+  const questIDs = []
+  const infoBoxContent2RegExp = /WH\.markup\.printHtml.+?infobox-contents-2/
+  const match = infoBoxContent2RegExp.exec(content)
+  if (match) {
+    const content2 = match[0]
+    const questRegExp = /quest=(\d+)/g
+    let match2
+    while (match2 = questRegExp.exec(content2)) {
+      const questID = parseInt(match2[1], 10)
+      questIDs.push(questID)
+    }
+  }
+  return questIDs
+}
+
 const objectiveIDRegExp = /(npc|object|item)=(\d+)/
 
 function extractObjectives(content) {
@@ -158,7 +291,7 @@ function extractObjectives(content) {
           const id = parseInt(match2[2], 10)
           objective.push({
             type: match2[1],
-            id
+            id,
           })
         }
       }

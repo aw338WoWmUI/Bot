@@ -26,21 +26,21 @@ actionBar:SetHeight(maximumNumberOfStackedButtons * buttonHeight + (maximumNumbe
 actionBar:Show()
 
 function createButton(id, macroText, tooltipText, postClick)
-  local button = CreateFrame('CheckButton', 'MeshNetBarButton' .. id, actionBar, 'ActionButtonTemplate')
+  local button = CreateFrame('CheckButton', 'MeshNetBarButton' .. id, actionBar, 'ActionButtonTemplate, SecureActionButtonTemplate')
   button.buttonType = 'MESHNETBARBUTTON'
   button:SetID(id)
   button:SetAttribute('id', id)
   button:RegisterForClicks('AnyUp')
-  if button.UpdateHotkeys then
-    button:UpdateHotkeys(button.buttonType)
+  if _G.ActionBarActionButtonMixin and ActionBarActionButtonMixin.UpdateHotkeys then
+    ActionBarActionButtonMixin.UpdateHotkeys(button, button.buttonType)
   elseif _G.ActionButton_UpdateHotkeys then
     ActionButton_UpdateHotkeys(button, button.buttonType)
   end
   button:SetAttribute('type', 'macro')
   button:SetAttribute('macrotext', macroText)
   button:SetPoint('CENTER', actionBar, 'LEFT', 0, 0)
-  button:SetScript('OnClick', function (self, button)
-    SecureActionButton_OnClick(self, button)
+  button:SetScript('OnClick', function (self, button, down)
+    SecureActionButton_OnClick(self, button, down, false, true)
   end)
 
   button:SetScript('PostClick', function (self, button, down)
