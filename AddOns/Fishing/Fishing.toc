@@ -1,0 +1,5 @@
+## Title: Fishing
+## Interface: 100002
+## Dependencies: PackageInitialization, Core, Coroutine, Development, HWT
+
+Fishing.lua

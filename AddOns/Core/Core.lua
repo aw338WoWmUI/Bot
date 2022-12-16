@@ -141,6 +141,10 @@ function Core.hasGossip(object)
   return Core.isUnitNPCType(object, Core.NpcFlags.Gossip)
 end
 
+function Core.isInteractable(object, checkDistance)
+	return HWT.GameObjectIsUsable(pointer, Boolean.toBoolean(checkDistance))
+end
+
 local sellVendorFlags = {
   Core.NpcFlags.Vendor,
   Core.NpcFlags.AmmoVendor,
