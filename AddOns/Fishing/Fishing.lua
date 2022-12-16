@@ -9,25 +9,34 @@ local FISHING_SPELL_ID = 131474
 local FISHING_BOBBER_OBJECT_ID = 35591
 
 function fish()
-  Coroutine.runAsCoroutine(function()
-    while true do
-      Core.castSpellByID(FISHING_SPELL_ID)
-      HWT.ResetAfk()
-      Coroutine.waitForDuration(1)
-      local fishingBobber = findFishingBobber()
-      local hasSomethingBitten = Coroutine.waitFor(function ()
-        return HWT.ObjectAnimationState(fishingBobber) == 1
-      end, 30)
-      if hasSomethingBitten then
-        local waitDurationBeforeInteractingWithBobber = _.randomFloat(0.2, 1)
-        Coroutine.waitForDuration(waitDurationBeforeInteractingWithBobber)
-        Core.interactWithObject(fishingBobber)
+  if isFishing then
+    isFishing = false
+  else
+    isFishing = true
+    Coroutine.runAsCoroutine(function()
+      while true do
+        Core.castSpellByID(FISHING_SPELL_ID)
         HWT.ResetAfk()
+        Coroutine.waitForDuration(1)
+        local fishingBobber = findFishingBobber()
+        Coroutine.waitFor(function ()
+          return HWT.ObjectExists(fishingBobber) and HWT.ObjectAnimationState(fishingBobber) == 1
+        end, 30)
+        if HWT.ObjectExists(fishingBobber) and HWT.ObjectAnimationState(fishingBobber) == 1 then
+          local waitDurationBeforeInteractingWithBobber = _.randomFloat(0.2, 1)
+          Coroutine.waitForDuration(waitDurationBeforeInteractingWithBobber)
+          Core.interactWithObject(fishingBobber)
+          HWT.ResetAfk()
+        end
+        if isFishing then
+          local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
+          Coroutine.waitForDuration(waitDurationUntilNextFishing)
+        else
+          return
+        end
       end
-      local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
-      Coroutine.waitForDuration(waitDurationUntilNextFishing)
-    end
-  end)
+    end)
+  end
 end
 
 function _.randomFloat(from, to)
