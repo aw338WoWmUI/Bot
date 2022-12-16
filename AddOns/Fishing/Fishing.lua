@@ -8,6 +8,8 @@ local _ = {}
 local FISHING_SPELL_ID = 131474
 local FISHING_BOBBER_OBJECT_ID = 35591
 
+local isFishing = false
+
 function fish()
   if isFishing then
     isFishing = false
@@ -29,8 +31,13 @@ function fish()
           HWT.ResetAfk()
         end
         if isFishing then
-          local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
-          Coroutine.waitForDuration(waitDurationUntilNextFishing)
+          if Questing.areBagsFull() then
+            RunMacroText('/logout')
+            return
+          else
+            local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
+            Coroutine.waitForDuration(waitDurationUntilNextFishing)
+          end
         else
           return
         end

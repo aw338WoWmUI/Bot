@@ -1,5 +1,5 @@
 ## Title: Fishing
 ## Interface: 11403
-## Dependencies: PackageInitialization, Core, Coroutine, Development, HWT
+## Dependencies: PackageInitialization, Core, Coroutine, Development, HWT, Questing
 
 Fishing.lua
