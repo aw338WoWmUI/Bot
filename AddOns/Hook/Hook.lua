@@ -1,8 +1,6 @@
+Hook = Hook or {}
 local addOnName, AddOn = ...
-PackageInitialization.initializePackage(addOnName)
 local _ = {}
-
-Hook = {}
 
 function Hook:new()
   local hook = {

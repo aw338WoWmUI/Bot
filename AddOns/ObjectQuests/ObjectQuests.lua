@@ -1,8 +1,8 @@
+ObjectQuests = ObjectQuests or {}
 local addOnName, AddOn = ...
-PackageInitialization.initializePackage(addOnName)
 local _ = {}
 
-function ObjectIsQuestObjective(object)
+function ObjectQuests.ObjectIsQuestObjective(object)
   if Compatibility.isRetail() then
     Unlocker.ObjectIsQuestObjective(object)
   else
@@ -16,7 +16,7 @@ function ObjectIsQuestObjective(object)
   end
 end
 
-function ObjectQuests(object)
+function ObjectQuests.ObjectQuests(object)
   if Compatibility.isRetail() then
     Unlocker.ObjectQuests(object)
   else

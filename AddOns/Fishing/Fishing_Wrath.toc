@@ -1,5 +1,5 @@
 ## Title: Fishing
 ## Interface: 30400
-## Dependencies: PackageInitialization, Core, Coroutine, Development, HWT, Questing
+## Dependencies: Core, Coroutine, Development, HWT, Questing
 
 Fishing.lua

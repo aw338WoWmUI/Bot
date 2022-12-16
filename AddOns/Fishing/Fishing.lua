@@ -1,16 +1,18 @@
 --- Usage: /script Fishing.fish()
 --- `/reload` to stop the script.
 
+Fishing = Fishing or {}
 local addOnName, AddOn = ...
-PackageInitialization.initializePackage(addOnName)
 local _ = {}
 
 local FISHING_SPELL_ID = 131474
 local FISHING_BOBBER_OBJECT_ID = 35591
 
+-- Massive Thresher
+
 local isFishing = false
 
-function fish()
+function Fishing.fish()
   if isFishing then
     isFishing = false
   else
@@ -21,6 +23,7 @@ function fish()
         HWT.ResetAfk()
         Coroutine.waitForDuration(1)
         local fishingBobber = findFishingBobber()
+        print('fishingBobber', fishingBobber)
         Coroutine.waitFor(function ()
           return HWT.ObjectExists(fishingBobber) and HWT.ObjectAnimationState(fishingBobber) == 1
         end, 30)
@@ -50,7 +53,7 @@ function _.randomFloat(from, to)
   return from + math.random() * (to - from)
 end
 
-function findFishingBobber()
+function Fishing.findFishingBobber()
   return Array.find(Core.retrieveObjectPointers(), function(pointer)
     return HWT.ObjectId(pointer) == FISHING_BOBBER_OBJECT_ID and HWT.GameObjectIsUsable(pointer, false)
   end)

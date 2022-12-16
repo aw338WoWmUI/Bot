@@ -19,7 +19,6 @@ await mkdir(addOnPath, {
   const content =
 `## Title: ${addOnName}
 ## Interface: 100002
-## Dependencies: PackageInitialization
 
 ${addOnName}.lua
 `
@@ -30,7 +29,6 @@ ${addOnName}.lua
   const content =
 `## Title: ${addOnName}
 ## Interface: 30400
-## Dependencies: PackageInitialization
 
 ${addOnName}.lua
 `
@@ -41,7 +39,6 @@ ${addOnName}.lua
   const content =
 `## Title: ${addOnName}
 ## Interface: 11403
-## Dependencies: PackageInitialization
 
 ${addOnName}.lua
 `
@@ -50,8 +47,8 @@ ${addOnName}.lua
 
 {
   const content =
-`local addOnName, AddOn = ...
-PackageInitialization.initializePackage(addOnName)
+`${addOnName} = ${addOnName} or {}
+local addOnName, AddOn = ...
 local _ = {}
 `
   await writeFile(join(addOnPath, `${addOnName}.lua`), content)

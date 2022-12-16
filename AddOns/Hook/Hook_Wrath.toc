@@ -1,5 +1,4 @@
 ## Title: Hook
 ## Interface: 30400
-## Dependencies: PackageInitialization
 
 Hook.lua

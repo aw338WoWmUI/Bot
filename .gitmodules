@@ -40,6 +40,3 @@
 [submodule "AddOns/RecommendedSpellCaster"]
 	path = AddOns/RecommendedSpellCaster
 	url = https://github.com/AkiKonani/RecommendedSpellCaster.git
-[submodule "AddOns/PackageInitialization"]
-	path = AddOns/PackageInitialization
-	url = https://github.com/SanjoSolutions/LuaPackageInitialization.git
