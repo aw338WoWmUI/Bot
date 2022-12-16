@@ -1,7 +1,6 @@
 local playerPosition = Core.retrieveCharacterPosition(); print(Core.calculateDistanceBetweenPositions(playerPosition, Movement.path[5]))
 Movement.isPositionInTheAir(Movement.path[2])
 Movement.moveToSavedPath()
-coroutine.wrap(function () DevTools_Dump(retrieveQuestStartPoints()) end)()
 
 Core.retrieveDistanceBetweenObjects('player', 'target')
 
@@ -89,8 +88,6 @@ Core.retrieveObjectPointer('target')
 
 Core.retrieveObjectWhichAreCloseToTheCharacter(250)
 
-coroutine.wrap(function () DevTools_Dump(retrieveQuestStartPoints()) end)()
-
 C_SuperTrack.GetSuperTrackedQuestID()
 
 shouldQuestBeAvailable(Array.find(quests, function (quest) return quest.id == 26391 end))
@@ -131,7 +128,6 @@ HWT.ObjectQuests(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209436))
 HWT.GameObjectType(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209436))
 
 coroutine.wrap(function () DevTools_Dump(retrieveObjectivePoints()) end)()
-coroutine.wrap(function () DevTools_Dump(retrieveQuestStartPoints()) end)()
 coroutine.wrap(function () DevTools_Dump(retrieveObjectPoints()) end)()
 HWT.ObjectQuests(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209463))
 HWT.GameObjectType(Core.findClosestObjectToCharacterWithOneOfObjectIDs(209463))
@@ -148,10 +144,6 @@ coroutine.wrap(function () DevTools_Dump(retrievePoints()) end)()
 coroutine.wrap(function () Movement.mountOnFlyingMount() end)()
 
 Coroutine.runAsCoroutine(function () DevTools_Dump(retrieveObjectivePoints()) end)
-
-Coroutine.runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)
-
-Coroutine.runAsCoroutine(function () DevTools_Dump(retrieveQuestStartPoints()) end)
 
 Coroutine.runAsCoroutine(function () DevTools_Dump(retrieveObjectPoints()) end)
 

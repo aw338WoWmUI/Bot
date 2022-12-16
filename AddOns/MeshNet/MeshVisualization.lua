@@ -78,8 +78,6 @@ end
 local meshVisualizationToggledHook = Hook.Hook:new()
 
 function MeshNet.onMeshVisualizationToggled(callback)
-  print('meshVisualizationToggledHook')
-  DevTools_Dump(meshVisualizationToggledHook)
   meshVisualizationToggledHook:registerCallback(callback)
 end
 

@@ -97,12 +97,6 @@ async function downloadNPC(id) {
   return hasBeenDownloaded
 }
 
-const baseURLs = [
-  'https://www.wowhead.com/npcs?filter=6:7;13644:1;0:0',
-  'https://www.wowhead.com/npcs?filter=6:7;13646:1;0:0',
-  'https://www.wowhead.com/npcs?filter=6:7;13645:1;0:0',
-  'https://www.wowhead.com/npcs?filter=6:7;13647:1;0:0',
-]
-
-const baseURL = baseURLs[3]
+const baseURL = 'https://www.wowhead.com/npcs'
+startTime = Date.now()
 await downloadAllNPCs(baseURL)

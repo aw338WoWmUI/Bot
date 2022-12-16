@@ -273,7 +273,9 @@ function Core.retrieveClosestPositionOnMesh(worldPosition, includeWater)
     includeWater = true
   end
 
-  Core.loadMapForContinentIfNotLoaded(worldPosition.continentID)
+  if worldPosition.continentID then
+    Core.loadMapForContinentIfNotLoaded(worldPosition.continentID)
+  end
 
   local x, y, z = HWT.GetClosestPositionOnMesh(
     worldPosition.continentID, worldPosition.x, worldPosition.y, worldPosition.z, not includeWater)
@@ -449,7 +451,10 @@ function Core.retrieveZCoordinate2(position, deltaZ)
 end
 
 function Core.retrieveZCoordinateOnPolygon(position, polygon)
-  Core.loadMapForContinentIfNotLoaded(position.continentID)
+  if position.continentID then
+    Core.loadMapForContinentIfNotLoaded(position.continentID)
+  end
+
   local vertexes = HWT.GetMeshPolygonVertices(position.continentID, polygon)
   local vertex1 = vertexes[1]
   local vertex2 = vertexes[2]
@@ -493,7 +498,11 @@ function Core.retrieveClosestMeshPolygon(worldPosition, deltaX, deltaY, deltaZ, 
   if includeWater == nil then
     includeWater = true
   end
-  Core.loadMapForContinentIfNotLoaded(worldPosition.continentID)
+
+  if worldPosition.continentID then
+    Core.loadMapForContinentIfNotLoaded(worldPosition.continentID)
+  end
+
   return HWT.GetClosestMeshPolygon(worldPosition.continentID, worldPosition.x, worldPosition.y, worldPosition.z, deltaX,
     deltaY, deltaZ, not includeWater)
 end
@@ -730,7 +739,10 @@ function Core.findPath(from, to, options)
   local isSmooth = options.isSmooth or false
 
   local continentID = from.continentID
-  Core.loadMapForContinentIfNotLoaded(continentID)
+  if continentID then
+    Core.loadMapForContinentIfNotLoaded(continentID)
+  end
+
   local path = HWT.FindPath(continentID, from.x, from.y, from.z, to.x, to.y, to.z, not includeWater, searchCapacity,
     agentRadius, searchDeviation, isSmooth)
   if path then

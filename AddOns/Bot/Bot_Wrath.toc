@@ -1,6 +1,6 @@
 ## Title: Bot
 ## Interface: 30400
-## Dependencies: Boolean, Questing
+## Dependencies: Boolean, Questing, HWT, Core
 
 Warrior.lua
 Bot.lua

@@ -17,6 +17,11 @@ const storylineRegExp = /<div class="quick-facts-storyline-list">(.*?)<\/div>/s
 async function processQuest(id) {
   const content = await readFile('quests/' + id + '.html')
 
+  const questDoesNotExistRegExp = new RegExp(`Quest #${id} doesn't exist.`)
+  if (questDoesNotExistRegExp.test(content)) {
+    return null
+  }
+
   const quest = {
     id,
   }
@@ -74,6 +79,7 @@ async function processQuest(id) {
   quest.storylinePreQuestIDs = extractStorylinePreQuestIDs(content)
   quest.followUpQuestIDs = extractSeriesFollowUpQuestIDs(content)
   quest.storylineFollowUpQuestIDs = extractStorylineFollowUpQuestIDs(content)
+  quest.requiresQuestIDs = extractRequiresQuestIDs(content)
   quest.unlockedQuestIDs = extractUnlockedQuestIDs(content)
   quest.objectives = extractObjectives(content)
 
@@ -234,6 +240,22 @@ function extractStorylineFollowUpQuestIDs(content) {
   return storylineFollowUpQuestIDs
 }
 
+function extractRequiresQuestIDs(content) {
+  const questIDs = []
+  const infoBoxContent1RegExp = /WH\.markup\.printHtml.+?infobox-contents-1/
+  const match = infoBoxContent1RegExp.exec(content)
+  if (match) {
+    const content2 = match[0]
+    const questRegExp = /quest=(\d+)/g
+    let match2
+    while (match2 = questRegExp.exec(content2)) {
+      const questID = parseInt(match2[1], 10)
+      questIDs.push(questID)
+    }
+  }
+  return questIDs
+}
+
 function extractUnlockedQuestIDs(content) {
   const questIDs = []
   const infoBoxContent2RegExp = /WH\.markup\.printHtml.+?infobox-contents-2/
@@ -294,7 +316,9 @@ sortIDs(IDs)
 const quests = []
 await concurrent(IDs, 1000, async function (ID) {
   const quest = await processQuest(ID)
-  quests.push(quest)
+  if (quest) {
+    quests.push(quest)
+  }
 })
 
 const content = 'quests = ' + convertToLua(quests)
