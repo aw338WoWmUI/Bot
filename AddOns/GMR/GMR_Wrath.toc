@@ -1,5 +1,0 @@
-## Title: GMR
-## Interface: 30400
-## Dependencies: Function, Array, Yielder, Coroutine, Conditionals
-
-GMR.lua
