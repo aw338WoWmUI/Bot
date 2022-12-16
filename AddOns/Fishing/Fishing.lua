@@ -8,8 +8,6 @@ local _ = {}
 local FISHING_SPELL_ID = 131474
 local FISHING_BOBBER_OBJECT_ID = 35591
 
--- Massive Thresher
-
 local isFishing = false
 
 function Fishing.fish()
@@ -23,7 +21,8 @@ function Fishing.fish()
         HWT.ResetAfk()
         Coroutine.waitForDuration(1)
         local fishingBobber = findFishingBobber()
-        print('fishingBobber', fishingBobber)
+        -- TODO: It seems that "Massive Thresher" can appear.
+        -- print('fishingBobber', fishingBobber)
         Coroutine.waitFor(function ()
           return HWT.ObjectExists(fishingBobber) and HWT.ObjectAnimationState(fishingBobber) == 1
         end, 30)
