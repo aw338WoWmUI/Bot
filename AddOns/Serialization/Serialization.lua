@@ -5,7 +5,7 @@ function Serialization.serialize(value)
 end
 
 function Serialization.serializeTable(table)
-  return Serialization.serializeTableWithIndention(table, 1, nil, nil)
+  return Serialization.tableToStringWithIndention(table, 1, nil, nil)
 end
 
 function Serialization.valueToString(value)
