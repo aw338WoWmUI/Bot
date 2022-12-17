@@ -56,17 +56,17 @@ function Fishing.toggleFishing()
             Core.interactWithObject(fishingBobber)
             HWT.ResetAfk()
           end
-          if isFishing then
-            if Questing.areBagsFull() then
-              Quit()
-              return
-            else
-              local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
-              Coroutine.waitForDuration(waitDurationUntilNextFishing)
-            end
-          else
+        end
+        if isFishing then
+          if Questing.areBagsFull() then
+            Quit()
             return
+          else
+            local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
+            Coroutine.waitForDuration(waitDurationUntilNextFishing)
           end
+        else
+          return
         end
       end
     end)
