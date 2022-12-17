@@ -1989,7 +1989,7 @@ function _.run ()
       local autoCompleteQuests = Array.filter(quests, function(quest)
         return quest.isAutoComplete and Compatibility.QuestLog.isComplete(quest.questID)
       end)
-      Array.forEach(autoCompleteQuests, function (quest)
+      Array.forEach(autoCompleteQuests, function(quest)
         _.completeAutoCompleteQuest(quest.questID)
       end)
 

@@ -9,7 +9,11 @@ local FISHING_BOBBER_OBJECT_ID = 35591
 local NIGHTCRAWLERS_ITEM_ID = 6530
 local CAPTAIN_RUMSEYS_LAGER_ITEM_ID = 34832
 local SCALEBELLY_MACKEREL_ITEM_ID = 194730
+local LOOKING_FOR_LUNKERS_SPELL_ID = 392270
+local HARPOON_SPELL_ID = 377081
 local MAXIMUM_FISHING_DURATION = 30 -- seconds
+local PULL_HARD_SPELL_ID = 374599
+local HARPOON_RANGE = 50
 
 local isFishing = false
 local exitTimer = nil
@@ -56,14 +60,57 @@ function Fishing.toggleFishing()
             Core.interactWithObject(fishingBobber)
             HWT.ResetAfk()
           end
+
+          local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
+          Coroutine.waitForDuration(waitDurationUntilNextFishing)
+
+          if _.hasLearnedHarpooning() and _.isChannelingLookingForLunkers() then
+            Events.waitForEventCondition('UNIT_SPELLCAST_CHANNEL_STOP', function(self, event, unit)
+              return unit == 'player'
+            end)
+
+            Coroutine.waitForDuration(0.5)
+
+            local lunker = Array.find(Core.retrieveObjectPointers(), function(pointer)
+              return (
+                UnitName(pointer) == 'Massive Thresher' and
+                  Core.calculateDistanceFromCharacterToObject(pointer) <= HARPOON_RANGE
+              )
+            end)
+
+            print('lunker', lunker)
+            if lunker then
+              local point = Core.retrieveObjectPosition(lunker)
+              Movement.facePoint(point)
+              UseItemByName('Iskaaran Harpoon')
+              Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit, __, spellID)
+                return unit == 'player' and spellID == HARPOON_SPELL_ID
+              end)
+              while Core.isAlive(lunker) do
+                local start, duration = GetSpellCooldown(PULL_HARD_SPELL_ID)
+                local cooldownDurationLeft = math.max(start + duration - GetTime(), 0)
+                if cooldownDurationLeft > 0 then
+                  Coroutine.waitForDuration(cooldownDurationLeft)
+                end
+                if Core.isAlive(lunker) then
+                  CastSpellByID(PULL_HARD_SPELL_ID)
+                  Events.waitForEventCondition('UNIT_SPELLCAST_START', function(self, event, unit, __, spellID)
+                    return unit == 'player' and spellID == PULL_HARD_SPELL_ID
+                  end)
+                end
+                if not isFishing then
+                  return
+                end
+                Yielder.yieldAndResume()
+              end
+              Questing.Coroutine.lootObject(lunker)
+            end
+          end
         end
         if isFishing then
           if Questing.areBagsFull() then
             Quit()
             return
-          else
-            local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
-            Coroutine.waitForDuration(waitDurationUntilNextFishing)
           end
         else
           return
@@ -133,6 +180,16 @@ function _.useBuffItem(itemName)
   UseItemByName(itemName)
   local waitDuration = _.randomFloat(0.5, 1)
   Coroutine.waitForDuration(waitDuration)
+end
+
+function _.hasLearnedHarpooning()
+  -- FIXME
+  -- return IsSpellKnown(ISKAARAN_HARPOON_SPELL_ID)
+  return true
+end
+
+function _.isChannelingLookingForLunkers()
+  return Boolean.toBoolean(select(4, UnitChannelInfo('player')))
 end
 
 function _.hasItem(itemID)
