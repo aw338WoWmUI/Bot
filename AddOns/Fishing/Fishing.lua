@@ -20,7 +20,7 @@ function Fishing.fish()
         Core.castSpellByID(FISHING_SPELL_ID)
         HWT.ResetAfk()
         Coroutine.waitForDuration(1)
-        local fishingBobber = findFishingBobber()
+        local fishingBobber = Fishing.findFishingBobber()
         -- TODO: It seems that "Massive Thresher" can appear.
         -- print('fishingBobber', fishingBobber)
         Coroutine.waitFor(function ()
