@@ -2163,16 +2163,18 @@ local function onEvent(self, event, ...)
   end
 end
 
-local frame = CreateFrame('Frame')
-frame:RegisterEvent('QUEST_TURNED_IN')
-frame:RegisterEvent('GOSSIP_SHOW')
-frame:RegisterEvent('QUEST_ACCEPTED')
-frame:RegisterEvent('QUEST_ACCEPT_CONFIRM')
-if Compatibility.isRetail() then
-  frame:RegisterEvent('QUEST_LOG_CRITERIA_UPDATE')
-end
-frame:RegisterEvent('QUEST_DETAIL')
-frame:SetScript('OnEvent', onEvent)
+HWT.doWhenHWTIsLoaded(function()
+  local frame = CreateFrame('Frame')
+  frame:RegisterEvent('QUEST_TURNED_IN')
+  frame:RegisterEvent('GOSSIP_SHOW')
+  frame:RegisterEvent('QUEST_ACCEPTED')
+  frame:RegisterEvent('QUEST_ACCEPT_CONFIRM')
+  if Compatibility.isRetail() then
+    frame:RegisterEvent('QUEST_LOG_CRITERIA_UPDATE')
+  end
+  frame:RegisterEvent('QUEST_DETAIL')
+  frame:SetScript('OnEvent', onEvent)
+end)
 
 Questing.convertMapPositionToWorldPosition = convertMapPositionToWorldPosition
 
