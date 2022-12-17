@@ -101,7 +101,7 @@ function _.enchantFishingPoleWithFishingLure()
 end
 
 function _.hasCaptainRumseysLager()
-  return Boolean.toBoolean(_.hasItem(CAPTAIN_RUMSEYS_LAGER_ITEM_ID))
+  return _.hasItem(CAPTAIN_RUMSEYS_LAGER_ITEM_ID)
 end
 
 function _.isCaptainRumseysLagerBuffDurationShorterThanMaximumFishingDuration()
@@ -113,7 +113,7 @@ function _.buffWithCaptainRumseysLagerBuff()
 end
 
 function _.hasScalebellyMackerel()
-  return Boolean.toBoolean(_.hasItem(SCALEBELLY_MACKEREL_ITEM_ID))
+  return _.hasItem(SCALEBELLY_MACKEREL_ITEM_ID)
 end
 
 function _.isChumBuffDurationShorterThanMaximumFishingDuration()
@@ -136,10 +136,10 @@ function _.useBuffItem(itemName)
 end
 
 function _.hasItem(itemID)
-  for containerIndex = 0, NUM_BAG_SLOTS do
+  for containerIndex = 0, NUM_BAG_SLOTS + 1 do
     for slotIndex = 1, Compatibility.Container.receiveNumberOfSlotsOfContainer(containerIndex) do
-      local itemInfo = Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex)
-      if itemInfo and itemInfo.itemID == itemID then
+      local slotItemID = C_Container.GetContainerItemID(containerIndex, slotIndex)
+      if slotItemID == itemID then
         return true
       end
     end
