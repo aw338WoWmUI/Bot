@@ -1,5 +1,5 @@
 ## Title: Fishing
 ## Interface: 100002
-## Dependencies: Core, Coroutine, Development, HWT, Questing
+## Dependencies: Core, Coroutine, Development, HWT, Questing, Boolean
 
 Fishing.lua
