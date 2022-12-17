@@ -793,16 +793,16 @@ function Core.calculateAnglesBetweenTwoPoints(a, b)
   )
   vector:Normalize()
   local yaw, pitch = Vector3D_CalculateYawPitchFromNormalVector(vector)
-  yaw = _.normalizeAngle(yaw)
+  yaw = Core.normalizeAngle(yaw)
   if a.z and b.z then
-    pitch = _.normalizeAngle(pitch)
+    pitch = Core.normalizeAngle(pitch)
   else
     pitch = nil
   end
   return yaw, pitch
 end
 
-function _.normalizeAngle(angle)
+function Core.normalizeAngle(angle)
   angle = angle % (2 * PI)
   if angle < 0 then
     angle = 2 * PI + angle

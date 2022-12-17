@@ -1858,7 +1858,11 @@ local ANGLE_PER_SECOND = math.rad(180)
 
 function Movement.face(retrieveTargetAngles, stop)
   local yaw, pitch = retrieveTargetAngles()
-  local yawDelta = math.abs(HWT.ObjectFacing('player') - yaw)
+  local playerYaw = HWT.ObjectFacing('player')
+  local yawDelta = Core.normalizeAngle(playerYaw - yaw)
+  if yawDelta > math.rad(180) then
+    yawDelta = math.rad(360) - yawDelta
+  end
   local duration = yawDelta / ANGLE_PER_SECOND
   HWT.FaceDirectionSmoothly(yaw, duration)
 
