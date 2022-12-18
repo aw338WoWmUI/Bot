@@ -2,6 +2,7 @@ local addOnName, AddOn = ...
 --- @class Core
 Core = Core or {}
 
+Core.INTERACT_DISTANCE = 5.3
 Core.RANGE_IN_WHICH_OBJECTS_SEEM_TO_BE_SHOWN = 50
 
 Core.TraceLineHitFlags = {
@@ -142,7 +143,7 @@ function Core.hasGossip(object)
 end
 
 function Core.isInteractable(object, checkDistance)
-	return HWT.GameObjectIsUsable(pointer, Boolean.toBoolean(checkDistance))
+  return HWT.GameObjectIsUsable(pointer, Boolean.toBoolean(checkDistance))
 end
 
 local sellVendorFlags = {
@@ -240,9 +241,9 @@ Core.WorldPosition = {}
 function Core.WorldPosition:isEqual(otherPosition)
   return (
     self.continentID == otherPosition.continentID and
-    Float.seemsCloseBy(self.x, otherPosition.x) and
-    Float.seemsCloseBy(self.y, otherPosition.y) and
-    Float.seemsCloseBy(self.z, otherPosition.z)
+      Float.seemsCloseBy(self.x, otherPosition.x) and
+      Float.seemsCloseBy(self.y, otherPosition.y) and
+      Float.seemsCloseBy(self.z, otherPosition.z)
   )
 end
 
@@ -1040,7 +1041,7 @@ function Core.retrieveClosestPositionWithPathTo(position, maximumDistance)
 end
 
 function Core.stopMoving()
-	Core.stopMovingForward()
+  Core.stopMovingForward()
 end
 
 Core.MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS = 330
@@ -1076,4 +1077,184 @@ end
 
 function Core.traceLineWater(from, to)
   return Core.traceLine(from, to, Core.TraceLineHitFlags.WATER)
+end
+
+function Core._moveTo(to, options)
+  local stoppable = Stoppable.Stoppable:new()
+
+  RunNextFrame(function()
+    options = options or {}
+
+    Movement.moveTo(to, {
+      stop = function()
+        return stoppable:hasStopped() or (options.stop and options.stop()) or stoppable:hasStopped()
+      end,
+      toleranceDistance = options.toleranceDistance,
+      continueMoving = options.continueMoving
+    })
+  end)
+
+  return stoppable
+end
+
+function Core.moveTo(point, options)
+  options = options or {}
+  local additionalStopConditions = options.additionalStopConditions
+  local distance = options.distance or 1
+
+  local function hasArrived()
+    return Core.isCharacterCloseToPosition(point, distance) or additionalStopConditions and additionalStopConditions()
+  end
+
+  return Core.moveToUntil(point, {
+    toleranceDistance = distance,
+    stopCondition = hasArrived
+  })
+end
+
+function Core.moveToUntil(point, options)
+  local stoppable = Stoppable.Stoppable:new()
+
+  RunNextFrame(function()
+    options = options or {}
+
+    local stopCondition = options.stopCondition
+
+    if Movement.isPositionInTheAir(point) and not Movement.canCharacterFly() then
+      point = Movement.createPoint(
+        point.x,
+        point.y,
+        Core.retrieveZCoordinate(point) or point.z
+      )
+    end
+
+    while stoppable:IsRunning() and not stopCondition() do
+      local stoppable2 = Core._moveTo(point, {
+        toleranceDistance = options.toleranceDistance,
+        stop = stopCondition
+      })
+      stoppable:stopAlso(stoppable2)
+      Yielder.yieldAndResume()
+    end
+  end)
+
+  return stoppable
+end
+
+function Core.moveToObject(pointer, options)
+  local stoppable = Stoppable.Stoppable:new()
+
+  RunNextFrame(function()
+    options = options or {}
+
+    local distance = options.distance or Core.INTERACT_DISTANCE
+    local stop = options.stop or Function.alwaysFalse
+
+    local function retrievePosition()
+      local position = Core.retrieveObjectPosition(pointer)
+
+      if Movement.isPositionInTheAir(position) and not Movement.canCharacterFly() then
+        position = Core.createWorldPosition(
+          position.continentID,
+          position.x,
+          position.y,
+          Movement.retrieveGroundZ(position) or position.z
+        )
+      end
+
+      position = Core.retrieveClosestPositionWithPathTo(position, distance)
+
+      return position
+    end
+
+    local function isJobDone(position)
+      return (
+        not position or
+          not HWT.ObjectExists(pointer) or
+          (stop and stop()) or
+          Core.isCharacterCloseToPosition(position, distance)
+      )
+    end
+
+    local lastMoveToPosition
+
+    local function isObjectUnreachableOrHasMoveToPositionChanged()
+      local moveToPostion = retrievePosition()
+      return not moveToPostion or moveToPostion:isDifferent(lastMoveToPosition)
+    end
+
+    local position = retrievePosition()
+    while stoppable:isRunning() and not isJobDone(position) do
+      lastMoveToPosition = position
+      Core._moveTo(position, {
+        toleranceDistance = distance,
+        stop = function()
+          return isJobDone(position) or isObjectUnreachableOrHasMoveToPositionChanged()
+        end,
+        continueMoving = true
+      })
+      position = retrievePosition()
+    end
+
+    Core.stopMoving()
+  end)
+
+  return stoppable
+end
+
+function Core.moveToAndInteractWithObject(pointer, distance, delay)
+  local stoppable = Stoppable.Stoppable:new()
+
+  RunNextFrame(function()
+    distance = distance or Core.INTERACT_DISTANCE
+
+    local position = Core.retrieveObjectPosition(pointer)
+    if not Core.isCharacterCloseToPosition(position, distance) then
+      Core.moveToObject(pointer, {
+        distance = distance
+      })
+    end
+
+    if stoppable:isRunning() and HWT.ObjectExists(pointer) and Core.isCharacterCloseToPosition(position, distance) then
+      Core.interactWithObject(pointer)
+      Coroutine.waitForDuration(1)
+      Coroutine.waitFor(function()
+        return not Core.isCharacterCasting()
+      end)
+      if GetNumLootItems() >= 1 then
+        Events.waitForEvent('LOOT_CLOSED')
+      end
+      stoppable:setReturnValues(true)
+    else
+      stoppable:setReturnValues(false)
+    end
+  end)
+
+  return stoppable
+end
+
+function Core.lootObject(pointer, distance)
+  if Core.moveToAndInteractWithObject(pointer, distance) then
+    -- after all items have been looted that can be looted
+    if _.thereAreMoreItemsThatCanBeLootedThanThereIsSpaceInBags() then
+      _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
+    end
+    local wasSuccessful = Events.waitForEvent('LOOT_CLOSED', 3)
+    print('LOOT_CLOSED', wasSuccessful)
+    return wasSuccessful
+  else
+    return false
+  end
+end
+
+function _.thereAreMoreItemsThatCanBeLootedThanThereIsSpaceInBags()
+  return GetNumLootItems() >= 1
+end
+
+function _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
+  -- canBeSoldForMoreGold or quest item > gray item with sell value <= X
+  -- GetLootInfo (https://wowpedia.fandom.com/wiki/API_GetLootInfo)
+  --   isQuestItem
+  --   quantity
+  -- GetLootRollItemLink (https://wowpedia.fandom.com/wiki/API_GetLootRollItemLink)
 end

@@ -1,6 +1,6 @@
 ## Title: Questing
 ## Interface: 100002
-## Dependencies: Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Function, Yielder, Draw, Math, SavedVariables, Bot, Stoppable, ObjectQuests, QuestsToAccept
+## Dependencies: Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Function, Yielder, Draw, Math, SavedVariables, Bot, Stoppable, ObjectQuests, QuestsToAccept, Hook
 
 data/retail/quests.lua
 data/retail/quest_giver_npc_ids.lua

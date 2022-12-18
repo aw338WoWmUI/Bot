@@ -1,6 +1,7 @@
 local addOnName, AddOn = ...
 --- @class Movement
 Movement = Movement or {}
+Movement.__ = AddOn
 
 local _ = {}
 
@@ -226,7 +227,7 @@ function Movement.canBeWalkedOrSwamFromPointToPoint(from, to)
 end
 
 function Movement.canPlayerSwimOnPoint(point)
-	return Movement.isPointInDeepWater(point)
+  return Movement.isPointInDeepWater(point)
 end
 
 function Movement.canBeMovedFromPointToPointCheckingSubSteps(from, to)
@@ -475,7 +476,7 @@ function Movement.canPlayerStandOnPoint(point, options)
     local result = (
       _.canPlayerBeOnPoint2(point, options) and
         not canFallOff() and
-      not Movement.isPointInDeepWater(point)
+        not Movement.isPointInDeepWater(point)
     )
 
     if options.withMount then
@@ -522,6 +523,12 @@ function Movement.receiveAnAvailableFlyingMount()
   local mountIDs = Movement.receiveAvailableMountIDs()
   local mountID = Array.find(mountIDs, Movement.isFlyingMount)
   return mountID
+end
+
+local RENEWED_PROTO_DRAKE_MOUNT_ID = 1589
+
+function Movement.receiveAnAvailableDragonridingMount()
+  return RENEWED_PROTO_DRAKE_MOUNT_ID
 end
 
 function Movement.receiveAnAvailableGroundMount()
@@ -585,7 +592,7 @@ function Movement.receiveSurfaceZ(position)
 end
 
 function Movement.retrieveZ(position, traceLineHitFlags)
-	local position1 = Movement.createPoint(position.x, position.y, position.z + Movement.MAXIMUM_JUMP_HEIGHT)
+  local position1 = Movement.createPoint(position.x, position.y, position.z + Movement.MAXIMUM_JUMP_HEIGHT)
   local position2 = Movement.createPoint(position.x, position.y, position.z - 10)
   local collisionPoint = Movement.traceLineWithFallback(position1, position2, traceLineHitFlags)
   if not collisionPoint then
@@ -894,15 +901,44 @@ function Movement.canBeFlown()
   return Movement.isFlyingAvailableInZone() and IsOutdoors() and Movement.canCharacterFly()
 end
 
+function Movement.canBeDragonriden()
+  return Movement.isDragonridingAvailableInZone() and IsOutdoors() and Movement.canCharacterRideDragon()
+end
+
+function Movement.isDragonridingAvailableInZone()
+  local isUsable = select(5, C_MountJournal.GetMountInfoByID(RENEWED_PROTO_DRAKE_MOUNT_ID))
+  return isUsable
+end
+
+local DRAGONRIDING_BASICS_SPELL_ID = 376777
+
+function Movement.canCharacterRideDragon()
+  return IsSpellKnown(DRAGONRIDING_BASICS_SPELL_ID)
+end
+
 function Movement.canBeGroundMounted()
   return IsOutdoors()
 end
 
 function Movement.canMountOnFlyingMount()
   return Boolean.toBoolean(
-    Core.isCharacterAlive() and
-      Movement.canBeFlown() and
+    Movement.canBeFlown() and
       Movement.isAFlyingMountAvailable() and
+      _.checkCommonConditionsForFlyingOrDragonriding()
+  )
+end
+
+function Movement.canMountOnDragonridingMount()
+  return Boolean.toBoolean(
+    Movement.canBeDragonriden() and
+      Movement.isADragonridingMountAvailable() and
+      _.checkCommonConditionsForFlyingOrDragonriding()
+  )
+end
+
+function _.checkCommonConditionsForFlyingOrDragonriding()
+  return Boolean.toBoolean(
+    Core.isCharacterAlive() and
       Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) and
       not Core.isCharacterInCombat() and
       not UnitInVehicle('player')
@@ -1055,7 +1091,8 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     shouldCancel = function()
       return (
         a.shouldStop() or
-          Core.calculateDistanceFromCharacterToPosition(waypoint) > math.max(initialDistance + 5, Movement.retrieveCharacterHeight()) or
+          Core.calculateDistanceFromCharacterToPosition(waypoint) > math.max(initialDistance + 5,
+            Movement.retrieveCharacterHeight()) or
           _.isPositionUnreachable(waypoint)
       )
     end
@@ -1145,7 +1182,10 @@ function _.Mounter:mount()
     _.stopForwardMovement()
     local hasTriedToMount = false
     local wasAbleToMount = nil
-    if Movement.canBeFlown() and Movement.canMountOnFlyingMount() then
+    if Movement.canBeDragonriden() and Movement.canMountOnDragonridingMount() then
+      hasTriedToMount = true
+      wasAbleToMount = Movement.mountOnDragonridingMount()
+    elseif Movement.canBeFlown() and Movement.canMountOnFlyingMount() then
       hasTriedToMount = true
       wasAbleToMount = Movement.mountOnFlyingMount()
     elseif Movement.canMountOnGroundMount() then
@@ -1332,6 +1372,14 @@ function Movement.isMountedOnFlyingMount()
   return false
 end
 
+function Movement.isMountedOnDragonridingMount()
+  if IsMounted() then
+    local isForDragonriding = select(13, Movement.receiveActiveMount())
+    return isForDragonriding
+  end
+  return false
+end
+
 function Movement.isDismounted()
   return not IsMounted()
 end
@@ -1373,6 +1421,10 @@ function Movement.receiveFlyingMountID()
   return Movement.receiveAnAvailableFlyingMount()
 end
 
+function Movement.receiveDragonridingMountID()
+  return Movement.receiveAnAvailableDragonridingMount()
+end
+
 function Movement.mountOnGroundMount()
   if not IsMounted() then
     local mountID = Movement.receiveGroundMountID()
@@ -1385,6 +1437,15 @@ end
 function Movement.mountOnFlyingMount()
   if not Movement.isMountedOnFlyingMount() then
     local mountID = Movement.receiveFlyingMountID()
+    if mountID then
+      Movement.mountOnMount(mountID)
+    end
+  end
+end
+
+function Movement.mountOnDragonridingMount()
+  if not Movement.isMountedOnDragonridingMount() then
+    local mountID = Movement.receiveDragonridingMountID()
     if mountID then
       Movement.mountOnMount(mountID)
     end
@@ -1947,7 +2008,8 @@ function Movement.traceLineWithFallback(from, to, traceLineHitFlags)
   elseif Float.seemsCloseBy(from.x, to.x) and Float.seemsCloseBy(from.y, to.y) then
     local x = from.x
     local y = from.y
-    local includeWater = Core.areFlagsSet(traceLineHitFlags, Core.TraceLineHitFlags.WATER) or Core.areFlagsSet(traceLineHitFlags, Core.TraceLineHitFlags.WATER2)
+    local includeWater = Core.areFlagsSet(traceLineHitFlags,
+      Core.TraceLineHitFlags.WATER) or Core.areFlagsSet(traceLineHitFlags, Core.TraceLineHitFlags.WATER2)
     local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(Movement.retrieveContinentID(),
       from), includeWater)
     local minZ = math.min(from.z, to.z)
@@ -1978,7 +2040,8 @@ function Movement.retrieveClosestPointOnMesh(position, includeWater)
   if includeWater == nil then
     includeWater = true
   end
-  local x, y, z = HWT.GetClosestPositionOnMesh(position.continentID, position.x, position.y, position.z, not includeWater)
+  local x, y, z = HWT.GetClosestPositionOnMesh(position.continentID, position.x, position.y, position.z,
+    not includeWater)
   if x and y and z then
     return Movement.createPoint(x, y, z)
   else
