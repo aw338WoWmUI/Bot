@@ -1,120 +1,32 @@
-local addOnName, AddOn = ...
---- @class Questing
 Questing = Questing or {}
---- @type Bot
---- @type Stoppable
 
---- @class Questing.Coroutine
-Questing.Coroutine = {}
-
+local addOnName, AddOn = ...
 local _ = {}
 
 local function moveTo(to, options)
-  options = options or {}
-
-  local stoppable = Stoppable.Stoppable:new()
-
-  Movement.moveTo(to, {
-    stop = function()
-      return not Questing.isRunning() or (options.stop and options.stop()) or stoppable.isStopped
-    end,
-    toleranceDistance = options.toleranceDistance,
-    continueMoving = options.continueMoving
-  })
-
+  local stoppable = Core._moveTo(to, options)
+  Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
   return stoppable
 end
 
+Questing.Coroutine = {}
+
 function Questing.Coroutine.moveTo(point, options)
-  options = options or {}
-  local additionalStopConditions = options.additionalStopConditions
-  local distance = options.distance or 1
-
-  local function hasArrived()
-    return Core.isCharacterCloseToPosition(point, distance) or additionalStopConditions and additionalStopConditions()
-  end
-
-  return Questing.Coroutine.moveToUntil(point, {
-    toleranceDistance = distance,
-    stopCondition = hasArrived
-  })
+  local stoppable = Core.moveTo(point, options)
+  Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
+  return stoppable
 end
 
 function Questing.Coroutine.moveToUntil(point, options)
-  options = options or {}
-
-  local stopCondition = options.stopCondition
-
-  if Movement.isPositionInTheAir(point) and not Movement.canCharacterFly() then
-    point = Movement.createPoint(
-      point.x,
-      point.y,
-      Core.retrieveZCoordinate(point) or point.z
-    )
-  end
-
-  while Questing.isRunning() and not stopCondition() do
-    moveTo(point, {
-      toleranceDistance = options.toleranceDistance,
-      stop = stopCondition
-    })
-    Yielder.yieldAndResume()
-  end
+  local stoppable = Core.moveToUntil(point, options)
+  Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
+  return stoppable
 end
 
 function Questing.Coroutine.moveToObject(pointer, options)
-  options = options or {}
-
-  local distance = options.distance or INTERACT_DISTANCE
-  local stop = options.stop or Function.alwaysFalse
-
-  local function retrievePosition()
-    local position = Core.retrieveObjectPosition(pointer)
-
-    if Movement.isPositionInTheAir(position) and not Movement.canCharacterFly() then
-      position = Core.createWorldPosition(
-        position.continentID,
-        position.x,
-        position.y,
-        Movement.retrieveGroundZ(position) or position.z
-      )
-    end
-
-    position = Core.retrieveClosestPositionWithPathTo(position, distance)
-
-    return position
-  end
-
-  local function isJobDone(position)
-    return (
-      not position or
-      not HWT.ObjectExists(pointer) or
-        (stop and stop()) or
-        Core.isCharacterCloseToPosition(position, distance)
-    )
-  end
-
-  local lastMoveToPosition
-
-  local function isObjectUnreachableOrHasMoveToPositionChanged()
-    local moveToPostion = retrievePosition()
-    return not moveToPostion or moveToPostion:isDifferent(lastMoveToPosition)
-  end
-
-  local position = retrievePosition()
-  while Questing.isRunning() and not isJobDone(position) do
-    lastMoveToPosition = position
-    moveTo(position, {
-      toleranceDistance = distance,
-      stop = function()
-        return isJobDone(position) or isObjectUnreachableOrHasMoveToPositionChanged()
-      end,
-      continueMoving = true
-    })
-    position = retrievePosition()
-  end
-
-  Core.stopMoving()
+  local stoppable = Core.moveToObject(pointer, options)
+  Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
+  return stoppable
 end
 
 function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
@@ -154,37 +66,32 @@ function Questing.Coroutine.interactWithObjectWithObjectID(objectID, options)
   end
 
   if pointer then
-    Questing.Coroutine.interactWithObject(pointer, options.distance, options.delay)
+    Questing.Coroutine.moveToAndInteractWithObject(pointer, options.distance, options.delay)
   end
 end
 
-function Questing.Coroutine.interactWithObject(pointer, distance, delay)
-  distance = distance or INTERACT_DISTANCE
+--- @param string pointer
+--- @param number distance
+--- @param number delay
+Questing.Coroutine.moveToAndInteractWithObject = function(pointer, distance, delay)
+  local stoppable = Core.moveToAndInteractWithObject(pointer, distance, delay)
+  Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
+  return stoppable
+end
 
-  local position = Core.retrieveObjectPosition(pointer)
-  if not Core.isCharacterCloseToPosition(position, distance) then
-    Questing.Coroutine.moveToObject(pointer, {
-      distance = distance
-    })
+function Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
+  local handle = Questing.onStop(function()
+    stoppable:stop()
+  end)
+  local function unregisterOnStopCallback()
+    handle:unregisterCallback()
   end
-
-  if Questing.isRunning() and HWT.ObjectExists(pointer) and Core.isCharacterCloseToPosition(position, distance) then
-    Core.interactWithObject(pointer)
-    Coroutine.waitForDuration(1)
-    Coroutine.waitFor(function()
-      return not Core.isCharacterCasting()
-    end)
-    if GetNumLootItems() >= 1 then
-      Events.waitForEvent('LOOT_CLOSED')
-    end
-    return true
-  else
-    return false
-  end
+  stoppable:afterStop(unregisterOnStopCallback)
+  stoppable:afterReturn(unregisterOnStopCallback)
 end
 
 function Questing.Coroutine.lootObject(pointer, distance)
-  if Questing.Coroutine.interactWithObject(pointer, distance) then
+  if Questing.Coroutine.moveToAndInteractWithObject(pointer, distance) then
     -- after all items have been looted that can be looted
     if _.thereAreMoreItemsThatCanBeLootedThanThereIsSpaceInBags() then
       _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
@@ -275,7 +182,7 @@ local function gossipWithObject(pointer, chooseOption)
   local name = Core.retrieveObjectName(pointer)
   print(name)
   while Questing.isRunning() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
-    Questing.Coroutine.interactWithObject(pointer)
+    Questing.Coroutine.moveToAndInteractWithObject(pointer)
     Events.waitForEvent('GOSSIP_SHOW', 2)
     Yielder.yieldAndResume()
   end

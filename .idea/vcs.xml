@@ -12,7 +12,6 @@
     <mapping directory="$PROJECT_DIR$/AddOns/Function" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Math" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Object" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/AddOns/PackageInitialization" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/RecommendedSpellCaster" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Set" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/String" vcs="Git" />

@@ -1127,7 +1127,7 @@ local function doSomethingWithObject(point)
       Questing.Coroutine.useItemOnPosition(point, specialItem)
     elseif pointer then
       print('interactWithObject')
-      Questing.Coroutine.interactWithObject(pointer)
+      Questing.Coroutine.moveToAndInteractWithObject(pointer)
       _.completeQuests()
     elseif objectID then
       print('interactWithAt')
@@ -1443,7 +1443,7 @@ local function doPoint(point)
     end
   elseif point.type == 'discoverFlightMaster' then
     AddOn.savedVariables.perCharacter.QuestingPointToShow = AddOn.savedVariables.perCharacter.QuestingPointToMove
-    Questing.Coroutine.interactWithObject(point.pointer)
+    Questing.Coroutine.moveToAndInteractWithObject(point.pointer)
   elseif point.type == 'attacker' then
     Questing.Coroutine.doMob(point.pointer)
   else
@@ -1535,7 +1535,7 @@ function Questing.handleObjective(point)
     pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
   end
   if pointer then
-    Questing.Coroutine.interactWithObject(pointer)
+    Questing.Coroutine.moveToAndInteractWithObject(pointer)
 
     if MerchantFrame:IsShown() then
       local questID = point.questIDs[1]
@@ -1800,6 +1800,7 @@ function isEnemy(object)
 end
 
 local isRunning = false
+local stopHook = Hook.Hook:new()
 
 function Questing.isRunning()
   return isRunning
@@ -1817,6 +1818,7 @@ end
 function Questing.stop()
   if Questing.isRunning() then
     print('Stopping questing...')
+    stopHook:runCallbacks()
     isRunning = false
   end
 end
@@ -1827,6 +1829,10 @@ function Questing.toggle()
   else
     Questing.start()
   end
+end
+
+function Questing.onStop(callback)
+  return stopHook:registerCallback(callback)
 end
 
 function isIdle()
