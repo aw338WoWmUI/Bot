@@ -650,7 +650,7 @@ end
 function Core.loadMapForContinentIfNotLoaded(continentID)
   if not HWT.IsMapLoaded(continentID) then
     if coroutine.running() then
-      Yielder.yieldAndResume() -- Give HWT.LoadMap the maximum time to load to avoid time-out errors.
+      Coroutine.yieldAndResume() -- Give HWT.LoadMap the maximum time to load to avoid time-out errors.
     end
     HWT.LoadMap(continentID)
   end
@@ -1137,7 +1137,7 @@ function Core.moveToUntil(point, options)
         stop = stopCondition
       })
       stoppable:stopAlso(stoppable2)
-      Yielder.yieldAndResume()
+      Coroutine.yieldAndResume()
     end
   end)
 

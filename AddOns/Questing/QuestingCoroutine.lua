@@ -184,7 +184,7 @@ local function gossipWithObject(pointer, chooseOption)
   while Questing.isRunning() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
     Questing.Coroutine.moveToAndInteractWithObject(pointer)
     Events.waitForEvent('GOSSIP_SHOW', 2)
-    Yielder.yieldAndResume()
+    Coroutine.yieldAndResume()
   end
   if Questing.isRunning() then
     local gossipOptionID = chooseOption()
@@ -264,7 +264,7 @@ end
 function Questing.Coroutine.gossipWithAt(point, objectID, optionToSelect)
   Questing.Coroutine.interactWithAt(point, objectID)
   Events.waitForEvent('GOSSIP_SHOW', 2)
-  Yielder.yieldAndResume()
+  Coroutine.yieldAndResume()
   if Questing.isRunning() and optionToSelect then
     selectOption(optionToSelect)
   end
@@ -305,7 +305,7 @@ function Questing.Coroutine.doMob(pointer, options)
       })
     end
     Bot.castCombatRotationSpell()
-    Yielder.yieldAndResume()
+    Coroutine.yieldAndResume()
   end
 
   if not Core.isCharacterInCombat() then

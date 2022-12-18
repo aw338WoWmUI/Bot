@@ -24,7 +24,7 @@ function _.runFunctions(functions)
   Coroutine.runAsCoroutine(function()
     Array.forEach(functions, function(fn)
       fn()
-      Yielder.yieldAndResume()
+      Coroutine.yieldAndResume()
     end)
   end)
 end

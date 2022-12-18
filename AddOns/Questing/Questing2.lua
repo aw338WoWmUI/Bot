@@ -151,7 +151,7 @@ defineQuest3(
           })
           Questing.Coroutine.interactWithObjectWithObjectID(npcID)
         end
-        Yielder.yieldAndResume()
+        Coroutine.yieldAndResume()
       end
     end
   end
@@ -223,7 +223,7 @@ do
           if object then
             Questing.Coroutine.doMob(object)
           else
-            Yielder.yieldAndResume()
+            Coroutine.yieldAndResume()
           end
         end
       end
@@ -252,7 +252,7 @@ do
           Questing.Coroutine.useItemOnPosition(position, itemID)
           Set.add(fedNPCs, object)
         end
-        Yielder.yieldAndResume()
+        Coroutine.yieldAndResume()
       end
     end
   )
@@ -301,7 +301,7 @@ do
                 )
               )
             end
-            Yielder.yieldAndResume()
+            Coroutine.yieldAndResume()
           end
         end
       end
@@ -1478,7 +1478,7 @@ function Questing.handleObjective(point)
             lastAngle = angle
             return result
           end)
-          Yielder.yieldAndResume()
+          Coroutine.yieldAndResume()
           local navigationY = select(2, frame:GetCenter())
           local scale = UIParent:GetEffectiveScale()
           local navigationY = navigationY * scale
