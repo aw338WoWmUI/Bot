@@ -960,13 +960,13 @@ function Movement.distanceOfPointToLine(point, line)
   local A = line[1]
   local B = line[2]
 
-  local BA = Vector:new(
+  local BA = Vector.Vector:new(
     point.x - A.x,
     point.y - A.y,
     point.z - A.z
   )
 
-  local BC = Vector:new(
+  local BC = Vector.Vector:new(
     B.x - A.x,
     B.y - A.y,
     B.z - A.z

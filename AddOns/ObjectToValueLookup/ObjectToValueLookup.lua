@@ -1,5 +1,6 @@
-local addOnName, AddOn = ...
 ObjectToValueLookup = ObjectToValueLookup or {}
+
+local addOnName, AddOn = ...
 
 local NIL_KEY = '__N'
 local VALUE_KEY = '__V'

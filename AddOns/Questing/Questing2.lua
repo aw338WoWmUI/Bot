@@ -992,7 +992,7 @@ function retrieveNavigationPosition()
 
       frame3:SetPoint('CENTER', UIParent, 'BOTTOMLEFT', navigationX, navigationY)
 
-      local vector = Vector:new(
+      local vector = Vector.Vector:new(
         navigationPointDistance * math.cos(yaw) * math.cos(pitch),
         navigationPointDistance * math.sin(yaw) * math.cos(pitch),
         navigationPointDistance * math.sin(pitch)

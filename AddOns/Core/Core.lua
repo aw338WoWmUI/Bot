@@ -463,19 +463,19 @@ function Core.retrieveZCoordinateOnPolygon(position, polygon)
   local vertexes = HWT.GetMeshPolygonVertices(position.continentID, polygon)
   local vertex1 = vertexes[1]
   local vertex2 = vertexes[2]
-  local vector1 = Vector:new(
+  local vector1 = Vector.Vector:new(
     vertex2[1] - vertex1[1],
     vertex2[2] - vertex1[2],
     vertex2[3] - vertex1[3]
   )
   local vertex3 = vertexes[#vertexes]
-  local vector2 = Vector:new(
+  local vector2 = Vector.Vector:new(
     vertex3[1] - vertex1[1],
     vertex3[2] - vertex1[2],
     vertex3[3] - vertex1[3]
   )
 
-  local targetVector = Vector:new(
+  local targetVector = Vector.Vector:new(
     position.x - vertex1[1],
     position.y - vertex1[2],
     nil
@@ -514,7 +514,7 @@ end
 
 function _.haveVectorsSameDirection(vector1, vector2)
   local scale = vector2.x / vector1.x
-  local scaledVector2 = Vector:new(
+  local scaledVector2 = Vector.Vector:new(
     scale * vector2.x,
     scale * vector2.y,
     scale * vector2.z

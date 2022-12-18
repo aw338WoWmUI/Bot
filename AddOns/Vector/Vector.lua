@@ -2,16 +2,18 @@
 -- License: https://creativecommons.org/licenses/by-sa/4.0/
 -- The code has been modified.
 
-Vector = {}
+Vector = Vector or {}
 
-function Vector:new(x, y, z)
+Vector.Vector = {}
+
+function Vector.Vector:new(x, y, z)
   local vector = { x = x, y = y, z = z }
-  setmetatable(vector, { __index = Vector })
+  setmetatable(vector, { __index = Vector.Vector })
   return vector
 end
 
-function Vector:cross(B)
-  return Vector:new(
+function Vector.Vector:cross(B)
+  return Vector.Vector:new(
     self.y * B.z - self.z * B.y,
     self.z * B.x - self.x * B.z,
     self.x * B.y - self.y * B.x
