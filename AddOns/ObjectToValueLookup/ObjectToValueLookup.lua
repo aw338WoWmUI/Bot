@@ -13,16 +13,18 @@ local function retrieveKey(key)
   end
 end
 
-function ObjectToValueLookup:new(convertObjectToArray)
+ObjectToValueLookup.ObjectToValueLookup = {}
+
+function ObjectToValueLookup.ObjectToValueLookup:new(convertObjectToArray)
   local lookup = {
     _values = {},
     _convertObjectToArray = convertObjectToArray
   }
-  setmetatable(lookup, { __index = ObjectToValueLookup})
+  setmetatable(lookup, { __index = ObjectToValueLookup.ObjectToValueLookup})
   return lookup
 end
 
-function ObjectToValueLookup:retrieveValue(object)
+function ObjectToValueLookup.ObjectToValueLookup:retrieveValue(object)
   local array = self._convertObjectToArray(object)
 
   local table = self._values
@@ -39,7 +41,7 @@ function ObjectToValueLookup:retrieveValue(object)
   return table[VALUE_KEY]
 end
 
-function ObjectToValueLookup:setValue(object, value)
+function ObjectToValueLookup.ObjectToValueLookup:setValue(object, value)
   local array = self._convertObjectToArray(object)
 
   local table = self._values

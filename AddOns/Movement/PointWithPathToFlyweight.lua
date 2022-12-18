@@ -1,7 +1,7 @@
 local addOnName, AddOn = ...
 Movement = Movement or {}
 
-local pointsWithPathTo = ObjectToValueLookup:new(function(point)
+local pointsWithPathTo = ObjectToValueLookup.ObjectToValueLookup:new(function(point)
   return { point.x, point.y, point.z, point.pathIndex }
 end)
 

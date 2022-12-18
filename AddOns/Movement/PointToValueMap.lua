@@ -8,5 +8,5 @@ end
 Movement.PointToValueMap = {}
 
 function Movement.PointToValueMap:new()
-  return ObjectToValueLookup:new(convertPointToArray)
+  return ObjectToValueLookup.ObjectToValueLookup:new(convertPointToArray)
 end
