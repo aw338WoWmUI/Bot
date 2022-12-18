@@ -8,7 +8,8 @@ function Stoppable.Stoppable:new()
     _hasStopped = false,
     _returnValues = nil,
     _afterStop = Hook.Hook:new(),
-    _afterReturn = Hook.Hook:new(),
+    _afterResolve = Hook.Hook:new(),
+    _thread = nil,
   }
   setmetatable(stoppable, { __index = Stoppable.Stoppable })
   return stoppable
@@ -27,6 +28,12 @@ function Stoppable.Stoppable:stop()
   self._afterStop:runCallbacks()
 end
 
+--- Wait until the stoppable has been resolved.
+function Stoppable.Stoppable:await()
+  self._thread = coroutine.running()
+  return coroutine.yield()
+end
+
 function Stoppable.Stoppable:stopAlso(stoppable)
   self:afterStop(function()
     stoppable:Stop()
@@ -37,11 +44,12 @@ function Stoppable.Stoppable:afterStop(callback)
   self._afterStop:registerCallback(callback)
 end
 
-function Stoppable.Stoppable:afterReturn(callback)
-  self._afterReturn:registerCallback(callback)
+function Stoppable.Stoppable:afterResolve(callback)
+  self._afterResolve:registerCallback(callback)
 end
 
-function Stoppable.Stoppable:setReturnValues(...)
+function Stoppable.Stoppable:resolveWith(...)
   self._returnValues = { ... }
-  self._afterReturn:runCallbacks()
+  self._afterResolve:runCallbacks()
+  Coroutine.resumeWithShowingError(self._thread, ...)
 end

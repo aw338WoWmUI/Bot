@@ -6,7 +6,7 @@ local _ = {}
 local function moveTo(to, options)
   local stoppable = Core._moveTo(to, options)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return stoppable
+  return stoppable.await()
 end
 
 Questing.Coroutine = {}
@@ -14,19 +14,19 @@ Questing.Coroutine = {}
 function Questing.Coroutine.moveTo(point, options)
   local stoppable = Core.moveTo(point, options)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return stoppable
+  return stoppable.await()
 end
 
 function Questing.Coroutine.moveToUntil(point, options)
   local stoppable = Core.moveToUntil(point, options)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return stoppable
+  return stoppable.await()
 end
 
 function Questing.Coroutine.moveToObject(pointer, options)
   local stoppable = Core.moveToObject(pointer, options)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return stoppable
+  return stoppable.await()
 end
 
 function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
@@ -76,7 +76,7 @@ end
 Questing.Coroutine.moveToAndInteractWithObject = function(pointer, distance, delay)
   local stoppable = Core.moveToAndInteractWithObject(pointer, distance, delay)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return stoppable
+  return stoppable.await()
 end
 
 function Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)

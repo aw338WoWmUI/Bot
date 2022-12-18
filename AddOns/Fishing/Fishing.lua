@@ -108,6 +108,7 @@ function Fishing.toggleFishing()
             local lunker = Array.find(Core.retrieveObjectPointers(), function(pointer)
               return (
                 UnitName(pointer) == 'Massive Thresher' and
+                  Core.isAlive(pointer) and
                   Core.calculateDistanceFromCharacterToObject(pointer) <= HARPOON_RANGE
               )
             end)
@@ -152,7 +153,7 @@ function Fishing.toggleFishing()
                 end
                 Coroutine.waitForDuration(0.5) -- Wait a little bit before checking if lunker is still alive.
               end
-              Core.lootObject(lunker)
+              Core.lootObject(lunker).await()
             end
           end
         end

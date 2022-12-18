@@ -649,6 +649,9 @@ end
 
 function Core.loadMapForContinentIfNotLoaded(continentID)
   if not HWT.IsMapLoaded(continentID) then
+    if coroutine.running() then
+      Yielder.yieldAndResume() -- Give HWT.LoadMap the maximum time to load to avoid time-out errors.
+    end
     HWT.LoadMap(continentID)
   end
 end
@@ -1082,7 +1085,7 @@ end
 function Core._moveTo(to, options)
   local stoppable = Stoppable.Stoppable:new()
 
-  RunNextFrame(function()
+  Coroutine.runNextFrame(function()
     options = options or {}
 
     Movement.moveTo(to, {
@@ -1115,7 +1118,7 @@ end
 function Core.moveToUntil(point, options)
   local stoppable = Stoppable.Stoppable:new()
 
-  RunNextFrame(function()
+  Coroutine.runNextFrame(function()
     options = options or {}
 
     local stopCondition = options.stopCondition
@@ -1144,7 +1147,7 @@ end
 function Core.moveToObject(pointer, options)
   local stoppable = Stoppable.Stoppable:new()
 
-  RunNextFrame(function()
+  Coroutine.runNextFrame(function()
     options = options or {}
 
     local distance = options.distance or Core.INTERACT_DISTANCE
@@ -1205,7 +1208,7 @@ end
 function Core.moveToAndInteractWithObject(pointer, distance, delay)
   local stoppable = Stoppable.Stoppable:new()
 
-  RunNextFrame(function()
+  Coroutine.runNextFrame(function()
     distance = distance or Core.INTERACT_DISTANCE
 
     local position = Core.retrieveObjectPosition(pointer)
@@ -1224,9 +1227,9 @@ function Core.moveToAndInteractWithObject(pointer, distance, delay)
       if GetNumLootItems() >= 1 then
         Events.waitForEvent('LOOT_CLOSED')
       end
-      stoppable:setReturnValues(true)
+      stoppable:resolveWith(true)
     else
-      stoppable:setReturnValues(false)
+      stoppable:resolveWith(false)
     end
   end)
 
