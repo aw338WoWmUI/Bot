@@ -39,8 +39,8 @@ async function processQuest(id) {
     }
   }
 
-  quest.starters = extractObjects(infoBoxContent, '\\[icon name=quest-start(?:-campaign)\\]Start')
-  quest.enders = extractObjects(infoBoxContent, '\\[icon name=quest-end(?:-campaign)\\]End')
+  quest.starters = extractObjects(infoBoxContent, '\\[icon name=quest-start(?:-campaign)?\\]Start')
+  quest.enders = extractObjects(infoBoxContent, '\\[icon name=quest-end(?:-campaign)?\\]End')
 
   {
     const match = sideRegExp.exec(infoBoxContent)
