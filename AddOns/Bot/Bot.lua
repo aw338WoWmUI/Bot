@@ -48,25 +48,27 @@ end
 
 function _.castRecommendedSpell()
   local ability = RecommendedSpellCaster.retrieveNextAbility()
-  if RecommendedSpellCaster.isItem(ability) then
-    RecommendedSpellCaster.castItem(ability)
-  else
-    _.castSpell(ability)
-  end
-
-  if HWT.IsAoEPending() then
-    local position
-    local targetPosition = Core.retrieveObjectPosition('target')
-    if targetPosition then
-      position = targetPosition
+  if ability then
+    if RecommendedSpellCaster.isItem(ability) then
+      RecommendedSpellCaster.castItem(ability)
     else
-      position = Core.retrieveCharacterPosition()
+      _.castSpell(ability)
     end
-    local angle = math.rad(math.random() * 360)
-    local radius = math.random() * 2
-    position.x = position.x + radius * math.cos(angle)
-    position.y = position.y + radius * math.sin(angle)
-    Core.clickPosition(position)
+
+    if HWT.IsAoEPending() then
+      local position
+      local targetPosition = Core.retrieveObjectPosition('target')
+      if targetPosition then
+        position = targetPosition
+      else
+        position = Core.retrieveCharacterPosition()
+      end
+      local angle = math.rad(math.random() * 360)
+      local radius = math.random() * 2
+      position.x = position.x + radius * math.cos(angle)
+      position.y = position.y + radius * math.sin(angle)
+      Core.clickPosition(position)
+    end
   end
 end
 
