@@ -97,7 +97,6 @@ function Questing.Coroutine.lootObject(pointer, distance)
       _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
     end
     local wasSuccessful = Events.waitForEvent('LOOT_CLOSED', 3)
-    print('LOOT_CLOSED', wasSuccessful)
     return wasSuccessful
   else
     return false

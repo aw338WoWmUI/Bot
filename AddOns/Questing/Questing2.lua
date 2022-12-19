@@ -1789,16 +1789,6 @@ function waitForSoftInteractNamePlate()
   end, 2)
 end
 
-function isFriendly(object)
-  local reaction = Core.unitReaction(object, 'player')
-  return reaction and reaction >= 4 and not Core.canUnitAttackOtherUnit('player', object)
-end
-
-function isEnemy(object)
-  local reaction = Core.unitReaction(object, 'player')
-  return reaction and reaction <= 3
-end
-
 local isRunning = false
 local stopHook = Hook.Hook:new()
 

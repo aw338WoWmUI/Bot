@@ -1,0 +1,5 @@
+## Title: AutoCombat
+## Interface: 11403
+## Dependencies: Coroutine, Bot, Core, Events
+
+AutoCombat.lua

@@ -39,8 +39,8 @@ async function processQuest(id) {
     }
   }
 
-  quest.starters = extractObjects(infoBoxContent, '[icon name=quest-start]Start')
-  quest.enders = extractObjects(infoBoxContent, '[icon name=quest-end]End')
+  quest.starters = extractObjects(infoBoxContent, '\\[icon name=quest-start(?:-campaign)\\]Start')
+  quest.enders = extractObjects(infoBoxContent, '\\[icon name=quest-end(?:-campaign)\\]End')
 
   {
     const match = sideRegExp.exec(infoBoxContent)
@@ -128,7 +128,7 @@ function extractReputationForDragonscaleExpedition(content) {
 
 function extractObjects(content, label) {
   const IDs = []
-  const startsWithRegExp = new RegExp('\\[li\\]' + escapeForRegExp(label) + ': .*?\\[\\\\\\/li\\]')
+  const startsWithRegExp = new RegExp('\\[li\\]' + label + ': .*?\\[\\\\\\/li\\]')
   const match = startsWithRegExp.exec(content)
   if (match) {
     const npcIDRegExp = /(npc|object|item)=(\d+)/g

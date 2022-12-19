@@ -142,10 +142,6 @@ function Core.hasGossip(object)
   return Core.isUnitNPCType(object, Core.NpcFlags.Gossip)
 end
 
-function Core.isInteractable(object, checkDistance)
-  return HWT.GameObjectIsUsable(pointer, Boolean.toBoolean(checkDistance))
-end
-
 local sellVendorFlags = {
   Core.NpcFlags.Vendor,
   Core.NpcFlags.AmmoVendor,
@@ -664,6 +660,16 @@ function Core.unitReaction(objectIdentifier1, objectIdentifier2)
   return UnitReaction(objectIdentifier1, objectIdentifier2)
 end
 
+function Core.isFriendly(object)
+  local reaction = Core.unitReaction(object, 'player')
+  return reaction and reaction >= 4 and not Core.canUnitAttackOtherUnit('player', object)
+end
+
+function Core.isEnemy(object)
+  local reaction = Core.unitReaction(object, 'player')
+  return reaction and reaction <= 3
+end
+
 function Core.retrievePositionFromPosition(position, distance, facing, pitch)
   return Core.createPosition(HWT.GetPositionFromPosition(
     position.x,
@@ -693,7 +699,7 @@ function Core.isCharacterAlive()
 end
 
 function Core.isAlive(objectIdentifier)
-  return not Core.isDead(objectIdentifier)
+  return HWT.ObjectExists(objectIdentifier) and not Core.isDead(objectIdentifier)
 end
 
 function Core.isDead(objectIdentifier)
@@ -936,6 +942,14 @@ end
 
 function Core.receiveUnitsThatAttackTheCharacter()
   return Array.filter(Core.retrieveObjectPointers(), Core.isUnitAttackingTheCharacter)
+end
+
+function Core.isMobThatIsInCombat(unit)
+  return Core.isUnitInCombat(unit) and Core.canUnitAttackOtherUnit('player', unit)
+end
+
+function Core.receiveMobsThatAreInCombat()
+  return Array.filter(Core.retrieveObjectPointers(), Core.isMobThatIsInCombat)
 end
 
 function Core.retrieveObjects()
@@ -1248,6 +1262,10 @@ function Core.lootObject(pointer, distance)
   else
     return false
   end
+end
+
+function Core.isInInteractionRange(objectIdentifier)
+	return Core.calculateDistanceFromCharacterToObject(objectIdentifier) <= Core.INTERACT_DISTANCE
 end
 
 function _.thereAreMoreItemsThatCanBeLootedThanThereIsSpaceInBags()

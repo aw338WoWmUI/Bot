@@ -47,11 +47,11 @@ function Bot.castCombatRotationSpell()
 end
 
 function _.castRecommendedSpell()
-  local ability = AddOn.retrieveNextAbility()
+  local ability = RecommendedSpellCaster.retrieveNextAbility()
   if RecommendedSpellCaster.isItem(ability) then
     RecommendedSpellCaster.castItem(ability)
   else
-    AddOn.castSpell(ability)
+    _.castSpell(ability)
   end
 
   if HWT.IsAoEPending() then
@@ -62,6 +62,10 @@ function _.castRecommendedSpell()
     else
       position = Core.retrieveCharacterPosition()
     end
+    local angle = math.rad(math.random() * 360)
+    local radius = math.random() * 2
+    position.x = position.x + radius * math.cos(angle)
+    position.y = position.y + radius * math.sin(angle)
     Core.clickPosition(position)
   end
 end
@@ -69,7 +73,7 @@ end
 function _.castSpell(ability)
   if (
     not IsCurrentSpell(ability.id) and
-      AddOn.canBeCasted(ability.id) and
+      RecommendedSpellCaster.canBeCasted(ability.id) and
       IsSpellInRange(ability.name, 'target') ~= 0
   ) then
     CastSpellByName(ability.name)
