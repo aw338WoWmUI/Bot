@@ -10,7 +10,7 @@ function AutoCombat.toggle()
       print('Starting auto combat.')
       isRunning = true
       while isRunning do
-        if not Core.isAlive('target') then
+        if Core.isCharacterInCombat() and not Core.isAlive('target') then
           _.targetMob()
         end
         if Core.isCharacterInCombat() and Core.isAlive('target') then
