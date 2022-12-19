@@ -321,5 +321,5 @@ await concurrent(IDs, 1000, async function (ID) {
   }
 })
 
-const content = 'quests = ' + convertToLua(quests)
+const content = 'local addOnName, AddOn = ...\n\nAddOn.quests = ' + convertToLua(quests)
 await writeFile('quests.lua', content)
