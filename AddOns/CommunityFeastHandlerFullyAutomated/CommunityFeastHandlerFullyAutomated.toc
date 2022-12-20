@@ -1,0 +1,5 @@
+## Title: CommunityFeastHandlerFullyAutomated
+## Interface: 100002
+## Dependencies: CommunityFeastHandler
+
+CommunityFeastHandlerFullyAutomated.lua

@@ -40,3 +40,6 @@
 [submodule "AddOns/RecommendedSpellCaster"]
 	path = AddOns/RecommendedSpellCaster
 	url = https://github.com/AkiKonani/RecommendedSpellCaster.git
+[submodule "AddOns/CommunityFeastHandler"]
+	path = AddOns/CommunityFeastHandler
+	url = https://github.com/SanjoSolutions/CommunityFeastHandler.git

@@ -83,14 +83,16 @@ async function processQuest(id) {
   quest.unlockedQuestIDs = extractUnlockedQuestIDs(content)
   quest.objectives = extractObjectives(content)
 
+  const DRAGONSCALE_EXPEDITION = 2507
+  const MARUUK_CENTAUR = 2503
   const ISKAARA_TUSKARR = 2511
   const VALDRAKKEN_ACCORD = 2510
-  const DRAGONSCALE_EXPEDITION = 2507
 
   quest.reputation = {
+    [DRAGONSCALE_EXPEDITION]: extractReputationForDragonscaleExpedition(content),
+    [MARUUK_CENTAUR]: extractReputationForMaruukCentaur(content),
     [ISKAARA_TUSKARR]: extractReputationForIskaaraTuskarr(content),
     [VALDRAKKEN_ACCORD]: extractReputationForValdrakkenAccord(content),
-    [DRAGONSCALE_EXPEDITION]: extractReputationForDragonscaleExpedition(content),
   }
 
   return quest
@@ -98,6 +100,16 @@ async function processQuest(id) {
 
 function extractReputationForIskaaraTuskarr(content) {
   const regExp = /<span>(\d+)<\/span> reputation with <a href="\/faction=2511\/iskaara-tuskarr">Iskaara Tuskarr/
+  const match = regExp.exec(content)
+  if (match) {
+    return parseInt(match[1], 10)
+  } else {
+    return 0
+  }
+}
+
+function extractReputationForMaruukCentaur(content) {
+  const regExp = /<span>(\d+)<\/span> reputation with <a href="\/faction=2503\/maruuk-centaur">Maruuk Centaur/
   const match = regExp.exec(content)
   if (match) {
     return parseInt(match[1], 10)
