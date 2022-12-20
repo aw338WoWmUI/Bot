@@ -29,14 +29,6 @@ local POOL_OBJECT_IDS = Set.create({
   AILERON_SEAMOTH_SCHOOL,
 })
 
-function a()
-	Array.forEach(Core.retrieveObjectPointers(), function (pointer)
-    if _.isPool(pointer) then
-      print(UnitName(pointer), HWT.ObjectId(pointer))
-    end
-  end)
-end
-
 function _.isPool(pointer)
 	local name = UnitName(pointer)
   return Boolean.toBoolean(string.match(name, 'Pool$') or string.match(name, 'Swarm$') or string.match(name, 'School$'))

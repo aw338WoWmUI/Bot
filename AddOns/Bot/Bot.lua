@@ -39,14 +39,16 @@ function Bot.castCombatRotationSpell()
   local classID = select(2, UnitClassBase('player'))
   if classID == Core.ClassID.Warrior then
     Bot.Warrior.castSpell()
+  elseif classID == Core.ClassID.DeathKnight then
+    Bot.DeathKnight.castSpell()
   elseif _G.RecommendedSpellCaster then
-    _.castRecommendedSpell()
+    AddOn.castRecommendedSpell()
   elseif _G.GMR and GMR.ClassRotation then
     GMR.ClassRotation()
   end
 end
 
-function _.castRecommendedSpell()
+function AddOn.castRecommendedSpell()
   local ability = RecommendedSpellCaster.retrieveNextAbility()
   if ability then
     if RecommendedSpellCaster.isItem(ability) then

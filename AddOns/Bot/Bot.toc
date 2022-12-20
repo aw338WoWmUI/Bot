@@ -4,5 +4,6 @@
 ## OptionalDeps: RecommendedSpellCaster
 
 Warrior.lua
+DeathKnight.lua
 Bot.lua
 KeysOfLoyaltyFarming.lua

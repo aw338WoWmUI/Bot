@@ -995,8 +995,8 @@ end
 
 function Movement.canReachWaypointWithCurrentMovementDirection(waypoint)
   local playerPosition = Movement.retrieveCharacterPosition()
-  local pitch = HWT.UnitPitch('player')
   local yaw = HWT.ObjectFacing('player')
+  local pitch = HWT.UnitPitch('player')
   local movementVector = {
     x = math.cos(yaw) * math.cos(pitch),
     y = math.sin(yaw) * math.cos(pitch),
