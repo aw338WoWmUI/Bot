@@ -43,3 +43,6 @@
 [submodule "AddOns/CommunityFeastHandler"]
 	path = AddOns/CommunityFeastHandler
 	url = https://github.com/SanjoSolutions/CommunityFeastHandler.git
+[submodule "createAddOn/createAddOn"]
+	path = createAddOn/createAddOn
+	url = https://github.com/SanjoSolutions/createAddOn.git

@@ -1,9 +1,9 @@
-import { mkdir } from 'node:fs/promises'
-import { argv } from 'node:process'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
-import { writeFile } from '@sanjo/write-file'
 import { readFile } from '@sanjo/read-file'
+import { writeFile } from '@sanjo/write-file'
+import { dirname, join } from 'node:path'
+import { argv } from 'node:process'
+import { fileURLToPath } from 'node:url'
+import { createAddOn } from './createAddOn/createAddOn.js'
 
 const directoryPath = dirname(fileURLToPath(import.meta.url))
 
@@ -11,58 +11,13 @@ const args = argv.slice(2)
 const addOnName = args[0]
 
 const addOnPath = join(directoryPath, '..', 'AddOns', addOnName)
-await mkdir(addOnPath, {
-  recursive: true
-})
+await createAddOn(addOnPath)
+await addSymbolicLinkStatementsToCreateSymbolicLinksScripts(addOnName)
 
-{
-  const content =
-`## Title: ${addOnName}
-## Interface: 100002
-
-${addOnName}.lua
-`
-  await writeFile(join(addOnPath, `${addOnName}.toc`), content)
-}
-
-{
-  const content =
-`## Title: ${addOnName}
-## Interface: 30400
-
-${addOnName}.lua
-`
-  await writeFile(join(addOnPath, `${addOnName}_Wrath.toc`), content)
-}
-
-{
-  const content =
-`## Title: ${addOnName}
-## Interface: 11403
-
-${addOnName}.lua
-`
-  await writeFile(join(addOnPath, `${addOnName}_Vanilla.toc`), content)
-}
-
-{
-  const content =
-`${addOnName} = ${addOnName} or {}
-local addOnName, AddOn = ...
-local _ = {}
-`
-  await writeFile(join(addOnPath, `${addOnName}.lua`), content)
-}
-
-{
-  const content = await readFile(join(directoryPath, '..', 'LICENSE'))
-  await writeFile(join(addOnPath, 'LICENSE'), content)
-}
-
-{
+async function addSymbolicLinkStatementsToCreateSymbolicLinksScripts(addOnName) {
   const createSymbolicLinksScriptPaths = [
     join(directoryPath, '..', 'create_symbolic_links.template.bat'),
-    join(directoryPath, '..', 'create_symbolic_links.bat')
+    join(directoryPath, '..', 'create_symbolic_links.bat'),
   ]
   for (const createSymbolicLinksScriptPath of createSymbolicLinksScriptPaths) {
     let content
@@ -88,7 +43,7 @@ local _ = {}
       mklinkStatements.splice(
         index,
         0,
-        `  mklink /D "%path%\\_${ version }_\\Interface\\AddOns\\${ addOnName }" "%~dp0\\AddOns\\${ addOnName }"`
+        `  mklink /D "%path%\\_${ version }_\\Interface\\AddOns\\${ addOnName }" "%~dp0\\AddOns\\${ addOnName }"`,
       )
       content = content.substr(0, match.indices[2][0]) +
         mklinkStatements.join('\n') +
