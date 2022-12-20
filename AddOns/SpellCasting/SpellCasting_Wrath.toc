@@ -1,0 +1,5 @@
+## Title: SpellCasting
+## Interface: 30400
+## Dependencies: Events, Compatibility, Coroutine
+
+SpellCasting.lua

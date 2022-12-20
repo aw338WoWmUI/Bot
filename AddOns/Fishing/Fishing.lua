@@ -236,7 +236,7 @@ function _.hours(amount)
 end
 
 function _.hasFishingLure()
-  return Boolean.toBoolean(_.hasItem(NIGHTCRAWLERS_ITEM_ID))
+  return Boolean.toBoolean(Bags.hasItem(NIGHTCRAWLERS_ITEM_ID))
 end
 
 function _.isFishingPoleEnchantedWithFishingLure()
@@ -259,7 +259,7 @@ function _.enchantFishingPoleWithFishingLure()
 end
 
 function _.hasCaptainRumseysLager()
-  return _.hasItem(CAPTAIN_RUMSEYS_LAGER_ITEM_ID)
+  return Bags.hasItem(CAPTAIN_RUMSEYS_LAGER_ITEM_ID)
 end
 
 function _.isCaptainRumseysLagerBuffDurationShorterThanMaximumFishingDuration()
@@ -271,7 +271,7 @@ function _.buffWithCaptainRumseysLagerBuff()
 end
 
 function _.hasScalebellyMackerel()
-  return _.hasItem(SCALEBELLY_MACKEREL_ITEM_ID)
+  return Bags.hasItem(SCALEBELLY_MACKEREL_ITEM_ID)
 end
 
 function _.isChumBuffDurationShorterThanMaximumFishingDuration()
@@ -301,19 +301,6 @@ end
 
 function _.isChannelingLookingForLunkers()
   return Boolean.toBoolean(select(4, UnitChannelInfo('player')))
-end
-
-function _.hasItem(itemID)
-  for containerIndex = 0, NUM_BAG_SLOTS + 1 do
-    for slotIndex = 1, Compatibility.Container.receiveNumberOfSlotsOfContainer(containerIndex) do
-      local slotItemID = C_Container.GetContainerItemID(containerIndex, slotIndex)
-      if slotItemID == itemID then
-        return true
-      end
-    end
-  end
-
-  return false
 end
 
 function _.randomFloat(from, to)

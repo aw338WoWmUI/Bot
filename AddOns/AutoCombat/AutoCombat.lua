@@ -4,6 +4,7 @@ local _ = {}
 
 local isRunning = false
 
+-- FIXME: Auto-combat for Evoker
 function AutoCombat.toggle()
   Coroutine.runAsCoroutine(function()
     if not isRunning then
