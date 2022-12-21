@@ -748,7 +748,7 @@ function Core.findPath(from, to, options)
   end
 
   local searchCapacity = options.searchCapacity or 1024
-  local agentRadius = options.agentRadius or 0
+  local agentRadius = options.agentRadius or (Core.retrieveCharacterBoundingRadius() + 0.5)
   local searchDeviation = options.searchDeviation or 3
   local isSmooth = options.isSmooth or false
 
