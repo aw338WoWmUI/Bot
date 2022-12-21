@@ -1327,7 +1327,7 @@ function _.findPathToSavedPosition3()
 end
 
 function Movement.moveToSavedPosition()
-  local thread = coroutine.create(function()
+  Coroutine.runAsCoroutine(function()
     local path = findPathToSavedPosition2()
     Movement.path = path
     AddOn.savedVariables.perCharacter.MovementPath = Movement.path
@@ -1335,7 +1335,6 @@ function Movement.moveToSavedPosition()
       Movement.movePath(path)
     end
   end)
-  return Coroutine.resumeWithShowingError(thread)
 end
 
 function Movement.moveCloserTo(x, y, z)
