@@ -32,8 +32,8 @@ function Hook.Hook:registerCallback(callback)
   return handle
 end
 
-function Hook.Hook:runCallbacks()
+function Hook.Hook:runCallbacks(...)
   for _, object in ipairs(self._callbacks) do
-    object.callback()
+    object.callback(...)
   end
 end

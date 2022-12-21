@@ -49,12 +49,12 @@ function Bot.castCombatRotationSpell()
 end
 
 function AddOn.castRecommendedSpell()
-  local ability = RecommendedSpellCaster.retrieveNextAbility()
+  local ability, recommendation = RecommendedSpellCaster.retrieveNextAbility()
   if ability then
     if RecommendedSpellCaster.isItem(ability) then
       RecommendedSpellCaster.castItem(ability)
     else
-      _.castSpell(ability)
+      _.castSpell(ability, recommendation)
     end
 
     if HWT.IsAoEPending() then
@@ -74,13 +74,15 @@ function AddOn.castRecommendedSpell()
   end
 end
 
-function _.castSpell(ability)
+function _.castSpell(ability, recommendation)
   if (
     not IsCurrentSpell(ability.id) and
       RecommendedSpellCaster.canBeCasted(ability.id) and
       IsSpellInRange(ability.name, 'target') ~= 0
   ) then
-    CastSpellByName(ability.name)
+    SpellCasting.castSpellByID(ability.id, {
+      empowermentLevel = recommendation.empower_to
+    })
   end
 end
 

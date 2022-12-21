@@ -1,6 +1,6 @@
 ## Title: Bot
 ## Interface: 100002
-## Dependencies: Boolean, Questing, HWT, Core, Bags, Coroutine, Set
+## Dependencies: Boolean, Questing, HWT, Core, Bags, Coroutine, Set, SpellCasting
 ## OptionalDeps: RecommendedSpellCaster
 
 Warrior.lua

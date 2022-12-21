@@ -1,4 +1,4 @@
-## Title: SpellCasting
+## Title: Spell Casting
 ## Interface: 30400
 ## Dependencies: Events, Compatibility, Coroutine
 
