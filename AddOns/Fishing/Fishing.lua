@@ -145,7 +145,7 @@ function Fishing.toggleFishing()
                 end
                 Coroutine.waitForDuration(0.5) -- Wait a little bit before checking if lunker is still alive.
               end
-              Core.lootObject(lunker).await()
+              Core.lootObject(lunker):await()
             end
           end
         end
@@ -196,7 +196,7 @@ end
 function _.moveToPool(pool)
   local standingSpot = _.findStandingSpotForFishingInPool(pool)
   if standingSpot then
-    Core.moveTo(standingSpot)
+    Core.moveTo(standingSpot):await()
   end
 end
 

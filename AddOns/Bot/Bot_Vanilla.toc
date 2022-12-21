@@ -1,6 +1,6 @@
 ## Title: Bot
 ## Interface: 11403
-## Dependencies: Boolean, Questing, HWT, Core, Bags, Coroutine
+## Dependencies: Boolean, Questing, HWT, Core, Bags, Coroutine, Set
 
 Warrior.lua
 DeathKnight.lua

@@ -966,6 +966,13 @@ function Core.retrieveObjects()
   end)
 end
 
+function Core.printObjects()
+	local objects = Core.retrieveObjectPointers()
+  Array.forEach(objects, function (object)
+    print(UnitName(object), HWT.ObjectId(object))
+  end)
+end
+
 function Core.retrieveObjectWhichAreCloseToTheCharacter(maximumDistance)
   return Array.filter(Core.retrieveObjects(), function(object)
     return Core.isCharacterCloseToPosition(object, maximumDistance)
@@ -1151,6 +1158,7 @@ function Core.moveToUntil(point, options)
         stop = stopCondition
       })
       stoppable:stopAlso(stoppable2)
+      stoppable2:await()
       Coroutine.yieldAndResume()
     end
   end)
@@ -1209,7 +1217,7 @@ function Core.moveToObject(pointer, options)
           return isJobDone(position) or isObjectUnreachableOrHasMoveToPositionChanged()
         end,
         continueMoving = true
-      })
+      }):await()
       position = retrievePosition()
     end
 
@@ -1229,7 +1237,7 @@ function Core.moveToAndInteractWithObject(pointer, distance, delay)
     if not Core.isCharacterCloseToPosition(position, distance) then
       Core.moveToObject(pointer, {
         distance = distance
-      })
+      }):await()
     end
 
     if stoppable:isRunning() and HWT.ObjectExists(pointer) and Core.isCharacterCloseToPosition(position, distance) then
@@ -1251,7 +1259,7 @@ function Core.moveToAndInteractWithObject(pointer, distance, delay)
 end
 
 function Core.lootObject(pointer, distance)
-  if Core.moveToAndInteractWithObject(pointer, distance) then
+  if Core.moveToAndInteractWithObject(pointer, distance):await() then
     -- after all items have been looted that can be looted
     if _.thereAreMoreItemsThatCanBeLootedThanThereIsSpaceInBags() then
       _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
@@ -1278,4 +1286,56 @@ function _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
   --   isQuestItem
   --   quantity
   -- GetLootRollItemLink (https://wowpedia.fandom.com/wiki/API_GetLootRollItemLink)
+end
+
+function Core.doMobs(mobs)
+	Array.forEach(mobs, Core.doMob)
+end
+
+function Core.tagMobs(mobs)
+	Array.forEach(mobs, Core.doMob)
+end
+
+function Core.doMob(pointer, options)
+  -- FIXME: Mobs which are in the air.
+  options = options or {}
+
+  local distance = Core.retrieveCharacterCombatRange()
+  local objectID = HWT.ObjectId(pointer)
+
+  local function isJobDone()
+    return not HWT.ObjectExists(pointer) or Core.isDead(pointer) or options.additionalStopConditions and options.additionalStopConditions()
+  end
+
+  local position = Core.retrieveObjectPosition(pointer)
+  if not Core.isCharacterCloseToPosition(position, distance) then
+    Core.moveToObject(pointer, {
+      distance = distance
+    }):await()
+  end
+
+  if IsMounted() then
+    Movement.dismount()
+  end
+
+  Core.targetUnit(pointer)
+  Core.startAttacking()
+
+  while Questing.isRunning() and not isJobDone() do
+    local position = Core.retrieveObjectPosition(pointer)
+    if not Core.isCharacterCloseToPosition(position, distance) then
+      Core.moveToObject(pointer, {
+        distance = distance
+      }):await()
+    end
+    Bot.castCombatRotationSpell()
+    Coroutine.yieldAndResume()
+  end
+
+  if not Core.isCharacterInCombat() then
+    local position = Core.retrieveObjectPosition(pointer)
+    if Core.isCharacterCloseToPosition(position, INTERACT_DISTANCE) then
+      Core.lootObject(pointer)
+    end
+  end
 end

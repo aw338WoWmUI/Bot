@@ -11,6 +11,37 @@ local OBSIDIAN_CACHE_ITEM_ID = 200069
 
 -- /dump Bot.KeysOfLoyalty.handleCompletion()
 
+local mobsWhoDropKeyIngredients = Set.create({
+  187602,
+  196336,
+  187867,
+  187599
+})
+
+-- /dump Bot.KeysOfLoyalty.farm()
+
+function Bot.KeysOfLoyalty.farm()
+  Coroutine.runAsCoroutine(function()
+    while true do
+      local mobs = Array.filter(Core.retrieveObjectPointers(), function(object)
+        return Core.isAlive(object) and Set.contains(mobsWhoDropKeyIngredients,
+          HWT.ObjectId(object)) and Core.calculateDistanceFromCharacterToObject(object) <= 40
+      end)
+
+      Core.tagMobs(mobs)
+
+      mobs = Array.filter(Core.retrieveObjectPointers(), function(object)
+        return Core.isAlive(object) and Set.contains(mobsWhoDropKeyIngredients,
+          HWT.ObjectId(object)) and Core.calculateDistanceFromCharacterToObject(object) <= 40
+      end)
+
+      Core.doMobs(mobs)
+
+      Coroutine.yieldAndResume()
+    end
+  end)
+end
+
 function Bot.KeysOfLoyalty.handleCompletion()
   Coroutine.runAsCoroutine(function()
     Bot.KeysOfLoyalty.createKeys()
@@ -44,7 +75,7 @@ function Bot.KeysOfLoyalty.openObsidianContainers()
     return Bags.findItem(itemIDs)
   end
 
-	local containerIndex, slotIndex = findItem()
+  local containerIndex, slotIndex = findItem()
   while containerIndex and slotIndex do
     SpellCasting.useContainerItem(containerIndex, slotIndex)
     Events.waitForEvent('BAG_UPDATE_DELAYED')

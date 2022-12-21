@@ -509,6 +509,11 @@ function Movement.receiveAvailableMountIDs()
   end)
 end
 
+function Movement.isADragonridingMountAvailable()
+  local mountIDs = Movement.receiveAvailableMountIDs()
+  return Array.any(mountIDs, Movement.isDragonridingMount)
+end
+
 function Movement.isAFlyingMountAvailable()
   local mountIDs = Movement.receiveAvailableMountIDs()
   return Array.any(mountIDs, Movement.isFlyingMount)
@@ -561,6 +566,11 @@ local flyingMountTypeIDs = Set.create({
   248,
   407
 })
+
+function Movement.isDragonridingMount(mountID)
+  local isForDragonriding = select(13, C_MountJournal.GetMountInfoByID(mountID))
+  return isForDragonriding
+end
 
 function Movement.isFlyingMount(mountID)
   local mountTypeID = select(5, C_MountJournal.GetMountInfoExtraByID(mountID))
@@ -1374,8 +1384,7 @@ end
 
 function Movement.isMountedOnDragonridingMount()
   if IsMounted() then
-    local isForDragonriding = select(13, Movement.receiveActiveMount())
-    return isForDragonriding
+    return Movement.isDragonridingMount(Movement.receiveActiveMount())
   end
   return false
 end
