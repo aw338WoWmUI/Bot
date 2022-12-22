@@ -14,6 +14,7 @@ local HARPOON_SPELL_ID = 377081
 local MAXIMUM_FISHING_DURATION = 30 -- seconds
 local PULL_HARD_SPELL_ID = 374599
 local HARPOON_RANGE = 50
+local ICE_FISHING_HOLE_OBJECT_ID = 192631
 
 local isFishing = false
 local exitTimer = nil
@@ -30,7 +31,7 @@ local POOL_OBJECT_IDS = Set.create({
 })
 
 function _.isPool(pointer)
-	local name = UnitName(pointer)
+  local name = UnitName(pointer)
   return Boolean.toBoolean(string.match(name, 'Pool$') or string.match(name, 'Swarm$') or string.match(name, 'School$'))
 end
 
@@ -49,7 +50,7 @@ function Fishing.toggleFishing()
     Coroutine.runAsCoroutine(function()
       while true do
         if FishingOptions.fishInPools then
-          local pools = Array.filter(Core.retrieveObjectPointers(), function (pointer)
+          local pools = Array.filter(Core.retrieveObjectPointers(), function(pointer)
             return Set.contains(POOL_OBJECT_IDS, HWT.ObjectId(pointer))
           end)
           local pool = _.selectPool(pools)
@@ -57,6 +58,8 @@ function Fishing.toggleFishing()
             _.fishInPool(pool)
           end
         end
+
+        local iceHole = Core.findClosestObjectToCharacterWithOneOfObjectIDs({ ICE_FISHING_HOLE_OBJECT_ID })
 
         if _.hasFishingLure() and not _.isFishingPoleEnchantedWithFishingLure() then
           _.enchantFishingPoleWithFishingLure()
@@ -66,11 +69,16 @@ function Fishing.toggleFishing()
           _.buffWithCaptainRumseysLagerBuff()
         end
 
-        if _.hasScalebellyMackerel() and _.isChumBuffDurationShorterThanMaximumFishingDuration() then
+        if not iceHole and _.hasScalebellyMackerel() and _.isChumBuffDurationShorterThanMaximumFishingDuration() then
           _.buffWithChumBuff()
         end
 
-        Core.castSpellByID(FISHING_SPELL_ID)
+        if iceHole then
+          Core.interactWithObject(iceHole)
+        else
+          Core.castSpellByID(FISHING_SPELL_ID)
+        end
+
         HWT.ResetAfk()
         Coroutine.waitForDuration(1)
         local fishingBobber = Fishing.findFishingBobber()
@@ -115,7 +123,7 @@ function Fishing.toggleFishing()
                 return unit == 'player' and spellID == HARPOON_SPELL_ID
               end)
               print('b')
-              Coroutine.waitFor(function ()
+              Coroutine.waitFor(function()
                 local start = GetSpellCooldown(PULL_HARD_SPELL_ID)
                 return start > 0
               end)
@@ -126,7 +134,7 @@ function Fishing.toggleFishing()
                 if cooldownDurationLeft > 0 then
                   print('c')
                   Coroutine.waitForDuration(cooldownDurationLeft)
-                  Coroutine.waitFor(function ()
+                  Coroutine.waitFor(function()
                     local start = GetSpellCooldown(PULL_HARD_SPELL_ID)
                     return start == 0
                   end)
@@ -181,13 +189,13 @@ function _.selectPool(pools)
 end
 
 function _.findClosestPool(pools)
-	return Array.min(pools, function (pool)
+  return Array.min(pools, function(pool)
     return Core.calculateDistanceFromCharacterToObject(pool)
   end)
 end
 
 function _.fishInPool(pool)
-	_.moveToPool(pool)
+  _.moveToPool(pool)
   if _.isCloseToPool(pool) then
 
   end
@@ -203,20 +211,21 @@ end
 local DISTANCE_TO_FISHING_POOL = 10
 
 function _.isCloseToPool(pool)
-	return Core.calculateDistanceFromCharacterToObject(pool) <= DISTANCE_TO_FISHING_POOL
+  return Core.calculateDistanceFromCharacterToObject(pool) <= DISTANCE_TO_FISHING_POOL
 end
 
 function _.findStandingSpotForFishingInPool(pool)
   local fishingPoolPosition = Core.retrieveObjectPosition(pool)
   local numberOfPointsOnCircle = 32
-  local candidates = Movement.generatePointsAround(fishingPoolPosition, DISTANCE_TO_FISHING_POOL, numberOfPointsOnCircle)
+  local candidates = Movement.generatePointsAround(fishingPoolPosition, DISTANCE_TO_FISHING_POOL,
+    numberOfPointsOnCircle)
   table.sort(candidates, _.compareStandingSpots)
   local spot = Array.find(candidates, _.doesPositionQualifyAsStandingSpot)
   return spot
 end
 
 function _.compareStandingSpots(a, b)
-	return Core.calculateDistanceFromCharacterToPosition(a) < Core.calculateDistanceFromCharacterToPosition(b)
+  return Core.calculateDistanceFromCharacterToPosition(a) < Core.calculateDistanceFromCharacterToPosition(b)
 end
 
 function _.doesPositionQualifyAsStandingSpot(position)
@@ -312,14 +321,14 @@ local function onEvent(self, event, ...)
 end
 
 function _.onAddonLoaded(addOnName)
-	if addOnName == 'Fishing' then
+  if addOnName == 'Fishing' then
     _.initializeSavedVariables()
   end
 end
 
 function _.initializeSavedVariables()
   if not FishingOptions then
-	  FishingOptions = {
+    FishingOptions = {
       fishInPools = true
     }
   end
