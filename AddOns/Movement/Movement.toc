@@ -1,6 +1,6 @@
 ## Title: Movement
 ## Interface: 100002
-## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Conditionals, Draw, Float, Core, ObjectToValueLookup, AStar, SavedVariables
+## Dependencies: Boolean, ActionSequenceDoer, Array, Coroutine, Math, Vector, HWT, Conditionals, Draw, Float, Core, ObjectToValueLookup, AStar, SavedVariables, Resolvable
 
 PointToValueMap.lua
 PointFlyweight.lua

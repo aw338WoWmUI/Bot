@@ -15,6 +15,7 @@ local MAXIMUM_FISHING_DURATION = 30 -- seconds
 local PULL_HARD_SPELL_ID = 374599
 local HARPOON_RANGE = 50
 local ICE_FISHING_HOLE_OBJECT_ID = 192631
+local ICE_CRACK_OBJECT_ID = 377944
 
 local isFishing = false
 local exitTimer = nil
@@ -60,6 +61,15 @@ function Fishing.toggleFishing()
         end
 
         local iceHole = Core.findClosestObjectToCharacterWithOneOfObjectIDs({ ICE_FISHING_HOLE_OBJECT_ID })
+        if iceHole then
+          Resolvable.await(Core.moveToObject(iceHole))
+        else
+          local iceCrack = Core.findClosestObjectToCharacterWithOneOfObjectIDs({ ICE_CRACK_OBJECT_ID })
+          if iceCrack then
+            Resolvable.await(Core.moveToAndInteractWithObject(iceCrack))
+            iceHole = Core.findClosestObjectToCharacterWithOneOfObjectIDs({ ICE_FISHING_HOLE_OBJECT_ID })
+          end
+        end
 
         if _.hasFishingLure() and not _.isFishingPoleEnchantedWithFishingLure() then
           _.enchantFishingPoleWithFishingLure()

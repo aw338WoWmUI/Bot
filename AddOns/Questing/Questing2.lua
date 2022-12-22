@@ -1763,7 +1763,12 @@ function moveToClosestPoint()
         if activity then
           activity:Cancel()
         end
-        activity = Movement.movePath(path)
+        local __, pathMover = Movement.movePath(path)
+        activity = {
+          Cancel = function ()
+            pathMover.stop()
+          end
+        }
         print('m2')
       end
     end

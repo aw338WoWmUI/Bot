@@ -1768,8 +1768,7 @@ function Movement.movePath(path, options)
       end
     }
   )
-  pathMover.run()
-  return pathMover
+  return pathMover.run(), pathMover
 end
 
 local function cleanUpPathFinding()
@@ -1852,12 +1851,14 @@ function Movement.moveTo(to, options)
     Movement.path = path
     AddOn.savedVariables.perCharacter.MovementPath = Movement.path
     if path then
-      pathMover = Movement.movePath(path, {
+      local resolvable
+      resolvable, pathMover = Movement.movePath(path, {
         stop = function()
           return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
         end,
         continueMoving = options.continueMoving
       })
+      Resolvable.await(resolvable)
       cleanUpPathFindingAndMoving()
     end
   end
@@ -2000,10 +2001,9 @@ function Movement.convertPathToGMRPath(path)
 end
 
 function Movement.moveToSavedPath()
-  local thread = coroutine.create(function()
+  return Coroutine.runAsCoroutine(function()
     Movement.movePath(path)
   end)
-  return Coroutine.resumeWithShowingError(thread)
 end
 
 function Movement.traceLineCollisionWithFallback(from, to)

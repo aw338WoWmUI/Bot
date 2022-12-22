@@ -1,4 +1,5 @@
 ## Title: Action Sequence Doer
 ## Interface: 30400
+## Dependencies: Stoppable, Coroutine
 
 ActionSequenceDoer.lua

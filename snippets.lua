@@ -354,3 +354,8 @@ Coroutine.runAsCoroutine(function () print(talents()) end)
 Compatibility.QuestLog.SetAbandonQuest(C_SuperTrack.GetSuperTrackedQuestID())
 Compatibility.QuestLog.AbandonQuest()
 
+Coroutine.runAsCoroutine(function () Core.moveToObject('target') end)
+
+Coroutine.runAsCoroutine(function () Core._moveTo(Core.retrieveObjectPosition('target')) end)
+
+Coroutine.runAsCoroutine(function () lll = Core._moveTo(Core.retrieveObjectPosition('target')) end)

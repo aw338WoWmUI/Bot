@@ -8,7 +8,7 @@ function Resolvable.Resolvable:new(fn)
   local object = {
     _afterResolve = Hook.Hook:new(),
   }
-  setmetatable(object, { __index = self })
+  setmetatable(object, { __index = Resolvable.Resolvable })
   RunNextFrame(function()
     local function resolve(...)
       object._afterResolve:runCallbacks(...)

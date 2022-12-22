@@ -2,13 +2,16 @@ local addOnName, AddOn = ...
 Stoppable = Stoppable or {}
 
 Stoppable.Stoppable = {}
-setmetatable(Stoppable.Stoppable, Resolvable.Resolvable)
+setmetatable(Stoppable.Stoppable, { __index = Resolvable.Resolvable })
 
 function Stoppable.Stoppable:new(fn)
-  local object = Resolvable.Resolvable:new(fn)
+  local object
+  object = Resolvable.Resolvable:new(function (resolve)
+    return fn(object, resolve)
+  end)
   object._hasStopped = false
   object._afterStop = Hook.Hook:new()
-  setmetatable(object, { __index = self })
+  setmetatable(object, { __index = Stoppable.Stoppable })
   return object
 end
 

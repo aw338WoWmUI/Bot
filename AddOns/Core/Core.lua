@@ -256,7 +256,7 @@ function Core.WorldPosition:isEqual(otherPosition)
 end
 
 function Core.WorldPosition:isDifferent(otherPosition)
-  return not Core.WorldPosition:isEqual(otherPosition)
+  return not self:isEqual(otherPosition)
 end
 
 function Core.createWorldPosition(continentID, x, y, z)
@@ -939,7 +939,6 @@ function Core.retrieveObjectPointer(objectIdentifier)
 end
 
 function Core.isObjectiveComplete(questID, objectiveIndex)
-  print(questID, objectiveIndex)
   local isObjectiveComplete = select(3, GetQuestObjectiveInfo(questID, objectiveIndex, false))
   return isObjectiveComplete
 end
@@ -1116,13 +1115,13 @@ function Core.traceLineWater(from, to)
 end
 
 function Core._moveTo(to, options)
-  return Stoppable.Stoppable:new(function(resolve)
+  return Stoppable.Stoppable:new(function(stoppable, resolve)
     Coroutine.runAsCoroutine(function()
       options = options or {}
 
       Movement.moveTo(to, {
         stop = function()
-          return stoppable:hasStopped() or (options.stop and options.stop()) or stoppable:hasStopped()
+          return stoppable:hasStopped() or (options.stop and options.stop())
         end,
         toleranceDistance = options.toleranceDistance,
         continueMoving = options.continueMoving
@@ -1149,7 +1148,7 @@ function Core.moveTo(point, options)
 end
 
 function Core.moveToUntil(point, options)
-  return Stoppable.Stoppable:new(function(resolve)
+  return Stoppable.Stoppable:new(function(stoppable, resolve)
     Coroutine.runAsCoroutine(function()
       options = options or {}
 
@@ -1179,7 +1178,7 @@ function Core.moveToUntil(point, options)
 end
 
 function Core.moveToObject(pointer, options)
-  return Stoppable.Stoppable:new(function(resolve)
+  return Stoppable.Stoppable:new(function(stoppable, resolve)
     Coroutine.runAsCoroutine(function()
       options = options or {}
 
@@ -1215,8 +1214,8 @@ function Core.moveToObject(pointer, options)
       local lastMoveToPosition
 
       local function isObjectUnreachableOrHasMoveToPositionChanged()
-        local moveToPostion = retrievePosition()
-        return not moveToPostion or moveToPostion:isDifferent(lastMoveToPosition)
+        local moveToPosition = retrievePosition()
+        return not moveToPosition or moveToPosition:isDifferent(lastMoveToPosition)
       end
 
       local position = retrievePosition()
@@ -1240,7 +1239,7 @@ function Core.moveToObject(pointer, options)
 end
 
 function Core.moveToAndInteractWithObject(pointer, distance, delay)
-  return Stoppable.Stoppable:new(function(resolve)
+  return Stoppable.Stoppable:new(function(stoppable, resolve)
     Coroutine.runAsCoroutine(function()
       distance = distance or Core.INTERACT_DISTANCE
 
