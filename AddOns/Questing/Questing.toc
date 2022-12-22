@@ -7,7 +7,8 @@ data/retail/quest_giver_npc_ids.lua
 data/retail/flight_master_npc_ids.lua
 data/retail/NPCs.lua
 data/retail/questItems.lua
-Database.lua
+Database_Shared.lua
+Database_Retail.lua
 Questing.lua
 QuestingCoroutine.lua
 learningToRide.lua

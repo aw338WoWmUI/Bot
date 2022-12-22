@@ -1,7 +1,9 @@
 local addOnName, AddOn = ...
 Questing = Questing or {}
 
-Questing.Database = {}
+Questing.Database = Questing.Database or {}
+
+local _ = {}
 
 questLookup = {}
 for _, quest in ipairs(quests) do
@@ -18,8 +20,34 @@ function Questing.Database.retrieveQuest(id)
   return questLookup[id]
 end
 
-function Questing.Database.retrieveQuestsThatShouldBeAvailable()
-  return Array.filter(quests, shouldQuestBeAvailable)
+function Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
+  return Array.filter(quests, function (quest)
+    return shouldQuestBeAvailable(quest) and _.isAQuestStarterOnMap(quest, mapID)
+  end)
+end
+
+function _.isAQuestStarterOnMap(quest, mapID)
+  return Array.any(quest.starters, _.isQuestStarterOnMap)
+end
+
+function _.isQuestStarterOnMap(questStarterEntry, mapID)
+	local questStarter = _.retrieveQuestStarter(questStarterEntry)
+  if questStarter then
+    return Array.any(questStarter.coordinates, function (coordinates)
+      return _.areCoordinatesOnMap(coordinates, mapID)
+    end)
+  else
+    return false
+  end
+end
+
+function _.areCoordinatesOnMap(coordinates, mapID)
+  local mapIDOfCoordinates = _.retrieveMapIDFromCoordinates(coordinates)
+  return mapIDOfCoordinates == mapID
+end
+
+function _.retrieveMapIDFromCoordinates(coordinates)
+	return coordinates[1]
 end
 
 local npcLookup = {}

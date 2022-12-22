@@ -1,6 +1,7 @@
 local addOnName, AddOn = ...
 --- @class Questing
 Questing = Questing or {}
+Questing._ = Questing._ or {}
 
 local _ = {}
 
@@ -18,6 +19,8 @@ local questsThatFailedToWork = Set.create()
 local questBlacklist = Set.create({
   31308, -- pet battle quest
 })
+
+Questing._.options = nil
 
 local function isQuestThatWorked(questID)
   return (
@@ -415,26 +418,9 @@ function Position:new(continentID, point)
   return position
 end
 
-local function convertMapPositionToWorldPosition(mapPosition)
-  if (
-    mapPosition and
-      mapPosition[1] ~= nil and
-      isValidMapCoordinate(mapPosition[2]) and
-      isValidMapCoordinate(mapPosition[3])
-  ) then
-    return Core.retrieveWorldPositionFromMapPosition({
-      mapID = mapPosition[1],
-      x = mapPosition[2],
-      y = mapPosition[3]
-    })
-  else
-    return nil
-  end
-end
-
 function retrieveNPCPosition(npc)
   local npcMapPosition = npc.coordinates[1]
-  return convertMapPositionToWorldPosition(npcMapPosition)
+  return Core.retrieveWorldPositionFromMapPosition(npcMapPosition)
 end
 
 function isQuestLogFull()
@@ -484,7 +470,7 @@ function retrieveQuestsOnMapThatTheCharacterIsOn()
     retrieveQuestsOnMap = Questing.Database.retrieveQuestsOnMapThatTheCharacterIsOn
   end
 
-  return _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
+  return Questing._.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
 end
 
 local MapIDs = {
@@ -499,7 +485,7 @@ local customParentMapIDs = {
   -- TODO: Mapping for other cities to their zone that they are in.
 }
 
-function _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
+function Questing._.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
   local mapID = Core.receiveMapIDForWhereTheCharacterIsAt()
   if mapID then
     while true do
@@ -523,29 +509,6 @@ function _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
   else
     return {}, nil
   end
-end
-
-function retrieveQuestsOnMapThatCanBeAccepted()
-  local retrieveQuestsOnMap
-  if Compatibility.isRetail() then
-    -- FIXME: Might be off.
-    retrieveQuestsOnMap = function(mapID)
-      local quests = C_QuestLog.GetQuestsOnMap(mapID)
-      return Array.filter(
-        Array.map(quests, function(quest)
-          quest.mapID = mapID
-          return quest
-        end),
-        function(quest)
-          return AddOn.isNotOnQuest(quest.questID)
-        end
-      )
-    end
-  else
-    retrieveQuestsOnMap = Questing.Database.receiveQuestsOnMapThatCanBeAccepted
-  end
-
-  return _.retrieveQuestsOnMapCheckingUpwards(retrieveQuestsOnMap)
 end
 
 function AddOn.isNotOnQuest(questID)
@@ -813,8 +776,38 @@ function _.seemsToBeQuestObjective(object)
   end
 end
 
+function _.seemsToBeQuestObjectiveOfAWorldQuest(object)
+	local objectQuestIDs = retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
+  local worldQuestIDs = _.retrieveInProgressWorldQuestIDs()
+  return Set.hasElements(Set.intersect(Set.create(objectQuestIDs), Set.create(worldQuestIDs)))
+end
+
+function _.retrieveInProgressWorldQuestIDs()
+  return _.retrieveWorldQuestIDs(_.retrieveInProgressWorldQuests())
+end
+
+function _.retrieveWorldQuestIDs(worldQuests)
+	return Array.map(worldQuests, _.retrieveWorldQuestIDs)
+end
+
+function _.retrieveWorldQuestIDs(worldQuest)
+	return worldQuest.questID
+end
+
+function _.retrieveInProgressWorldQuests()
+	return Array.filter(Compatibility.TaskQuest.retrieveQuestsOnMap(), _.isWorldQuestInProgress)
+end
+
+function _.isWorldQuestInProgress(worldQuest)
+	return worldQuest.inProgress
+end
+
 function doesPassObjectFilter(object)
-  return _.seemsToBeQuestObjective(object.pointer) or seemsToBeQuestObject(object.pointer)
+  if Questing._.options.doWorldQuests then
+    return _.seemsToBeQuestObjectiveOfAWorldQuest(object.pointer)
+  else
+    return _.seemsToBeQuestObjective(object.pointer) or seemsToBeQuestObject(object.pointer)
+  end
 end
 
 function retrieveObjectPoints()
@@ -1687,18 +1680,27 @@ function retrievePoints()
   if yielder.hasRanOutOfTime() then
     yielder.yield()
   end
-  local questStartPoints = AddOn.retrieveQuestStartPoints()
+
+  local questStartPoints = Questing._.retrieveQuestStartPoints()
   if yielder.hasRanOutOfTime() then
     yielder.yield()
   end
-  local objectivePoints = retrieveObjectivePoints()
-  if yielder.hasRanOutOfTime() then
-    yielder.yield()
+
+  local objectivePoints
+  if Questing._.options.doWorldQuests then
+    objectivePoints = {}
+  else
+    objectivePoints = retrieveObjectivePoints()
+    if yielder.hasRanOutOfTime() then
+      yielder.yield()
+    end
   end
+
   local objectPoints = retrieveObjectPoints()
   if yielder.hasRanOutOfTime() then
     yielder.yield()
   end
+
   local lootPoints
   if Core.isCharacterInCombat() then
     lootPoints = {}
@@ -1708,6 +1710,7 @@ function retrievePoints()
       yielder.yield()
     end
   end
+
   local points = {
     attackerPoints = attackerPoints,
     questStartPoints = questStartPoints,
@@ -1796,9 +1799,10 @@ function Questing.isRunning()
   return isRunning
 end
 
-function Questing.start()
+function Questing.start(options)
   if not Questing.isRunning() then
     print('Starting questing...')
+    Questing._.options = options or {}
     isRunning = true
 
     Coroutine.runAsCoroutine(_.run)
@@ -1813,11 +1817,11 @@ function Questing.stop()
   end
 end
 
-function Questing.toggle()
+function Questing.toggle(options)
   if isRunning then
     Questing.stop()
   else
-    Questing.start()
+    Questing.start(options)
   end
 end
 
@@ -2171,8 +2175,6 @@ HWT.doWhenHWTIsLoaded(function()
   frame:RegisterEvent('QUEST_DETAIL')
   frame:SetScript('OnEvent', onEvent)
 end)
-
-Questing.convertMapPositionToWorldPosition = convertMapPositionToWorldPosition
 
 function testHandleObjective()
   local continentID = Movement.retrieveContinentID()

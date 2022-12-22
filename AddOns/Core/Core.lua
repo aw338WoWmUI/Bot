@@ -232,6 +232,18 @@ function Core.createPosition(x, y, z)
   }
 end
 
+Core.MapPosition = {}
+
+function Core.createMapPosition(mapID, x, y)
+  local mapPosition = {
+    mapID = mapID,
+    x = x,
+    y = y
+  }
+  setmetatable(mapPosition, { __index = Core.MapPosition })
+  return mapPosition
+end
+
 Core.WorldPosition = {}
 
 function Core.WorldPosition:isEqual(otherPosition)

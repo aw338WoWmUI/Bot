@@ -9,13 +9,13 @@ function Bot.isRunning()
   return isRunning
 end
 
-function Bot.start()
+function Bot.start(options)
   if not Bot.isRunning() then
     print('Starting bot...')
 
     isRunning = true
 
-    Questing.start()
+    Questing.start(options)
   end
 end
 

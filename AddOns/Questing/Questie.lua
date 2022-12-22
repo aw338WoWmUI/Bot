@@ -12,7 +12,7 @@ local addOnName, AddOn = ...
 --
 --local quests = selectCloseQuests(findQuests())
 
-function AddOn.retrieveQuestStartPoints()
+function Questing._.retrieveQuestStartPoints()
   local quests = findQuests()
   logToFile('quests:\n' .. tableToString(quests, 3))
   return Array.selectTrue(Array.map(quests, function (quest)

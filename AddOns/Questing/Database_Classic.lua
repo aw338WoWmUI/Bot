@@ -1,7 +1,7 @@
 local addOnName, AddOn = ...
 Questing = Questing or {}
 
-Questing.Database = {}
+Questing.Database = Questing.Database or {}
 
 local _ = {}
 
@@ -59,13 +59,6 @@ function Questing.Database.receiveQuestsOnMap(mapID)
       return convertPointsToMapPoints(quest.starters)
     end
   end))
-end
-
-function Questing.Database.receiveQuestsOnMapThatCanBeAccepted(mapID)
-  local availableQuests = Questing.Database.retrieveQuestsThatShouldBeAvailable(mapID)
-  return Array.filter(availableQuests, function (quest)
-    return AddOn.isNotOnQuest(quest.id)
-  end)
 end
 
 function Questing.Database.retrieveQuestsOnMapThatTheCharacterIsOn(mapID)

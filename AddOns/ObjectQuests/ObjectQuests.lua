@@ -11,15 +11,17 @@ function ObjectQuests.ObjectIsQuestObjective(object)
     local QuestieDB = QuestieLoader:ImportModule('QuestieDB')
     local npc = QuestieDB:GetNPC(objectID)
     if npc then
-
+      -- TODO: Implement
+      error('Not implemented.')
     end
   end
 end
 
 function ObjectQuests.ObjectQuests(object)
   if Compatibility.isRetail() then
-    Unlocker.ObjectQuests(object)
+    return Unlocker.ObjectQuests(object)
   else
-
+    -- TODO: Implement
+    error('Not implemented.')
   end
 end

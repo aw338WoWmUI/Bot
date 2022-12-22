@@ -1,5 +1,9 @@
+Questing = Questing or {}
+Questing._ = Questing._ or {}
 local addOnName, AddOn = ...
 local _ = {}
+
+Questing.__ = _
 
 local questGiverStatuses = Set.create({
   Unlocker.QuestGiverStatuses.DailyQuest,
@@ -40,23 +44,28 @@ local questGivers = {
   }
 }
 
-function AddOn.retrieveQuestStartPoints()
+function Questing._.retrieveQuestStartPoints()
   local points
-  if isQuestLogFull() then
-    points = {}
+
+  if Questing._.options.doWorldQuests then
+    points = _.retrieveTaskQuestStartPointsFromMap()
   else
-    points = Array.concat(
-      _.retrieveQuestStartPointsFromObjects(),
-      _.retrieveQuestStartPointsFromAddOnDatabase(),
-      _.retrieveQuestStartPointsFromMap()
-    )
+    if isQuestLogFull() then
+      points = {}
+    else
+      points = Array.concat(
+        _.retrieveQuestStartPointsFromObjects(),
+        _.retrieveQuestStartPointsFromAddOnDatabase(),
+        _.retrieveQuestStartPointsFromMap()
+      )
 
-    Array.append(points, _.retrieveQuestStartPointsFromQuestLinesWhichArentAlreadyCoveredByOtherPoints(points))
+      Array.append(points, _.retrieveQuestStartPointsFromQuestLinesWhichArentAlreadyCoveredByOtherPoints(points))
+    end
+
+    points = Array.filter(points, function(point)
+      return Array.any(point.questIDs, QuestsToAccept.isQuestToAccept)
+    end)
   end
-
-  points = Array.filter(points, function(point)
-    return Array.any(point.questIDs, QuestsToAccept.isQuestToAccept)
-  end)
 
   return points
 end
@@ -86,15 +95,37 @@ function _.retrieveQuestStartPointsFromObjects()
 end
 
 function _.retrieveQuestStartPointsFromMap()
-  local quests = retrieveQuestsOnMapThatCanBeAccepted()
+  local quests = _.retrieveQuestsOnMapThatCanBeAccepted()
 
-  local points = Array.selectTrue(Array.flatMap(quests, function(quest)
+  local questPoints = Array.selectTrue(Array.flatMap(quests, function(quest)
     if not unavailableQuestIDs[quest.id] then
       return _.generateQuestStartPointsFromStarters(quest)
     end
   end))
 
-  return points
+  local taskQuestPoints = _.retrieveTaskQuestStartPointsFromMap()
+
+  return Array.concat(questPoints, taskQuestPoints)
+end
+
+function _.retrieveTaskQuestStartPointsFromMap()
+  local taskQuests = _.retrieveTaskQuestsOnMap()
+
+  local taskQuestPoints = Array.selectTrue(Array.flatMap(taskQuests, function(quest)
+    if not unavailableQuestIDs[quest.questID] then
+      return _.generateQuestStartPointFromTaskQuest(quest)
+    end
+  end))
+
+  return taskQuestPoints
+end
+
+function _.retrieveQuestsOnMapThatCanBeAccepted()
+  return Questing._.retrieveQuestsOnMapCheckingUpwards(Questing.Database.receiveQuestsOnMapThatCanBeAccepted)
+end
+
+function _.retrieveTaskQuestsOnMap()
+  return Questing._.retrieveQuestsOnMapCheckingUpwards(Compatibility.TaskQuest.retrieveQuestsOnMap)
 end
 
 function _.retrieveQuestStartPointsFromAddOnDatabase()
@@ -229,4 +260,19 @@ function _.generateQuestStartPointsFromStarters(quest)
     -- print('Missing quest starter IDs for quest "' .. quest.id .. '".')
     return {}
   end
+end
+
+function _.generateQuestStartPointFromTaskQuest(taskQuest)
+  local position = Core.retrieveWorldPositionFromMapPosition(Core.createMapPosition(taskQuest.mapID, taskQuest.x, taskQuest.y))
+  return {
+    continentID = position.continentID,
+    x = position.x,
+    y = position.y,
+    z = position.z,
+    type = 'taskQuest',
+    questIDs = {
+      taskQuest.questID
+    },
+    questName = QuestUtils_GetQuestName(taskQuest.questID)
+  }
 end

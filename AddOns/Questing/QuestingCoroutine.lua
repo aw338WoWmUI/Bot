@@ -208,7 +208,7 @@ local function gossipWithObjectWithObjectID(objectID, chooseOption)
     local npc = Questing.Database.retrieveNPC(objectID)
     if npc and npc.coordinates and next(npc.coordinates) then
       local positions = Array.map(npc.coordinates, function(coordinates)
-        return Questing.convertMapPositionToWorldPosition(coordinates)
+        return Core.retrieveWorldPositionFromMapPosition(coordinates)
       end)
       local continentID = select(8, GetInstanceInfo())
       local positionsOnContinent = Array.filter(positions, function(position)
