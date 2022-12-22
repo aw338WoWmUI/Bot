@@ -1,6 +1,7 @@
 import { escapeForRegExp } from '@sanjo/escape-for-reg-exp'
 import { readFile } from '@sanjo/read-file'
 import { writeFile } from '@sanjo/write-file'
+import { kebabCase } from 'lodash'
 import { parse } from 'node-html-parser'
 import { readdir } from 'node:fs/promises'
 import { concurrent, convertToLua, sortIDs } from './lib.js'
@@ -13,6 +14,11 @@ const racesRegExp = /Races?: ([^\\]+)/
 const seriesRegExp = /<table class="series">(.*?)<\/table>/
 const questRegExp = /quest=(\d+)/
 const storylineRegExp = /<div class="quick-facts-storyline-list">(.*?)<\/div>/s
+
+const DRAGONSCALE_EXPEDITION = 2507
+const MARUUK_CENTAUR = 2503
+const ISKAARA_TUSKARR = 2511
+const VALDRAKKEN_ACCORD = 2510
 
 async function processQuest(id) {
   const content = await readFile('quests/' + id + '.html')
@@ -83,11 +89,6 @@ async function processQuest(id) {
   quest.unlockedQuestIDs = extractUnlockedQuestIDs(content)
   quest.objectives = extractObjectives(content)
 
-  const DRAGONSCALE_EXPEDITION = 2507
-  const MARUUK_CENTAUR = 2503
-  const ISKAARA_TUSKARR = 2511
-  const VALDRAKKEN_ACCORD = 2510
-
   quest.reputation = {
     [DRAGONSCALE_EXPEDITION]: extractReputationForDragonscaleExpedition(content),
     [MARUUK_CENTAUR]: extractReputationForMaruukCentaur(content),
@@ -99,37 +100,23 @@ async function processQuest(id) {
 }
 
 function extractReputationForIskaaraTuskarr(content) {
-  const regExp = /<span>(\d+)<\/span> reputation with <a href="\/faction=2511\/iskaara-tuskarr">Iskaara Tuskarr/
-  const match = regExp.exec(content)
-  if (match) {
-    return parseInt(match[1], 10)
-  } else {
-    return 0
-  }
+  return extractReputationFor(content, ISKAARA_TUSKARR, 'Iskaara Tuskarr')
 }
 
 function extractReputationForMaruukCentaur(content) {
-  const regExp = /<span>(\d+)<\/span> reputation with <a href="\/faction=2503\/maruuk-centaur">Maruuk Centaur/
-  const match = regExp.exec(content)
-  if (match) {
-    return parseInt(match[1], 10)
-  } else {
-    return 0
-  }
+  return extractReputationFor(content, MARUUK_CENTAUR, 'Maruuk Centaur')
 }
 
 function extractReputationForValdrakkenAccord(content) {
-  const regExp = /<span>(\d+)<\/span> reputation with <a href="\/faction=2510\/valdrakken-accord">Valdrakken Accord/
-  const match = regExp.exec(content)
-  if (match) {
-    return parseInt(match[1], 10)
-  } else {
-    return 0
-  }
+  return extractReputationFor(content, VALDRAKKEN_ACCORD, 'Valdrakken Accord')
 }
 
 function extractReputationForDragonscaleExpedition(content) {
-  const regExp = /<span>(\d+)<\/span> reputation with <a href="\/faction=2507\/dragonscale-expedition">Dragonscale Expedition/
+  return extractReputationFor(content, DRAGONSCALE_EXPEDITION, 'Dragonscale Expedition')
+}
+
+function extractReputationFor(content, factionID, factionName) {
+  const regExp = new RegExp(`<span>(\\d+)<\\/span> reputation with <a href="\\/faction=${factionID}\\/${kebabCase(factionName)}">${factionName}`)
   const match = regExp.exec(content)
   if (match) {
     return parseInt(match[1], 10)
