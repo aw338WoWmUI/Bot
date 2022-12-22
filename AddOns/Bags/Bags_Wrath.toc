@@ -1,5 +1,0 @@
-## Title: Bags
-## Interface: 30400
-## Dependencies: Compatibility, Set
-
-Bags.lua
