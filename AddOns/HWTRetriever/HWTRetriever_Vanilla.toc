@@ -1,4 +1,6 @@
 ## Title: HWT Retriever
 ## Interface: 11403
+## Version: 1.0.0
 
+libs/Library/Library.lua
 HWTRetriever.lua

@@ -1,6 +1,8 @@
 ## Title: Draw
 ## Interface: 100002
 ## Dependencies: HWT, Array
+## Version: 1.0.0
 
+libs/Library/Library.lua
 LibDraw.lua
 Draw.lua

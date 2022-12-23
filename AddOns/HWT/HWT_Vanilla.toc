@@ -1,5 +1,7 @@
 ## Title: HWT
 ## Interface: 11403
 ## Dependencies: Conditionals, HWTRetriever, Boolean, Array, Coroutine, Object
+## Version: 1.0.0
 
+libs/Library/Library.lua
 HWT.lua

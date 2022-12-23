@@ -1,5 +1,7 @@
 ## Title: Logging
 ## Interface: 11403
 ## Dependencies: Serialization, Array, HWT
+## Version: 1.0.0
 
+libs/Library/Library.lua
 Logging.lua

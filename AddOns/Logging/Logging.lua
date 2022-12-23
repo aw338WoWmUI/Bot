@@ -1,43 +1,51 @@
-Logging = {}
+local addOnName = ...
+local version = '1.0.0'
 
-local _ = {}
+if not Library.isRegistered(addOnName, version) then
+  --- @class Logging
+  local Logging = {}
 
-local IS_LOGGING_ENABLED = true
+  Library.register(addOnName, version, Logging)
 
-function Logging.log(...)
-  if IS_LOGGING_ENABLED then
-    local string = strjoin(' ', unpack(Array.map({ ... }, Serialization.valueToString)))
-    Logging.logToFile(string)
+  local _ = {}
+
+  local IS_LOGGING_ENABLED = true
+
+  function Logging.log(...)
+    if IS_LOGGING_ENABLED then
+      local string = strjoin(' ', unpack(Array.map({ ... }, Serialization.valueToString)))
+      Logging.logToFile(string)
+    end
   end
-end
 
-function Logging.log2(filePath, ...)
-  if IS_LOGGING_ENABLED then
-    local string = strjoin(' ', unpack(Array.map({ ... }, Serialization.valueToString)))
-    Logging.logToFile2(filePath, string)
+  function Logging.log2(filePath, ...)
+    if IS_LOGGING_ENABLED then
+      local string = strjoin(' ', unpack(Array.map({ ... }, Serialization.valueToString)))
+      Logging.logToFile2(filePath, string)
+    end
   end
-end
 
-function Logging.writeToLogFile2(filePath, content)
-  if IS_LOGGING_ENABLED then
-    HWT.WriteFile(filePath, content, true)
+  function Logging.writeToLogFile2(filePath, content)
+    if IS_LOGGING_ENABLED then
+      HWT.WriteFile(filePath, content, true)
+    end
   end
-end
 
-function Logging.logToFile2(filePath, content)
-  if IS_LOGGING_ENABLED then
-    Logging.writeToLogFile2(filePath, tostring(content) .. '\n')
+  function Logging.logToFile2(filePath, content)
+    if IS_LOGGING_ENABLED then
+      Logging.writeToLogFile2(filePath, tostring(content) .. '\n')
+    end
   end
-end
 
-function Logging.logToFile(content)
-  if IS_LOGGING_ENABLED then
-    _.writeToLogFile(tostring(content) .. '\n')
+  function Logging.logToFile(content)
+    if IS_LOGGING_ENABLED then
+      _.writeToLogFile(tostring(content) .. '\n')
+    end
   end
-end
 
-function _.writeToLogFile(content)
-  if IS_LOGGING_ENABLED then
-    HWT.WriteFile('C:/log.txt', content, true)
+  function _.writeToLogFile(content)
+    if IS_LOGGING_ENABLED then
+      HWT.WriteFile('C:/log.txt', content, true)
+    end
   end
 end

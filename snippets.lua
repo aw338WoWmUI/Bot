@@ -359,3 +359,13 @@ Coroutine.runAsCoroutine(function () Core.moveToObject('target') end)
 Coroutine.runAsCoroutine(function () Core._moveTo(Core.retrieveObjectPosition('target')) end)
 
 Coroutine.runAsCoroutine(function () lll = Core._moveTo(Core.retrieveObjectPosition('target')) end)
+
+Library.retrieve('Conditionals', '1.0.0')
+
+Library.retrieve('Boolean', '1.0.0')
+
+Library.retrieve('Boolean', '^1.0.0')
+
+Library.retrieve('Float', '1.0.0')
+
+Library.retrieve('Float', '^1.0.0')

@@ -1,7 +1,9 @@
 ## Title: Compatibility
 ## Interface: 11403
 ## Dependencies: Boolean, Caching, Array
+## Version: 1.0.0
 
+libs/Library/Library.lua
 Compatibility.lua
 QuestLog.lua
 GossipInfo.lua
