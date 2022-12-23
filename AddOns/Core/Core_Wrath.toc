@@ -1,7 +1,5 @@
 ## Title: Core
 ## Interface: 30400
-## Dependencies: HWT, Compatibility, Set, Vector, Array, Logging, Math, BinaryHeap, ObjectQuests, Movement, Stoppable, Coroutine
+## Dependencies: HWT, Boolean, Compatibility, Set, Vector, Array, Logging, Math, BinaryHeap, ObjectQuests, Movement, Stoppable, Coroutine
 
-libs/Library/Library.lua
-libs/Boolean/Boolean.lua
 Core.lua

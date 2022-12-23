@@ -3,8 +3,9 @@
 
 -- LubDraw orginally by docbrown on fh-wow.com
 
-local addOnName, AddOn = ...
 Draw = Draw or {}
+
+local addOnName, AddOn = ...
 
 local sin, cos, atan, atan2, sqrt, rad = math.sin, math.cos, math.atan, math.atan2, math.sqrt, math.rad
 local tinsert, tremove = tinsert, tremove

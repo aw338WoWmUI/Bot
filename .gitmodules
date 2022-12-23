@@ -19,9 +19,6 @@
 [submodule "AddOns/Coroutine"]
 	path = AddOns/Coroutine
 	url = https://github.com/SanjoSolutions/LuaCoroutine.git
-[submodule "AddOns/BinaryHeap/libs/BinaryHeap"]
-	path = AddOns/BinaryHeap/libs/BinaryHeap
-	url = https://github.com/AkiKonani/BinaryHeap.git
 [submodule "AddOns/Function"]
 	path = AddOns/Function
 	url = https://github.com/SanjoSolutions/LuaFunction.git
@@ -46,12 +43,6 @@
 [submodule "createAddOn/createAddOn"]
 	path = createAddOn/createAddOn
 	url = https://github.com/SanjoSolutions/createAddOn.git
-[submodule "AddOns/Core/Boolean"]
-	path = AddOns/Core/libs/Boolean
-	url = https://github.com/SanjoSolutions/LuaBoolean.git
-[submodule "AddOns/Core/Library"]
-	path = AddOns/Core/libs/Library
-	url = https://github.com/SanjoSolutions/Library.git
 [submodule "AddOns/Bags"]
 	path = AddOns/Bags
 	url = https://github.com/SanjoSolutions/Bags.git
@@ -85,3 +76,6 @@
 [submodule "AddOns/Yielder"]
 	path = AddOns/Yielder
 	url = https://github.com/SanjoSolutions/LuaYielder.git
+[submodule "AddOns/BinaryHeap"]
+	path = AddOns/BinaryHeap
+	url = https://github.com/AkiKonani/BinaryHeap.git

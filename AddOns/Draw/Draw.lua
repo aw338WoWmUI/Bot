@@ -1,5 +1,6 @@
-local addOnName, AddOn = ...
 Draw = Draw or {}
+
+local addOnName, AddOn = ...
 
 local function splitIntoTriangles(points)
   local triangles = {}
