@@ -76,6 +76,6 @@
 [submodule "AddOns/Yielder"]
 	path = AddOns/Yielder
 	url = https://github.com/SanjoSolutions/LuaYielder.git
-[submodule "AddOns/BinaryHeap"]
-	path = AddOns/BinaryHeap
+[submodule "AddOns/BinaryHeap/libs/BinaryHeap"]
+	path = AddOns/BinaryHeap/libs/BinaryHeap
 	url = https://github.com/AkiKonani/BinaryHeap.git
