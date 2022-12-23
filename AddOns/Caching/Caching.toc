@@ -1,4 +1,0 @@
-## Title: Caching
-## Interface: 100002
-
-Caching.lua
