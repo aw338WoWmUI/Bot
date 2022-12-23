@@ -85,21 +85,3 @@
 [submodule "AddOns/Yielder"]
 	path = AddOns/Yielder
 	url = https://github.com/SanjoSolutions/LuaYielder.git
-[submodule "AddOns/BinaryHeap/libs/Library"]
-	path = AddOns/BinaryHeap/libs/Library
-	url = https://github.com/SanjoSolutions/Library.git
-[submodule "AddOns/Compatibility/libs/Library"]
-	path = AddOns/Compatibility/libs/Library
-	url = https://github.com/SanjoSolutions/Library.git
-[submodule "AddOns/Draw/libs/Library"]
-	path = AddOns/Draw/libs/Library
-	url = https://github.com/SanjoSolutions/Library.git
-[submodule "AddOns/HWT/libs/Library"]
-	path = AddOns/HWT/libs/Library
-	url = https://github.com/SanjoSolutions/Library.git
-[submodule "AddOns/HWTRetriever/libs/Library"]
-	path = AddOns/HWTRetriever/libs/Library
-	url = https://github.com/SanjoSolutions/Library.git
-[submodule "AddOns/Logging/libs/Library"]
-	path = AddOns/Logging/libs/Library
-	url = https://github.com/SanjoSolutions/Library.git

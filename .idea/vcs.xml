@@ -6,30 +6,23 @@
     <mapping directory="$PROJECT_DIR$/AddOns/Array" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Array/libs/Boolean" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Array/libs/Boolean/Library" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/AddOns/Array/libs/Boolean/libs/Library" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Array/libs/Library" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Bags" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/BinaryHeap/libs/BinaryHeap" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Boolean" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/AddOns/Boolean/libs/Library" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Caching" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/CommunityFeastHandler" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Conditionals" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Core/libs/Boolean" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/AddOns/Core/libs/Boolean/libs/Library" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/AddOns/Core/libs/Boolean/Library" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Core/libs/Library" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Coroutine" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Events" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Float" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/AddOns/Float/libs/Library" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Function" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Function/Array" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Function/Object" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/AddOns/Function/Object/Set" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Function/Testing" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/AddOns/Function/Testing/Array" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/AddOns/Function/Testing/Object" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/AddOns/Function/Testing/Object/Set" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Hook" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Hooking" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Math" vcs="Git" />

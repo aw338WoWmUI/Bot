@@ -1,5 +1,4 @@
 ## Title: Binary Heap
 ## Interface: 100002
 
-libs/Library/Library.lua
 libs/BinaryHeap/src/binaryheap.lua
