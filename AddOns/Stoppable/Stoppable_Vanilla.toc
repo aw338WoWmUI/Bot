@@ -1,5 +1,0 @@
-## Title: Stoppable
-## Interface: 11403
-## Dependencies: Hook, Coroutine, Resolvable
-
-Stoppable.lua

@@ -1,5 +1,0 @@
-## Title: Resolvable
-## Interface: 11403
-## Dependencies: Coroutine, Hook
-
-Resolvable.lua

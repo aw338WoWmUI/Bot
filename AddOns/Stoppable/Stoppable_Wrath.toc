@@ -1,5 +1,0 @@
-## Title: Stoppable
-## Interface: 30400
-## Dependencies: Hook, Coroutine, Resolvable
-
-Stoppable.lua

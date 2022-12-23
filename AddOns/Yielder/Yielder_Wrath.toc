@@ -1,4 +1,0 @@
-## Title: Yielder
-## Interface: 30400
-
-Yielder.lua

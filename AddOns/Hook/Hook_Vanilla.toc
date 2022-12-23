@@ -1,4 +1,0 @@
-## Title: Hook
-## Interface: 11403
-
-Hook.lua

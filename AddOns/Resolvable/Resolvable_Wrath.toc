@@ -1,5 +1,0 @@
-## Title: Resolvable
-## Interface: 30400
-## Dependencies: Coroutine, Hook
-
-Resolvable.lua

@@ -1,5 +1,0 @@
-## Title: Scheduling
-## Interface: 30400
-## Dependencies: Array
-
-Scheduling.lua

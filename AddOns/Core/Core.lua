@@ -2,6 +2,9 @@ local addOnName, AddOn = ...
 --- @class Core
 Core = Core or {}
 
+--- @type Boolean
+local Boolean = Library.retrieve('Boolean', '^1.0.0')
+
 Core.INTERACT_DISTANCE = 5.3
 Core.RANGE_IN_WHICH_OBJECTS_SEEM_TO_BE_SHOWN = 50
 

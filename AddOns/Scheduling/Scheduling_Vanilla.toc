@@ -1,5 +1,0 @@
-## Title: Scheduling
-## Interface: 11403
-## Dependencies: Array
-
-Scheduling.lua

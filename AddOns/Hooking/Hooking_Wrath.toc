@@ -1,5 +1,0 @@
-## Title: Hooking
-## Interface: 30400
-## Dependencies: Serialization
-
-Hooking.lua

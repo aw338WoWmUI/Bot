@@ -1,5 +1,5 @@
 ## Title: Logging
 ## Interface: 11403
-## Dependencies: Serialization, Array
+## Dependencies: Serialization, Array, HWT
 
 Logging.lua

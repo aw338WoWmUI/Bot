@@ -46,3 +46,42 @@
 [submodule "createAddOn/createAddOn"]
 	path = createAddOn/createAddOn
 	url = https://github.com/SanjoSolutions/createAddOn.git
+[submodule "AddOns/Core/Boolean"]
+	path = AddOns/Core/libs/Boolean
+	url = https://github.com/SanjoSolutions/LuaBoolean.git
+[submodule "AddOns/Core/Library"]
+	path = AddOns/Core/libs/Library
+	url = https://github.com/SanjoSolutions/Library.git
+[submodule "AddOns/Bags"]
+	path = AddOns/Bags
+	url = https://github.com/SanjoSolutions/Bags.git
+[submodule "AddOns/Caching"]
+	path = AddOns/Caching
+	url = https://github.com/SanjoSolutions/LuaCaching.git
+[submodule "AddOns/Conditionals"]
+	path = AddOns/Conditionals
+	url = https://github.com/SanjoSolutions/LuaConditionals.git
+[submodule "AddOns/Hook"]
+	path = AddOns/Hook
+	url = https://github.com/SanjoSolutions/LuaHook.git
+[submodule "AddOns/Hooking"]
+	path = AddOns/Hooking
+	url = https://github.com/SanjoSolutions/LuaHooking.git
+[submodule "AddOns/Resolvable"]
+	path = AddOns/Resolvable
+	url = https://github.com/SanjoSolutions/LuaResolvable.git
+[submodule "AddOns/Scheduling"]
+	path = AddOns/Scheduling
+	url = https://github.com/SanjoSolutions/LuaScheduling.git
+[submodule "AddOns/Serialization"]
+	path = AddOns/Serialization
+	url = https://github.com/SanjoSolutions/LuaSerialization.git
+[submodule "AddOns/SpellCasting"]
+	path = AddOns/SpellCasting
+	url = https://github.com/SanjoSolutions/LuaSpellCasting.git
+[submodule "AddOns/Stoppable"]
+	path = AddOns/Stoppable
+	url = https://github.com/SanjoSolutions/LuaStoppable.git
+[submodule "AddOns/Yielder"]
+	path = AddOns/Yielder
+	url = https://github.com/SanjoSolutions/LuaYielder.git
