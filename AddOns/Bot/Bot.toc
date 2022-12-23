@@ -1,7 +1,7 @@
 ## Title: Bot
 ## Interface: 100002
-## Dependencies: Boolean, Questing, HWT, Core, Bags, Coroutine, Set, SpellCasting
-## OptionalDeps: RecommendedSpellCaster
+## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting
+## OptionalDeps: RecommendedSpellCaster, Questing
 
 Warrior.lua
 DeathKnight.lua

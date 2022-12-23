@@ -15,7 +15,9 @@ function Bot.start(options)
 
     isRunning = true
 
-    Questing.start(options)
+    if _G.Questing then
+      Questing.start(options)
+    end
   end
 end
 
@@ -23,7 +25,10 @@ function Bot.stop()
   if Bot.isRunning() then
     print('Stopping bot...')
     isRunning = false
-    Questing.stop()
+
+    if _G.Questing then
+      Questing.stop()
+    end
   end
 end
 
