@@ -60,8 +60,6 @@ function Bot.DragonbaneKeep.toggleFarming()
           end)
         end
 
-        print('closestObject', closestObject)
-
         if closestObject then
           if _.isObjectToInteractWith(closestObject) then
             Resolvable.await(Core.moveToAndInteractWithObject(closestObject))
