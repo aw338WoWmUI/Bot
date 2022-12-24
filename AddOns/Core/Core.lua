@@ -574,6 +574,10 @@ function Core.findClosestObjectTo2D(objectIDs, to)
   return Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, to, Math.euclideanDistance2D)
 end
 
+function Core.findClosestObjectToCharacterWithObjectID(objectID)
+  return Core.findClosestObjectToCharacterWithOneOfObjectIDs({ objectID })
+end
+
 function Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectIDs)
   local characterPosition = Core.retrieveCharacterPosition()
   return Core.findClosestObjectWithOneOfObjectIDsTo(objectIDs, characterPosition)
@@ -590,10 +594,6 @@ function Core.findClosestQuestRelatedObjectTo(questID, to)
 end
 
 function Core.findClosestObjectTo(to, customFilter, customDistance)
-  if type(objectIDs) == 'number' then
-    objectIDs = { objectIDs }
-  end
-
   local filter = customFilter or Function.alwaysTrue
   local calculateDistance = customDistance or Core.calculateDistanceBetweenPositions
 
@@ -1403,7 +1403,7 @@ function Core.moveToCorpseIfPossible()
 end
 
 function Core.isGhost(objectIdentifier)
-	return Boolean.toBoolean(UnitIsGhost(objectIdentifier))
+  return Boolean.toBoolean(UnitIsGhost(objectIdentifier))
 end
 
 function Core.isCharacterGhost()
@@ -1420,5 +1420,36 @@ function Core.moveToCorpse()
 end
 
 function Core.canStaticPopup1Button1BePressed()
-	return StaticPopup1:IsShown() and StaticPopup1Button1:IsShown() and StaticPopup1Button1:IsEnabled()
+  return StaticPopup1:IsShown() and StaticPopup1Button1:IsShown() and StaticPopup1Button1:IsEnabled()
+end
+
+local function selectOption(optionToSelect)
+  C_GossipInfo.SelectOption(optionToSelect)
+end
+
+local function gossipWithObject(pointer, chooseOption)
+  return Stoppable.Stoppable:new(function(stoppable, resolve)
+    Coroutine.runAsCoroutine(function()
+      local name = Core.retrieveObjectName(pointer)
+      while stoppable:isRunning() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
+        Resolvable.await(Core.moveToAndInteractWithObject(pointer))
+        if not GossipFrame:IsShown() then
+          Events.waitForEvent('GOSSIP_SHOW', 2)
+        end
+        Coroutine.yieldAndResume()
+      end
+      if stoppable:isRunning() and GossipFrame:IsShown() then
+        local gossipOptionID = chooseOption()
+        if gossipOptionID then
+          selectOption(gossipOptionID)
+        end
+      end
+
+      resolve()
+    end)
+  end)
+end
+
+function Core.gossipWithObject(pointer, gossipOptionID)
+  return gossipWithObject(pointer, Function.returnValue(gossipOptionID))
 end

@@ -210,7 +210,7 @@ function _.generateQuestStartPointsFromStarters(quest)
       if starter.type == 'npc' then
         local npc = Questing.Database.retrieveNPC(starter.id)
         if npc then
-          local npcPointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(npc.id)
+          local npcPointer = Core.findClosestObjectToCharacterWithObjectID(npc.id)
           if npcPointer and not Set.contains(questGiverStatuses, Unlocker.retrieveQuestGiverStatus(npcPointer)) then
             return nil
           end

@@ -198,7 +198,7 @@ end
 
 function waitForShipToHaveArrivedAtStormwind()
   Coroutine.waitFor(function()
-    local objectGUID = Core.findClosestObjectToCharacterWithOneOfObjectIDs(25013)
+    local objectGUID = Core.findClosestObjectToCharacterWithObjectID(25013)
     if objectGUID then
       local position = Core.retrieveObjectPosition(objectGUID)
       return Core.calculateDistanceBetweenPositions(
@@ -214,7 +214,7 @@ function waitForShipToHaveArrivedAtStormwind()
 end
 
 function moveOntoShip()
-  local object = Core.findClosestObjectToCharacterWithOneOfObjectIDs(25013)
+  local object = Core.findClosestObjectToCharacterWithObjectID(25013)
   if object then
     local position = Core.retrieveObjectPosition(object)
     Questing.Coroutine.moveTo(position)

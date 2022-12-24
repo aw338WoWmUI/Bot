@@ -92,7 +92,7 @@ end
 
 function Bot.DragonbaneKeep.turnKeysIn()
   if Bags.hasItem(RESTORED_OBSIDIAN_KEY_ITEM_ID) then
-    local sabellian = Core.findClosestObjectToCharacterWithOneOfObjectIDs(SABELLIAN_OBJECT_ID)
+    local sabellian = Core.findClosestObjectToCharacterWithObjectID(SABELLIAN_OBJECT_ID)
     if sabellian then
       repeat
         Core.interactWithObject(sabellian)

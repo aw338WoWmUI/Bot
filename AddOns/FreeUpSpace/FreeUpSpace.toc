@@ -1,0 +1,5 @@
+## Title: FreeUpSpace
+## Interface: 100002
+## Dependencies: Compatibility, Bags, Core, Resolvable, Coroutine, Boolean, Events
+
+FreeUpSpace.lua

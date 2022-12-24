@@ -60,14 +60,14 @@ function Fishing.toggleFishing()
           end
         end
 
-        local iceHole = Core.findClosestObjectToCharacterWithOneOfObjectIDs({ ICE_FISHING_HOLE_OBJECT_ID })
+        local iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
         if iceHole then
           Resolvable.await(Core.moveToObject(iceHole))
         else
-          local iceCrack = Core.findClosestObjectToCharacterWithOneOfObjectIDs({ ICE_CRACK_OBJECT_ID })
+          local iceCrack = Core.findClosestObjectToCharacterWithObjectID(ICE_CRACK_OBJECT_ID)
           if iceCrack then
             Resolvable.await(Core.moveToAndInteractWithObject(iceCrack))
-            iceHole = Core.findClosestObjectToCharacterWithOneOfObjectIDs({ ICE_FISHING_HOLE_OBJECT_ID })
+            iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
           end
         end
 
@@ -168,7 +168,7 @@ function Fishing.toggleFishing()
           end
         end
         if isFishing then
-          if Questing.areBagsFull() then
+          if Bags.areBagsFull() then
             Quit()
             return
           end

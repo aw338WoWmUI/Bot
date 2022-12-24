@@ -915,9 +915,10 @@ function Movement.canBeDragonriden()
   return Movement.isDragonridingAvailableInZone() and IsOutdoors() and Movement.canCharacterRideDragon()
 end
 
+local DRAGON_ISLES_CONTINENT_ID = 2444
+
 function Movement.isDragonridingAvailableInZone()
-  local isUsable = select(5, C_MountJournal.GetMountInfoByID(RENEWED_PROTO_DRAKE_MOUNT_ID))
-  return isUsable
+  return Core.retrieveCurrentContinentID() == DRAGON_ISLES_CONTINENT_ID
 end
 
 local DRAGONRIDING_BASICS_SPELL_ID = 376777

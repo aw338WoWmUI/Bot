@@ -126,7 +126,7 @@ defineQuest3(
     )
 
     if self:isObjectiveOpen(1) then
-      if not Core.findClosestObjectToCharacterWithOneOfObjectIDs(57310) then
+      if not Core.findClosestObjectToCharacterWithObjectID(57310) then
         if Questing.isRunning() then
           Questing.Coroutine.gossipWith(58376, 40644)
         end
@@ -143,7 +143,7 @@ defineQuest3(
       end
       while Questing.isRunning() and self:isObjectiveOpen(1) do
         local npcID = 57310
-        local pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(npcID)
+        local pointer = Core.findClosestObjectToCharacterWithObjectID(npcID)
         if pointer then
           local npcPosition = Core.retrieveObjectPosition(pointer)
           local yaw = Core.calculateAnglesBetweenTwoPoints(targetLocation, npcPosition)
@@ -218,11 +218,11 @@ do
           41.904102325439
         ))
         Coroutine.waitFor(function()
-          local object = Core.findClosestObjectToCharacterWithOneOfObjectIDs(42387)
+          local object = Core.findClosestObjectToCharacterWithObjectID(42387)
           return object and Core.canUnitAttackOtherUnit('player', object)
         end)
         while not Compatibility.QuestLog.isComplete(questID) do
-          local object = Core.findClosestObjectToCharacterWithOneOfObjectIDs(42387)
+          local object = Core.findClosestObjectToCharacterWithObjectID(42387)
           if object then
             Questing.Coroutine.doMob(object)
           else
@@ -777,7 +777,7 @@ function _.seemsToBeQuestObjective(object)
 end
 
 function _.seemsToBeQuestObjectiveOfAWorldQuest(object)
-	local objectQuestIDs = retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
+  local objectQuestIDs = retrieveQuestIDsOfActiveQuestsToWhichObjectSeemsRelated(object)
   local worldQuestIDs = _.retrieveInProgressWorldQuestIDs()
   return Set.hasElements(Set.intersect(Set.create(objectQuestIDs), Set.create(worldQuestIDs)))
 end
@@ -787,19 +787,19 @@ function _.retrieveInProgressWorldQuestIDs()
 end
 
 function _.retrieveWorldQuestIDs(worldQuests)
-	return Array.map(worldQuests, _.retrieveWorldQuestIDs)
+  return Array.map(worldQuests, _.retrieveWorldQuestIDs)
 end
 
 function _.retrieveWorldQuestIDs(worldQuest)
-	return worldQuest.questID
+  return worldQuest.questID
 end
 
 function _.retrieveInProgressWorldQuests()
-	return Array.filter(Compatibility.TaskQuest.retrieveQuestsOnMap(), _.isWorldQuestInProgress)
+  return Array.filter(Compatibility.TaskQuest.retrieveQuestsOnMap(), _.isWorldQuestInProgress)
 end
 
 function _.isWorldQuestInProgress(worldQuest)
-	return worldQuest.inProgress
+  return worldQuest.inProgress
 end
 
 function doesPassObjectFilter(object)
@@ -1080,7 +1080,7 @@ local function doSomethingWithObject(point)
   local objectID = point.objectID
   local pointer = point.pointer
   if not pointer and objectID then
-    pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID) -- FIXME: Object closest to point position which matches objectID
+    pointer = Core.findClosestObjectToCharacterWithObjectID(objectID) -- FIXME: Object closest to point position which matches objectID
   end
 
   if not pointer and objectID and Core.calculateDistanceFromCharacterToPosition(point) <= Core.RANGE_IN_WHICH_OBJECTS_SEEM_TO_BE_SHOWN then
@@ -1513,7 +1513,7 @@ function Questing.handleObjective(point)
   Questing.Coroutine.moveTo(point, {
     additionalStopConditions = function()
       if objectID then
-        local object = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
+        local object = Core.findClosestObjectToCharacterWithObjectID(objectID)
         if object and Core.calculateDistanceFromCharacterToObject(object) <= INTERACT_DISTANCE then
           return true
         end
@@ -1525,7 +1525,7 @@ function Questing.handleObjective(point)
 
   local pointer = point.pointer
   if not pointer and objectID then
-    pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
+    pointer = Core.findClosestObjectToCharacterWithObjectID(objectID)
   end
   if pointer then
     Questing.Coroutine.moveToAndInteractWithObject(pointer)
@@ -1627,7 +1627,7 @@ function _.findClosestPointOnMeshWithPathTo(position)
 end
 
 function _.retrievePositionFromObjectID(objectID)
-  local object = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
+  local object = Core.findClosestObjectToCharacterWithObjectID(objectID)
   if object then
     return Core.retrieveObjectPosition(object)
   else
@@ -1765,7 +1765,7 @@ function moveToClosestPoint()
         end
         local __, pathMover = Movement.movePath(path)
         activity = {
-          Cancel = function ()
+          Cancel = function()
             pathMover.stop()
           end
         }
@@ -1863,12 +1863,12 @@ function _.hasEnoughFreSlotsForRewards(numberOfRewards, numberOfChoices)
   if numberOfChoices >= 1 then
     numberOfItemsAddedToBag = numberOfItemsAddedToBag + 1
   end
-  local numberOfFreeInventorySlots = determineNumberOfFreeInventorySlots()
+  local numberOfFreeInventorySlots = Bags.determineNumberOfFreeSlots()
   return numberOfItemsAddedToBag <= numberOfFreeInventorySlots
 end
 
 function Questing.areBagsFull()
-  return determineNumberOfFreeInventorySlots() == 0
+  return Bags.determineNumberOfFreeSlots() == 0
 end
 
 function waitForQuestHasBeenAccepted()
@@ -1906,7 +1906,7 @@ end
 
 function registerUnavailableQuests(npcID)
   local questsThatShouldBeAvailableFromNPC = Questing.Database.retrieveQuestsThatShouldBeAvailableFromNPC(npcID)
-  local objectPointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(npcID)
+  local objectPointer = Core.findClosestObjectToCharacterWithObjectID(npcID)
   local availableQuestsSet
   if objectPointer and Core.retrieveObjectPointer('npc') == objectPointer then
     local availableQuests = Compatibility.Quests.retrieveAvailableQuests()
@@ -2058,7 +2058,7 @@ function _.completeAutoCompleteQuest(questID)
 end
 
 function _.itSeemsMakeSenseToSell()
-  return Questing.areBagsFull() and _.isSellVendorSet()
+  return Bags.areBagsFull() and _.isSellVendorSet()
 end
 
 function _.isSellVendorSet()
@@ -2109,7 +2109,8 @@ function _.sellItemsAtVendor()
       local itemInfo = Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex)
       if itemInfo then
         local classID = select(6, GetItemInfoInstant(itemInfo.itemID))
-        if itemInfo and (
+        if itemInfo and
+          not itemInfo.hasNoValue and (
           itemInfo.quality == Enum.ItemQuality.Poor or
             (itemInfo.quality == Enum.ItemQuality.Common and (classID == Enum.ItemClass.Weapon or classID == Enum.ItemClass.Armor)) or
             (AddOn.savedVariables.perCharacter.QuestingOptions.sellUncommon and itemInfo.quality == Enum.ItemQuality.Uncommon) or

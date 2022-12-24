@@ -1,6 +1,6 @@
 ## Title: Questing
 ## Interface: 30400
-## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Function, Yielder, Draw, Math, SavedVariables, Bot, Stoppable, ObjectQuests, Hook
+## Dependencies: Questie, Array, Set, Object, Coroutine, Boolean, Movement, Tooltips, Events, Compatibility, HWT, Unlocker, Core, Function, Yielder, Draw, Math, SavedVariables, Bot, Stoppable, ObjectQuests, Hook, Bags
 
 Questie.lua
 Database_Shared.lua

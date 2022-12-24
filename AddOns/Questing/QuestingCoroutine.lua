@@ -39,7 +39,7 @@ function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
   end
 
   if Questing.isRunning() then
-    local pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
+    local pointer = Core.findClosestObjectToCharacterWithObjectID(objectID)
     if pointer then
       Core.interactWithObject(pointer)
       Coroutine.waitForDuration(2)
@@ -50,19 +50,19 @@ end
 function Questing.Coroutine.interactWithObjectWithObjectID(objectID, options)
   options = options or {}
 
-  local pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
+  local pointer = Core.findClosestObjectToCharacterWithObjectID(objectID)
 
   if not pointer and options.fallbackPosition then
     Questing.Coroutine.moveTo(options.fallbackPosition, {
       distance = Core.RANGE_IN_WHICH_OBJECTS_SEEM_TO_BE_SHOWN,
       additionalStopConditions = function()
-        return Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
+        return Core.findClosestObjectToCharacterWithObjectID(objectID)
       end
     })
   end
 
   if not pointer then
-    pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
+    pointer = Core.findClosestObjectToCharacterWithObjectID(objectID)
   end
 
   if pointer then
@@ -125,7 +125,7 @@ function Questing.Coroutine.useItemOnNPC(point, objectID, itemID, distance)
   end
 
   if Questing.isRunning() then
-    local pointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
+    local pointer = Core.findClosestObjectToCharacterWithObjectID(objectID)
     Core.useItemByID(itemID, pointer)
   end
 end
@@ -179,7 +179,6 @@ end
 
 local function gossipWithObject(pointer, chooseOption)
   local name = Core.retrieveObjectName(pointer)
-  print(name)
   while Questing.isRunning() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
     Questing.Coroutine.moveToAndInteractWithObject(pointer)
     Events.waitForEvent('GOSSIP_SHOW', 2)
@@ -194,11 +193,13 @@ local function gossipWithObject(pointer, chooseOption)
 end
 
 function Questing.Coroutine.gossipWithObject(pointer, gossipOptionID)
-  return gossipWithObject(pointer, Function.returnValue(gossipOptionID))
+  local stoppable = Core.gossipWithObject(pointer, gossipOptionID)
+  Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
+  return Resolvable.await(stoppable)
 end
 
 local function gossipWithObjectWithObjectID(objectID, chooseOption)
-  local objectPointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
+  local objectPointer = Core.findClosestObjectToCharacterWithObjectID(objectID)
 
   print('objectPointer', objectPointer, objectID)
 
@@ -229,7 +230,7 @@ local function gossipWithObjectWithObjectID(objectID, chooseOption)
       while closestPosition do
         Questing.Coroutine.moveTo(closestPosition)
         visitedPositions:add(closestPosition)
-        local objectPointer = Core.findClosestObjectToCharacterWithOneOfObjectIDs(objectID)
+        local objectPointer = Core.findClosestObjectToCharacterWithObjectID(objectID)
         if objectPointer then
           gossipWithObject(objectPointer, chooseOption)
           break
