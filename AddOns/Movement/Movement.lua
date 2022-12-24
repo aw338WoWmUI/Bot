@@ -114,17 +114,17 @@ function Movement.positionInFrontOfPlayer2(distance, deltaZ)
   )
 end
 
-function Movement.calculateIsObstacleInFrontToPosition(position)
-  return Core.retrievePositionFromPosition(position, 5, HWT.ObjectFacing('player'), 0)
+function Movement.calculateIsObstacleInFrontToPosition(position, distance)
+  return Core.retrievePositionFromPosition(position, distance or 5, HWT.ObjectFacing('player'), 0)
 end
 
-function Movement.isObstacleInFront(position)
+function Movement.isObstacleInFront(position, distance)
   local position1 = Movement.createPoint(
     position.x,
     position.y,
     position.z + zOffset
   )
-  local position2 = Movement.calculateIsObstacleInFrontToPosition(position1)
+  local position2 = Movement.calculateIsObstacleInFrontToPosition(position1, distance)
   return not Movement.thereAreZeroCollisions(position1, position2)
 end
 
@@ -650,9 +650,9 @@ function Movement.thereAreZeroCollisions(a, b, track)
   return not Movement.thereAreCollisions(a, b)
 end
 
-function Movement.isObstacleInFrontOfPlayer()
-  local playerPosition = Core.retrieveCharacterPosition()
-  return Movement.isObstacleInFront(playerPosition)
+function Movement.isObstacleInFrontOfCharacter(distance)
+  local characterPosition = Core.retrieveCharacterPosition()
+  return Movement.isObstacleInFront(characterPosition, distance)
 end
 
 function Movement.generateWaypoint()
@@ -923,7 +923,7 @@ end
 local DRAGONRIDING_BASICS_SPELL_ID = 376777
 
 function Movement.canCharacterRideDragon()
-  return IsSpellKnown(DRAGONRIDING_BASICS_SPELL_ID)
+  return Core.isCharacterAlive() and IsSpellKnown(DRAGONRIDING_BASICS_SPELL_ID)
 end
 
 function Movement.canBeGroundMounted()
@@ -1040,6 +1040,56 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
   local initialDistance = nil
   local lastJumpTime = nil
 
+  local function runForGroundAndFlying(action, actionSequenceDoer, remainingDistance)
+    local playerPosition = Movement.retrieveCharacterPosition()
+
+    if (
+      Movement.canBeFlown() and
+        Movement.isMountedOnFlyingMount() and
+        (remainingDistance > 10 or Movement.isPositionInTheAir(waypoint)) and
+        (Movement.isPointCloseToGround(playerPosition) or (Movement.isPointInDeepWater(playerPosition) and not Movement.isPointInDeepWater(waypoint))) and
+        (not isLastWaypoint or Movement.isPositionInTheAir(waypoint))
+    ) then
+      Movement.liftUp()
+    elseif (
+      Movement.canBeDragonriden() and
+        Movement.isMountedOnDragonridingMount() and
+        (remainingDistance > 10 or Movement.isPositionInTheAir(waypoint))
+    ) then
+      Movement.liftUp()
+    end
+
+    if _.areConditionsMetForFacingWaypoint(waypoint) then
+      _.faceWaypoint(action, waypoint)
+    end
+
+    if not Core.isCharacterMoving() then
+      Core.startMovingForward()
+    end
+
+    if Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted() then
+      Movement.dismount()
+      actionSequenceDoer.lastTimeDismounted = GetTime()
+    end
+
+    if not lastJumpTime or GetTime() - lastJumpTime > 1 then
+      if (Movement.isJumpSituation(waypoint)) then
+        lastJumpTime = GetTime()
+        Core.jumpOrStartAscend()
+      end
+    end
+  end
+
+  local function runForDragonriding(action, actionSequenceDoer, remainingDistance)
+    if _.areConditionsMetForFacingWaypoint(waypoint) then
+      Movement.Dragonriding.facePoint(waypoint, action)
+    end
+
+    if Movement.Dragonriding.areConditionsMetForFlyingHigher() then
+      Movement.Dragonriding.flyHigher()
+    end
+  end
+
   return {
     run = function(action, actionSequenceDoer)
       if not actionSequenceDoer.mounter then
@@ -1051,43 +1101,19 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
         initialDistance = Core.calculateDistanceFromCharacterToPosition(waypoint)
       end
 
-      local playerPosition = Movement.retrieveCharacterPosition()
+      local remainingDistance = Movement.calculateRemainingPathDistance(path, waypointIndex)
 
-      local remainingDistance = Core.calculateDistanceFromCharacterToPosition(waypoint) + Core.calculatePathLength(Array.slice(path,
-        waypointIndex))
       if remainingDistance > 10 and (not actionSequenceDoer.lastTimeDismounted or GetTime() - actionSequenceDoer.lastTimeDismounted >= 3) then
         actionSequenceDoer.mounter:mount()
       end
 
-      local playerPosition = Movement.retrieveCharacterPosition()
       if (
-        Movement.canBeFlown() and
-          Movement.isMountedOnFlyingMount() and
-          (totalDistance > 10 or Movement.isPositionInTheAir(waypoint)) and
-          (Movement.isPointCloseToGround(playerPosition) or (Movement.isPointInDeepWater(playerPosition) and not Movement.isPointInDeepWater(waypoint))) and
-          (not isLastWaypoint or Movement.isPositionInTheAir(waypoint))
+        IsFlying() and
+          Movement.isMountedOnDragonridingMount()
       ) then
-        Movement.liftUp()
-      end
-
-      if _.areConditionsMetForFacingWaypoint(waypoint) then
-        _.faceWaypoint(action, waypoint)
-      end
-
-      if not Core.isCharacterMoving() then
-        Core.startMovingForward()
-      end
-
-      if Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted() then
-        Movement.dismount()
-        actionSequenceDoer.lastTimeDismounted = GetTime()
-      end
-
-      if not lastJumpTime or GetTime() - lastJumpTime > 1 then
-        if (Movement.isJumpSituation(waypoint)) then
-          lastJumpTime = GetTime()
-          Core.jumpOrStartAscend()
-        end
+        runForDragonriding(action, actionSequenceDoer, remainingDistance)
+      else
+        runForGroundAndFlying(action, actionSequenceDoer, remainingDistance)
       end
 
       firstRun = false
@@ -1107,6 +1133,13 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
       )
     end
   }
+end
+
+function Movement.calculateRemainingPathDistance(path, nextWaypointIndex)
+  return (
+    Core.calculateDistanceFromCharacterToPosition(path[nextWaypointIndex]) +
+      Core.calculatePathLength(Array.slice(path, nextWaypointIndex))
+  )
 end
 
 function _.isPositionUnreachable(position)
@@ -1383,7 +1416,7 @@ end
 
 function Movement.isMountedOnDragonridingMount()
   if IsMounted() then
-    return Movement.isDragonridingMount(Movement.receiveActiveMount())
+    return Movement.isDragonridingMount(select(12, Movement.receiveActiveMount()))
   end
   return false
 end
@@ -1487,6 +1520,14 @@ function Movement.waitForIsInAirOrDismounted(timeout)
 end
 
 function Movement.liftUp()
+  if Movement.isMountedOnFlyingMount() then
+    Movement.liftUpWithFlyingMount()
+  elseif Movement.isMountedOnDragonridingMount() then
+    Movement.Dragonriding.liftUp()
+  end
+end
+
+function Movement.liftUpWithFlyingMount()
   Core.jumpOrStartAscend()
   OrAscendStart()
   Movement.waitForIsInAirOrDismounted(3)
@@ -1825,41 +1866,61 @@ function Movement.moveTo(to, options)
 
   local from = Core.retrieveCharacterPosition()
 
-  do
-    local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(from)
-    if closestPositionOnMesh then
-      from = closestPositionOnMesh
-    end
-  end
-
-  do
-    local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(to)
-    if closestPositionOnMesh then
-      to = closestPositionOnMesh
-    end
-  end
-
-  if isDifferentPathFindingRequestThanRun(to) then
+  if Movement.canBeDragonriden() then
     Movement.stopPathFindingAndMoving()
-    run = {
-      from = from,
-      to = to
+
+    local path = {
+      from,
+      to
     }
-    pathFinder = Movement.createPathFinder()
-    local path = pathFinder.start(from, to, options.toleranceDistance)
-    pathFinder = nil
     Movement.path = path
     AddOn.savedVariables.perCharacter.MovementPath = Movement.path
-    if path then
-      local resolvable
-      resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
-        stop = function()
-          return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
-        end,
-        continueMoving = options.continueMoving
-      })
-      Resolvable.await(resolvable)
-      cleanUpPathFindingAndMoving()
+
+    local resolvable
+    resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
+      stop = function()
+        return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
+      end,
+      continueMoving = options.continueMoving
+    })
+    Resolvable.await(resolvable)
+  else
+    do
+      local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(from)
+      if closestPositionOnMesh then
+        from = closestPositionOnMesh
+      end
+    end
+
+    do
+      local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(to)
+      if closestPositionOnMesh then
+        to = closestPositionOnMesh
+      end
+    end
+
+    if isDifferentPathFindingRequestThanRun(to) then
+      Movement.stopPathFindingAndMoving()
+      run = {
+        from = from,
+        to = to
+      }
+      pathFinder = Movement.createPathFinder()
+      local path = pathFinder.start(from, to, options.toleranceDistance)
+      pathFinder = nil
+      Movement.path = path
+      AddOn.savedVariables.perCharacter.MovementPath = Movement.path
+      if path then
+        local resolvable
+        resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
+          stop = function()
+            return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
+          end,
+          continueMoving = options.continueMoving
+        })
+        Resolvable.await(resolvable)
+        cleanUpPathFindingAndMoving()
+      end
     end
   end
 end
@@ -2280,7 +2341,8 @@ HWT.doWhenHWTIsLoaded(function()
     if DEVELOPMENT then
       if AddOn.savedVariables.accountWide.savedPosition then
         Draw.SetColorRaw(1, 1, 0, 1)
-        Draw.Circle(AddOn.savedVariables.accountWide.savedPosition.x, AddOn.savedVariables.accountWide.savedPosition.y,
+        Draw.Circle(AddOn.savedVariables.accountWide.savedPosition.x,
+          AddOn.savedVariables.accountWide.savedPosition.y,
           AddOn.savedVariables.accountWide.savedPosition.z, 0.5)
       end
     end
@@ -2340,3 +2402,7 @@ HWT.doWhenHWTIsLoaded(function()
     end
   end)
 end)
+
+function Movement.canOnlyBeMovedOnGround()
+  return not Movement.canBeDragonriden() and not Movement.canBeFlown()
+end

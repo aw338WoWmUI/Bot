@@ -542,9 +542,6 @@ end
 
 function Core.retrieveObjectPosition(objectIdentifier)
   local x, y, z = HWT.ObjectPosition(objectIdentifier)
-  if not x or not y or not z then
-    print('Core.retrieveObjectPosition', x, y, z)
-  end
   if x and y and z then
     return Core.createWorldPosition(Core.retrieveCurrentContinentID(), x, y, z)
   else
@@ -616,6 +613,12 @@ end
 function Core.findClosestObjectToCharacter(customFilter)
   local characterPosition = Core.retrieveCharacterPosition()
   return Core.findClosestObjectTo(characterPosition, customFilter)
+end
+
+function Core.findClosestObject(objects)
+  return Array.min(objects, function(object)
+    return Core.calculateDistanceFromCharacterToObject(object)
+  end)
 end
 
 function Core.calculateDistanceBetweenPositions(a, b)
@@ -719,11 +722,11 @@ function Core.isCharacterAlive()
 end
 
 function Core.isCharacterDead()
-  return not Core.isCharacterAlive()
+  return Core.isDead('player')
 end
 
 function Core.isAlive(objectIdentifier)
-  return HWT.ObjectExists(objectIdentifier) and not Core.isDead(objectIdentifier)
+  return HWT.ObjectExists(objectIdentifier) and not Core.isDead(objectIdentifier) and not Core.isGhost(objectIdentifier)
 end
 
 function Core.isDead(objectIdentifier)
@@ -826,13 +829,13 @@ function Core.calculateAnglesBetweenTwoPoints(a, b)
     (b.z or 0) - (a.z or 0)
   )
   vector:Normalize()
-  local yaw, pitch = Vector3D_CalculateYawPitchFromNormalVector(vector)
-  yaw = Core.normalizeAngle(yaw)
-  if a.z and b.z then
-    pitch = Core.normalizeAngle(pitch)
+  local yaw
+  if vector.x ~= 0 or vector.y ~= 0 then
+    yaw = Core.normalizeAngle(math.atan2(vector.y, vector.x))
   else
-    pitch = nil
+    yaw = 0
   end
+  local pitch = math.asin(vector.z)
   return yaw, pitch
 end
 
@@ -1200,16 +1203,20 @@ function Core.moveToObject(pointer, options)
       local function retrievePosition()
         local position = Core.retrieveObjectPosition(pointer)
 
-        if Movement.isPositionInTheAir(position) and not Movement.canCharacterFly() then
-          position = Core.createWorldPosition(
-            position.continentID,
-            position.x,
-            position.y,
-            Movement.retrieveGroundZ(position) or position.z
-          )
-        end
+        if position then
+          if Movement.isPositionInTheAir(position) and not Movement.canCharacterFly() then
+            position = Core.createWorldPosition(
+              position.continentID,
+              position.x,
+              position.y,
+              Movement.retrieveGroundZ(position) or position.z
+            )
+          end
 
-        position = Core.retrieveClosestPositionWithPathTo(position, distance)
+          if Movement.canOnlyBeMovedOnGround() then
+            position = Core.retrieveClosestPositionWithPathTo(position, distance)
+          end
+        end
 
         return position
       end
@@ -1338,28 +1345,31 @@ function Core.doMob(pointer, options)
         }))
       end
 
-      if IsMounted() then
-        Movement.dismount()
-      end
-
-      Core.targetUnit(pointer)
-      Core.startAttacking()
-
-      while stoppable:isRunning() and not isJobDone() do
-        local position = Core.retrieveObjectPosition(pointer)
-        if not Core.isCharacterCloseToPosition(position, distance) then
-          Resolvable.await(Core.moveToObject(pointer, {
-            distance = distance
-          }))
+      if not isJobDone() then
+        if IsMounted() then
+          Movement.dismount()
         end
-        Bot.castCombatRotationSpell()
-        Coroutine.yieldAndResume()
-      end
 
-      Coroutine.waitForDuration(0.5)
-      local position = Core.retrieveObjectPosition(pointer)
-      if Core.isLootable(pointer) and Core.isCharacterCloseToPosition(position, Core.INTERACT_DISTANCE) then
-        Core.lootObject(pointer)
+        Core.targetUnit(pointer)
+        Core.startAttacking()
+
+        while stoppable:isRunning() and not isJobDone() do
+          local position = Core.retrieveObjectPosition(pointer)
+          if not Core.isCharacterCloseToPosition(position, distance) then
+            Resolvable.await(Core.moveToObject(pointer, {
+              distance = distance
+            }))
+          end
+          Bot.castCombatRotationSpell()
+          -- TODO: Face target if the error is thrown that the character is facing the wrong way.
+          Coroutine.yieldAndResume()
+        end
+
+        Coroutine.waitForDuration(0.5)
+        local position = Core.retrieveObjectPosition(pointer)
+        if Core.isLootable(pointer) and Core.isCharacterCloseToPosition(position, Core.INTERACT_DISTANCE) then
+          Core.lootObject(pointer)
+        end
       end
 
       resolve()
@@ -1392,8 +1402,12 @@ function Core.moveToCorpseIfPossible()
   end
 end
 
+function Core.isGhost(objectIdentifier)
+	return Boolean.toBoolean(UnitIsGhost(objectIdentifier))
+end
+
 function Core.isCharacterGhost()
-  return Boolean.toBoolean(UnitIsGhost('player'))
+  return Core.isGhost('player')
 end
 
 function Core.moveToCorpse()

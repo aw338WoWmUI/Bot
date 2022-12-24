@@ -17,8 +17,6 @@ local OBSIDIAN_CACHE_ITEM_ID = 200069
 
 local isRunning = false
 
--- TODO: Handle death.
-
 function Bot.DragonbaneKeep.toggleFarming()
   if not isRunning then
     isRunning = true
@@ -38,9 +36,7 @@ function Bot.DragonbaneKeep.toggleFarming()
           )
         end)
 
-        local closestRareMob = Array.min(rareMobs, function(object)
-          return Core.calculateMovementPathDistanceFromCharacterToObject(object)
-        end)
+        local closestRareMob = Core.findClosestObject(rareMobs)
 
         local closestObject
 
@@ -55,9 +51,7 @@ function Bot.DragonbaneKeep.toggleFarming()
             )
           end)
 
-          closestObject = Array.min(objects, function(object)
-            return Core.calculateMovementPathDistanceFromCharacterToObject(object)
-          end)
+          closestObject = Core.findClosestObject(objects)
         end
 
         if closestObject then
