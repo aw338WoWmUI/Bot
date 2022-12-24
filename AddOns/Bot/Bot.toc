@@ -1,9 +1,11 @@
 ## Title: Bot
 ## Interface: 100002
-## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting
+## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Resolvable
 ## OptionalDeps: RecommendedSpellCaster, Questing
+## SavedVariables: rareObjectIDs, mobsWhoDropKeyFraming, mobsWhoDropKeyFragments, objectsWhoContainKeyFragments
 
+data.lua
 Warrior.lua
 DeathKnight.lua
 Bot.lua
-KeysOfLoyaltyFarming.lua
+DragonbaneKeepFarming.lua

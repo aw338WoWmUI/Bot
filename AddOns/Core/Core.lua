@@ -13,6 +13,8 @@ Core.TraceLineHitFlags = {
 
 local _ = {}
 
+local INF = 1 / 0
+
 --- This list has been based on https://github.com/TrinityCore/TrinityCore/blob/4b06b8ec1e3ccc153a44b3eb2e8487641cfae98d/src/server/game/Entities/Unit/UnitDefines.h#L275-L310
 --- which is licensed under the GNU General Public License v2.0 (full license: https://github.com/TrinityCore/TrinityCore/blob/75c06d25da76f0c4f0ea680e6f5ed1bc3bf1d42e/COPYING).
 --- By the conditions of the license, this list is also licensed under the same license.
@@ -209,10 +211,6 @@ local FOOD_ICON_ID = 134062
 
 function Core.isCharacterEating()
   return Boolean.toBoolean(Core.findAuraByIcon(FOOD_ICON_ID, 'player'))
-end
-
-function Core.isCharacterGhost()
-  return Boolean.toBoolean(UnitIsGhost('player'))
 end
 
 function Core.receiveMapIDForWhereTheCharacterIsAt()
@@ -646,6 +644,16 @@ function Core.calculateDistanceFromCharacterToObject(objectIdentifier)
   return Core.calculateDistanceBetweenPositions(characterPosition, objectPosition)
 end
 
+function Core.calculateMovementPathDistanceFromCharacterToObject(objectIdentifier)
+  local objectPosition = Core.retrieveObjectPosition(objectIdentifier)
+  local path = Core.findPathFromCharacterTo(objectPosition)
+  if path then
+    return Core.calculatePathLength(path)
+  else
+    return INF
+  end
+end
+
 function Core.retrieveCurrentContinentID()
   local continentID = select(8, GetInstanceInfo())
   return continentID
@@ -708,6 +716,10 @@ end
 
 function Core.isCharacterAlive()
   return Core.isAlive('player')
+end
+
+function Core.isCharacterDead()
+  return not Core.isCharacterAlive()
 end
 
 function Core.isAlive(objectIdentifier)
@@ -996,7 +1008,7 @@ function Core.abandonQuest(questID)
 end
 
 function Core.receiveCorpsePosition()
-  return HWT.GetCorpsePosition()
+  return Core.createWorldPosition(Core.retrieveCurrentContinentID(), HWT.GetCorpsePosition())
 end
 
 function Core.interactWithObject(objectIdentifier)
@@ -1162,7 +1174,7 @@ function Core.moveToUntil(point, options)
         )
       end
 
-      while stoppable:IsRunning() and not stopCondition() do
+      while stoppable:isRunning() and not stopCondition() do
         local stoppable2 = Core._moveTo(point, {
           toleranceDistance = options.toleranceDistance,
           stop = stopCondition
@@ -1307,45 +1319,92 @@ function Core.tagMobs(mobs)
 end
 
 function Core.doMob(pointer, options)
-  -- FIXME: Mobs which are in the air.
-  options = options or {}
+  return Stoppable.Stoppable:new(function(stoppable, resolve)
+    Coroutine.runAsCoroutine(function()
+      -- FIXME: Mobs which are in the air.
+      options = options or {}
 
-  local distance = Core.retrieveCharacterCombatRange()
-  local objectID = HWT.ObjectId(pointer)
+      local distance = (HWT.UnitBoundingRadius(pointer) or 0) + Core.retrieveCharacterCombatRange()
+      local objectID = HWT.ObjectId(pointer)
 
-  local function isJobDone()
-    return not HWT.ObjectExists(pointer) or Core.isDead(pointer) or options.additionalStopConditions and options.additionalStopConditions()
+      local function isJobDone()
+        return not HWT.ObjectExists(pointer) or Core.isDead(pointer) or options.additionalStopConditions and options.additionalStopConditions()
+      end
+
+      local position = Core.retrieveObjectPosition(pointer)
+      if not Core.isCharacterCloseToPosition(position, distance) then
+        Resolvable.await(Core.moveToObject(pointer, {
+          distance = distance
+        }))
+      end
+
+      if IsMounted() then
+        Movement.dismount()
+      end
+
+      Core.targetUnit(pointer)
+      Core.startAttacking()
+
+      while stoppable:isRunning() and not isJobDone() do
+        local position = Core.retrieveObjectPosition(pointer)
+        if not Core.isCharacterCloseToPosition(position, distance) then
+          Resolvable.await(Core.moveToObject(pointer, {
+            distance = distance
+          }))
+        end
+        Bot.castCombatRotationSpell()
+        Coroutine.yieldAndResume()
+      end
+
+      Coroutine.waitForDuration(0.5)
+      local position = Core.retrieveObjectPosition(pointer)
+      if Core.isLootable(pointer) and Core.isCharacterCloseToPosition(position, Core.INTERACT_DISTANCE) then
+        Core.lootObject(pointer)
+      end
+
+      resolve()
+    end)
+  end)
+end
+
+function Core.handleDeath()
+  Core.releaseSpiritIfPossible()
+  Core.moveToCorpseIfPossible()
+end
+
+function Core.releaseSpiritIfPossible()
+  if Core.canSpiritBeReleased() then
+    Core.releaseSpirit()
   end
+end
 
-  local position = Core.retrieveObjectPosition(pointer)
-  if not Core.isCharacterCloseToPosition(position, distance) then
-    Resolvable.await(Core.moveToObject(pointer, {
-      distance = distance
-    }))
+function Core.canSpiritBeReleased()
+  return Core.isCharacterDead() and Core.canStaticPopup1Button1BePressed()
+end
+
+function Core.releaseSpirit()
+  StaticPopup1Button1:Click()
+end
+
+function Core.moveToCorpseIfPossible()
+  if Core.isCharacterGhost() then
+    Core.moveToCorpse()
   end
+end
 
-  if IsMounted() then
-    Movement.dismount()
-  end
+function Core.isCharacterGhost()
+  return Boolean.toBoolean(UnitIsGhost('player'))
+end
 
-  Core.targetUnit(pointer)
-  Core.startAttacking()
+function Core.moveToCorpse()
+  local corpsePosition = Core.receiveCorpsePosition()
+  -- TODO: Flying to corpse
+  Resolvable.await(Core.moveToUntil(corpsePosition, {
+    stopCondition = Core.canStaticPopup1Button1BePressed
+  }))
+  StaticPopup1Button1:Click()
+end
 
-  while Questing.isRunning() and not isJobDone() do
-    local position = Core.retrieveObjectPosition(pointer)
-    if not Core.isCharacterCloseToPosition(position, distance) then
-      Resolvable.await(Core.moveToObject(pointer, {
-        distance = distance
-      }))
-    end
-    Bot.castCombatRotationSpell()
-    Coroutine.yieldAndResume()
-  end
-
-  if not Core.isCharacterInCombat() then
-    local position = Core.retrieveObjectPosition(pointer)
-    if Core.isCharacterCloseToPosition(position, INTERACT_DISTANCE) then
-      Core.lootObject(pointer)
-    end
-  end
+function Core.canStaticPopup1Button1BePressed()
+	return StaticPopup1:IsShown() and StaticPopup1Button1:IsShown() and StaticPopup1Button1:IsEnabled()
 end

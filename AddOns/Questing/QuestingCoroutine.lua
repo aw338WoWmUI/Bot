@@ -270,49 +270,7 @@ function Questing.Coroutine.gossipWithAt(point, objectID, optionToSelect)
 end
 
 function Questing.Coroutine.doMob(pointer, options)
-  -- FIXME: Mobs which are in the air.
-  print('Questing.Coroutine.doMob')
-  options = options or {}
-
-  local distance = Core.retrieveCharacterCombatRange()
-  local objectID = HWT.ObjectId(pointer)
-
-  local function isJobDone()
-    return not HWT.ObjectExists(pointer) or Core.isDead(pointer) or options.additionalStopConditions and options.additionalStopConditions()
-  end
-
-  local position = Core.retrieveObjectPosition(pointer)
-  if not Core.isCharacterCloseToPosition(position, distance) then
-    Questing.Coroutine.moveToObject(pointer, {
-      distance = distance
-    })
-  end
-
-  if IsMounted() then
-    Movement.dismount()
-  end
-
-  print('targeting', Core.retrieveObjectName(pointer))
-  Core.targetUnit(pointer)
-  Core.startAttacking()
-
-  while Questing.isRunning() and not isJobDone() do
-    local position = Core.retrieveObjectPosition(pointer)
-    if not Core.isCharacterCloseToPosition(position, distance) then
-      Questing.Coroutine.moveToObject(pointer, {
-        distance = distance
-      })
-    end
-    Bot.castCombatRotationSpell()
-    Coroutine.yieldAndResume()
-  end
-
-  if not Core.isCharacterInCombat() then
-    local position = Core.retrieveObjectPosition(pointer)
-    if Core.isCharacterCloseToPosition(position, INTERACT_DISTANCE) then
-      Questing.Coroutine.lootObject(pointer)
-    end
-  end
-
-  print('--- Questing.Coroutine.doMob')
+  local stoppable = Core.doMob(pointer, options)
+  Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
+  return Resolvable.await(stoppable)
 end

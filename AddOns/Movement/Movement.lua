@@ -1852,7 +1852,7 @@ function Movement.moveTo(to, options)
     AddOn.savedVariables.perCharacter.MovementPath = Movement.path
     if path then
       local resolvable
-      resolvable, pathMover = Movement.movePath(path, {
+      resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
         stop = function()
           return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
         end,

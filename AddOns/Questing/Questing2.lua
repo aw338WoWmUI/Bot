@@ -2024,12 +2024,11 @@ function _.run ()
         registerUnavailableQuests(npcID)
       end
 
+      -- TODO: Reuse Core functionality (Questing.Coroutine.moveToUntil also checks for Questing.isRunning())
       if Core.isCharacterGhost() then
         local corpsePosition = Movement.createPoint(Core.receiveCorpsePosition())
         Questing.Coroutine.moveToUntil(corpsePosition, {
-          stopCondition = function()
-            return StaticPopup1Button1:IsShown()
-          end
+          stopCondition = Core.canStaticPopup1Button1BePressed
         })
         StaticPopup1Button1:Click()
       elseif Questing.canLearnRiding() then
