@@ -1542,7 +1542,6 @@ end
 
 function Movement.liftUpWithFlyingMount()
   Core.jumpOrStartAscend()
-  OrAscendStart()
   Movement.waitForIsInAirOrDismounted(3)
   Core.stopAscending()
 end
