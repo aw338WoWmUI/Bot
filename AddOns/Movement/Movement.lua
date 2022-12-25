@@ -1951,6 +1951,13 @@ function Movement.facePoint(point, stop)
   )
 end
 
+function Movement.faceObject(object, stop)
+  local point = Core.retrieveObjectPosition(object)
+  if point then
+    Movement.facePoint(point, stop)
+  end
+end
+
 function Movement.faceDirection(yaw, pitch, stop)
   Movement.face(
     function()

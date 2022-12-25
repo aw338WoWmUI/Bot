@@ -59,7 +59,11 @@ function Bot.DragonbaneKeep.toggleFarming()
             Resolvable.await(Core.moveToAndInteractWithObject(closestObject))
           else
             -- is mob
-            Resolvable.await(Core.doMob(closestObject))
+            Resolvable.await(Core.doMob(closestObject, {
+              additionalStopConditions = function ()
+                return not isRunning
+              end
+            }))
           end
         end
 

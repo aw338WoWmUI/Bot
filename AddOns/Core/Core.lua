@@ -1350,6 +1350,20 @@ function Core.doMob(pointer, options)
           Movement.dismount()
         end
 
+        local TARGET_IS_REQUIRED_TO_BE_IN_FRONT_OF_CHARACTER = 56
+        local isFacing = false
+        local listener = Events.listenForEvent('UI_ERROR_MESSAGE', function (event, code)
+          if code == TARGET_IS_REQUIRED_TO_BE_IN_FRONT_OF_CHARACTER then
+            if not isFacing then
+              isFacing = true
+              Coroutine.runAsCoroutine(function ()
+                Movement.faceObject('target', isJobDone)
+                isFacing = false
+              end)
+            end
+          end
+        end)
+
         Core.targetUnit(pointer)
         Core.startAttacking()
 
@@ -1364,6 +1378,8 @@ function Core.doMob(pointer, options)
           -- TODO: Face target if the error is thrown that the character is facing the wrong way.
           Coroutine.yieldAndResume()
         end
+
+        listener.stopListening()
 
         Coroutine.waitForDuration(0.5)
         local position = Core.retrieveObjectPosition(pointer)
