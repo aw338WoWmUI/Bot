@@ -1,3 +1,5 @@
+-- FIXME: "ran out of time" error on initial load
+
 local addOnName, AddOn = ...
 MeshNet = MeshNet or {}
 

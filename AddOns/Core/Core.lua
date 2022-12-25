@@ -1396,9 +1396,10 @@ function Core.doMob(pointer, options)
 
         listener.stopListening()
 
-        Coroutine.waitForDuration(0.5)
-        local position = Core.retrieveObjectPosition(pointer)
-        if Core.isLootable(pointer) and Core.isCharacterCloseToPosition(position, Core.INTERACT_DISTANCE) then
+        local canLoot = Coroutine.waitFor(function ()
+          return Core.isLootable(pointer)
+        end, 1)
+        if canLoot then
           Core.lootObject(pointer)
         end
       end

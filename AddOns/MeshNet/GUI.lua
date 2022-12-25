@@ -1,3 +1,5 @@
+-- TODO: Button for removing the polygon that the character is closest to.
+
 BINDING_HEADER_MESHNETBAR = 'Mesh Net'
 BINDING_HEADER_CONNECTING_TWO_POLYGONS = 'Connecting two polygons'
 BINDING_HEADER_CONNECTING_TWO_POLYGONS_WITH_POINT_SPECIFICATION = 'Connecting two polygons with point specification'

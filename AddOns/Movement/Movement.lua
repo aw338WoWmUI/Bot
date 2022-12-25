@@ -1,6 +1,7 @@
 -- FIXME: Generation of neighbor points seems to be defect when the character flies as ghost.
 -- FIXME: Seems to fail to jump with small obstacles (seems to kinda become stuck on small objects).
 -- FIXME: Pathfinding with the trace line method seems currently too slow to be practical (at least in some cases where it takes more than 30 seconds).
+-- FIXME: When flying (while ghost, on ghost mount), the mount seems to regularly stop for short amount of times.
 
 local addOnName, AddOn = ...
 --- @class Movement
@@ -919,7 +920,8 @@ end
 
 function Movement.canCharacterMount()
   -- TODO: Maybe improve Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) to consider different mounts.
-  return Core.isCharacterAlive() and not Core.isCharacterInCombat() and IsOutdoors() and not UnitInVehicle('player') and Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true })
+  return Core.isCharacterAlive() and not Core.isCharacterInCombat() and IsOutdoors() and not UnitInVehicle('player') and Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(),
+    { withMount = true })
 end
 
 local APPRENTICE_RIDING = 33388
@@ -930,43 +932,18 @@ local MASTER_RIDING = 90265
 function Movement.canCharacterFly()
   return (
     (Movement.canCharacterMount() and (IsSpellKnown(EXPERT_RIDING) or IsSpellKnown(MASTER_RIDING)) and Movement.isFlyingAvailableInZone() and Movement.isAFlyingMountAvailable()) or
-    Movement.canCharacterFlyAsGhost()
+      Movement.canCharacterFlyAsGhost()
   )
 end
 
 function Movement.canCharacterFlyAsGhost()
-	-- TODO: All zones where can be flown as ghost.
+  -- TODO: All zones where can be flown as ghost.
   return Core.isCharacterGhost() and Core.retrieveCurrentContinentID() == DRAGON_ISLES_CONTINENT_ID
 end
 
 function Movement.canCharacterMountOnGroundMount()
   -- TODO: Is ground mounting available in all zones?
   return Movement.canCharacterMount() and (IsSpellKnown(APPRENTICE_RIDING) or IsSpellKnown(JOURNEYMAN_RIDING) or IsSpellKnown(EXPERT_RIDING) or IsSpellKnown(MASTER_RIDING)) and Movement.isAGroundMountAvailable()
-end
-
-function Movement.canMountOnFlyingMount()
-  return Boolean.toBoolean(
-    Movement.canCharacterFly() and
-      Movement.isAFlyingMountAvailable() and
-      _.checkCommonConditionsForFlyingOrDragonriding()
-  )
-end
-
-function Movement.canMountOnDragonridingMount()
-  return Boolean.toBoolean(
-    Movement.canCharacterRideDragon() and
-      Movement.isADragonridingMountAvailable() and
-      _.checkCommonConditionsForFlyingOrDragonriding()
-  )
-end
-
-function _.checkCommonConditionsForFlyingOrDragonriding()
-  return Boolean.toBoolean(
-    Core.isCharacterAlive() and
-      Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) and
-      not Core.isCharacterInCombat() and
-      not UnitInVehicle('player')
-  )
 end
 
 function Movement.distanceOfPointToLine(point, line)
@@ -1044,13 +1021,13 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
   local lastJumpTime = nil
 
   local function runForGroundAndFlying(action, actionSequenceDoer, remainingDistance)
-    local playerPosition = Movement.retrieveCharacterPosition()
+    local characterPosition = Movement.retrieveCharacterPosition()
 
     if (
       Movement.canCharacterFly() and
         Movement.isMountedOnFlyingMount() and
         (remainingDistance > 10 or Movement.isPositionInTheAir(waypoint)) and
-        (Movement.isPointCloseToGround(playerPosition) or (Movement.isPointInDeepWater(playerPosition) and not Movement.isPointInDeepWater(waypoint))) and
+        (Movement.isPointCloseToGround(characterPosition) or (Movement.isPointInDeepWater(characterPosition) and not Movement.isPointInDeepWater(waypoint))) and
         (not isLastWaypoint or Movement.isPositionInTheAir(waypoint))
     ) then
       Movement.liftUp()
@@ -1062,15 +1039,21 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
       Movement.liftUp()
     end
 
+    if Movement.Flying.areConditionsMetForFlyingHigher(waypoint) then
+      Core.stopMovingForward()
+      Movement.Flying.flyHigher(waypoint)
+    end
+
     if _.areConditionsMetForFacingWaypoint(waypoint) then
-      _.faceWaypoint(action, waypoint)
+      _.faceWaypoint(action, waypoint, isLastWaypoint)
     end
 
     if not Core.isCharacterMoving() then
       Core.startMovingForward()
     end
 
-    if Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted() and (not IsFlying() or Movement.isPositionLessOffGroundThanTheMaximum(10)) then
+    if Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted() and (not IsFlying() or Movement.isPositionLessOffGroundThanTheMaximum(characterPosition,
+      10)) then
       Movement.dismount()
       actionSequenceDoer.lastTimeDismounted = GetTime()
     end
@@ -1152,7 +1135,7 @@ function Movement.calculateRemainingPathDistance(path, nextWaypointIndex)
 end
 
 function _.isPositionUnreachable(position)
-  return Movement.isPositionInTheAirWhereAFlyingMountSeemsRequired(position) and not Movement.canMountOnFlyingMount()
+  return Movement.isPositionInTheAirWhereAFlyingMountSeemsRequired(position) and not Movement.canCharacterFly()
 end
 
 function _.isPointCloseToCharacterWithZTolerance(point)
@@ -1194,25 +1177,29 @@ function _.areConditionsMetForFacingWaypoint(waypoint)
 end
 
 function Movement.thereAreZeroCollisionsBetweenTheCharacterAndThePoint(point)
-	local characterPosition = Core.retrieveCharacterPosition()
+  local characterPosition = Core.retrieveCharacterPosition()
   return Movement.thereAreZeroCollisions(characterPosition, point)
 end
 
-function _.faceWaypoint(action, waypoint)
+function _.faceWaypoint(action, waypoint, isLastWaypoint)
   if Core.calculateDistanceFromCharacterToPosition(waypoint) <= 8 then
     Core.stopMovingForward()
   end
   local facingPoint
-  if Movement.isPointCloseToGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canCharacterFly() then
-    facingPoint = Movement.createPointWithZOffset(waypoint, TARGET_LIFT_HEIGHT)
+  if not isLastWaypoint then
+    if Movement.isPointCloseToGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canCharacterFly() then
+      facingPoint = Movement.createPointWithZOffset(waypoint, TARGET_LIFT_HEIGHT)
+    else
+      facingPoint = waypoint
+    end
+    if Movement.isMountedOnFlyingMount() and Movement.canCharacterFly() then
+      local pointInAir = Movement.determinePointHighEnoughToStayInAir(waypoint)
+      if pointInAir and Core.calculateDistanceFromCharacterToPosition(waypoint) > 5 then
+        facingPoint = pointInAir
+      end
+    end
   else
     facingPoint = waypoint
-  end
-  if Movement.isMountedOnFlyingMount() and Movement.canCharacterFly() then
-    local pointInAir = Movement.determinePointHeighEnoughToStayInAir(waypoint)
-    if pointInAir and Core.calculateDistanceFromCharacterToPosition(waypoint) > 5 then
-      facingPoint = pointInAir
-    end
   end
   Movement.facePoint(facingPoint, function()
     return action.isDone() or action.shouldCancel()
@@ -1239,10 +1226,10 @@ function _.Mounter:mount()
     _.stopForwardMovement()
     local hasTriedToMount = false
     local wasAbleToMount = nil
-    if Movement.canCharacterRideDragon() and Movement.canMountOnDragonridingMount() then
+    if Movement.canCharacterRideDragon() then
       hasTriedToMount = true
       wasAbleToMount = Movement.mountOnDragonridingMount()
-    elseif Movement.canCharacterFly() and Movement.canMountOnFlyingMount() then
+    elseif Movement.canCharacterFly() then
       hasTriedToMount = true
       wasAbleToMount = Movement.mountOnFlyingMount()
     elseif Movement.canCharacterMountOnGroundMount() then
@@ -1269,10 +1256,10 @@ function _.isCharacterAlreadyOnBestMount()
 end
 
 function _.canCharacterMountOnBetterMount()
-  return not _.isCharacterAlreadyOnBestMount() and (Movement.canMountOnFlyingMount() or Movement.canCharacterMountOnGroundMount())
+  return not _.isCharacterAlreadyOnBestMount() and (Movement.canCharacterFly() or Movement.canCharacterMountOnGroundMount())
 end
 
-function Movement.determinePointHeighEnoughToStayInAir(waypoint)
+function Movement.determinePointHighEnoughToStayInAir(waypoint)
   local playerPosition = Movement.retrieveCharacterPosition()
   local length = Math.euclideanDistance(playerPosition, waypoint)
   local traceLineTargetPoint = Movement.positionInFrontOfPlayer(length, 0)
@@ -1309,7 +1296,6 @@ function _.thereAreCollisions2(from, to)
     Core.calculateAnglesBetweenTwoPoints(from, to) - 0.5 * PI,
     0
   )
-  lines = {}
   local a = Movement.thereAreCollisions(
     from,
     to
@@ -1333,6 +1319,9 @@ function Movement.isJumpSituation(to)
   local playerPosition = Movement.retrieveCharacterPosition()
   local positionA = Movement.createPointWithZOffset(playerPosition, Movement.JUMP_DETECTION_HEIGHT)
   local positionB = Movement.positionInFrontOfPlayer2(0.5, Movement.JUMP_DETECTION_HEIGHT)
+  lines = {
+    { positionA, positionB }
+  }
 
   return _.thereAreCollisions2(positionA, positionB)
 end
