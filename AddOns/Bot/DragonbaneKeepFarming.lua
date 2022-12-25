@@ -1,4 +1,8 @@
 -- FIXME: Seems to fail to loot units which are out of interact range.
+-- FIXME: Seems to fail to continue after having looted an object (seems to have to do with double loot and probably that the function waits for an event very long.). Eventually (after ~ 30 seconds) the character seems to continue.
+-- TODO: Maybe looting of objects that are still lootable.
+-- TODO: Also combat with mobs who attack the character.
+-- TODO: Avoid that the character dies from the lava damage.
 
 Bot = Bot or {}
 Bot.DragonbaneKeep = {}

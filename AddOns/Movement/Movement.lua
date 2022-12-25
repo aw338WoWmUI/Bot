@@ -1,4 +1,5 @@
 -- FIXME: Generation of neighbor points seems to be defect when the character flies as ghost.
+-- FIXME: Seems to fail to jump with small obstacles (seems to kinda become stuck on small objects).
 
 local addOnName, AddOn = ...
 --- @class Movement
