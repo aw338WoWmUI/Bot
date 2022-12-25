@@ -1179,7 +1179,7 @@ function Movement.thereAreZeroCollisionsBetweenTheCharacterAndThePoint(point)
 end
 
 function _.faceWaypoint(action, waypoint)
-  if Core.calculateDistanceFromCharacterToPosition(waypoint) <= 5 then
+  if Core.calculateDistanceFromCharacterToPosition(waypoint) <= 8 then
     Core.stopMovingForward()
   end
   local facingPoint
