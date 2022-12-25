@@ -495,12 +495,6 @@ function Movement.isFlyingAvailableInZone()
   return IsFlyableArea()
 end
 
-local EXPERT_RIDING = 34092
-
-function Movement.canCharacterFly()
-  return Boolean.toBoolean(IsSpellKnown(EXPERT_RIDING) and Movement.isAFlyingMountAvailable())
-end
-
 function Movement.receiveAvailableMountIDs()
   local mountIDs = C_MountJournal.GetMountIDs()
   return Array.filter(mountIDs, function(mountID)
@@ -907,14 +901,6 @@ function Movement.isPointCloseToGround(point)
   end
 end
 
-function Movement.canBeFlown()
-  return Movement.isFlyingAvailableInZone() and IsOutdoors() and Movement.canCharacterFly()
-end
-
-function Movement.canBeDragonriden()
-  return Movement.isDragonridingAvailableInZone() and IsOutdoors() and Movement.canCharacterRideDragon()
-end
-
 local DRAGON_ISLES_CONTINENT_ID = 2444
 
 function Movement.isDragonridingAvailableInZone()
@@ -924,16 +910,31 @@ end
 local DRAGONRIDING_BASICS_SPELL_ID = 376777
 
 function Movement.canCharacterRideDragon()
-  return Core.isCharacterAlive() and IsSpellKnown(DRAGONRIDING_BASICS_SPELL_ID)
+  return Movement.canCharacterMount() and IsSpellKnown(DRAGONRIDING_BASICS_SPELL_ID) and Movement.isDragonridingAvailableInZone() and Movement.isADragonridingMountAvailable()
 end
 
-function Movement.canBeGroundMounted()
-  return IsOutdoors()
+function Movement.canCharacterMount()
+  -- TODO: Maybe improve Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) to consider different mounts.
+  return Core.isCharacterAlive() and not Core.isCharacterInCombat() and IsOutdoors() and not UnitInVehicle('player') and Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true })
+end
+
+local APPRENTICE_RIDING = 33388
+local JOURNEYMAN_RIDING = 33391
+local EXPERT_RIDING = 34092
+local MASTER_RIDING = 90265
+
+function Movement.canCharacterFly()
+  return Movement.canCharacterMount() and (IsSpellKnown(EXPERT_RIDING) or IsSpellKnown(MASTER_RIDING)) and Movement.isFlyingAvailableInZone() and Movement.isAFlyingMountAvailable()
+end
+
+function Movement.canCharacterMountOnGroundMount()
+  -- TODO: Is ground mounting available in all zones?
+  return Movement.canCharacterMount() and (IsSpellKnown(APPRENTICE_RIDING) or IsSpellKnown(JOURNEYMAN_RIDING) or IsSpellKnown(EXPERT_RIDING) or IsSpellKnown(MASTER_RIDING)) and Movement.isAGroundMountAvailable()
 end
 
 function Movement.canMountOnFlyingMount()
   return Boolean.toBoolean(
-    Movement.canBeFlown() and
+    Movement.canCharacterFly() and
       Movement.isAFlyingMountAvailable() and
       _.checkCommonConditionsForFlyingOrDragonriding()
   )
@@ -941,7 +942,7 @@ end
 
 function Movement.canMountOnDragonridingMount()
   return Boolean.toBoolean(
-    Movement.canBeDragonriden() and
+    Movement.canCharacterRideDragon() and
       Movement.isADragonridingMountAvailable() and
       _.checkCommonConditionsForFlyingOrDragonriding()
   )
@@ -950,17 +951,6 @@ end
 function _.checkCommonConditionsForFlyingOrDragonriding()
   return Boolean.toBoolean(
     Core.isCharacterAlive() and
-      Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) and
-      not Core.isCharacterInCombat() and
-      not UnitInVehicle('player')
-  )
-end
-
-function Movement.canMountOnGroundMount()
-  return Boolean.toBoolean(
-    Core.isCharacterAlive() and
-      Movement.canBeGroundMounted() and
-      Movement.isAGroundMountAvailable() and
       Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) and
       not Core.isCharacterInCombat() and
       not UnitInVehicle('player')
@@ -1045,7 +1035,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     local playerPosition = Movement.retrieveCharacterPosition()
 
     if (
-      Movement.canBeFlown() and
+      Movement.canCharacterFly() and
         Movement.isMountedOnFlyingMount() and
         (remainingDistance > 10 or Movement.isPositionInTheAir(waypoint)) and
         (Movement.isPointCloseToGround(playerPosition) or (Movement.isPointInDeepWater(playerPosition) and not Movement.isPointInDeepWater(waypoint))) and
@@ -1053,7 +1043,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     ) then
       Movement.liftUp()
     elseif (
-      Movement.canBeDragonriden() and
+      Movement.canCharacterRideDragon() and
         Movement.isMountedOnDragonridingMount() and
         (remainingDistance > 10 or Movement.isPositionInTheAir(waypoint))
     ) then
@@ -1193,12 +1183,12 @@ function _.faceWaypoint(action, waypoint)
     Core.stopMovingForward()
   end
   local facingPoint
-  if Movement.isPointCloseToGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
+  if Movement.isPointCloseToGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canCharacterFly() then
     facingPoint = Movement.createPointWithZOffset(waypoint, TARGET_LIFT_HEIGHT)
   else
     facingPoint = waypoint
   end
-  if Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
+  if Movement.isMountedOnFlyingMount() and Movement.canCharacterFly() then
     local pointInAir = Movement.determinePointHeighEnoughToStayInAir(waypoint)
     if pointInAir and Core.calculateDistanceFromCharacterToPosition(waypoint) > 5 then
       facingPoint = pointInAir
@@ -1229,13 +1219,13 @@ function _.Mounter:mount()
     _.stopForwardMovement()
     local hasTriedToMount = false
     local wasAbleToMount = nil
-    if Movement.canBeDragonriden() and Movement.canMountOnDragonridingMount() then
+    if Movement.canCharacterRideDragon() and Movement.canMountOnDragonridingMount() then
       hasTriedToMount = true
       wasAbleToMount = Movement.mountOnDragonridingMount()
-    elseif Movement.canBeFlown() and Movement.canMountOnFlyingMount() then
+    elseif Movement.canCharacterFly() and Movement.canMountOnFlyingMount() then
       hasTriedToMount = true
       wasAbleToMount = Movement.mountOnFlyingMount()
-    elseif Movement.canMountOnGroundMount() then
+    elseif Movement.canCharacterMountOnGroundMount() then
       hasTriedToMount = true
       wasAbleToMount = Movement.mountOnGroundMount()
     end
@@ -1255,11 +1245,11 @@ function _.Mounter:stopTryingToMount()
 end
 
 function _.isCharacterAlreadyOnBestMount()
-  return Movement.isMountedOnFlyingMount() or (not Movement.canBeFlown() and IsMounted())
+  return Movement.isMountedOnFlyingMount() or (not Movement.canCharacterFly() and IsMounted())
 end
 
 function _.canCharacterMountOnBetterMount()
-  return not _.isCharacterAlreadyOnBestMount() and (Movement.canMountOnFlyingMount() or Movement.canMountOnGroundMount())
+  return not _.isCharacterAlreadyOnBestMount() and (Movement.canMountOnFlyingMount() or Movement.canCharacterMountOnGroundMount())
 end
 
 function Movement.determinePointHeighEnoughToStayInAir(waypoint)
@@ -1316,7 +1306,7 @@ function _.thereAreCollisions2(from, to)
 end
 
 function Movement.isJumpSituation(to)
-  if Movement.isMountedOnFlyingMount() and Movement.canBeFlown() then
+  if Movement.isMountedOnFlyingMount() and Movement.canCharacterFly() then
     return false
   end
 
@@ -1870,7 +1860,7 @@ function Movement.moveTo(to, options)
 
   local from = Core.retrieveCharacterPosition()
 
-  if Movement.canBeDragonriden() then
+  if Movement.canCharacterRideDragon() then
     Movement.stopPathFindingAndMoving()
 
     local path = {
@@ -2423,5 +2413,5 @@ HWT.doWhenHWTIsLoaded(function()
 end)
 
 function Movement.canOnlyBeMovedOnGround()
-  return not Movement.canBeDragonriden() and not Movement.canBeFlown()
+  return not Movement.canCharacterRideDragon() and not Movement.canCharacterFly()
 end
