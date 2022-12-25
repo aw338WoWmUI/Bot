@@ -1879,7 +1879,7 @@ function Movement.moveTo(to, options)
 
   local from = Core.retrieveCharacterPosition()
 
-  if Movement.canCharacterRideDragon() then
+  if Movement.canCharacterRideDragon() or Movement.canCharacterFly() then
     Movement.stopPathFindingAndMoving()
 
     local path = {
