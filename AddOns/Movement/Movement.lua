@@ -1,3 +1,5 @@
+-- FIXME: Generation of neighbor points seems to be defect when the character flies as ghost.
+
 local addOnName, AddOn = ...
 --- @class Movement
 Movement = Movement or {}
@@ -1066,7 +1068,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
       Core.startMovingForward()
     end
 
-    if Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted() then
+    if Movement.isSituationWhereCharacterMightOnlyFitThroughDismounted() and (not IsFlying() or Movement.isPositionLessOffGroundThanTheMaximum(10)) then
       Movement.dismount()
       actionSequenceDoer.lastTimeDismounted = GetTime()
     end
