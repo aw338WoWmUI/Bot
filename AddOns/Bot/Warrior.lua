@@ -37,7 +37,7 @@ end
 function _.areConditionsMetToCastVictoryRush()
   local characterHealthInPercent = UnitHealth('player') / UnitHealthMax('player')
   return (
-    _.canBeCasted(VICTORY_RUSH) and
+    SpellCasting.canBeCasted(VICTORY_RUSH) and
     characterHealthInPercent <= 0.8
   )
 end
@@ -54,28 +54,21 @@ function _.findAuraByID(spellID, unit, filter)
   return AuraUtil.FindAura(IDPredicate, unit, filter, spellID)
 end
 
-function _.canBeCasted(spellId)
-  return (
-    IsUsableSpell(spellId) and
-      GetSpellCooldown(spellId) == 0
-  )
-end
-
 function _.areConditionsMetToCastCharge()
-  return _.canBeCasted(CHARGE) and
+  return SpellCasting.canBeCasted(CHARGE) and
     IsSpellInRange(CHARGE, 'target')
 end
 
 function _.areConditionsMetToCastBattleShout()
   local hasBattleShoutBuff = Boolean.toBoolean(_.retrievePlayerAuraBySpellID(BATTLE_SHOUT))
   return (
-    not hasBattleShoutBuff and _.canBeCasted(BATTLE_SHOUT)
+    not hasBattleShoutBuff and SpellCasting.canBeCasted(BATTLE_SHOUT)
   )
 end
 
 function _.areConditionsMetToCastRend()
   return (
-    _.canBeCasted(REND) and
+    SpellCasting.canBeCasted(REND) and
       IsSpellInRange(REND_NAME, 'target') and
       not _.findAuraByID(REND, 'target', 'HARMFUL')
   )
@@ -86,7 +79,7 @@ function _.areConditionsMetToCastHeroicStrike()
   local targetHealth = UnitHealth('target')
   return (
     not IsCurrentSpell(HEROIC_STRIKE) and
-      _.canBeCasted(HEROIC_STRIKE) and
+      SpellCasting.canBeCasted(HEROIC_STRIKE) and
       IsSpellInRange(HEROIC_STRIKE_NAME, 'target') and
       targetHealth > lowDamage
   )

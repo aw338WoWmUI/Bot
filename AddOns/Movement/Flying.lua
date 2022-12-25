@@ -2,7 +2,11 @@ Movement = Movement or {}
 Movement.Flying = {}
 
 function Movement.Flying.areConditionsMetForFlyingHigher(targetPoint)
-  return Movement.Flying.isThereAnObstacleInFrontOfTheCharacter(targetPoint)
+  return (
+    IsFlying() and
+    Movement.isMountedOnFlyingMount() and
+    Movement.Flying.isThereAnObstacleInFrontOfTheCharacter(targetPoint)
+  )
 end
 
 function Movement.Flying.isThereAnObstacleInFrontOfTheCharacter(targetPoint)

@@ -1,12 +1,16 @@
 Movement = Movement or {}
 Movement.Dragonriding = {}
 
+local SKYWARD_ASCENT_SPELL_ID = 372610
+local SURGE_FORWARD = 372608
+local WHIRLING_SURGE = 361584
+
 -- TODO: Does it work correctly (in terms that the pitch and yaw are correctly considered)?
 function Movement.Dragonriding.areConditionsMetForFlyingHigher(targetPoint)
-  if not Movement.Dragonriding.isAPointAvailable() then
-    return false
-  end
+  return SpellCasting.canBeCasted(SKYWARD_ASCENT_SPELL_ID) and Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint)
+end
 
+function Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint)
   local distance = math.min(15, Core.calculateDistanceFromCharacterToPosition(targetPoint))
   return Movement.isObstacleInFrontOfCharacter(distance)
 end
@@ -22,7 +26,6 @@ function Movement.Dragonriding.liftUp()
 end
 
 function Movement.Dragonriding.castSkywardAscent()
-  local SKYWARD_ASCENT_SPELL_ID = 372610
   Core.castSpellByID(SKYWARD_ASCENT_SPELL_ID)
 end
 
@@ -46,27 +49,17 @@ function Movement.Dragonriding.faceWaypoint(waypoint, action)
 end
 
 function Movement.Dragonriding.areConditionsMetForSurgeForward()
-	return Movement.Dragonriding.isAPointAvailable() and not Movement.isObstacleInFrontOfCharacter(30)
-end
-
-function Movement.Dragonriding.areNumberOfPointsAvailable(amount)
-  return C_UIWidgetManager.GetFillUpFramesWidgetVisualizationInfo(4460).numFullFrames >= amount
-end
-
-function Movement.Dragonriding.isAPointAvailable()
-  return Movement.Dragonriding.areNumberOfPointsAvailable(1)
+	return SpellCasting.canBeCasted(SURGE_FORWARD) and not Movement.isObstacleInFrontOfCharacter(30)
 end
 
 function Movement.Dragonriding.surgeForward()
-	local SURGE_FORWARD = 372608
   Core.castSpellByID(SURGE_FORWARD)
 end
 
 function Movement.Dragonriding.areConditionsMetForWhirlingSurge()
-	return Movement.Dragonriding.areNumberOfPointsAvailable(3) and not Movement.isObstacleInFrontOfCharacter(45)
+	return SpellCasting.canBeCasted(WHIRLING_SURGE) and not Movement.isObstacleInFrontOfCharacter(45)
 end
 
 function Movement.Dragonriding.whirlingSurge()
-	local WHIRLING_SURGE = 361584
   Core.castSpellByID(WHIRLING_SURGE)
 end

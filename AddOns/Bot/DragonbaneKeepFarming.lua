@@ -52,7 +52,7 @@ function Bot.DragonbaneKeep.toggleFarming()
           local objects = Array.filter(Core.retrieveObjectPointers(), function(object)
             local objectID = HWT.ObjectId(object)
             return (
-              Set.contains(AddOn.objectsWhoContainKeyFragments, objectID) or
+              (Core.isLootable(object) and Set.contains(AddOn.objectsWhoContainKeyFragments, objectID)) or
                 (Core.isAlive(object) and Set.contains(mobsToFarm, objectID))
             )
           end)
@@ -137,5 +137,6 @@ function Bot.DragonbaneKeep.createKey()
   if containerIndex and slotIndex then
     SpellCasting.useContainerItem(containerIndex, slotIndex)
     SpellCasting.waitForSpellCastSucceeded(ASSEMBLING_SPELL_ID)
+    Events.waitForEvent('BAG_UPDATE_DELAYED')
   end
 end

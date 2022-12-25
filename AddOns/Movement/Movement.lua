@@ -1037,6 +1037,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
         (remainingDistance > 30 or Movement.isPositionInTheAir(waypoint))
     ) then
       Movement.liftUp()
+      return
     end
 
     if Movement.Flying.areConditionsMetForFlyingHigher(waypoint) then
