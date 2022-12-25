@@ -1340,9 +1340,20 @@ function Core.doMob(pointer, options)
 
       local position = Core.retrieveObjectPosition(pointer)
       if not Core.isCharacterCloseToPosition(position, distance) then
-        Resolvable.await(Core.moveToObject(pointer, {
+        local moveToStoppable = Core.moveToObject(pointer, {
           distance = distance
-        }))
+        })
+        local ticker
+        ticker = C_Timer.NewTicker(1, function ()
+          Coroutine.runAsCoroutine(function ()
+            if isJobDone() then
+              ticker:Cancel()
+              moveToStoppable:stop()
+            end
+          end)
+        end)
+        Resolvable.await(moveToStoppable)
+        ticker:Cancel()
       end
 
       if not isJobDone() then
