@@ -3,6 +3,10 @@ Movement.Dragonriding = {}
 
 -- TODO: Does it work correctly (in terms that the pitch and yaw are correctly considered)?
 function Movement.Dragonriding.areConditionsMetForFlyingHigher(targetPoint)
+  if not Movement.Dragonriding.isAPointAvailable() then
+    return false
+  end
+
   local distance = math.min(15, Core.calculateDistanceFromCharacterToPosition(targetPoint))
   return Movement.isObstacleInFrontOfCharacter(distance)
 end
