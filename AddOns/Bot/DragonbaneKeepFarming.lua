@@ -1,3 +1,5 @@
+-- FIXME: Seems to fail to loot units which are out of interact range.
+
 Bot = Bot or {}
 Bot.DragonbaneKeep = {}
 local addOnName, AddOn = ...
