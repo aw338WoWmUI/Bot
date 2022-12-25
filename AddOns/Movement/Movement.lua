@@ -1045,7 +1045,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     elseif (
       Movement.canCharacterRideDragon() and
         Movement.isMountedOnDragonridingMount() and
-        (remainingDistance > 10 or Movement.isPositionInTheAir(waypoint))
+        (remainingDistance > 30 or Movement.isPositionInTheAir(waypoint))
     ) then
       Movement.liftUp()
     end
