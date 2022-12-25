@@ -76,7 +76,7 @@ function Bot.DragonbaneKeep.toggleFarming()
 end
 
 function _.isObjectToInteractWith(object)
-  return Set.contains(AddOn.objectsWhoContainKeyFragments, object)
+  return Set.contains(AddOn.objectsWhoContainKeyFragments, HWT.ObjectId(object))
 end
 
 function Bot.DragonbaneKeep.handleCompletion()
