@@ -924,7 +924,15 @@ local EXPERT_RIDING = 34092
 local MASTER_RIDING = 90265
 
 function Movement.canCharacterFly()
-  return Movement.canCharacterMount() and (IsSpellKnown(EXPERT_RIDING) or IsSpellKnown(MASTER_RIDING)) and Movement.isFlyingAvailableInZone() and Movement.isAFlyingMountAvailable()
+  return (
+    (Movement.canCharacterMount() and (IsSpellKnown(EXPERT_RIDING) or IsSpellKnown(MASTER_RIDING)) and Movement.isFlyingAvailableInZone() and Movement.isAFlyingMountAvailable()) or
+    Movement.canCharacterFlyAsGhost()
+  )
+end
+
+function Movement.canCharacterFlyAsGhost()
+	-- TODO: All zones where can be flown as ghost.
+  return Core.isCharacterGhost() and Core.retrieveCurrentContinentID() == DRAGON_ISLES_CONTINENT_ID
 end
 
 function Movement.canCharacterMountOnGroundMount()
