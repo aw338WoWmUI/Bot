@@ -1340,7 +1340,7 @@ function Core.doMob(pointer, options)
       local objectID = HWT.ObjectId(pointer)
 
       local function isJobDone()
-        return not HWT.ObjectExists(pointer) or Core.isDead(pointer) or options.additionalStopConditions and options.additionalStopConditions()
+        return not HWT.ObjectExists(pointer) or Core.isDead(pointer) or Core.isCharacterDead() or options.additionalStopConditions and options.additionalStopConditions()
       end
 
       local position = Core.retrieveObjectPosition(pointer)

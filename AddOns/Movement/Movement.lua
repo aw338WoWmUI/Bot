@@ -1873,7 +1873,7 @@ function Movement.moveTo(to, options)
     local resolvable
     resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
       stop = function()
-        return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
+        return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance) or Core.isCharacterDead()
       end,
       continueMoving = options.continueMoving
     })
