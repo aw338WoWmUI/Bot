@@ -1088,6 +1088,14 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     if Movement.Dragonriding.areConditionsMetForFlyingHigher(waypoint) then
       Movement.Dragonriding.flyHigher()
     end
+
+    if Movement.Dragonriding.areConditionsMetForWhirlingSurge() then
+      Movement.Dragonriding.whirlingSurge()
+    end
+
+    if Movement.Dragonriding.areConditionsMetForSurgeForward() then
+      Movement.Dragonriding.surgeForward()
+    end
   end
 
   return {
