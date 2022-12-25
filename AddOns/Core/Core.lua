@@ -1386,7 +1386,6 @@ function Core.doMob(pointer, options)
             }))
           end
           Bot.castCombatRotationSpell()
-          -- TODO: Face target if the error is thrown that the character is facing the wrong way.
           Coroutine.yieldAndResume()
         end
 
