@@ -641,6 +641,11 @@ function Core.calculateDistanceFromCharacterToPosition(position)
   return Core.calculateDistanceBetweenPositions(characterPosition, position)
 end
 
+function Core.calculate2DDistanceFromCharacterToPosition(position)
+  local characterPosition = Core.retrieveCharacterPosition()
+  return Core.calculate2DDistanceBetweenPositions(characterPosition, position)
+end
+
 function Core.calculateDistanceFromCharacterToObject(objectIdentifier)
   local characterPosition = Core.retrieveCharacterPosition()
   local objectPosition = Core.retrieveObjectPosition(objectIdentifier)

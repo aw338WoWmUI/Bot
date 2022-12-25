@@ -1082,11 +1082,9 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
   end
 
   local function runForDragonriding(action, actionSequenceDoer, remainingDistance)
-    if _.areConditionsMetForFacingWaypoint(waypoint) then
-      Movement.Dragonriding.facePoint(waypoint, action)
-    end
+    Movement.Dragonriding.faceWaypoint(waypoint, action)
 
-    if Movement.Dragonriding.areConditionsMetForFlyingHigher() then
+    if Movement.Dragonriding.areConditionsMetForFlyingHigher(waypoint) then
       Movement.Dragonriding.flyHigher()
     end
   end
@@ -1183,6 +1181,11 @@ end
 function _.areConditionsMetForFacingWaypoint(waypoint)
   return Core.calculateDistanceFromCharacterToPosition(waypoint) > 5 or
     not Movement.canReachWaypointWithCurrentMovementDirection(waypoint)
+end
+
+function Movement.thereAreZeroCollisionsBetweenTheCharacterAndThePoint(point)
+	local characterPosition = Core.retrieveCharacterPosition()
+  return Movement.thereAreZeroCollisions(characterPosition, point)
 end
 
 function _.faceWaypoint(action, waypoint)
@@ -1997,21 +2000,29 @@ local ANGLE_PER_SECOND = math.rad(180)
 
 function Movement.face(retrieveTargetAngles, stop)
   local yaw, pitch = retrieveTargetAngles()
-  local playerYaw = HWT.ObjectFacing('player')
-  local yawDelta = Core.normalizeAngle(playerYaw - yaw)
+  local characterYaw = HWT.ObjectFacing('player')
+  local yawDelta = Core.normalizeAngle(characterYaw - yaw)
   if yawDelta > math.rad(180) then
     yawDelta = math.rad(360) - yawDelta
   end
-  local duration = yawDelta / ANGLE_PER_SECOND
-  HWT.FaceDirectionSmoothly(yaw, duration)
-
-  if Core.isCharacterFlying() or Core.isCharacterSwimming() then
-    HWT.SetPitch(pitch)
+  local isFacing = false
+  if yawDelta > 0 then
+    local duration = yawDelta / ANGLE_PER_SECOND
+    HWT.FaceDirectionSmoothly(yaw, duration)
+    isFacing = true
   end
 
-  Coroutine.waitUntil(function()
-    return not HWT.IsFacingSmoothly()
-  end)
+  local characterPitch = HWT.UnitPitch('player')
+  if pitch ~= characterPitch and Core.isCharacterFlying() or Core.isCharacterSwimming() then
+    HWT.SetPitch(pitch)
+    isFacing = true
+  end
+
+  if isFacing then
+    Coroutine.waitUntil(function()
+      return not HWT.IsFacingSmoothly()
+    end)
+  end
 end
 
 function _.waitForCharacterToHaveStoppedRotating()
