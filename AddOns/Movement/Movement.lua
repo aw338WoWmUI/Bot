@@ -1,5 +1,6 @@
 -- FIXME: Generation of neighbor points seems to be defect when the character flies as ghost.
 -- FIXME: Seems to fail to jump with small obstacles (seems to kinda become stuck on small objects).
+-- FIXME: Pathfinding with the trace line method seems currently too slow to be practical (at least in some cases where it takes more than 30 seconds).
 
 local addOnName, AddOn = ...
 --- @class Movement
