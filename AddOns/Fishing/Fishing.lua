@@ -79,11 +79,9 @@ function Fishing.toggleFishing()
           iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
           if iceHole then
             if Core.calculateDistanceFromCharacterToObject(iceHole) > maxFishingDistance then
-              local position = Core.retrieveObjectPosition(iceHole)
-              g_iceHoles:setValue(position, true)
-              local angle = math.random() * 2 * PI
-              position.x = position.x + distanceToIceHole * math.cos(angle)
-              position.y = position.y + distanceToIceHole * math.sin(angle)
+              local iceHolePosition = Core.retrieveObjectPosition(iceHole)
+              g_iceHoles:setValue(iceHolePosition, true)
+              local position = Core.retrievePositionBetweenPositions(iceHolePosition, Core.retrieveCharacterPosition(), distanceToIceHole)
               Resolvable.await(Core.moveTo(position, {
                 distance = maxFishingDistance - distanceToIceHole
               }))
@@ -92,10 +90,7 @@ function Fishing.toggleFishing()
             local iceCrack = Core.findClosestObjectToCharacterWithObjectID(ICE_CRACK_OBJECT_ID)
             if iceCrack then
               if Core.calculateDistanceFromCharacterToObject(iceCrack) > maxBreakingIceInteractDistance then
-                local position = Core.retrieveObjectPosition(iceCrack)
-                local angle = math.random() * 2 * PI
-                position.x = position.x + distanceToIceHole * math.cos(angle)
-                position.y = position.y + distanceToIceHole * math.sin(angle)
+                local position = Core.retrievePositionBetweenPositions(Core.retrieveObjectPosition(iceCrack), Core.retrieveCharacterPosition(), distanceToIceHole)
                 Resolvable.await(Core.moveTo(position, {
                   distance = maxBreakingIceInteractDistance - distanceToIceHole
                 }))
