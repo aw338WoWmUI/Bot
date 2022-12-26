@@ -2223,24 +2223,6 @@ function Movement.findClosestPointThatCanBeWalkedTo(from, to)
   return walkToPoint
 end
 
-function Movement.moveTowards(x, y, z)
-  local playerPosition = Movement.retrieveCharacterPosition()
-  local destination = Movement.createPoint(x, y, z)
-  local walkToPoint = Movement.findClosestPointThatCanBeWalkedTo(playerPosition, destination)
-
-  if walkToPoint ~= playerPosition then
-    Questing.Coroutine.moveTo(walkToPoint)
-  end
-end
-
-function Movement.moveTowardsSavedPosition()
-  local thread = coroutine.create(function()
-    Movement.moveTowards(AddOn.savedVariables.accountWide.savedPosition.x,
-      AddOn.savedVariables.accountWide.savedPosition.y, AddOn.savedVariables.accountWide.savedPosition.z)
-  end)
-  return Coroutine.resumeWithShowingError(thread)
-end
-
 function Movement.havePointsSameCoordinates(a, b)
   return a.x == b.x and a.y == b.y and a.z == b.z
 end

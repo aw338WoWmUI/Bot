@@ -212,7 +212,8 @@ do
     function(self)
       if self:isObjectiveOpen(1) then
         print(1)
-        Questing.Coroutine.moveTo(Movement.createPoint(
+        Questing.Coroutine.moveTo(Core.createWorldPosition(
+          0,
           -9861.0556640625,
           1333.9146728516,
           41.904102325439
@@ -2026,7 +2027,7 @@ function _.run ()
 
       -- TODO: Reuse Core functionality (Questing.Coroutine.moveToUntil also checks for Questing.isRunning())
       if Core.isCharacterGhost() then
-        local corpsePosition = Movement.createPoint(Core.receiveCorpsePosition())
+        local corpsePosition = Core.receiveCorpsePosition()
         Questing.Coroutine.moveToUntil(corpsePosition, {
           stopCondition = Core.canStaticPopup1Button1BePressed
         })

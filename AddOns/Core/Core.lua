@@ -719,7 +719,12 @@ function Core.retrievePositionBetweenPositions(from, to, distance)
   local x = from.x + distance * vector.x
   local y = from.y + distance * vector.y
   local z = from.z + distance * vector.z
-  return Core.createPosition(x, y, z)
+  local continentID = to.continentID or from.continentID
+  if continentID then
+    return Core.createWorldPosition(continentID, x, y, z)
+  else
+    return Core.createPosition(x, y, z)
+  end
 end
 
 function Core.isCharacterAlive()

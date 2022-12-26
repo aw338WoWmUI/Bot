@@ -30,7 +30,7 @@ end
 
 function moveToWhenNotMoving(x, y, z)
   if not Core.isCharacterMoving() then
-    Questing.Coroutine.moveTo(Core.createPosition(x, y, z))
+    Questing.Coroutine.moveTo(Core.createWorldPosition(Core.retrieveCurrentContinentID(), x, y, z))
   end
 end
 
@@ -53,7 +53,7 @@ end
 function createQuestingMoveToAction(x, y, z, distance)
   return {
     run = function()
-      Questing.Coroutine.moveTo(Core.createPosition(x, y, z))
+      Questing.Coroutine.moveTo(Core.createWorldPosition(Core.retrieveCurrentContinentID(), x, y, z))
     end,
     isDone = function()
       return Core.isCharacterCloseToPosition(Core.createPosition(x, y, z), distance or 1)
@@ -182,11 +182,7 @@ function g()
   print(playerPosition.x, playerPosition.y, playerPosition.z)
 end
 
-local dockPosition = {
-  x = -8641.3349609375,
-  y = 1331.2628173828,
-  z = 5.2331943511963
-}
+local dockPosition = Core.createWorldPosition(0, -8641.3349609375, 1331.2628173828, 5.2331943511963)
 
 function moveToDockInStormwind()
   Questing.Coroutine.moveTo(dockPosition)
