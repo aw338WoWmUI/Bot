@@ -52,7 +52,7 @@ function Bot.DragonbaneKeep.toggleFarming()
           local objects = Array.filter(Core.retrieveObjectPointers(), function(object)
             local objectID = HWT.ObjectId(object)
             return (
-              (Core.isLootable(object) and Set.contains(AddOn.objectsWhoContainKeyFragments, objectID)) or
+              Set.contains(AddOn.objectsWhoContainKeyFragments, objectID) or
                 (Core.isAlive(object) and Set.contains(mobsToFarm, objectID))
             )
           end)
