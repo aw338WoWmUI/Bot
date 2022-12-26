@@ -99,12 +99,9 @@ function Fishing.toggleFishing()
                 return not isFishing
               end)
               Core.interactWithObject(iceCrack)
-              local wasSuccessful = Events.waitForEvent('UNIT_SPELLCAST_SUCCEEDED', 2)
-              if wasSuccessful then
-                Coroutine.waitFor(function()
-                  return not SpellCasting.isChanneling()
-                end)
-              end
+              Events.waitForEventCondition('UNIT_SPELLCAST_STOP', function (self, event, unit)
+                return unit == 'player'
+              end)
               iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
             else
               -- local spots = g_iceHoles:retrieveAllValues()
