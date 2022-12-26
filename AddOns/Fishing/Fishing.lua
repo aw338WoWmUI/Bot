@@ -4,6 +4,8 @@ Fishing = Fishing or {}
 local addOnName, AddOn = ...
 local _ = {}
 
+local MODE = 'ICE_FISHING'
+
 local FISHING_SPELL_ID = 131474
 local FISHING_BOBBER_OBJECT_ID = 35591
 local NIGHTCRAWLERS_ITEM_ID = 6530
@@ -16,6 +18,7 @@ local PULL_HARD_SPELL_ID = 374599
 local HARPOON_RANGE = 50
 local ICE_FISHING_HOLE_OBJECT_ID = 192631
 local ICE_CRACK_OBJECT_ID = 377944
+local ICE_FISHING = 377895
 
 local isFishing = false
 local exitTimer = nil
@@ -36,6 +39,13 @@ function _.isPool(pointer)
   return Boolean.toBoolean(string.match(name, 'Pool$') or string.match(name, 'Swarm$') or string.match(name, 'School$'))
 end
 
+function Fishing.measureDistance()
+  local iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
+  if iceHole then
+    return Core.calculateDistanceFromCharacterToObject(iceHole)
+  end
+end
+
 function Fishing.toggleFishing()
   if isFishing then
     exitTimer:Cancel()
@@ -49,7 +59,7 @@ function Fishing.toggleFishing()
     end)
 
     Coroutine.runAsCoroutine(function()
-      while true do
+      while isFishing do
         if FishingOptions.fishInPools then
           local pools = Array.filter(Core.retrieveObjectPointers(), function(pointer)
             return Set.contains(POOL_OBJECT_IDS, HWT.ObjectId(pointer))
@@ -60,14 +70,54 @@ function Fishing.toggleFishing()
           end
         end
 
-        local iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
-        if iceHole then
-          Resolvable.await(Core.moveToObject(iceHole))
-        else
-          local iceCrack = Core.findClosestObjectToCharacterWithObjectID(ICE_CRACK_OBJECT_ID)
-          if iceCrack then
-            Resolvable.await(Core.moveToAndInteractWithObject(iceCrack))
-            iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
+        local distanceToIceHole = 4.9033551216125
+        local maxBreakingIceInteractDistance = 10.230718612671
+        local maxFishingDistance = 8.2202529907227
+
+        local iceHole = nil
+        if MODE == 'ICE_FISHING' then
+          iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
+          if iceHole then
+            if Core.calculateDistanceFromCharacterToObject(iceHole) > maxFishingDistance then
+              local position = Core.retrieveObjectPosition(iceHole)
+              g_iceHoles:setValue(position, true)
+              local angle = math.random() * 2 * PI
+              position.x = position.x + distanceToIceHole * math.cos(angle)
+              position.y = position.y + distanceToIceHole * math.sin(angle)
+              Resolvable.await(Core.moveTo(position, {
+                distance = maxFishingDistance - distanceToIceHole
+              }))
+            end
+          else
+            local iceCrack = Core.findClosestObjectToCharacterWithObjectID(ICE_CRACK_OBJECT_ID)
+            if iceCrack then
+              if Core.calculateDistanceFromCharacterToObject(iceCrack) > maxBreakingIceInteractDistance then
+                local position = Core.retrieveObjectPosition(iceCrack)
+                local angle = math.random() * 2 * PI
+                position.x = position.x + distanceToIceHole * math.cos(angle)
+                position.y = position.y + distanceToIceHole * math.sin(angle)
+                Resolvable.await(Core.moveTo(position, {
+                  distance = maxBreakingIceInteractDistance - distanceToIceHole
+                }))
+              end
+              Movement.faceObject(iceCrack, function()
+                return not isFishing
+              end)
+              Core.interactWithObject(iceCrack)
+              local wasSuccessful = Events.waitForEvent('UNIT_SPELLCAST_SUCCEEDED', 2)
+              if wasSuccessful then
+                Coroutine.waitFor(function()
+                  return not SpellCasting.isChanneling()
+                end)
+              end
+              iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
+            else
+              -- local spots = g_iceHoles:retrieveAllValues()
+              --_.findSpot(spots)
+              --if _.hasFoundSpot() then
+              --
+              --end
+            end
           end
         end
 
@@ -79,102 +129,110 @@ function Fishing.toggleFishing()
           _.buffWithCaptainRumseysLagerBuff()
         end
 
-        if not iceHole and _.hasScalebellyMackerel() and _.isChumBuffDurationShorterThanMaximumFishingDuration() then
+        if MODE ~= 'ICE_FISHING' and _.hasScalebellyMackerel() and _.isChumBuffDurationShorterThanMaximumFishingDuration() then
           _.buffWithChumBuff()
         end
 
-        if iceHole then
-          Core.interactWithObject(iceHole)
-        else
-          Core.castSpellByID(FISHING_SPELL_ID)
-        end
-
-        HWT.ResetAfk()
-        Coroutine.waitForDuration(1)
-        local fishingBobber = Fishing.findFishingBobber()
-        -- TODO: It seems that "Massive Thresher" can appear.
-        -- print('fishingBobber', fishingBobber)
-        if fishingBobber then
-          Coroutine.waitFor(function()
-            return HWT.ObjectExists(fishingBobber) and HWT.ObjectAnimationState(fishingBobber) == 1
-          end, MAXIMUM_FISHING_DURATION)
-          if HWT.ObjectExists(fishingBobber) and HWT.ObjectAnimationState(fishingBobber) == 1 then
-            local waitDurationBeforeInteractingWithBobber = _.randomFloat(0.2, 1)
-            Coroutine.waitForDuration(waitDurationBeforeInteractingWithBobber)
-            Core.interactWithObject(fishingBobber)
-            HWT.ResetAfk()
+        if MODE == 'ICE_FISHING' and iceHole or MODE ~= 'ICE_FISHING' then
+          if MODE == 'ICE_FISHING' then
+            if iceHole then
+              Movement.faceObject(iceHole, function()
+                return not isFishing
+              end)
+              Core.interactWithObject(iceHole)
+              Events.waitForEvent('UNIT_SPELLCAST_SUCCEEDED', 2)
+            end
+          else
+            Core.castSpellByID(FISHING_SPELL_ID)
           end
 
-          local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
-          Coroutine.waitForDuration(waitDurationUntilNextFishing)
+          HWT.ResetAfk()
+          Coroutine.waitForDuration(1)
+          local fishingBobber = Fishing.findFishingBobber()
+          -- TODO: It seems that "Massive Thresher" can appear.
+          -- print('fishingBobber', fishingBobber)
+          if fishingBobber then
+            Coroutine.waitFor(function()
+              return HWT.ObjectExists(fishingBobber) and HWT.ObjectAnimationState(fishingBobber) == 1
+            end, MAXIMUM_FISHING_DURATION)
+            if HWT.ObjectExists(fishingBobber) and HWT.ObjectAnimationState(fishingBobber) == 1 then
+              local waitDurationBeforeInteractingWithBobber = _.randomFloat(0.2, 1)
+              Coroutine.waitForDuration(waitDurationBeforeInteractingWithBobber)
+              Core.interactWithObject(fishingBobber)
+              HWT.ResetAfk()
+            end
 
-          if _.hasLearnedHarpooning() and _.isChannelingLookingForLunkers() then
-            Events.waitForEventCondition('UNIT_SPELLCAST_CHANNEL_STOP', function(self, event, unit)
-              return unit == 'player'
-            end)
+            local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
+            Coroutine.waitForDuration(waitDurationUntilNextFishing)
 
-            Coroutine.waitForDuration(0.5)
-
-            local lunker = Array.find(Core.retrieveObjectPointers(), function(pointer)
-              return (
-                UnitName(pointer) == 'Massive Thresher' and
-                  Core.isAlive(pointer) and
-                  Core.calculateDistanceFromCharacterToObject(pointer) <= HARPOON_RANGE
-              )
-            end)
-
-            print('lunker', lunker)
-            if lunker then
-              local point = Core.retrieveObjectPosition(lunker)
-              Movement.facePoint(point)
-              UseItemByName('Iskaaran Harpoon')
-              print('a')
-              Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit, __, spellID)
-                return unit == 'player' and spellID == HARPOON_SPELL_ID
+            if _.hasLearnedHarpooning() and _.isChannelingLookingForLunkers() then
+              Events.waitForEventCondition('UNIT_SPELLCAST_CHANNEL_STOP', function(self, event, unit)
+                return unit == 'player'
               end)
-              print('b')
-              Coroutine.waitFor(function()
-                local start = GetSpellCooldown(PULL_HARD_SPELL_ID)
-                return start > 0
+
+              Coroutine.waitForDuration(0.5)
+
+              local lunker = Array.find(Core.retrieveObjectPointers(), function(pointer)
+                return (
+                  UnitName(pointer) == 'Massive Thresher' and
+                    Core.isAlive(pointer) and
+                    Core.calculateDistanceFromCharacterToObject(pointer) <= HARPOON_RANGE
+                )
               end)
-              while Core.isAlive(lunker) do
-                local start, duration = GetSpellCooldown(PULL_HARD_SPELL_ID)
-                local cooldownDurationLeft = math.max(start + duration - GetTime(), 0)
-                print('cooldownDurationLeft', cooldownDurationLeft)
-                if cooldownDurationLeft > 0 then
-                  print('c')
-                  Coroutine.waitForDuration(cooldownDurationLeft)
-                  Coroutine.waitFor(function()
-                    local start = GetSpellCooldown(PULL_HARD_SPELL_ID)
-                    return start == 0
-                  end)
-                  print('d')
+
+              print('lunker', lunker)
+              if lunker then
+                local point = Core.retrieveObjectPosition(lunker)
+                Movement.facePoint(point)
+                UseItemByName('Iskaaran Harpoon')
+                print('a')
+                Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit, __, spellID)
+                  return unit == 'player' and spellID == HARPOON_SPELL_ID
+                end)
+                print('b')
+                Coroutine.waitFor(function()
+                  local start = GetSpellCooldown(PULL_HARD_SPELL_ID)
+                  return start > 0
+                end)
+                while Core.isAlive(lunker) do
+                  local start, duration = GetSpellCooldown(PULL_HARD_SPELL_ID)
+                  local cooldownDurationLeft = math.max(start + duration - GetTime(), 0)
+                  print('cooldownDurationLeft', cooldownDurationLeft)
+                  if cooldownDurationLeft > 0 then
+                    print('c')
+                    Coroutine.waitForDuration(cooldownDurationLeft)
+                    Coroutine.waitFor(function()
+                      local start = GetSpellCooldown(PULL_HARD_SPELL_ID)
+                      return start == 0
+                    end)
+                    print('d')
+                  end
+                  if Core.isAlive(lunker) then
+                    Core.pressExtraActionButton1()
+                    print('e')
+                    Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit, __, spellID)
+                      return unit == 'player' and spellID == PULL_HARD_SPELL_ID
+                    end)
+                    print('f')
+                  end
+                  if not isFishing then
+                    return
+                  end
+                  Coroutine.waitForDuration(0.5) -- Wait a little bit before checking if lunker is still alive.
                 end
-                if Core.isAlive(lunker) then
-                  Core.pressExtraActionButton1()
-                  print('e')
-                  Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit, __, spellID)
-                    return unit == 'player' and spellID == PULL_HARD_SPELL_ID
-                  end)
-                  print('f')
-                end
-                if not isFishing then
-                  return
-                end
-                Coroutine.waitForDuration(0.5) -- Wait a little bit before checking if lunker is still alive.
+                Resolvable.await(Core.lootObject(lunker))
               end
-              Resolvable.await(Core.lootObject(lunker))
+            end
+          end
+          if isFishing then
+            if Bags.areBagsFull() then
+              Quit()
+              return
             end
           end
         end
-        if isFishing then
-          if Bags.areBagsFull() then
-            Quit()
-            return
-          end
-        else
-          return
-        end
+
+        Coroutine.yieldAndResume()
       end
     end)
   end
@@ -262,11 +320,14 @@ end
 
 function _.enchantFishingPoleWithFishingLure()
   -- C_Container.UseContainerItem
-  UseItemByName('Nightcrawlers')
-  PickupInventoryItem(28)
-  Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit)
-    return unit == 'player'
-  end)
+  local item = 'Nightcrawlers'
+  UseItemByName(item)
+  if IsCurrentItem(item) then
+    PickupInventoryItem(28)
+    Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit)
+      return unit == 'player'
+    end)
+  end
 end
 
 function _.hasCaptainRumseysLager()
@@ -311,7 +372,8 @@ function _.hasLearnedHarpooning()
 end
 
 function _.isChannelingLookingForLunkers()
-  return Boolean.toBoolean(select(4, UnitChannelInfo('player')))
+  local startTime, __, __, __, spellID = select(4, UnitChannelInfo('player'))
+  return Boolean.toBoolean(startTime) and spellID == LOOKING_FOR_LUNKERS_SPELL_ID
 end
 
 function _.randomFloat(from, to)
@@ -341,6 +403,11 @@ function _.initializeSavedVariables()
     FishingOptions = {
       fishInPools = true
     }
+  end
+  if g_iceHoles then
+    g_iceHoles = Movement.createWorldPositionSetFromSavedVariable(g_iceHoles)
+  else
+    g_iceHoles = Movement.WorldPositionSet:new()
   end
 end
 

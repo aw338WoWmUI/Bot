@@ -33,6 +33,8 @@ canBeStoodOnPointCache = Movement.PointToValueMap:new()
 local canBeStoodWithMountOnPointCache = Movement.PointToValueMap:new()
 local DISTANCE = GRID_LENGTH
 local FEMALE_HUMAN_CHARACTER_HEIGHT = 1.970519900322
+local MAXIMUM_DISTANCE_FOR_STOPPING_WHEN_FACING_WHILE_MOVING_ON_GROUND_SWIMMING_OR_FLYING = 5
+local MAXIMUM_DISTANCE_FOR_STOPPING_WHEN_FACING_WHILE_DRAGONRIDING = 8
 lines = {}
 
 local cache = {}
@@ -983,7 +985,7 @@ function Movement.calculate2DDistanceOfPointToLine(point, line)
   return math.abs((x2 - x1) * (y1 - y0) - (x1 - x0) * (y2 - y1)) / math.sqrt(math.pow(x2 - x1, 2), math.pow(y2 - y1, 2))
 end
 
-function Movement.canReachWaypointWithCurrentMovementDirection(waypoint)
+function Movement.isMissingWaypointWithCurrentMovementDirection(waypoint)
   local playerPosition = Movement.retrieveCharacterPosition()
   local yaw = HWT.ObjectFacing('player')
   local pitch = HWT.UnitPitch('player')
@@ -998,11 +1000,11 @@ function Movement.canReachWaypointWithCurrentMovementDirection(waypoint)
     z = playerPosition.z + movementVector.z
   }
 
-  if Core.isCharacterFlying() or Core.isCharacterSwimming() then
-    return Movement.distanceOfPointToLine(waypoint, { playerPosition, positionB }) <= TOLERANCE_RANGE
+  if IsFlying() or Core.isCharacterSwimming() then
+    return Movement.distanceOfPointToLine(waypoint, { playerPosition, positionB }) > TOLERANCE_RANGE
   else
     local distance = Movement.calculate2DDistanceOfPointToLine(waypoint, { playerPosition, positionB })
-    return distance <= TOLERANCE_RANGE
+    return distance > TOLERANCE_RANGE
   end
 end
 
@@ -1173,8 +1175,7 @@ function Movement.dismount()
 end
 
 function _.areConditionsMetForFacingWaypoint(waypoint)
-  return Core.calculateDistanceFromCharacterToPosition(waypoint) > 5 or
-    not Movement.canReachWaypointWithCurrentMovementDirection(waypoint)
+  return Movement.isMissingWaypointWithCurrentMovementDirection(waypoint)
 end
 
 function Movement.thereAreZeroCollisionsBetweenTheCharacterAndThePoint(point)
@@ -1182,8 +1183,38 @@ function Movement.thereAreZeroCollisionsBetweenTheCharacterAndThePoint(point)
   return Movement.thereAreZeroCollisions(characterPosition, point)
 end
 
+function Movement.isCharacterDragonriding()
+	return IsFlying() and Movement.isCharacterMountedOnDragonridingMount()
+end
+
+function Movement.isCharacterMountedOnDragonridingMount()
+	return Movement.isDragonridingMount(Movement.receiveActiveMountID())
+end
+
+function Movement.isCharacterMovingOnGroundSwimmingOrFlying()
+	return Movement.isCharacterMovingOnGround() or IsSwimming() or IsFlying()
+end
+
+function Movement.isCharacterMovingOnGround()
+	return not IsFlying() and not IsSwimming()
+end
+
+function Movement.isFlying()
+	return IsFlying() and Movement.isCharacterMountedOnFlyingMount()
+end
+
+function Movement.isCharacterMountedOnFlyingMount()
+	return Movement.isFlyingMount(Movement.receiveActiveMountID())
+end
+
 function _.faceWaypoint(action, waypoint, isLastWaypoint)
-  if Core.calculateDistanceFromCharacterToPosition(waypoint) <= 8 then
+  local maximumDistance
+  if Movement.isCharacterDragonriding() then
+    maximumDistance = MAXIMUM_DISTANCE_FOR_STOPPING_WHEN_FACING_WHILE_DRAGONRIDING
+  elseif Movement.isCharacterMovingOnGroundSwimmingOrFlying() then
+    maximumDistance = MAXIMUM_DISTANCE_FOR_STOPPING_WHEN_FACING_WHILE_MOVING_ON_GROUND_SWIMMING_OR_FLYING
+  end
+  if Core.calculateDistanceFromCharacterToPosition(waypoint) <= maximumDistance then
     Core.stopMovingForward()
   end
   local facingPoint
@@ -1205,6 +1236,16 @@ function _.faceWaypoint(action, waypoint, isLastWaypoint)
   Movement.facePoint(facingPoint, function()
     return action.isDone() or action.shouldCancel()
   end)
+end
+
+function Movement.retrieveMaximumDistanceForStoppingWhenFacing()
+	local maximumDistance
+  if Movement.isCharacterDragonriding() then
+    maximumDistance = MAXIMUM_DISTANCE_FOR_STOPPING_WHEN_FACING_WHILE_DRAGONRIDING
+  elseif Movement.isCharacterMovingOnGroundSwimmingOrFlying() then
+    maximumDistance = MAXIMUM_DISTANCE_FOR_STOPPING_WHEN_FACING_WHILE_MOVING_ON_GROUND_SWIMMING_OR_FLYING
+  end
+  return maximumDistance
 end
 
 function _.stopForwardMovement()
@@ -1430,9 +1471,13 @@ function Movement.isDismounted()
 end
 
 function Movement.isMountedOn(mountID)
-  local activeMountID = select(12, Movement.receiveActiveMount())
-  return activeMountID == mountID
+  return Movement.receiveActiveMountID() == mountID
 end
+
+  function Movement.receiveActiveMountID()
+  local activeMountID = select(12, Movement.receiveActiveMount())
+  	return activeMountID
+  end
 
 function Movement.waitForDismounted()
   return Coroutine.waitFor(Movement.isDismounted)
@@ -1866,63 +1911,66 @@ end
 
 function Movement.moveTo(to, options)
   options = options or {}
+  local stop = options.stop
 
-  local from = Core.retrieveCharacterPosition()
+  if not (stop and stop()) then
+    local from = Core.retrieveCharacterPosition()
 
-  if Movement.canCharacterRideDragon() or Movement.canCharacterFly() then
-    Movement.stopPathFindingAndMoving()
-
-    local path = {
-      from,
-      to
-    }
-    Movement.path = path
-    AddOn.savedVariables.perCharacter.MovementPath = Movement.path
-
-    local resolvable
-    resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
-      stop = function()
-        return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance) or Core.isCharacterDead()
-      end,
-      continueMoving = options.continueMoving
-    })
-    Resolvable.await(resolvable)
-  else
-    do
-      local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(from)
-      if closestPositionOnMesh then
-        from = closestPositionOnMesh
-      end
-    end
-
-    do
-      local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(to)
-      if closestPositionOnMesh then
-        to = closestPositionOnMesh
-      end
-    end
-
-    if isDifferentPathFindingRequestThanRun(to) then
+    if Movement.canCharacterRideDragon() or Movement.canCharacterFly() then
       Movement.stopPathFindingAndMoving()
-      run = {
-        from = from,
-        to = to
+
+      local path = {
+        from,
+        to
       }
-      pathFinder = Movement.createPathFinder()
-      local path = pathFinder.start(from, to, options.toleranceDistance)
-      pathFinder = nil
       Movement.path = path
       AddOn.savedVariables.perCharacter.MovementPath = Movement.path
-      if path then
-        local resolvable
-        resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
-          stop = function()
-            return (options.stop and options.stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
-          end,
-          continueMoving = options.continueMoving
-        })
-        Resolvable.await(resolvable)
-        cleanUpPathFindingAndMoving()
+
+      local resolvable
+      resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
+        stop = function()
+          return (stop and stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance) or Core.isCharacterDead()
+        end,
+        continueMoving = options.continueMoving
+      })
+      Resolvable.await(resolvable)
+    else
+      do
+        local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(from)
+        if closestPositionOnMesh then
+          from = closestPositionOnMesh
+        end
+      end
+
+      do
+        local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(to)
+        if closestPositionOnMesh then
+          to = closestPositionOnMesh
+        end
+      end
+
+      if isDifferentPathFindingRequestThanRun(to) then
+        Movement.stopPathFindingAndMoving()
+        run = {
+          from = from,
+          to = to
+        }
+        pathFinder = Movement.createPathFinder()
+        local path = pathFinder.start(from, to, options.toleranceDistance)
+        pathFinder = nil
+        Movement.path = path
+        AddOn.savedVariables.perCharacter.MovementPath = Movement.path
+        if path then
+          local resolvable
+          resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
+            stop = function()
+              return (stop and stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
+            end,
+            continueMoving = options.continueMoving
+          })
+          Resolvable.await(resolvable)
+          cleanUpPathFindingAndMoving()
+        end
       end
     end
   end
@@ -2012,7 +2060,7 @@ function Movement.face(retrieveTargetAngles, stop)
   end
 
   local characterPitch = HWT.UnitPitch('player')
-  if pitch ~= characterPitch and Core.isCharacterFlying() or Core.isCharacterSwimming() then
+  if pitch ~= characterPitch and (Core.isCharacterFlying() or Core.isCharacterSwimming()) then
     HWT.SetPitch(pitch)
     isFacing = true
   end

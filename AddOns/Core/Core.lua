@@ -1063,7 +1063,7 @@ function Core.retrieveCharacterCombatRange()
 end
 
 function Core.isCharacterFlying()
-  return Core.areFlagsSet(HWT.UnitMovementFlags('player'), HWT.GetUnitMovementFlagsTable().Flying)
+  return IsFlying()
 end
 
 function Core.isCharacterSwimming()

@@ -1,6 +1,6 @@
 ## Title: Bot
 ## Interface: 11403
-## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting
+## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Array
 ## OptionalDeps: Questing
 
 Warrior.lua

@@ -6,6 +6,7 @@
     <mapping directory="$PROJECT_DIR$/AddOns/Array" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Bags" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/BinaryHeap" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/AddOns/BinaryHeap/libs/BinaryHeap" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Boolean" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/Caching" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/AddOns/CommunityFeastHandler" vcs="Git" />

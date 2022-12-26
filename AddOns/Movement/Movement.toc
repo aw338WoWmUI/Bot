@@ -5,6 +5,7 @@
 PointToValueMap.lua
 PointFlyweight.lua
 PointWithPathToFlyweight.lua
+WorldPositionSet.lua
 Moving.lua
 Movement.lua
 Dragonriding.lua

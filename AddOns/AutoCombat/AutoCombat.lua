@@ -2,22 +2,25 @@ AutoCombat = AutoCombat or {}
 local addOnName, AddOn = ...
 local _ = {}
 
+local isEnabled = false
 local isRunning = false
 
 function AutoCombat.toggle()
-  if not isRunning then
-    AutoCombat.enable()
-  else
+  if isEnabled then
     AutoCombat.disable()
+  else
+    AutoCombat.enable()
   end
 end
 
 function AutoCombat.enable()
   Coroutine.runAsCoroutine(function()
-    if not isRunning then
+    if not isEnabled then
       print('Starting auto combat.')
+      isEnabled = true
+      _.waitForHasStopped()
       isRunning = true
-      while isRunning do
+      while isEnabled do
         if Core.isCharacterInCombat() and not Core.isAlive('target') then
           _.targetMob()
         end
@@ -37,31 +40,37 @@ function AutoCombat.enable()
 
         Coroutine.yieldAndResume()
       end
+      isRunning = false
     end
   end)
 end
 
 function AutoCombat.disable()
   Coroutine.runAsCoroutine(function()
-    if isRunning then
+    if isEnabled then
       print('Stopping auto combat.')
-      isRunning = false
+      isEnabled = false
+      _.waitForHasStopped()
     end
   end)
 end
 
 function AutoCombat.castManually(spellName)
   Coroutine.runAsCoroutine(function()
-    local wasAutoCombatEnabledBeforeCasting = isRunning
-    if isRunning then
-      AutoCombat.disable()
-    end
-    CastSpellByName(spellName)
-    if wasAutoCombatEnabledBeforeCasting then
-      Coroutine.waitFor(function ()
-        return not HWT.IsAoEPending()
-      end)
-      AutoCombat.enable()
+    if SpellCasting.retrieveRemainingSpellCooldown(spellName) <= 2 then
+      local wasAutoCombatEnabledBeforeCasting = isEnabled
+      if isEnabled then
+        AutoCombat.disable()
+      end
+      _.waitForHasStopped()
+      SpellCasting.waitForSpellToBeReadyForCast(spellName)
+      CastSpellByName(spellName)
+      if wasAutoCombatEnabledBeforeCasting then
+        Coroutine.waitFor(function()
+          return not HWT.IsAoEPending()
+        end)
+        AutoCombat.enable()
+      end
     end
   end)
 end
@@ -74,4 +83,10 @@ function _.targetMob()
   if mob then
     Core.targetUnit(mob)
   end
+end
+
+function _.waitForHasStopped()
+  Coroutine.waitFor(function()
+    return not isRunning
+  end)
 end

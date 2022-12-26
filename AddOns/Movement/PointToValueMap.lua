@@ -10,3 +10,9 @@ Movement.PointToValueMap = {}
 function Movement.PointToValueMap:new()
   return ObjectToValueLookup.ObjectToValueLookup:new(convertPointToArray)
 end
+
+function Movement.createPointToValueMapFromSavedVariable(savedVariable)
+  setmetatable(savedVariable, { __index = ObjectToValueLookup.ObjectToValueLookup})
+  savedVariable._convertObjectToArray = convertPointToArray
+  return savedVariable
+end
