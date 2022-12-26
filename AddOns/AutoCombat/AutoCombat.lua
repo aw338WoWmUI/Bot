@@ -4,8 +4,15 @@ local _ = {}
 
 local isRunning = false
 
--- FIXME: Auto-combat for Evoker
 function AutoCombat.toggle()
+  if not isRunning then
+    AutoCombat.enable()
+  else
+    AutoCombat.disable()
+  end
+end
+
+function AutoCombat.enable()
   Coroutine.runAsCoroutine(function()
     if not isRunning then
       print('Starting auto combat.')
@@ -18,7 +25,7 @@ function AutoCombat.toggle()
           Core.startAttacking()
           Bot.castCombatRotationSpell()
         else
-          local lootableMob = Array.find(Core.retrieveObjectPointers(), function (pointer)
+          local lootableMob = Array.find(Core.retrieveObjectPointers(), function(pointer)
             return Core.isLootable(pointer) and Core.isInInteractionRange(pointer)
           end)
           if lootableMob then
@@ -30,9 +37,31 @@ function AutoCombat.toggle()
 
         Coroutine.yieldAndResume()
       end
-    else
+    end
+  end)
+end
+
+function AutoCombat.disable()
+  Coroutine.runAsCoroutine(function()
+    if isRunning then
       print('Stopping auto combat.')
       isRunning = false
+    end
+  end)
+end
+
+function AutoCombat.castManually(spellName)
+  Coroutine.runAsCoroutine(function()
+    local wasAutoCombatEnabledBeforeCasting = isRunning
+    if isRunning then
+      AutoCombat.disable()
+    end
+    CastSpellByName(spellName)
+    if wasAutoCombatEnabledBeforeCasting then
+      Coroutine.waitFor(function ()
+        return not HWT.IsAoEPending()
+      end)
+      AutoCombat.enable()
     end
   end)
 end
