@@ -1,0 +1,24 @@
+{
+  "Lua.runtime.version": "Lua 5.1",
+  "Lua.workspace.ignoreSubmodules": false,
+  "Lua.workspace.ignoreDir": [
+    ".vscode",
+    ".history",
+    "AddOns/Questing/data",
+    "data_copier/*.lua"
+  ],
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.workspace.library": [
+    "E:/IntelliJ-IDEA-Lua-IDE-WoW-API/APIs",
+    "E:/IntelliJ-IDEA-Lua-IDE-WoW-API/Widget APIs",
+    "E:/IntelliJ-IDEA-Lua-IDE-WoW-API/GlobalFunctions",
+    "C:/documentation/documentation_hwt_retail.lua"
+  ],
+  "Lua.diagnostics.globals": [
+    "GMR"
+  ],
+  "Lua.diagnostics.disable": [
+    "need-check-nil"
+  ],
+  "Lua.diagnostics.enable": false
+}

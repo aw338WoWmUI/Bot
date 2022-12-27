@@ -35,62 +35,64 @@ function ActionSequenceDoer.createActionSequenceDoer2(actions, options)
   local actionSequenceDoer
   actionSequenceDoer = {
     run = function()
-      return Stoppable.Stoppable:new(function(stoppable, resolve)
-        Coroutine.runAsCoroutine(function()
-          if not isRunning then
-            isRunning = true
+      local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
-            local yielder = Yielder.createYielder()
+      Coroutine.runAsCoroutine(function()
+        if not isRunning then
+          isRunning = true
 
-            while not _hasStopped do
-              while index <= #actions do
-                local action = actions[index]
-                if action:isDone(actionSequenceDoer) then
-                  isActionRunning = false
-                  if action.whenIsDone then
-                    action:whenIsDone(actionSequenceDoer)
-                  end
-                  index = index + 1
-                else
-                  if isActionRunning and action.shouldCancel and action:shouldCancel(actionSequenceDoer) then
-                    if action.onCancel then
-                      action:onCancel(actionSequenceDoer)
-                      actionSequenceDoer.stop()
-                    end
-                    if options.onStop then
-                      options.onStop(actionSequenceDoer)
-                    end
-                    resolve(false)
-                    return
-                  else
-                    break
-                  end
+          local yielder = Yielder.createYielder()
+
+          while not _hasStopped do
+            while index <= #actions do
+              local action = actions[index]
+              if action:isDone(actionSequenceDoer) then
+                isActionRunning = false
+                if action.whenIsDone then
+                  action:whenIsDone(actionSequenceDoer)
                 end
-              end
-
-              if index <= #actions then
-                local action = actions[index]
-                isActionRunning = true
-                -- print('run action', index)
-                action:run(actionSequenceDoer)
-
-                yielder.yield()
+                index = index + 1
               else
-                actionSequenceDoer.stop()
-                if options.onStop then
-                  options.onStop(actionSequenceDoer)
+                if isActionRunning and action.shouldCancel and action:shouldCancel(actionSequenceDoer) then
+                  if action.onCancel then
+                    action:onCancel(actionSequenceDoer)
+                    actionSequenceDoer.stop()
+                  end
+                  if options.onStop then
+                    options.onStop(actionSequenceDoer)
+                  end
+                  stoppableInternal:resolve(false)
+                  return
+                else
+                  break
                 end
-                resolve(true)
-                return
               end
             end
 
-            if options.onStop then
-              options.onStop(actionSequenceDoer)
+            if index <= #actions then
+              local action = actions[index]
+              isActionRunning = true
+              -- print('run action', index)
+              action:run(actionSequenceDoer)
+
+              yielder.yield()
+            else
+              actionSequenceDoer.stop()
+              if options.onStop then
+                options.onStop(actionSequenceDoer)
+              end
+              stoppableInternal:resolve(true)
+              return
             end
           end
-        end)
+
+          if options.onStop then
+            options.onStop(actionSequenceDoer)
+          end
+        end
       end)
+
+      return stoppable
     end,
 
     stop = function()

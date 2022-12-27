@@ -64,10 +64,10 @@ function Bot.DragonbaneKeep.toggleFarming()
           if _.isObjectToInteractWith(closestObject) then
             -- FIXME: Seems to try to loot a second time.
             print(UnitName(closestObject), Core.retrieveObjectDataDynamicFlags(closestObject))
-            Resolvable.await(Core.moveToAndInteractWithObject(closestObject))
+            await(Core.moveToAndInteractWithObject(closestObject))
           else
             -- is mob
-            Resolvable.await(Core.doMob(closestObject, {
+            await(Core.doMob(closestObject, {
               additionalStopConditions = function ()
                 return not isRunning
               end

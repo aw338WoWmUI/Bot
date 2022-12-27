@@ -298,11 +298,30 @@ function Core.retrieveClosestPositionOnMesh(worldPosition, includeWater)
   end
 end
 
-function Core.retrieveWorldPositionFromMapPosition(mapPosition)
+function Core.retrieveWorldPositionFromMapPosition(mapPosition, retrieveZCoordinate)
+  retrieveZCoordinate = retrieveZCoordinate or Core.retrieveZCoordinateForWorldPositionDerivedFromMapPosition
+
   if mapPosition.x > 1 or mapPosition.y > 1 then
     print('mapPosition.x > 1 or mapPosition.y > 1', debugstack())
   end
   local continentID, worldPosition = C_Map.GetWorldPosFromMapPos(mapPosition.mapID, mapPosition)
+
+  return Core.createWorldPosition(
+    continentID,
+    worldPosition.x,
+    worldPosition.y,
+    retrieveZCoordinate(
+      Core.createWorldPosition(
+        continentID,
+        worldPosition.x,
+        worldPosition.y,
+        nil
+      )
+    )
+  )
+end
+
+function Core.retrieveZCoordinateForWorldPositionDerivedFromMapPosition(worldPosition)
   local z
   local playerPosition = Core.retrieveCharacterPosition()
   if Math.euclideanDistance2D(playerPosition, worldPosition) <= MAXIMUM_RANGE_FOR_TRACE_LINE_CHECKS then
@@ -316,10 +335,27 @@ function Core.retrieveWorldPositionFromMapPosition(mapPosition)
   end
 
   if not z then
-    z = Core.retrieveZCoordinate(Core.createWorldPosition(continentID, worldPosition.x, worldPosition.y, nil))
+    z = Core.retrieveZCoordinate(worldPosition)
   end
 
-  return Core.createWorldPosition(continentID, worldPosition.x, worldPosition.y, z)
+  return z
+end
+
+function Core.retrieveHighestZCoordinate(worldPosition)
+  local deltaZ = MAX_Z - MIN_Z
+  local polygon = Core.retrieveClosestMeshPolygon(
+    Core.createWorldPosition(worldPosition.continentID, worldPosition.x, worldPosition.y, MAX_Z),
+    0,
+    0,
+    deltaZ
+  )
+  local z
+  if polygon then
+    z = Core.retrieveZCoordinateOnPolygon(worldPosition, polygon)
+  else
+    z = nil
+  end
+  return z
 end
 
 local function lessThan(a, b)
@@ -649,7 +685,11 @@ end
 function Core.calculateDistanceFromCharacterToObject(objectIdentifier)
   local characterPosition = Core.retrieveCharacterPosition()
   local objectPosition = Core.retrieveObjectPosition(objectIdentifier)
-  return Core.calculateDistanceBetweenPositions(characterPosition, objectPosition)
+  if objectPosition then
+    return Core.calculateDistanceBetweenPositions(characterPosition, objectPosition)
+  else
+    return nil
+  end
 end
 
 function Core.calculateMovementPathDistanceFromCharacterToObject(objectIdentifier)
@@ -748,6 +788,7 @@ function Core.isCharacterMoving()
 end
 
 function Core.startMovingForward()
+  print('Core.startMovingForward()')
   MoveForwardStart()
   HWT.ResetAfk()
 end
@@ -1140,21 +1181,21 @@ function Core.traceLineWater(from, to)
 end
 
 function Core._moveTo(to, options)
-  return Stoppable.Stoppable:new(function(stoppable, resolve)
-    Coroutine.runAsCoroutine(function()
-      options = options or {}
+  local stoppable, stoppableInternal = Stoppable.Stoppable:new()
+  Coroutine.runAsCoroutine(function()
+    options = options or {}
 
-      Movement.moveTo(to, {
-        stop = function()
-          return stoppable:hasStopped() or (options.stop and options.stop())
-        end,
-        toleranceDistance = options.toleranceDistance,
-        continueMoving = options.continueMoving
-      })
+    Movement.moveTo(to, {
+      stop = function()
+        return stoppable:hasStopped() or (options.stop and options.stop())
+      end,
+      toleranceDistance = options.toleranceDistance,
+      continueMoving = options.continueMoving
+    })
 
-      resolve()
-    end)
+    stoppableInternal.resolve()
   end)
+  return stoppable
 end
 
 function Core.moveTo(point, options)
@@ -1173,132 +1214,140 @@ function Core.moveTo(point, options)
 end
 
 function Core.moveToUntil(point, options)
-  return Stoppable.Stoppable:new(function(stoppable, resolve)
-    Coroutine.runAsCoroutine(function()
-      options = options or {}
+  local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
-      local stopCondition = options.stopCondition
+  Coroutine.runAsCoroutine(function()
+    options = options or {}
 
-      if Movement.isPositionInTheAir(point) and not Movement.canCharacterFly() then
-        point = Movement.createPoint(
-          point.x,
-          point.y,
-          Core.retrieveZCoordinate(point) or point.z
-        )
-      end
+    local stopCondition = options.stopCondition
 
-      while stoppable:isRunning() and not stopCondition() do
-        local stoppable2 = Core._moveTo(point, {
-          toleranceDistance = options.toleranceDistance,
-          stop = stopCondition
-        })
-        stoppable:stopAlso(stoppable2)
-        Resolvable.await(stoppable2)
-        Coroutine.yieldAndResume()
-      end
+    if Movement.isPositionInTheAir(point) and not Movement.canCharacterFly() then
+      point = Movement.createPoint(
+        point.x,
+        point.y,
+        Core.retrieveZCoordinate(point) or point.z
+      )
+    end
 
-      resolve()
-    end)
+    while stoppable:isRunning() and not stopCondition() do
+      local stoppable2 = Core._moveTo(point, {
+        toleranceDistance = options.toleranceDistance,
+        stop = stopCondition
+      })
+      stoppable:stopAlso(stoppable2)
+      await(stoppable2)
+      Coroutine.yieldAndResume()
+    end
+
+    stoppableInternal.resolve()
   end)
+
+  return stoppable
 end
 
 function Core.moveToObject(pointer, options)
-  return Stoppable.Stoppable:new(function(stoppable, resolve)
-    Coroutine.runAsCoroutine(function()
-      options = options or {}
+  local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
-      local distance = options.distance or Core.INTERACT_DISTANCE
-      local stop = options.stop or Function.alwaysFalse
+  Coroutine.runAsCoroutine(function()
+    options = options or {}
 
-      local function retrievePosition()
-        local position = Core.retrieveObjectPosition(pointer)
+    local distance = options.distance or Core.INTERACT_DISTANCE
+    local stop = options.stop or Function.alwaysFalse
 
-        if position then
-          if Movement.isPositionInTheAir(position) and not Movement.canCharacterFly() then
-            position = Core.createWorldPosition(
-              position.continentID,
-              position.x,
-              position.y,
-              Movement.retrieveGroundZ(position) or position.z
-            )
-          end
+    local function retrievePosition()
+      local position = Core.retrieveObjectPosition(pointer)
 
-          if Movement.canOnlyBeMovedOnGround() then
-            position = Core.retrieveClosestPositionWithPathTo(position, distance)
-          end
+      if position then
+        if Movement.isPositionInTheAir(position) and not Movement.canCharacterFly() then
+          position = Core.createWorldPosition(
+            position.continentID,
+            position.x,
+            position.y,
+            Movement.retrieveGroundZ(position) or position.z
+          )
         end
 
-        return position
+        if Movement.canOnlyBeMovedOnGround() then
+          position = Core.retrieveClosestPositionWithPathTo(position, distance)
+        end
       end
 
-      local function isJobDone(position)
-        return (
-          not position or
-            not HWT.ObjectExists(pointer) or
-            (stop and stop()) or
-            Core.isCharacterCloseToPosition(position, distance)
-        )
-      end
+      return position
+    end
 
-      local lastMoveToPosition
+    local function isJobDone(position)
+      return (
+        not position or
+          not HWT.ObjectExists(pointer) or
+          (stop and stop()) or
+          Core.isCharacterCloseToPosition(position, distance)
+      )
+    end
 
-      local function isObjectUnreachableOrHasMoveToPositionChanged()
-        local moveToPosition = retrievePosition()
-        return not moveToPosition or moveToPosition:isDifferent(lastMoveToPosition)
-      end
+    local lastMoveToPosition
 
-      local position = retrievePosition()
-      while stoppable:isRunning() and not isJobDone(position) do
-        lastMoveToPosition = position
-        Resolvable.await(Core._moveTo(position, {
-          toleranceDistance = distance,
-          stop = function()
-            return isJobDone(position) or isObjectUnreachableOrHasMoveToPositionChanged()
-          end,
-          continueMoving = true
-        }))
-        position = retrievePosition()
-      end
+    local function isObjectUnreachableOrHasMoveToPositionChanged()
+      local moveToPosition = retrievePosition()
+      return not moveToPosition or moveToPosition:isDifferent(lastMoveToPosition)
+    end
 
-      Core.stopMoving()
+    local position = retrievePosition()
+    while stoppable:isRunning() and not isJobDone(position) do
+      lastMoveToPosition = position
+      await(Core._moveTo(position, {
+        toleranceDistance = distance,
+        stop = function()
+          return isJobDone(position) or isObjectUnreachableOrHasMoveToPositionChanged()
+        end,
+        continueMoving = true
+      }))
+      position = retrievePosition()
+    end
 
-      resolve()
-    end)
+    Core.stopMoving()
+
+    stoppableInternal.resolve()
   end)
+
+  return stoppable
 end
 
 function Core.moveToAndInteractWithObject(pointer, distance, delay)
-  return Stoppable.Stoppable:new(function(stoppable, resolve)
-    Coroutine.runAsCoroutine(function()
-      distance = distance or Core.INTERACT_DISTANCE
+  local pausable, pausableInternal = Pausable.Pausable:new()
+  Coroutine.runAsCoroutine(function()
+    distance = distance or Core.INTERACT_DISTANCE
 
-      local position = Core.retrieveObjectPosition(pointer)
-      if not Core.isCharacterCloseToPosition(position, distance) then
-        Resolvable.await(Core.moveToObject(pointer, {
-          distance = distance
-        }))
-      end
+    local position = Core.retrieveObjectPosition(pointer)
+    if not Core.isCharacterCloseToPosition(position, distance) then
+      await(Core.moveToObject(pointer, {
+        distance = distance
+      }))
+    end
 
-      if stoppable:isRunning() and HWT.ObjectExists(pointer) and Core.isCharacterCloseToPosition(position,
-        distance) then
-        Core.interactWithObject(pointer)
-        Coroutine.waitForDuration(1)
-        Coroutine.waitFor(function()
-          return not Core.isCharacterCasting()
-        end)
-        if GetNumLootItems() >= 1 then
-          Events.waitForEvent('LOOT_CLOSED')
-        end
-        resolve(true)
-      else
-        resolve(false)
+    if pausable:isRunning() and HWT.ObjectExists(pointer) and Core.isCharacterCloseToPosition(position,
+      distance) then
+      pausableInternal:pauseIfHasBeenRequestedToPause()
+      Core.interactWithObject(pointer)
+      pausableInternal:pauseIfHasBeenRequestedToPause()
+      Coroutine.waitForDuration(1)
+      pausableInternal:pauseIfHasBeenRequestedToPause()
+      Coroutine.waitFor(function()
+        return not Core.isCharacterCasting()
+      end)
+      pausableInternal:pauseIfHasBeenRequestedToPause()
+      if GetNumLootItems() >= 1 then
+        Events.waitForEvent('LOOT_CLOSED')
       end
-    end)
+      pausableInternal:resolve(true)
+    else
+      pausableInternal:resolve(false)
+    end
   end)
+  return pausable
 end
 
 function Core.lootObject(pointer, distance)
-  if Resolvable.await(Core.moveToAndInteractWithObject(pointer, distance)) then
+  if await(Core.moveToAndInteractWithObject(pointer, distance)) then
     -- after all items have been looted that can be looted
     if _.thereAreMoreItemsThatCanBeLootedThanThereIsSpaceInBags() then
       _.destroyItemsForLootThatSeemsToMakeMoreSenseToPutInBagInstead()
@@ -1336,82 +1385,84 @@ function Core.tagMobs(mobs)
 end
 
 function Core.doMob(pointer, options)
-  return Stoppable.Stoppable:new(function(stoppable, resolve)
-    Coroutine.runAsCoroutine(function()
-      -- FIXME: Mobs which are in the air.
-      options = options or {}
+  local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
-      local distance = (HWT.UnitBoundingRadius(pointer) or 0) + Core.retrieveCharacterCombatRange()
-      local objectID = HWT.ObjectId(pointer)
+  Coroutine.runAsCoroutine(function()
+    -- FIXME: Mobs which are in the air.
+    options = options or {}
 
-      local function isJobDone()
-        return not HWT.ObjectExists(pointer) or Core.isDead(pointer) or Core.isCharacterDead() or options.additionalStopConditions and options.additionalStopConditions()
-      end
+    local distance = (HWT.UnitBoundingRadius(pointer) or 0) + Core.retrieveCharacterCombatRange()
+    local objectID = HWT.ObjectId(pointer)
 
-      local position = Core.retrieveObjectPosition(pointer)
-      if not Core.isCharacterCloseToPosition(position, distance) then
-        local moveToStoppable = Core.moveToObject(pointer, {
-          distance = distance
-        })
-        local ticker
-        ticker = C_Timer.NewTicker(1, function ()
-          Coroutine.runAsCoroutine(function ()
-            if isJobDone() then
-              ticker:Cancel()
-              moveToStoppable:stop()
-            end
-          end)
-        end)
-        Resolvable.await(moveToStoppable)
-        ticker:Cancel()
-      end
+    local function isJobDone()
+      return not HWT.ObjectExists(pointer) or Core.isDead(pointer) or Core.isCharacterDead() or options.additionalStopConditions and options.additionalStopConditions()
+    end
 
-      if not isJobDone() then
-        if IsMounted() then
-          Movement.dismount()
-        end
-
-        local TARGET_IS_REQUIRED_TO_BE_IN_FRONT_OF_CHARACTER = 56
-        local isFacing = false
-        local listener = Events.listenForEvent('UI_ERROR_MESSAGE', function (event, code)
-          if code == TARGET_IS_REQUIRED_TO_BE_IN_FRONT_OF_CHARACTER then
-            if not isFacing then
-              isFacing = true
-              Coroutine.runAsCoroutine(function ()
-                Movement.faceObject('target', isJobDone)
-                isFacing = false
-              end)
-            end
+    local position = Core.retrieveObjectPosition(pointer)
+    if not Core.isCharacterCloseToPosition(position, distance) then
+      local moveToStoppable = Core.moveToObject(pointer, {
+        distance = distance
+      })
+      local ticker
+      ticker = C_Timer.NewTicker(1, function()
+        Coroutine.runAsCoroutine(function()
+          if isJobDone() then
+            ticker:Cancel()
+            moveToStoppable:stop()
           end
         end)
+      end)
+      await(moveToStoppable)
+      ticker:Cancel()
+    end
 
-        Core.targetUnit(pointer)
-        Core.startAttacking()
-
-        while stoppable:isRunning() and not isJobDone() do
-          local position = Core.retrieveObjectPosition(pointer)
-          if not Core.isCharacterCloseToPosition(position, distance) then
-            Resolvable.await(Core.moveToObject(pointer, {
-              distance = distance
-            }))
-          end
-          Bot.castCombatRotationSpell()
-          Coroutine.yieldAndResume()
-        end
-
-        listener.stopListening()
-
-        local canLoot = Coroutine.waitFor(function ()
-          return Core.isLootable(pointer)
-        end, 1)
-        if canLoot then
-          Core.lootObject(pointer)
-        end
+    if not isJobDone() then
+      if IsMounted() then
+        Movement.dismount()
       end
 
-      resolve()
-    end)
+      local TARGET_IS_REQUIRED_TO_BE_IN_FRONT_OF_CHARACTER = 56
+      local isFacing = false
+      local listener = Events.listenForEvent('UI_ERROR_MESSAGE', function(event, code)
+        if code == TARGET_IS_REQUIRED_TO_BE_IN_FRONT_OF_CHARACTER then
+          if not isFacing then
+            isFacing = true
+            Coroutine.runAsCoroutine(function()
+              Movement.faceObject('target', isJobDone)
+              isFacing = false
+            end)
+          end
+        end
+      end)
+
+      Core.targetUnit(pointer)
+      Core.startAttacking()
+
+      while stoppable:isRunning() and not isJobDone() do
+        local position = Core.retrieveObjectPosition(pointer)
+        if not Core.isCharacterCloseToPosition(position, distance) then
+          await(Core.moveToObject(pointer, {
+            distance = distance
+          }))
+        end
+        Bot.castCombatRotationSpell()
+        Coroutine.yieldAndResume()
+      end
+
+      listener.stopListening()
+
+      local canLoot = Coroutine.waitFor(function()
+        return Core.isLootable(pointer)
+      end, 1)
+      if canLoot then
+        Core.lootObject(pointer)
+      end
+    end
+
+    stoppableInternal.resolve()
   end)
+
+  return stoppable
 end
 
 function Core.handleDeath()
@@ -1450,7 +1501,7 @@ end
 function Core.moveToCorpse()
   local corpsePosition = Core.receiveCorpsePosition()
   -- TODO: Flying to corpse
-  Resolvable.await(Core.moveToUntil(corpsePosition, {
+  await(Core.moveToUntil(corpsePosition, {
     stopCondition = Core.canStaticPopup1Button1BePressed
   }))
   StaticPopup1Button1:Click()
@@ -1465,26 +1516,28 @@ local function selectOption(optionToSelect)
 end
 
 local function gossipWithObject(pointer, chooseOption)
-  return Stoppable.Stoppable:new(function(stoppable, resolve)
-    Coroutine.runAsCoroutine(function()
-      local name = Core.retrieveObjectName(pointer)
-      while stoppable:isRunning() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
-        Resolvable.await(Core.moveToAndInteractWithObject(pointer))
-        if not GossipFrame:IsShown() then
-          Events.waitForEvent('GOSSIP_SHOW', 2)
-        end
-        Coroutine.yieldAndResume()
-      end
-      if stoppable:isRunning() and GossipFrame:IsShown() then
-        local gossipOptionID = chooseOption()
-        if gossipOptionID then
-          selectOption(gossipOptionID)
-        end
-      end
+  local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
-      resolve()
-    end)
+  Coroutine.runAsCoroutine(function()
+    local name = Core.retrieveObjectName(pointer)
+    while stoppable:isRunning() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
+      await(Core.moveToAndInteractWithObject(pointer))
+      if not GossipFrame:IsShown() then
+        Events.waitForEvent('GOSSIP_SHOW', 2)
+      end
+      Coroutine.yieldAndResume()
+    end
+    if stoppable:isRunning() and GossipFrame:IsShown() then
+      local gossipOptionID = chooseOption()
+      if gossipOptionID then
+        selectOption(gossipOptionID)
+      end
+    end
+
+    stoppableInternal.resolve()
   end)
+
+  return stoppable
 end
 
 function Core.gossipWithObject(pointer, gossipOptionID)

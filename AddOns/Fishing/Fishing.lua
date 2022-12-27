@@ -46,6 +46,12 @@ function Fishing.measureDistance()
   end
 end
 
+local TARGET_DISTANCE_TO_ICE_HOLE = 4.9033551216125
+local TARGET_DISTANCE_TO_ICE_CRACK = TARGET_DISTANCE_TO_ICE_HOLE
+local maxBreakingIceInteractDistance = 10.230718612671
+local maxFishingDistance = 8.2202529907227
+local MINIMUM_DISTANCE_FROM_ICE_HOLE = 2.884045124054
+
 function Fishing.toggleFishing()
   if isFishing then
     exitTimer:Cancel()
@@ -70,39 +76,35 @@ function Fishing.toggleFishing()
           end
         end
 
-        local distanceToIceHole = 4.9033551216125
-        local maxBreakingIceInteractDistance = 10.230718612671
-        local maxFishingDistance = 8.2202529907227
-
         local iceHole = nil
         if MODE == 'ICE_FISHING' then
           iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
           if iceHole then
-            if Core.calculateDistanceFromCharacterToObject(iceHole) > maxFishingDistance then
-              local iceHolePosition = Core.retrieveObjectPosition(iceHole)
-              g_iceHoles:setValue(iceHolePosition, true)
-              local position = Core.retrievePositionBetweenPositions(iceHolePosition, Core.retrieveCharacterPosition(), distanceToIceHole)
-              Resolvable.await(Core.moveTo(position, {
-                distance = maxFishingDistance - distanceToIceHole
-              }))
-            end
+            local iceHolePosition = Core.retrieveObjectPosition(iceHole)
+            g_iceHoles:setValue(iceHolePosition, true)
           else
             local iceCrack = Core.findClosestObjectToCharacterWithObjectID(ICE_CRACK_OBJECT_ID)
             if iceCrack then
-              if Core.calculateDistanceFromCharacterToObject(iceCrack) > maxBreakingIceInteractDistance then
-                local position = Core.retrievePositionBetweenPositions(Core.retrieveObjectPosition(iceCrack), Core.retrieveCharacterPosition(), distanceToIceHole)
-                Resolvable.await(Core.moveTo(position, {
-                  distance = maxBreakingIceInteractDistance - distanceToIceHole
-                }))
-              end
+              Fishing.positionForBreakingIce(iceCrack)
+              Coroutine.waitUntil(function()
+                return not IsFlying()
+              end)
               Movement.faceObject(iceCrack, function()
                 return not isFishing
               end)
               Core.interactWithObject(iceCrack)
-              Events.waitForEventCondition('UNIT_SPELLCAST_STOP', function (self, event, unit)
+              print(1)
+              Events.waitForEventCondition('UNIT_SPELLCAST_STOP', function(self, event, unit)
                 return unit == 'player'
               end)
+              print(2)
+              Coroutine.waitForDuration(1)
               iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
+              print('iceHole', iceHole)
+              if iceHole then
+                local iceHolePosition = Core.retrieveObjectPosition(iceHole)
+                g_iceHoles:setValue(iceHolePosition, true)
+              end
             else
               -- local spots = g_iceHoles:retrieveAllValues()
               --_.findSpot(spots)
@@ -113,21 +115,22 @@ function Fishing.toggleFishing()
           end
         end
 
-        if _.hasFishingLure() and not _.isFishingPoleEnchantedWithFishingLure() then
-          _.enchantFishingPoleWithFishingLure()
-        end
-
-        if _.hasCaptainRumseysLager() and _.isCaptainRumseysLagerBuffDurationShorterThanMaximumFishingDuration() then
-          _.buffWithCaptainRumseysLagerBuff()
-        end
-
-        if MODE ~= 'ICE_FISHING' and _.hasScalebellyMackerel() and _.isChumBuffDurationShorterThanMaximumFishingDuration() then
-          _.buffWithChumBuff()
-        end
-
         if MODE == 'ICE_FISHING' and iceHole or MODE ~= 'ICE_FISHING' then
+          if _.hasFishingLure() and not _.isFishingPoleEnchantedWithFishingLure() then
+            _.enchantFishingPoleWithFishingLure()
+          end
+
+          if _.hasCaptainRumseysLager() and _.isCaptainRumseysLagerBuffDurationShorterThanMaximumFishingDuration() then
+            _.buffWithCaptainRumseysLagerBuff()
+          end
+
+          if MODE ~= 'ICE_FISHING' and _.hasScalebellyMackerel() and _.isChumBuffDurationShorterThanMaximumFishingDuration() then
+            _.buffWithChumBuff()
+          end
+
           if MODE == 'ICE_FISHING' then
             if iceHole then
+              Fishing.positionForFishingInIceHole(iceHole)
               Movement.faceObject(iceHole, function()
                 return not isFishing
               end)
@@ -212,7 +215,7 @@ function Fishing.toggleFishing()
                   end
                   Coroutine.waitForDuration(0.5) -- Wait a little bit before checking if lunker is still alive.
                 end
-                Resolvable.await(Core.lootObject(lunker))
+                await(Core.lootObject(lunker))
               end
             end
           end
@@ -227,6 +230,31 @@ function Fishing.toggleFishing()
         Coroutine.yieldAndResume()
       end
     end)
+  end
+end
+
+function Fishing.positionForFishingInIceHole(iceHole)
+  local iceHolePosition = Core.retrieveObjectPosition(iceHole)
+  local position = Core.retrievePositionBetweenPositions(iceHolePosition, Core.retrieveCharacterPosition(),
+    TARGET_DISTANCE_TO_ICE_HOLE)
+  await(Core.moveToUntil(position, {
+    stopCondition = _.createStopCondition(iceHole, MINIMUM_DISTANCE_FROM_ICE_HOLE, maxFishingDistance)
+  }))
+end
+
+function Fishing.positionForBreakingIce(iceCrack)
+  local iceCrackPosition = Core.retrieveObjectPosition(iceCrack)
+  local position = Core.retrievePositionBetweenPositions(iceCrackPosition, Core.retrieveCharacterPosition(),
+    TARGET_DISTANCE_TO_ICE_CRACK)
+  await(Core.moveToUntil(position, {
+    stopCondition = _.createStopCondition(iceCrack, TARGET_DISTANCE_TO_ICE_CRACK, maxBreakingIceInteractDistance)
+  }))
+end
+
+function _.createStopCondition(object, minimumDistance, maximumDistance)
+  return function()
+    local distance = Core.calculateDistanceFromCharacterToObject(object)
+    return not distance or (distance >= minimumDistance and distance <= maximumDistance)
   end
 end
 
@@ -264,7 +292,7 @@ end
 function _.moveToPool(pool)
   local standingSpot = _.findStandingSpotForFishingInPool(pool)
   if standingSpot then
-    Resolvable.await(Core.moveTo(standingSpot))
+    await(Core.moveTo(standingSpot))
   end
 end
 

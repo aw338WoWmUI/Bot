@@ -1,0 +1,5 @@
+## Title: Pausable
+## Interface: 11403
+## Dependencies: Stoppable, Hook, Resolvable, Array
+
+Pausable.lua

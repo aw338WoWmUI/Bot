@@ -1,6 +1,6 @@
 ## Title: Bot
 ## Interface: 100002
-## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Resolvable, Events, Array
+## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Resolvable, Events, Array, Stoppable, Pausable
 ## OptionalDeps: RecommendedSpellCaster, Questing
 ## SavedVariables: rareObjectIDs, mobsWhoDropKeyFraming, mobsWhoDropKeyFragments, objectsWhoContainKeyFragments
 

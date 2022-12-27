@@ -6,7 +6,7 @@ local _ = {}
 local function moveTo(to, options)
   local stoppable = Core._moveTo(to, options)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return Resolvable.await(stoppable)
+  return await(stoppable)
 end
 
 Questing.Coroutine = {}
@@ -14,19 +14,19 @@ Questing.Coroutine = {}
 function Questing.Coroutine.moveTo(point, options)
   local stoppable = Core.moveTo(point, options)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return Resolvable.await(stoppable)
+  return await(stoppable)
 end
 
 function Questing.Coroutine.moveToUntil(point, options)
   local stoppable = Core.moveToUntil(point, options)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return Resolvable.await(stoppable)
+  return await(stoppable)
 end
 
 function Questing.Coroutine.moveToObject(pointer, options)
   local stoppable = Core.moveToObject(pointer, options)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return Resolvable.await(stoppable)
+  return await(stoppable)
 end
 
 function Questing.Coroutine.interactWithAt(point, objectID, distance, delay)
@@ -76,7 +76,7 @@ end
 Questing.Coroutine.moveToAndInteractWithObject = function(pointer, distance, delay)
   local stoppable = Core.moveToAndInteractWithObject(pointer, distance, delay)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return Resolvable.await(stoppable)
+  return await(stoppable)
 end
 
 function Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
@@ -195,7 +195,7 @@ end
 function Questing.Coroutine.gossipWithObject(pointer, gossipOptionID)
   local stoppable = Core.gossipWithObject(pointer, gossipOptionID)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return Resolvable.await(stoppable)
+  return await(stoppable)
 end
 
 local function gossipWithObjectWithObjectID(objectID, chooseOption)
@@ -273,5 +273,5 @@ end
 function Questing.Coroutine.doMob(pointer, options)
   local stoppable = Core.doMob(pointer, options)
   Questing.Coroutine.stopWhenQuestingStopsRunning(stoppable)
-  return Resolvable.await(stoppable)
+  return await(stoppable)
 end

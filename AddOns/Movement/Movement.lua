@@ -1073,6 +1073,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     Movement.Dragonriding.faceWaypoint(waypoint, action)
 
     if Movement.Dragonriding.areConditionsMetForFlyingHigher(waypoint) then
+      print('Movement.Dragonriding.areConditionsMetForFlyingHigher', 'ja')
       Movement.Dragonriding.flyHigher()
     end
 
@@ -1933,7 +1934,7 @@ function Movement.moveTo(to, options)
         end,
         continueMoving = options.continueMoving
       })
-      Resolvable.await(resolvable)
+      await(resolvable)
     else
       do
         local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(from)
@@ -1968,7 +1969,7 @@ function Movement.moveTo(to, options)
             end,
             continueMoving = options.continueMoving
           })
-          Resolvable.await(resolvable)
+          await(resolvable)
           cleanUpPathFindingAndMoving()
         end
       end

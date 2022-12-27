@@ -25,7 +25,7 @@ function _.moveEquipmentWithALowItemLevelFromTheBankIntoTheCharacterBags()
       627.76910400391,
       99.667327880859
     )
-    Resolvable.await(Core.moveTo(interactWithBankNPCPosition))
+    await(Core.moveTo(interactWithBankNPCPosition))
     local bankNPCObjectID = 43819
     local bankNPC = Core.findClosestObjectToCharacterWithObjectID(bankNPCObjectID)
     if bankNPC then
@@ -62,7 +62,7 @@ function _.sellEquipmentWithALowItemLevelFromTheCharacterBagsToAVendor()
   local vendorObjectID = 6740
   local vendor = Core.findClosestObjectToCharacterWithObjectID(vendorObjectID)
   if vendor and Core.isAlive(vendor) then
-    Resolvable.await(Core.gossipWithObject(vendor, 28159))
+    await(Core.gossipWithObject(vendor, 28159))
     Events.waitForEvent('MERCHANT_SHOW')
 
     local containerIndexes = {

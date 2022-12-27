@@ -8,6 +8,7 @@
       <excludeFolder url="file://$MODULE_DIR$/data_copier/quest_items" />
       <excludeFolder url="file://$MODULE_DIR$/data_copier/npcs_" />
       <excludeFolder url="file://$MODULE_DIR$/data_copier/quests_" />
+      <excludeFolder url="file://$MODULE_DIR$/.history" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
