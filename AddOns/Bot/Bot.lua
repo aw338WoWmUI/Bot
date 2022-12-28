@@ -140,6 +140,46 @@ local coordinates = {
 
 local positions = nil
 
+function Bot.findCaches()
+  positions = Array
+    .map(coordinates, function(coordinates)
+    return Core.retrieveWorldPositionFromMapPosition(
+      { mapID = 2022, x = coordinates.x / 100, y = coordinates.y / 100 },
+      Core.retrieveHighestZCoordinate
+    )
+  end)
+    :filter(function(position)
+    return position.z ~= nil
+  end)
+
+  Draw.Sync(function()
+    Draw.SetColorRaw(0, 0, 1, 1)
+    Array.forEach(positions, function(position)
+      Draw.Circle(position.x, position.y, position.z, 10)
+    end)
+
+    local characterPosition = Core.retrieveCharacterPosition()
+    Draw.SetColorRaw(0, 1, 0, 1)
+    Array.forEach(caches, function(cache)
+      local position = Core.retrieveObjectPosition(cache)
+      if position then
+        Draw.Circle(position.x, position.y, position.z, 1)
+        Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+      end
+    end)
+  end)
+
+  C_Timer.NewTicker(1, function()
+    caches = Array.filter(Core.retrieveObjectPointers(), function(pointer)
+      return HWT.ObjectId(pointer) == 376580 and Core.retrieveObjectDataDynamicFlags(pointer) == -65536
+      -- open: -65520
+    end)
+    if #caches >= 1 then
+      print('Found cache(s).')
+    end
+  end)
+end
+
 function Bot.lootCaches()
   positions = Array
     .map(coordinates, function(coordinates)
