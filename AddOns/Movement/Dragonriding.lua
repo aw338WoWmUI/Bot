@@ -1,9 +1,14 @@
 Movement = Movement or {}
 Movement.Dragonriding = {}
 
+local NUMBER_OF_POINTS_TO_SAVE_FOR_SKYWARD_ASCENT = 3
+
 local SKYWARD_ASCENT_SPELL_ID = 372610
 local SURGE_FORWARD = 372608
 local WHIRLING_SURGE = 361584
+
+local SURGE_FORWARD_COST = 1
+local WHIRLING_SURGE_COST = 3
 
 -- TODO: Does it work correctly (in terms that the pitch and yaw are correctly considered)?
 function Movement.Dragonriding.areConditionsMetForFlyingHigher(targetPoint)
@@ -49,7 +54,11 @@ function Movement.Dragonriding.faceWaypoint(waypoint, action)
 end
 
 function Movement.Dragonriding.areConditionsMetForSurgeForward()
-	return SpellCasting.canBeCasted(SURGE_FORWARD) and not Movement.isObstacleInFrontOfCharacter(30)
+  return (
+    SpellCasting.canBeCasted(SURGE_FORWARD) and
+      Movement.Dragonriding.areEnoughPointsAvailableForSpell(SURGE_FORWARD_COST) and
+      not Movement.isObstacleInFrontOfCharacter(30)
+  )
 end
 
 function Movement.Dragonriding.surgeForward()
@@ -57,9 +66,44 @@ function Movement.Dragonriding.surgeForward()
 end
 
 function Movement.Dragonriding.areConditionsMetForWhirlingSurge()
-	return SpellCasting.canBeCasted(WHIRLING_SURGE) and not Movement.isObstacleInFrontOfCharacter(45)
+  return (
+    SpellCasting.canBeCasted(WHIRLING_SURGE) and
+      Movement.Dragonriding.areEnoughPointsAvailableForSpell(WHIRLING_SURGE_COST) and
+      not Movement.isObstacleInFrontOfCharacter(45)
+  )
 end
 
 function Movement.Dragonriding.whirlingSurge()
   Core.castSpellByID(WHIRLING_SURGE)
+end
+
+function Movement.Dragonriding.measureSkywardAscentHeight()
+  Coroutine.runAsCoroutine(function()
+    local zBefore = Core.retrieveCharacterPosition().z
+    Movement.Dragonriding.castSkywardAscent()
+    local maxZ = zBefore
+    local startTime = GetTime()
+    local measureLength = 3 -- seconds
+    while GetTime() - startTime <= measureLength do
+      maxZ = math.max(maxZ, Core.retrieveCharacterPosition().z)
+      Coroutine.yieldAndResume()
+    end
+    local height = maxZ - zBefore
+    print('height', height)
+    -- results:
+    -- 52.485343933105
+    -- 52.485332489014
+  end)
+end
+
+function Movement.Dragonriding.retrieveNumberOfPoints()
+	return C_UIWidgetManager.GetFillUpFramesWidgetVisualizationInfo(4460).numFullFrames
+end
+
+function Movement.Dragonriding.areAMinimumOfNPointsAvailable(n)
+	return Movement.Dragonriding.retrieveNumberOfPoints() >= n
+end
+
+function Movement.Dragonriding.areEnoughPointsAvailableForSpell(cost)
+	return Movement.Dragonriding.areAMinimumOfNPointsAvailable(cost + NUMBER_OF_POINTS_TO_SAVE_FOR_SKYWARD_ASCENT)
 end

@@ -63,6 +63,10 @@ function Pausable.Pausable:resume()
   self._isPaused = false
 end
 
+function Pausable.Pausable:afterNextRegisterAsPaused(callback)
+	self._afterNextRegisterAsPaused:registerCallbackForRunningOnce(callback)
+end
+
 function Pausable.Pausable:afterHasPaused(callback)
   self._afterHasPaused:registerCallback(callback)
 end

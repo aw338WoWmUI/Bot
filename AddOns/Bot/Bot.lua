@@ -172,6 +172,7 @@ function Bot.lootCaches()
   local moveToNextNode = nil
   local isVisitingNodesEnabled = false
 
+  local lookForCache
   local visitNodes
 
   local function doLookForCaches()
@@ -258,10 +259,6 @@ function Bot.lootCaches()
     return pausable
   end
 
-  local lookForCache = doLookForCaches()
-  visitNodes = doVisitNodes()
-  _.doHandleEventOfCharacterBeingAttacked()
-
   function _.doHandleEventOfCharacterBeingAttacked()
     Coroutine.runAsCoroutine(function()
       while true do
@@ -314,6 +311,10 @@ function Bot.lootCaches()
 
     return resolvable
   end
+
+  lookForCache = doLookForCaches()
+  visitNodes = doVisitNodes()
+  _.doHandleEventOfCharacterBeingAttacked()
 end
 
 local button = CreateFrame('Button', nil, nil, 'UIPanelButtonNoTooltipTemplate')
