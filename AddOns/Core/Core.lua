@@ -1578,3 +1578,10 @@ function Core.drawPath(path)
     Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius() or 0.5)
   end
 end
+
+function Core.printAuras()
+  AuraUtil.ForEachAura('player', 'HELPFUL', 32, function(auraInfo)
+    local spellName = GetSpellInfo(auraInfo.spellId)
+    print(auraInfo.spellId, spellName)
+  end, true)
+end

@@ -4,6 +4,8 @@ Fishing = Fishing or {}
 local addOnName, AddOn = ...
 local _ = {}
 
+-- Fishing._ = _
+
 local MODE = 'FISHING' -- 'ICE_FISHING'
 local HARPOONING = false
 
@@ -22,7 +24,7 @@ local ICE_CRACK_OBJECT_ID = 377944
 local ICE_FISHING = 377895
 local AQUADYNAMIC_FISH_ATTRACTOR = 6533
 local ISLEFIN_DORADO_LURE_ITEM_ID = 198403
-local ISLEFIN_DORADO_LURE_SPELL_ID = 383094
+local ISLEFIN_DORADO_LURE_SPELL_ID = 383095
 
 local fishingPoleEnchantments = {
   AQUADYNAMIC_FISH_ATTRACTOR,
@@ -386,7 +388,7 @@ function _.buffWithLureBuff()
 end
 
 function _.findLure()
-  return Array.find(lures, function (lure)
+  return Array.find(lures, function(lure)
     return Bags.hasItem(lure.itemID)
   end)
 end
