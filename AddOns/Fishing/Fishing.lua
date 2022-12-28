@@ -4,7 +4,8 @@ Fishing = Fishing or {}
 local addOnName, AddOn = ...
 local _ = {}
 
-local MODE = 'ICE_FISHING'
+local MODE = 'FISHING' -- 'ICE_FISHING'
+local HARPOONING = false
 
 local FISHING_SPELL_ID = 131474
 local FISHING_BOBBER_OBJECT_ID = 35591
@@ -19,6 +20,21 @@ local HARPOON_RANGE = 50
 local ICE_FISHING_HOLE_OBJECT_ID = 192631
 local ICE_CRACK_OBJECT_ID = 377944
 local ICE_FISHING = 377895
+local AQUADYNAMIC_FISH_ATTRACTOR = 6533
+local ISLEFIN_DORADO_LURE_ITEM_ID = 198403
+local ISLEFIN_DORADO_LURE_SPELL_ID = 383094
+
+local fishingPoleEnchantments = {
+  AQUADYNAMIC_FISH_ATTRACTOR,
+  NIGHTCRAWLERS_ITEM_ID
+}
+
+local lures = {
+  {
+    itemID = ISLEFIN_DORADO_LURE_ITEM_ID,
+    spellID = ISLEFIN_DORADO_LURE_SPELL_ID
+  }
+}
 
 local isFishing = false
 local exitTimer = nil
@@ -93,14 +109,11 @@ function Fishing.toggleFishing()
                 return not isFishing
               end)
               Core.interactWithObject(iceCrack)
-              print(1)
               Events.waitForEventCondition('UNIT_SPELLCAST_STOP', function(self, event, unit)
                 return unit == 'player'
               end)
-              print(2)
               Coroutine.waitForDuration(1)
               iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
-              print('iceHole', iceHole)
               if iceHole then
                 local iceHolePosition = Core.retrieveObjectPosition(iceHole)
                 g_iceHoles:setValue(iceHolePosition, true)
@@ -115,9 +128,13 @@ function Fishing.toggleFishing()
           end
         end
 
-        if MODE == 'ICE_FISHING' and iceHole or MODE ~= 'ICE_FISHING' then
-          if _.hasFishingLure() and not _.isFishingPoleEnchantedWithFishingLure() then
-            _.enchantFishingPoleWithFishingLure()
+        if MODE == 'ICE_FISHING' and iceHole or MODE == 'FISHING' then
+          if _.hasAFishingPoleEnchantment() and not _.isFishingPoleEnchantedWithFishingLure() then
+            _.enchantFishingPoleWithBestFishingPoleEnchantment()
+          end
+
+          if _.hasALure() and not _.hasALureBuff() then
+            _.buffWithLureBuff()
           end
 
           if _.hasCaptainRumseysLager() and _.isCaptainRumseysLagerBuffDurationShorterThanMaximumFishingDuration() then
@@ -160,62 +177,61 @@ function Fishing.toggleFishing()
             local waitDurationUntilNextFishing = _.randomFloat(0.5, 1)
             Coroutine.waitForDuration(waitDurationUntilNextFishing)
 
-            if _.hasLearnedHarpooning() and _.isChannelingLookingForLunkers() then
-              Events.waitForEventCondition('UNIT_SPELLCAST_CHANNEL_STOP', function(self, event, unit)
-                return unit == 'player'
-              end)
-
-              Coroutine.waitForDuration(0.5)
-
-              local lunker = Array.find(Core.retrieveObjectPointers(), function(pointer)
-                return (
-                  UnitName(pointer) == 'Massive Thresher' and
-                    Core.isAlive(pointer) and
-                    Core.calculateDistanceFromCharacterToObject(pointer) <= HARPOON_RANGE
-                )
-              end)
-
-              print('lunker', lunker)
-              if lunker then
-                local point = Core.retrieveObjectPosition(lunker)
-                Movement.facePoint(point)
-                UseItemByName('Iskaaran Harpoon')
-                print('a')
-                Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit, __, spellID)
-                  return unit == 'player' and spellID == HARPOON_SPELL_ID
+            if _.isChannelingLookingForLunkers() then
+              if _.hasLearnedHarpooning() and HARPOONING then
+                Events.waitForEventCondition('UNIT_SPELLCAST_CHANNEL_STOP', function(self, event, unit)
+                  return unit == 'player'
                 end)
-                print('b')
-                Coroutine.waitFor(function()
-                  local start = GetSpellCooldown(PULL_HARD_SPELL_ID)
-                  return start > 0
+
+                Coroutine.waitForDuration(0.5)
+
+                local lunker = Array.find(Core.retrieveObjectPointers(), function(pointer)
+                  return (
+                    UnitName(pointer) == 'Massive Thresher' and
+                      Core.isAlive(pointer) and
+                      Core.calculateDistanceFromCharacterToObject(pointer) <= HARPOON_RANGE
+                  )
                 end)
-                while Core.isAlive(lunker) do
-                  local start, duration = GetSpellCooldown(PULL_HARD_SPELL_ID)
-                  local cooldownDurationLeft = math.max(start + duration - GetTime(), 0)
-                  print('cooldownDurationLeft', cooldownDurationLeft)
-                  if cooldownDurationLeft > 0 then
-                    print('c')
-                    Coroutine.waitForDuration(cooldownDurationLeft)
-                    Coroutine.waitFor(function()
-                      local start = GetSpellCooldown(PULL_HARD_SPELL_ID)
-                      return start == 0
-                    end)
-                    print('d')
+
+                if lunker then
+                  local point = Core.retrieveObjectPosition(lunker)
+                  Movement.facePoint(point)
+                  UseItemByName('Iskaaran Harpoon')
+                  Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit, __, spellID)
+                    return unit == 'player' and spellID == HARPOON_SPELL_ID
+                  end)
+                  Coroutine.waitFor(function()
+                    local start = GetSpellCooldown(PULL_HARD_SPELL_ID)
+                    return start > 0
+                  end)
+                  while Core.isAlive(lunker) do
+                    local start, duration = GetSpellCooldown(PULL_HARD_SPELL_ID)
+                    local cooldownDurationLeft = math.max(start + duration - GetTime(), 0)
+                    if cooldownDurationLeft > 0 then
+                      Coroutine.waitForDuration(cooldownDurationLeft)
+                      Coroutine.waitFor(function()
+                        local start = GetSpellCooldown(PULL_HARD_SPELL_ID)
+                        return start == 0
+                      end)
+                    end
+                    if Core.isAlive(lunker) then
+                      Core.pressExtraActionButton1()
+                      Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit, __, spellID)
+                        return unit == 'player' and spellID == PULL_HARD_SPELL_ID
+                      end)
+                    end
+                    if not isFishing then
+                      return
+                    end
+                    Coroutine.waitForDuration(0.5) -- Wait a little bit before checking if lunker is still alive.
                   end
-                  if Core.isAlive(lunker) then
-                    Core.pressExtraActionButton1()
-                    print('e')
-                    Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit, __, spellID)
-                      return unit == 'player' and spellID == PULL_HARD_SPELL_ID
-                    end)
-                    print('f')
-                  end
-                  if not isFishing then
-                    return
-                  end
-                  Coroutine.waitForDuration(0.5) -- Wait a little bit before checking if lunker is still alive.
+                  await(Core.lootObject(lunker))
                 end
-                await(Core.lootObject(lunker))
+              else
+                SpellStopCasting()
+                Events.waitForEventCondition('UNIT_SPELLCAST_CHANNEL_STOP', function(self, event, unit)
+                  return unit == 'player'
+                end)
               end
             end
           end
@@ -324,29 +340,70 @@ function _.hours(amount)
   return amount * 60 * 60
 end
 
-function _.hasFishingLure()
-  return Boolean.toBoolean(Bags.hasItem(NIGHTCRAWLERS_ITEM_ID))
+function _.hasAFishingPoleEnchantment()
+  return Boolean.toBoolean(_.findBestFishingPoleEnchantment())
+end
+
+function _.findBestFishingPoleEnchantment()
+  return Array.find(fishingPoleEnchantments, Bags.hasItem)
 end
 
 function _.isFishingPoleEnchantedWithFishingLure()
   local tooltip = C_TooltipInfo.GetInventoryItem('player', 28, false)
-  return Array.any(tooltip.lines, _.isFishingLureEnchantmentLine)
+  return Array.any(tooltip.lines, _.isFishingPoleEnchantment)
 end
 
-function _.isFishingLureEnchantmentLine(line)
+function _.isFishingPoleEnchantment(line)
   TooltipUtil.SurfaceArgs(line)
   return line.type == 0 and string.match(line.leftText, '^Fishing Lure')
 end
 
-function _.enchantFishingPoleWithFishingLure()
-  -- C_Container.UseContainerItem
-  local item = 'Nightcrawlers'
-  UseItemByName(item)
-  if IsCurrentItem(item) then
-    PickupInventoryItem(28)
-    Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit)
-      return unit == 'player'
-    end)
+function _.hasALure()
+  return Boolean.toBoolean(_.findLure())
+end
+
+function _.hasALureBuff()
+  return Array.any(lures, function(lure)
+    return Core.findAuraByID(lure.spellID, 'player')
+  end)
+end
+
+function _.buffWithLureBuff()
+  local lure = _.findLure()
+  if lure then
+    local itemID = lure.itemID
+    if itemID then
+      local itemName = GetItemInfo(itemID)
+      if itemName then
+        UseItemByName(itemName)
+        -- TODO: Does this work?
+        Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit)
+          return unit == 'player'
+        end)
+      end
+    end
+  end
+end
+
+function _.findLure()
+  return Array.find(lures, function (lure)
+    return Bags.hasItem(lure.itemID)
+  end)
+end
+
+function _.enchantFishingPoleWithBestFishingPoleEnchantment()
+  local itemID = _.findBestFishingPoleEnchantment()
+  if itemID then
+    local itemName = GetItemInfo(itemID)
+    if itemName then
+      UseItemByName(itemName)
+      if IsCurrentItem(itemName) then
+        PickupInventoryItem(28)
+        Events.waitForEventCondition('UNIT_SPELLCAST_SUCCEEDED', function(self, event, unit)
+          return unit == 'player'
+        end)
+      end
+    end
   end
 end
 
@@ -421,7 +478,7 @@ end
 function _.initializeSavedVariables()
   if not FishingOptions then
     FishingOptions = {
-      fishInPools = true
+      fishInPools = false
     }
   end
   if g_iceHoles then

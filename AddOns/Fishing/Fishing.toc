@@ -1,6 +1,6 @@
 ## Title: Fishing
 ## Interface: 100002
-## Dependencies: Core, Coroutine, Development, HWT, Boolean, Compatibility, Yielder, Bags, Resolvable, Events, Movement
+## Dependencies: Core, Coroutine, Development, HWT, Boolean, Compatibility, Yielder, Bags, Resolvable, Events, Movement, Array
 ## SavedVariablesPerCharacter: FishingOptions
 ## SavedVariables: g_iceHoles
 

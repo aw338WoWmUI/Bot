@@ -42,16 +42,8 @@ function _.areConditionsMetToCastVictoryRush()
   )
 end
 
-local function IDPredicate(spellIDToFind, _, _, _, _, _, _, _, _, _, _, _, spellID)
-  return spellID == spellIDToFind
-end
-
 function _.retrievePlayerAuraBySpellID(spellID)
-  return _.findAuraByID(spellID, 'player')
-end
-
-function _.findAuraByID(spellID, unit, filter)
-  return AuraUtil.FindAura(IDPredicate, unit, filter, spellID)
+  return Core.findAuraByID(spellID, 'player')
 end
 
 function _.areConditionsMetToCastCharge()
@@ -70,7 +62,7 @@ function _.areConditionsMetToCastRend()
   return (
     SpellCasting.canBeCasted(REND) and
       IsSpellInRange(REND_NAME, 'target') and
-      not _.findAuraByID(REND, 'target', 'HARMFUL')
+      not Core.findAuraByID(REND, 'target', 'HARMFUL')
   )
 end
 

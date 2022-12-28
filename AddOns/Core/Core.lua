@@ -199,6 +199,14 @@ function Core.isCharacterDrinking()
   return Boolean.toBoolean(Core.findAuraByIcon(DRINK_ICON_ID, 'player'))
 end
 
+function Core.findAuraByID(spellID, unit, filter)
+  return AuraUtil.FindAura(_.IDPredicate, unit, filter, spellID)
+end
+
+function _.IDPredicate(spellIDToFind, _, _, _, _, _, _, _, _, _, _, _, spellID)
+  return spellID == spellIDToFind
+end
+
 function Core.findAuraByIcon(icon, unit, filter)
   return AuraUtil.FindAura(_.iconPredicate, unit, filter, icon)
 end
@@ -1542,4 +1550,31 @@ end
 
 function Core.gossipWithObject(pointer, gossipOptionID)
   return gossipWithObject(pointer, Function.returnValue(gossipOptionID))
+end
+
+function Core.drawPath(path)
+  Draw.SetColorRaw(0, 1, 0, 1)
+  for index = 1, #path - 1 do
+    local point = path[index]
+    local point2 = path[index + 1]
+    Draw.Line(
+      point.x,
+      point.y,
+      point.z,
+      point2.x,
+      point2.y,
+      point2.z
+    )
+  end
+  for index = 1, #path do
+    local color
+    if index == 3 or index == 4 then
+      color = { 3 / 255, 169 / 255, 244 / 255, 1 }
+    else
+      color = { 0, 1, 0, 1 }
+    end
+    Draw.SetColorRaw(unpack(color))
+    local point = path[index]
+    Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius() or 0.5)
+  end
 end

@@ -357,6 +357,50 @@ function Bot.lootCaches()
   _.doHandleEventOfCharacterBeingAttacked()
 end
 
+local objectsWhoDrop = {}
+
+local CHEST_OPEN = -65520
+local CHEST_CLOSED = -65536
+
+function Bot.findThingsThatDropDragonShardOfKnowledge()
+  Draw.Sync(function()
+    local characterPosition = Core.retrieveCharacterPosition()
+    if characterPosition then
+      local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(characterPosition)
+      Array.forEach(objectsWhoDrop, function(object)
+        local position = Core.retrieveObjectPosition(object)
+        if position then
+          Draw.SetColorRaw(0, 1, 0, 1)
+          Draw.Circle(position.x, position.y, position.z, 1)
+          local hasDrawnPathToObject = false
+          if closestPositionOnMesh then
+            local path = Core.findPath(closestPositionOnMesh, position)
+            if path then
+              Core.drawPath(path)
+              hasDrawnPathToObject = true
+            end
+          end
+          if not hasDrawnPathToObject then
+            Draw.SetColorRaw(0, 1, 0, 1)
+            Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+          end
+        end
+      end)
+    end
+  end)
+
+  C_Timer.NewTicker(1, function()
+    local objects = Core.retrieveObjectPointers()
+    objectsWhoDrop = Array.filter(objects, function(object)
+      local objectID = HWT.ObjectId(object)
+      return (
+        Set.contains(AddOn.droppedBy, objectID) or
+          (Set.contains(AddOn.containedIn1, objectID) or Set.contains(AddOn.containedIn2, objectID) or Set.contains(AddOn.containedIn3, objectID)) and Core.retrieveObjectDataDynamicFlags(object) == CHEST_CLOSED
+      )
+    end)
+  end)
+end
+
 local button = CreateFrame('Button', nil, nil, 'UIPanelButtonNoTooltipTemplate')
 button:SetText('Start')
 button:SetSize(130, 20)

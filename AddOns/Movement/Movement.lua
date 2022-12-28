@@ -2414,30 +2414,7 @@ HWT.doWhenHWTIsLoaded(function()
 
     local path = AddOn.savedVariables.perCharacter.MovementPath
     if path then
-      Draw.SetColorRaw(0, 1, 0, 1)
-      for index = 1, #path - 1 do
-        local point = path[index]
-        local point2 = path[index + 1]
-        Draw.Line(
-          point.x,
-          point.y,
-          point.z,
-          point2.x,
-          point2.y,
-          point2.z
-        )
-      end
-      for index = 1, #path do
-        local color
-        if index == 3 or index == 4 then
-          color = { 3 / 255, 169 / 255, 244 / 255, 1 }
-        else
-          color = { 0, 1, 0, 1 }
-        end
-        Draw.SetColorRaw(unpack(color))
-        local point = path[index]
-        Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius() or 0.5)
-      end
+      Core.drawPath(path)
     end
 
     if DEVELOPMENT then
