@@ -75,6 +75,9 @@ function AddOn.castRecommendedSpell()
       position.x = position.x + radius * math.cos(angle)
       position.y = position.y + radius * math.sin(angle)
       Core.clickPosition(position)
+      Coroutine.waitUntil(function ()
+        return not HWT.IsAoEPending()
+      end)
     end
   end
 end
