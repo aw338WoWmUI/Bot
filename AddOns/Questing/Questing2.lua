@@ -2036,7 +2036,7 @@ function _.run ()
         Questing.learnRiding()
       elseif _.itSeemsMakeSenseToSell() then
         print('Selling...')
-        _.sell()
+        Bot.sell()
       else
         moveToClosestPoint()
       end
@@ -2064,65 +2064,6 @@ end
 
 function _.isSellVendorSet()
   return Boolean.toBoolean(Questing.closestNPCs.Sell)
-end
-
-function _.sell()
-  local sellNPC = Questing.closestNPCs.Sell
-  Questing.Coroutine.gossipWithAt(sellNPC, sellNPC.objectID)
-  if MerchantFrame:IsShown() then
-    _.sellItemsAtVendor()
-  else
-    if _.hasSellingGossipOption() then
-      _.selectSellingGossipOption()
-    end
-    local wasSuccessful = Events.waitForEvent('MERCHANT_SHOW', 2)
-    if wasSuccessful then
-      _.sellItemsAtVendor()
-    end
-  end
-  CloseMerchant()
-end
-
-function _.hasSellingGossipOption()
-  return Boolean.toBoolean(_.retrieveSellingGossipOption())
-end
-
-function _.isSellingGossipOption(option)
-  return option.icon == 132060
-end
-
-function _.selectSellingGossipOption()
-  local option = _.retrieveSellingGossipOption()
-  if option then
-    Compatibility.GossipInfo.selectOption(option.gossipOptionID)
-  end
-end
-
-function _.retrieveSellingGossipOption()
-  local options = Compatibility.GossipInfo.retrieveOptions()
-  return Array.find(options, _.isSellingGossipOption)
-end
-
-function _.sellItemsAtVendor()
-  print('_.sellItemsAtVendor()')
-  for containerIndex = 0, NUM_BAG_SLOTS do
-    for slotIndex = 1, Compatibility.Container.receiveNumberOfSlotsOfContainer(containerIndex) do
-      local itemInfo = Compatibility.Container.retrieveItemInfo(containerIndex, slotIndex)
-      if itemInfo then
-        local classID = select(6, GetItemInfoInstant(itemInfo.itemID))
-        if itemInfo and
-          not itemInfo.hasNoValue and (
-          itemInfo.quality == Enum.ItemQuality.Poor or
-            (itemInfo.quality == Enum.ItemQuality.Common and (classID == Enum.ItemClass.Weapon or classID == Enum.ItemClass.Armor)) or
-            (AddOn.savedVariables.perCharacter.QuestingOptions.sellUncommon and itemInfo.quality == Enum.ItemQuality.Uncommon) or
-            (AddOn.savedVariables.perCharacter.QuestingOptions.sellRare and itemInfo.quality == Enum.ItemQuality.Rare)
-        ) then
-          Compatibility.Container.UseContainerItem(containerIndex, slotIndex)
-          Events.waitForEvent('BAG_UPDATE_DELAYED')
-        end
-      end
-    end
-  end
 end
 
 -- Cursor Quest

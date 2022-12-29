@@ -1,7 +1,8 @@
 ## Title: Bot
 ## Interface: 30400
-## Dependencies: Boolean, Questing, HWT, Core, Bags, Coroutine, Set, SpellCasting, Array
+## Dependencies: Boolean, Questing, HWT, Core, Bags, Coroutine, Set, SpellCasting, Array, Compatibility, Events
 ## OptionalDeps: Questing
+## SavedVariablesPerCharacter: BotOptions
 
 Warrior.lua
 DeathKnight.lua

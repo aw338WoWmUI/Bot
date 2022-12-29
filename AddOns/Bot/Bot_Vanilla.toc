@@ -1,7 +1,8 @@
 ## Title: Bot
 ## Interface: 11403
-## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Array
+## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Array, Compatibility, Events
 ## OptionalDeps: Questing
+## SavedVariablesPerCharacter: BotOptions
 
 Warrior.lua
 DeathKnight.lua

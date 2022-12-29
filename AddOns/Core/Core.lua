@@ -1201,7 +1201,7 @@ function Core._moveTo(to, options)
       continueMoving = options.continueMoving
     })
 
-    stoppableInternal.resolve()
+    stoppableInternal:resolve()
   end)
   return stoppable
 end
@@ -1242,12 +1242,12 @@ function Core.moveToUntil(point, options)
         toleranceDistance = options.toleranceDistance,
         stop = stopCondition
       })
-      stoppable:stopAlso(stoppable2)
+      stoppable:alsoStop(stoppable2)
       await(stoppable2)
       Coroutine.yieldAndResume()
     end
 
-    stoppableInternal.resolve()
+    stoppableInternal:resolve()
   end)
 
   return stoppable
@@ -1314,7 +1314,7 @@ function Core.moveToObject(pointer, options)
 
     Core.stopMoving()
 
-    stoppableInternal.resolve()
+    stoppableInternal:resolve()
   end)
 
   return stoppable
@@ -1467,7 +1467,7 @@ function Core.doMob(pointer, options)
       end
     end
 
-    stoppableInternal.resolve()
+    stoppableInternal:resolve()
   end)
 
   return stoppable
@@ -1542,7 +1542,7 @@ local function gossipWithObject(pointer, chooseOption)
       end
     end
 
-    stoppableInternal.resolve()
+    stoppableInternal:resolve()
   end)
 
   return stoppable
@@ -1584,4 +1584,47 @@ function Core.printAuras()
     local spellName = GetSpellInfo(auraInfo.spellId)
     print(auraInfo.spellId, spellName)
   end, true)
+end
+
+function Core.gossipWithAt(point, objectID, optionToSelect)
+  local stoppable, stoppableInternal = Stoppable.Stoppable:new()
+
+  Coroutine.runAsCoroutine(function()
+    local interactWithStoppable = Core.interactWithAt(point, objectID)
+    stoppable:alsoStop(interactWithStoppable)
+    await(interactWithStoppable)
+    Events.waitForEvent('GOSSIP_SHOW', 2)
+    Coroutine.yieldAndResume()
+    if stoppable:isRunning() and optionToSelect then
+      selectOption(optionToSelect)
+    end
+  end)
+
+  return stoppable
+end
+
+function Core.interactWithAt(point, objectID, distance, delay)
+  local stoppable, stoppableInternal = Stoppable.Stoppable:new()
+
+  Coroutine.runAsCoroutine(function()
+    distance = distance or Core.INTERACT_DISTANCE
+
+    if not Core.isCharacterCloseToPosition(point, distance) then
+      local moveToStoppable = Core.moveTo(point, {
+        distance = distance
+      })
+      stoppable:alsoStop(moveToStoppable)
+      await(moveToStoppable)
+    end
+
+    if stoppable:isRunning() then
+      local pointer = Core.findClosestObjectToCharacterWithObjectID(objectID)
+      if pointer then
+        Core.interactWithObject(pointer)
+        Coroutine.waitForDuration(2)
+      end
+    end
+  end)
+
+  return stoppable
 end
