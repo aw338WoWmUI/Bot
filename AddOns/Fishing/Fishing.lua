@@ -6,7 +6,6 @@ local _ = {}
 
 -- Fishing._ = _
 
-local MODE = 'FISHING' -- 'ICE_FISHING'
 local HARPOONING = false
 
 local FISHING_SPELL_ID = 131474
@@ -95,7 +94,7 @@ function Fishing.toggleFishing()
         end
 
         local iceHole = nil
-        if MODE == 'ICE_FISHING' then
+        if FishingOptions.mode == 'ICE_FISHING' then
           iceHole = Core.findClosestObjectToCharacterWithObjectID(ICE_FISHING_HOLE_OBJECT_ID)
           if iceHole then
             local iceHolePosition = Core.retrieveObjectPosition(iceHole)
@@ -130,7 +129,16 @@ function Fishing.toggleFishing()
           end
         end
 
-        if MODE == 'ICE_FISHING' and iceHole or MODE == 'FISHING' then
+        if FishingOptions.mode == 'ICE_FISHING' and iceHole or FishingOptions.mode == 'FISHING' then
+          if FishingOptions.mode == 'ICE_FISHING' then
+            if iceHole then
+              Fishing.positionForFishingInIceHole(iceHole)
+              Movement.faceObject(iceHole, function()
+                return not isFishing
+              end)
+            end
+          end
+
           if _.hasAFishingPoleEnchantment() and not _.isFishingPoleEnchantedWithFishingLure() then
             _.enchantFishingPoleWithBestFishingPoleEnchantment()
           end
@@ -143,16 +151,12 @@ function Fishing.toggleFishing()
             _.buffWithCaptainRumseysLagerBuff()
           end
 
-          if MODE ~= 'ICE_FISHING' and _.hasScalebellyMackerel() and _.isChumBuffDurationShorterThanMaximumFishingDuration() then
+          if FishingOptions.mode ~= 'ICE_FISHING' and _.hasScalebellyMackerel() and _.isChumBuffDurationShorterThanMaximumFishingDuration() then
             _.buffWithChumBuff()
           end
 
-          if MODE == 'ICE_FISHING' then
+          if FishingOptions.mode == 'ICE_FISHING' then
             if iceHole then
-              Fishing.positionForFishingInIceHole(iceHole)
-              Movement.faceObject(iceHole, function()
-                return not isFishing
-              end)
               Core.interactWithObject(iceHole)
               Events.waitForEvent('UNIT_SPELLCAST_SUCCEEDED', 2)
             end
@@ -480,6 +484,7 @@ end
 function _.initializeSavedVariables()
   if not FishingOptions then
     FishingOptions = {
+      mode = 'FISHING', -- either 'FISHING' or 'ICE_FISHING'
       fishInPools = false
     }
   end

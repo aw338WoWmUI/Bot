@@ -153,20 +153,27 @@ function Bot.findCaches()
   end)
 
   Draw.Sync(function()
-    Draw.SetColorRaw(0, 0, 1, 1)
-    Array.forEach(positions, function(position)
-      Draw.Circle(position.x, position.y, position.z, 10)
-    end)
-
     local characterPosition = Core.retrieveCharacterPosition()
-    Draw.SetColorRaw(0, 1, 0, 1)
-    Array.forEach(caches, function(cache)
-      local position = Core.retrieveObjectPosition(cache)
-      if position then
-        Draw.Circle(position.x, position.y, position.z, 1)
-        Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
-      end
-    end)
+    if characterPosition then
+      Array.forEach(positions, function(position)
+        local distance = Core.calculateDistanceBetweenPositions(characterPosition, position)
+        if distance <= 184 then
+          Draw.SetColorRaw(0, 1, 0, 1)
+        else
+          Draw.SetColorRaw(0, 0, 1, 1)
+        end
+        Draw.Circle(position.x, position.y, position.z, 10)
+      end)
+
+      Draw.SetColorRaw(0, 1, 0, 1)
+      Array.forEach(caches, function(cache)
+        local position = Core.retrieveObjectPosition(cache)
+        if position then
+          Draw.Circle(position.x, position.y, position.z, 1)
+          Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+        end
+      end)
+    end
   end)
 
   C_Timer.NewTicker(1, function()
@@ -174,9 +181,6 @@ function Bot.findCaches()
       return HWT.ObjectId(pointer) == 376580 and Core.retrieveObjectDataDynamicFlags(pointer) == -65536
       -- open: -65520
     end)
-    if #caches >= 1 then
-      print('Found cache(s).')
-    end
   end)
 end
 
@@ -193,20 +197,27 @@ function Bot.lootCaches()
   end)
 
   Draw.Sync(function()
-    Draw.SetColorRaw(0, 0, 1, 1)
-    Array.forEach(positions, function(position)
-      Draw.Circle(position.x, position.y, position.z, 10)
-    end)
-
     local characterPosition = Core.retrieveCharacterPosition()
-    Draw.SetColorRaw(0, 1, 0, 1)
-    Array.forEach(caches, function(cache)
-      local position = Core.retrieveObjectPosition(cache)
-      if position then
-        Draw.Circle(position.x, position.y, position.z, 1)
-        Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
-      end
-    end)
+    if characterPosition then
+      Array.forEach(positions, function(position)
+        local distance = Core.calculateDistanceBetweenPositions(characterPosition, position)
+        if distance <= 184 - 50 then
+          Draw.SetColorRaw(0, 1, 0, 1)
+        else
+          Draw.SetColorRaw(0, 0, 1, 1)
+        end
+        Draw.Circle(position.x, position.y, position.z, 10)
+      end)
+
+      Draw.SetColorRaw(0, 1, 0, 1)
+      Array.forEach(caches, function(cache)
+        local position = Core.retrieveObjectPosition(cache)
+        if position then
+          Draw.Circle(position.x, position.y, position.z, 1)
+          Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+        end
+      end)
+    end
   end)
 
   local moveToNextNode = nil
@@ -362,28 +373,34 @@ local objectsWhoDrop = {}
 local CHEST_OPEN = -65520
 local CHEST_CLOSED = -65536
 
+local unitClassesWhichSeemToDropDragonShardOfKnowledge = Set.create({
+  'worldboss',
+  'rareelite',
+  'rare'
+})
+
 function Bot.findThingsThatDropDragonShardOfKnowledge()
   Draw.Sync(function()
     local characterPosition = Core.retrieveCharacterPosition()
     if characterPosition then
-      local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(characterPosition)
+      --local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(characterPosition)
       Array.forEach(objectsWhoDrop, function(object)
         local position = Core.retrieveObjectPosition(object)
         if position then
           Draw.SetColorRaw(0, 1, 0, 1)
           Draw.Circle(position.x, position.y, position.z, 1)
-          local hasDrawnPathToObject = false
-          if closestPositionOnMesh then
-            local path = Core.findPath(closestPositionOnMesh, position)
-            if path then
-              Core.drawPath(path)
-              hasDrawnPathToObject = true
-            end
-          end
-          if not hasDrawnPathToObject then
-            Draw.SetColorRaw(0, 1, 0, 1)
-            Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
-          end
+          --local hasDrawnPathToObject = false
+          --if closestPositionOnMesh then
+          --  local path = Core.findPath(closestPositionOnMesh, position)
+          --  if path then
+          --    Core.drawPath(path)
+          --    hasDrawnPathToObject = true
+          --  end
+          --end
+          --if not hasDrawnPathToObject then
+          Draw.SetColorRaw(0, 1, 0, 1)
+          Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+          --end
         end
       end)
     end
@@ -394,8 +411,16 @@ function Bot.findThingsThatDropDragonShardOfKnowledge()
     objectsWhoDrop = Array.filter(objects, function(object)
       local objectID = HWT.ObjectId(object)
       return (
-        Set.contains(AddOn.droppedBy, objectID) or
-          (Set.contains(AddOn.containedIn1, objectID) or Set.contains(AddOn.containedIn2, objectID) or Set.contains(AddOn.containedIn3, objectID)) and Core.retrieveObjectDataDynamicFlags(object) == CHEST_CLOSED
+        (
+          (
+            Set.contains(unitClassesWhichSeemToDropDragonShardOfKnowledge, UnitClassification(object)) or
+              Set.contains(AddOn.droppedBy, objectID)
+          ) and
+            Core.isAlive(object)
+        ) or
+          (Set.contains(AddOn.containedIn1, objectID) or Set.contains(AddOn.containedIn2,
+            objectID) or Set.contains(AddOn.containedIn3,
+            objectID)) and Core.retrieveObjectDataDynamicFlags(object) == CHEST_CLOSED
       )
     end)
   end)
