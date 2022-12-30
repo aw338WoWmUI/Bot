@@ -25,6 +25,14 @@ local AQUADYNAMIC_FISH_ATTRACTOR = 6533
 local ISLEFIN_DORADO_LURE_ITEM_ID = 198403
 local ISLEFIN_DORADO_LURE_SPELL_ID = 383095
 
+local MASTERS_WILDERCLOTH_FISHING_HAT = 193543
+local WILDERCLOTH_FISHING_HAT = 193529
+
+local fishingHats = {
+  MASTERS_WILDERCLOTH_FISHING_HAT,
+  WILDERCLOTH_FISHING_HAT
+}
+
 local fishingPoleEnchantments = {
   AQUADYNAMIC_FISH_ATTRACTOR,
   NIGHTCRAWLERS_ITEM_ID
@@ -137,6 +145,10 @@ function Fishing.toggleFishing()
                 return not isFishing
               end)
             end
+          end
+
+          if _.canEquipABetterFishingHat() then
+            _.equipBestFishingHat()
           end
 
           if _.hasAFishingPoleEnchantment() and not _.isFishingPoleEnchantedWithFishingLure() then
@@ -344,6 +356,22 @@ end
 
 function _.hours(amount)
   return amount * 60 * 60
+end
+
+function _.canEquipABetterFishingHat()
+  local bestFishingHatInBags, index2 = _.findBestFishingHatInBags()
+  local equippedHat = GetInventoryItemID('player', INVSLOT_HEAD)
+  local index = Array.indexOf(fishingHats, equippedHat)
+  return Boolean.toBoolean(bestFishingHatInBags and (index == -1 or index2 < index))
+end
+
+function _.equipBestFishingHat()
+  local bestFishingHatInBags = _.findBestFishingHatInBags()
+  EquipItemByName(bestFishingHatInBags)
+end
+
+function _.findBestFishingHatInBags()
+  return Array.find(fishingHats, Bags.hasItem)
 end
 
 function _.hasAFishingPoleEnchantment()
