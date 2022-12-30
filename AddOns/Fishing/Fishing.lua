@@ -86,7 +86,7 @@ function Fishing.toggleFishing()
     isFishing = true
 
     exitTimer = C_Timer.NewTimer(_.hours(3), function()
-      Exit()
+      Quit()
     end)
 
     Coroutine.runAsCoroutine(function()
