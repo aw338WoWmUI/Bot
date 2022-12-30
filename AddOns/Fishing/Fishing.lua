@@ -90,6 +90,8 @@ function Fishing.toggleFishing()
     end)
 
     Coroutine.runAsCoroutine(function()
+      local hatBeforeHavingSwappedIt = nil
+
       while isFishing do
         if FishingOptions.fishInPools then
           local pools = Array.filter(Core.retrieveObjectPointers(), function(pointer)
@@ -148,6 +150,9 @@ function Fishing.toggleFishing()
           end
 
           if _.canEquipABetterFishingHat() then
+            if hatBeforeHavingSwappedIt == nil then
+              hatBeforeHavingSwappedIt = GetInventoryItemLink('player', INVSLOT_HEAD)
+            end
             _.equipBestFishingHat()
           end
 
@@ -262,6 +267,10 @@ function Fishing.toggleFishing()
         end
 
         Coroutine.yieldAndResume()
+      end
+
+      if hatBeforeHavingSwappedIt then
+        EquipItemByName(hatBeforeHavingSwappedIt)
       end
     end)
   end
