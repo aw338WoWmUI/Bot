@@ -42,5 +42,6 @@ AddOn.containedIn2 = Set.create({
 -- Additional object IDs
 AddOn.containedIn3 = Set.create({
   376386,
-  382029
+  382029,
+  383734
 })
