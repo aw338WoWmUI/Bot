@@ -58,30 +58,10 @@ function AddOn.castRecommendedSpell()
   if ability then
     if RecommendedSpellCaster.isItem(ability) then
       RecommendedSpellCaster.castItem(ability)
-      _.handleAOE()
+      SpellCasting.handleAOE()
     else
       _.castSpell(ability, recommendation)
     end
-  end
-end
-
-function _.handleAOE()
-  if HWT.IsAoEPending() then
-    local position
-    local targetPosition = Core.retrieveObjectPosition('target')
-    if targetPosition then
-      position = targetPosition
-    else
-      position = Core.retrieveCharacterPosition()
-    end
-    local angle = math.rad(math.random() * 360)
-    local radius = math.random() * 2
-    position.x = position.x + radius * math.cos(angle)
-    position.y = position.y + radius * math.sin(angle)
-    Core.clickPosition(position)
-    Coroutine.waitUntil(function()
-      return not HWT.IsAoEPending()
-    end)
   end
 end
 
@@ -91,40 +71,14 @@ function Bot.castSpell(spell)
     id = spellID,
     name = spellName
   }, {
-    empower_to = 2
+    empower_to = nil
   })
 end
 
-function _.waitForCharacterEvent(eventName)
-  return Events.waitForEventCondition(eventName, _.isCharacterEvent)
-end
-
-function _.waitForOneOfCharacterEvents(eventNames)
-	return Events.waitForOneOfEventsAndCondition(eventNames, _.isCharacterEvent)
-end
-
-function _.isCharacterEvent(self, event, unitToken)
-  return unitToken == 'player'
-end
-
 function _.castSpell(ability, recommendation)
-  if (
-    not IsCurrentSpell(ability.id) and
-      RecommendedSpellCaster.canBeCasted(ability.id) and
-      IsSpellInRange(ability.name, 'target') ~= 0
-  ) then
-    SpellCasting.castSpellByID(ability.id, {
-      empowermentLevel = recommendation.empower_to
-    })
-    _.handleAOE()
-    if IsPressHoldReleaseSpell(ability.id) then
-       -- _.waitForOneOfCharacterEvents({'UNIT_SPELLCAST_EMPOWER_STOP', 'UNIT_SPELLCAST_FAILED'}) -- this is handled in SpellCasting.castSpellByID
-    elseif SpellCasting.isInstantSpell(ability.id) then
-      _.waitForOneOfCharacterEvents({'UNIT_SPELLCAST_SUCCEEDED', 'UNIT_SPELLCAST_FAILED'})
-    else
-      _.waitForOneOfCharacterEvents({'UNIT_SPELLCAST_STOP', 'UNIT_SPELLCAST_CHANNEL_STOP', 'UNIT_SPELLCAST_FAILED'})
-    end
-  end
+  SpellCasting.castSpell(ability.id, {
+    empowermentLevel = recommendation.empower_to
+  })
 end
 
 local caches = {}

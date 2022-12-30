@@ -215,6 +215,10 @@ function _.iconPredicate(iconToFind, _, _, _, icon)
   return icon == iconToFind
 end
 
+function Core.hasCharacterBuff(ID)
+	return Boolean.toBoolean(Core.findAuraByID(ID, 'player', 'HELPFUL'))
+end
+
 local FOOD_ICON_ID = 134062
 
 function Core.isCharacterEating()
@@ -1627,4 +1631,14 @@ function Core.interactWithAt(point, objectID, distance, delay)
   end)
 
   return stoppable
+end
+
+function Core.printSpellTooltip(spell)
+	local spellID = select(7, GetSpellInfo(spell))
+  local tooltip = C_TooltipInfo.GetSpellByID(spellID)
+  Array.forEach(tooltip.lines, function (line)
+    print('line')
+    TooltipUtil.SurfaceArgs(line)
+    DevTools_Dump(line)
+  end)
 end

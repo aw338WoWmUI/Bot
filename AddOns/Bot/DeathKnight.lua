@@ -54,7 +54,7 @@ function _.findCharacterToResurrect()
 end
 
 function _.raiseAlly(characterToResurrect)
-  SpellCasting.castSpellByID(RAISE_ALLY, {
+  SpellCasting.castSpell(RAISE_ALLY, {
     target = characterToResurrect
   })
 end
