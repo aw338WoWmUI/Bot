@@ -85,9 +85,9 @@ function Fishing.toggleFishing()
   else
     isFishing = true
 
-    exitTimer = C_Timer.NewTimer(_.hours(3), function()
-      Quit()
-    end)
+    --exitTimer = C_Timer.NewTimer(_.hours(3), function()
+    --  Quit()
+    --end)
 
     Coroutine.runAsCoroutine(function()
       local hatBeforeHavingSwappedIt = nil
