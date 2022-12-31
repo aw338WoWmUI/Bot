@@ -32,7 +32,7 @@ function _.isCharacterToResurrectDead()
   return _.findCharacterToResurrect() ~= nil
 end
 
-local unitTokens = {
+local partyUnitTokens = {
   'party1',
   'party2',
   'party3',
@@ -40,6 +40,14 @@ local unitTokens = {
 }
 
 function _.findCharacterToResurrect()
+  local unitTokens = {}
+  if IsInRaid() then
+    for index = 1, 40 do
+      table.insert(unitTokens, 'raid' .. index)
+    end
+  elseif UnitInParty('player') then
+    Array.append(unitTokens, partyUnitTokens)
+  end
   local deadTank = Array.find(unitTokens, function(unitToken)
     return UnitGroupRolesAssigned(unitToken) == 'TANK' and UnitIsDead(unitToken)
   end)
