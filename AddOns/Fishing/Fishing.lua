@@ -46,7 +46,7 @@ local lures = {
 }
 
 local isFishing = false
-local exitTimer = nil
+--local exitTimer = nil
 
 local TEMPORAL_DRAGONHEAD_POOL = 381100
 local THOUSANDBITE_PIRANHA_SWARM = 381097
@@ -79,8 +79,8 @@ local MINIMUM_DISTANCE_FROM_ICE_HOLE = 2.884045124054
 
 function Fishing.toggleFishing()
   if isFishing then
-    exitTimer:Cancel()
-    exitTimer = nil
+    --exitTimer:Cancel()
+    --exitTimer = nil
     isFishing = false
   else
     isFishing = true
