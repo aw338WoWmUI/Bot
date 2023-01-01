@@ -1039,6 +1039,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
         (remainingDistance > 30 or Movement.isPositionInTheAir(waypoint)) and
         Movement.Dragonriding.areConditionsMetForFlyingHigher(waypoint)
     ) then
+      Core.stopMovingForward()
       Movement.liftUp()
       return
     end
