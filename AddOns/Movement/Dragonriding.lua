@@ -37,7 +37,7 @@ function Movement.Dragonriding.flyHigher()
 end
 
 function Movement.Dragonriding.liftUp()
-  HWT.SetPitch(0)
+  HWT.SetPitch(math.rad(10))
   Movement.Dragonriding.castSkywardAscent()
   Coroutine.waitForDuration(1.5)
 end
