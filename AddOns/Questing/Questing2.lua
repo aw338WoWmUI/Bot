@@ -2098,15 +2098,15 @@ local function onEvent(self, event, ...)
   if event == 'QUEST_TURNED_IN' then
     onQuestTurnedIn(...)
   elseif event == 'GOSSIP_SHOW' then
-    print('GOSSIP_SHOW')
+    -- print('GOSSIP_SHOW')
   elseif event == 'QUEST_ACCEPTED' then
-    print('QUEST_ACCEPTED')
+    -- print('QUEST_ACCEPTED')
   elseif event == 'QUEST_ACCEPT_CONFIRM' then
-    print('QUEST_ACCEPT_CONFIRM', Unlocker.retrieveQuestGiverStatus('target'))
+    -- print('QUEST_ACCEPT_CONFIRM', Unlocker.retrieveQuestGiverStatus('target'))
   elseif event == 'QUEST_LOG_CRITERIA_UPDATE' then
-    print('QUEST_LOG_CRITERIA_UPDATE', Unlocker.retrieveQuestGiverStatus('target'))
+    -- print('QUEST_LOG_CRITERIA_UPDATE', Unlocker.retrieveQuestGiverStatus('target'))
   elseif event == 'QUEST_DETAIL' then
-    print('QUEST_DETAIL')
+    -- print('QUEST_DETAIL')
   end
 end
 

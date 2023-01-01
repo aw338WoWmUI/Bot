@@ -124,6 +124,16 @@ function _.retrieveQuestsOnMapThatCanBeAccepted()
   return Questing._.retrieveQuestsOnMapCheckingUpwards(Questing.Database.receiveQuestsOnMapThatCanBeAccepted)
 end
 
+-- Questing.__.retrieveTaskQuestsOnMap()
+-- Questing.__.print()
+
+function _.print()
+	local tasks = _.retrieveTaskQuestsOnMap()
+  Array.forEach(tasks, function (task)
+    print(task.questID, QuestUtils_GetQuestName(task.questID))
+  end)
+end
+
 function _.retrieveTaskQuestsOnMap()
   return Questing._.retrieveQuestsOnMapCheckingUpwards(Compatibility.TaskQuest.retrieveQuestsOnMap)
 end

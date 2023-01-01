@@ -11,6 +11,7 @@
       <w>eastpoint</w>
       <w>evoker</w>
       <w>healthstone</w>
+      <w>initializable</w>
       <w>iskaaran</w>
       <w>islefin</w>
       <w>kalimdor</w>
@@ -28,6 +29,7 @@
       <w>stoppables</w>
       <w>stormwind</w>
       <w>tabard</w>
+      <w>togglable</w>
       <w>vendoring</w>
       <w>wildercloth</w>
       <w>yielder</w>

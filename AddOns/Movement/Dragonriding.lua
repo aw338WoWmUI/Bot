@@ -1,5 +1,6 @@
 Movement = Movement or {}
 Movement.Dragonriding = {}
+local _ = {}
 
 local NUMBER_OF_POINTS_TO_SAVE_FOR_SKYWARD_ASCENT = 3
 
@@ -10,9 +11,20 @@ local WHIRLING_SURGE = 361584
 local SURGE_FORWARD_COST = 1
 local WHIRLING_SURGE_COST = 3
 
+local SKYWARD_ASCENT_ASCEND_HEIGHT = 52.485332489014
+
 -- TODO: Does it work correctly (in terms that the pitch and yaw are correctly considered)?
 function Movement.Dragonriding.areConditionsMetForFlyingHigher(targetPoint)
-  return SpellCasting.canBeCasted(SKYWARD_ASCENT_SPELL_ID) and Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint)
+  return (
+    SpellCasting.canBeCasted(SKYWARD_ASCENT_SPELL_ID) and
+      Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint) and
+      _.areEnoughPointsAvailableToReachTargetHeight(targetPoint.z)
+  )
+end
+
+function _.areEnoughPointsAvailableToReachTargetHeight(targetHeight)
+  local characterPosition = Core.retrieveCharacterPosition()
+  return Movement.Dragonriding.areAMinimumOfNPointsAvailable(math.ceil((targetHeight - characterPosition.z) / SKYWARD_ASCENT_ASCEND_HEIGHT))
 end
 
 function Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint)
@@ -21,7 +33,7 @@ function Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint)
 end
 
 function Movement.Dragonriding.flyHigher()
-  Movement.Dragonriding.castSkywardAscent()
+  Movement.Dragonriding.liftUp()
 end
 
 function Movement.Dragonriding.liftUp()
@@ -40,14 +52,15 @@ function Movement.Dragonriding.faceDirection(yaw, pitch, action)
   end)
 end
 
-function Movement.Dragonriding.faceWaypoint(waypoint, action)
+function Movement.Dragonriding.updateFacing(waypoint, action)
   local pitch
 
   local yaw, pitchFromCharacterToWaypoint = Movement.calculateAnglesFromCharacterToPoint(waypoint)
-  if Core.calculate2DDistanceFromCharacterToPosition(waypoint) > 10 then
-    pitch = math.rad(-5)
-  else
+  local characterPosition = Core.retrieveCharacterPosition()
+  if Movement.thereAreZeroCollisions(characterPosition, waypoint) then
     pitch = pitchFromCharacterToWaypoint
+  else
+    pitch = math.rad(-5)
   end
 
   Movement.Dragonriding.faceDirection(yaw, pitch, action)

@@ -960,6 +960,10 @@ function Core.canUnitAttackOtherUnit(unit1, unit2)
   return UnitCanAttack(unit1, unit2)
 end
 
+function Core.canCharacterAttackUnit(unit)
+  return Core.canUnitAttackOtherUnit('player', unit)
+end
+
 function Core.retrieveCharacterFaction()
   local unitFactionGroup = UnitFactionGroup('player')
   return unitFactionGroup

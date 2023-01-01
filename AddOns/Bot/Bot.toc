@@ -1,7 +1,7 @@
 ## Title: Bot
 ## Interface: 100002
-## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Resolvable, Events, Array, Stoppable, Pausable, Compatibility
-## OptionalDeps: RecommendedSpellCaster, Questing
+## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Resolvable, Events, Array, Stoppable, Pausable, Compatibility, Togglable, InitializableTogglable
+## OptionalDeps: RecommendedSpellCaster, Questing, HandyNotes, HandyNotes_Dragonflight
 ## SavedVariables: rareObjectIDs, mobsWhoDropKeyFraming, mobsWhoDropKeyFragments, objectsWhoContainKeyFragments
 ## SavedVariablesPerCharacter: BotOptions
 
@@ -11,3 +11,7 @@ DeathKnight.lua
 Bot.lua
 DragonbaneKeepFarming.lua
 itemProcessing.lua
+Assisting.lua
+Farming.lua
+DraconicCacheFarming.lua
+DragonShardOfKnowledgeFarming.lua

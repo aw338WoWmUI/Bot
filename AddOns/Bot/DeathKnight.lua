@@ -6,10 +6,23 @@ local addOnName, AddOn = ...
 
 local _ = {}
 
+local LICHBORNE = 49039
+local DEATH_COIL = 47541
+local DEATH_STRIKE = 49998
+
 function Bot.DeathKnight.castSpell()
   local characterToResurrect = _.findCharacterToResurrect()
   if _.areConditionsMetForRaiseAlly(characterToResurrect) then
     _.raiseAlly(characterToResurrect)
+  elseif _.areConditionsMetForHealing() and (Core.hasCharacterBuff(LICHBORNE) or SpellCasting.canBeCasted(LICHBORNE)) and SpellCasting.canBeCasted(DEATH_COIL) then
+    if not Core.hasCharacterBuff(LICHBORNE) then
+      SpellCasting.castSpell(LICHBORNE)
+    end
+    SpellCasting.castSpell(DEATH_COIL, {
+      target = 'player'
+    })
+  elseif _.areConditionsMetForHealing() and SpellCasting.canBeCasted(DEATH_STRIKE) then
+    SpellCasting.castSpell(DEATH_STRIKE)
   elseif _.hasCharacterItemWithBreathOfNeltharionEquipped() and _.isBreathOfNeltharionTinkerOffCooldown() and _.areAtLeastTwoMobsInFront() then
     if _.hasCharacterItemWithGroundedCircuitryEquipped() and _.isGroundedCircuitryTinkerOffCooldown() then
       _.castGroundedCircuitry()
@@ -28,8 +41,8 @@ function _.areConditionsMetForRaiseAlly(characterToResurrect)
   return SpellCasting.canBeCasted(RAISE_ALLY) and characterToResurrect ~= nil
 end
 
-function _.isCharacterToResurrectDead()
-  return _.findCharacterToResurrect() ~= nil
+function _.areConditionsMetForHealing()
+  return (UnitHealth('player') / UnitHealthMax('player')) <= 0.5
 end
 
 local partyUnitTokens = {
@@ -121,5 +134,5 @@ function _.isGroundedCircuitryTinkerOffCooldown()
 end
 
 function _.castGroundedCircuitry()
-	UseInventoryItem(INVSLOT_WRIST)
+  UseInventoryItem(INVSLOT_WRIST)
 end

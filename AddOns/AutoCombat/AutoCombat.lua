@@ -13,6 +13,8 @@ function AutoCombat.toggle()
   end
 end
 
+local HUNTING_COMPANION = 376280
+
 function AutoCombat.enable()
   Coroutine.runAsCoroutine(function()
     if not isEnabled then
@@ -21,6 +23,10 @@ function AutoCombat.enable()
       _.waitForHasStopped()
       isRunning = true
       while isEnabled do
+        -- TODO: Probably only works in Ohn'Ahran Plains
+        --if IsOutdoors() and SpellCasting.canBeCasted(HUNTING_COMPANION) and not Core.hasCharacterBuff(HUNTING_COMPANION) then
+        --  SpellCasting.castSpell(HUNTING_COMPANION)
+        --end
         if Core.isCharacterInCombat() and not Core.isAlive('target') then
           _.targetMob()
         end
@@ -78,7 +84,7 @@ end
 function _.targetMob()
   local mobs = Core.receiveMobsThatAreInCombat()
   local mob = Array.min(mobs, function(mob)
-    return Core.calculateDistanceFromCharacterToObject(mob)
+    return UnitHealth(mob)
   end)
   if mob then
     Core.targetUnit(mob)

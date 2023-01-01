@@ -1,0 +1,5 @@
+## Title: InitializableTogglable
+## Interface: 11403
+## Dependencies: Togglable
+
+InitializableTogglable.lua

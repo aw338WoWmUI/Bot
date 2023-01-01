@@ -1070,7 +1070,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
   end
 
   local function runForDragonriding(action, actionSequenceDoer, remainingDistance)
-    Movement.Dragonriding.faceWaypoint(waypoint, action)
+    Movement.Dragonriding.updateFacing(waypoint, action)
 
     if Movement.Dragonriding.areConditionsMetForFlyingHigher(waypoint) then
       print('Movement.Dragonriding.areConditionsMetForFlyingHigher', 'ja')
