@@ -22,6 +22,10 @@ function Movement.Dragonriding.areConditionsMetForFlyingHigher(targetPoint)
   )
 end
 
+function _.findWayOnTheSide()
+  -- TODO: Implement
+end
+
 function _.areEnoughPointsAvailableToReachTargetHeight(targetHeight)
   local characterPosition = Core.retrieveCharacterPosition()
   return Movement.Dragonriding.areAMinimumOfNPointsAvailable(math.ceil((targetHeight - characterPosition.z) / SKYWARD_ASCENT_ASCEND_HEIGHT))
