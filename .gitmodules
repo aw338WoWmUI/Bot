@@ -1,6 +1,3 @@
-[submodule "AddOns/AStar"]
-	path = AddOns/AStar
-	url = https://github.com/AkiKonani/a-star-lua.git
 [submodule "AddOns/Array"]
 	path = AddOns/Array
 	url = https://github.com/SanjoSolutions/LuaArray.git

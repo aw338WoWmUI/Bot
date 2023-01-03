@@ -1060,10 +1060,21 @@ function Core.retrieveObjects()
 end
 
 function Core.printObjects()
-  local objects = Core.retrieveObjectPointers()
-  Array.forEach(objects, function(object)
-    print(UnitName(object), HWT.ObjectId(object))
+  local objects = Array.map(Core.retrieveObjectPointers(), function (object)
+    return {
+      name = UnitName(object),
+      objectID = HWT.ObjectId(object),
+      distance = Core.calculateDistanceFromCharacterToObject(object)
+    }
   end)
+  table.sort(objects, _.compareDistance)
+  Array.forEach(objects, function(object)
+    print(object.name, object.objectID, Math.round(object.distance))
+  end)
+end
+
+function _.compareDistance(a, b)
+	return a.distance < b.distance
 end
 
 function Core.retrieveObjectWhichAreCloseToTheCharacter(maximumDistance)
@@ -1215,6 +1226,7 @@ function Core._moveTo(to, options)
 end
 
 function Core.moveTo(point, options)
+  print('Core.moveTo')
   options = options or {}
   local additionalStopConditions = options.additionalStopConditions
   local distance = options.distance or 1
@@ -1237,8 +1249,9 @@ function Core.moveToUntil(point, options)
 
     local stopCondition = options.stopCondition
 
-    if Movement.isPositionInTheAir(point) and not Movement.canCharacterFly() then
-      point = Movement.createPoint(
+    if Movement.isPositionInTheAir(point) and not Movement.canCharacterFlyOrDragonride() then
+      point = Core.createWorldPosition(
+        point.continentID,
         point.x,
         point.y,
         Core.retrieveZCoordinate(point) or point.z
@@ -1274,7 +1287,7 @@ function Core.moveToObject(pointer, options)
       local position = Core.retrieveObjectPosition(pointer)
 
       if position then
-        if Movement.isPositionInTheAir(position) and not Movement.canCharacterFly() then
+        if Movement.isPositionInTheAir(position) and not Movement.canCharacterFlyOrDragonride() then
           position = Core.createWorldPosition(
             position.continentID,
             position.x,
@@ -1329,6 +1342,7 @@ function Core.moveToObject(pointer, options)
 end
 
 function Core.moveToAndInteractWithObject(pointer, distance, delay)
+  print('Core.moveToAndInteractWithObject')
   local pausable, pausableInternal = Pausable.Pausable:new()
   Coroutine.runAsCoroutine(function()
     distance = distance or Core.INTERACT_DISTANCE
@@ -1343,6 +1357,7 @@ function Core.moveToAndInteractWithObject(pointer, distance, delay)
     if pausable:isRunning() and HWT.ObjectExists(pointer) and Core.isCharacterCloseToPosition(position,
       distance) then
       pausableInternal:pauseIfHasBeenRequestedToPause()
+      print('Core.moveToAndInteractWithObject -> Core.interactWithObject')
       Core.interactWithObject(pointer)
       pausableInternal:pauseIfHasBeenRequestedToPause()
       Coroutine.waitForDuration(1)

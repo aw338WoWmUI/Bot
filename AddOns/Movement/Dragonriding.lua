@@ -13,13 +13,20 @@ local WHIRLING_SURGE_COST = 3
 
 local SKYWARD_ASCENT_ASCEND_HEIGHT = 52.485332489014
 
+local LOOK_AHEAD_DISTANCE = 50
+
 -- TODO: Does it work correctly (in terms that the pitch and yaw are correctly considered)?
 function Movement.Dragonriding.areConditionsMetForFlyingHigher(targetPoint)
-  return (
+  local characterPosition = Core.retrieveCharacterPosition()
+  local result = (
     SpellCasting.canBeCasted(SKYWARD_ASCENT_SPELL_ID) and
-      Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint) and
-      _.areEnoughPointsAvailableToReachTargetHeight(targetPoint.z)
+      (not IsFlying() or Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint)) and
+      _.areEnoughPointsAvailableToReachTargetHeight(math.max(targetPoint.z, characterPosition.z + Movement.Dragonriding.measureMountainHeight(targetPoint)))
   )
+  if result then
+    print('conditions are met for flying higher')
+  end
+  return result
 end
 
 function _.findWayOnTheSide()
@@ -32,7 +39,7 @@ function _.areEnoughPointsAvailableToReachTargetHeight(targetHeight)
 end
 
 function Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint)
-  local distance = math.min(15, Core.calculateDistanceFromCharacterToPosition(targetPoint))
+  local distance = math.min(LOOK_AHEAD_DISTANCE, Core.calculateDistanceFromCharacterToPosition(targetPoint))
   return Movement.isObstacleInFrontOfCharacter(distance)
 end
 
@@ -41,7 +48,7 @@ function Movement.Dragonriding.flyHigher()
 end
 
 function Movement.Dragonriding.liftUp()
-  HWT.SetPitch(math.rad(10))
+  HWT.SetPitch(math.rad(45))
   Movement.Dragonriding.castSkywardAscent()
   Coroutine.waitForDuration(1.5)
 end
@@ -61,7 +68,7 @@ function Movement.Dragonriding.updateFacing(waypoint, action)
 
   local yaw, pitchFromCharacterToWaypoint = Movement.calculateAnglesFromCharacterToPoint(waypoint)
   local characterPosition = Core.retrieveCharacterPosition()
-  if Movement.thereAreZeroCollisions(characterPosition, waypoint) then
+  if Core.calculate2DDistanceFromCharacterToPosition(waypoint) <= 5 or Movement.thereAreZeroCollisions(characterPosition, waypoint) then
     pitch = pitchFromCharacterToWaypoint
   else
     pitch = math.rad(-5)
@@ -123,4 +130,32 @@ end
 
 function Movement.Dragonriding.areEnoughPointsAvailableForSpell(cost)
 	return Movement.Dragonriding.areAMinimumOfNPointsAvailable(cost + NUMBER_OF_POINTS_TO_SAVE_FOR_SKYWARD_ASCENT)
+end
+
+local MAXIMUM_MOUNTAIN_HEIGHT = 1000
+
+function Movement.Dragonriding.measureMountainHeight(waypoint)
+	local length = LOOK_AHEAD_DISTANCE
+  local characterPosition = Core.retrieveCharacterPosition()
+  for offsetZ = 0, MAXIMUM_MOUNTAIN_HEIGHT, SKYWARD_ASCENT_ASCEND_HEIGHT do
+    local z = characterPosition.z + offsetZ
+    local a = Core.createWorldPosition(
+      characterPosition.continentID,
+      characterPosition.x,
+      characterPosition.y,
+      z
+    )
+    local b = Core.createWorldPosition(
+      waypoint.continentID,
+      waypoint.x,
+      waypoint.y,
+      z
+    )
+    local b2 = Core.retrievePositionBetweenPositions(a, b, length)
+    if Movement.thereAreZeroCollisions(a, b2) then
+      return offsetZ
+    end
+  end
+
+  return nil
 end

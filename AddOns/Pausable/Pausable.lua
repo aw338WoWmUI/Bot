@@ -61,6 +61,11 @@ end
 function Pausable.Pausable:resume()
   self._hasBeenRequestedToPause = false
   self._isPaused = false
+  if self._thread then
+    local thread = self._thread
+    self._thread = nil
+    Coroutine.resumeWithShowingError(thread)
+  end
 end
 
 function Pausable.Pausable:afterNextRegisterAsPaused(callback)

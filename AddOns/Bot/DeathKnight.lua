@@ -38,7 +38,7 @@ end
 local RAISE_ALLY = 61999
 
 function _.areConditionsMetForRaiseAlly(characterToResurrect)
-  return SpellCasting.canBeCasted(RAISE_ALLY) and characterToResurrect ~= nil
+  return characterToResurrect ~= nil and SpellCasting.canBeCasted(RAISE_ALLY)
 end
 
 function _.areConditionsMetForHealing()

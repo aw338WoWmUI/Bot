@@ -175,8 +175,6 @@ HWT.GameObjectType(Core.findClosestObjectToCharacterWithObjectID(203972))
 
 Movement.isJumpSituation(savedPosition)
 
-AStar.canPathBeMoved(Movement.path)
-
 Core.traceLineCollision(Movement.createPointWithZOffset(MovementPath[10], 1), Movement.createPointWithZOffset(MovementPath[10], -1000))
 
 -- z

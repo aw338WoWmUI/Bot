@@ -1,5 +1,5 @@
 ## Title: Pausable
 ## Interface: 30400
-## Dependencies: Stoppable, Hook, Resolvable, Array
+## Dependencies: Stoppable, Hook, Resolvable, Array, Coroutine
 
 Pausable.lua

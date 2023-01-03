@@ -132,6 +132,12 @@ function Movement.isObstacleInFront(position, distance)
     position.z + zOffset
   )
   local position2 = Movement.calculateIsObstacleInFrontToPosition(position1, distance)
+  lines = {
+    {
+      position1,
+      position2
+    }
+  }
   return not Movement.thereAreZeroCollisions(position1, position2)
 end
 
@@ -348,7 +354,7 @@ function Movement.canBeFlownFromPointToPoint(from, to)
       return false
     end
   end
-  local a = Movement.isFlyingAvailableInZone() and Movement.canCharacterFly()
+  local a = Movement.isFlyingAvailableInZone() and Movement.canCharacterFlyOrDragonride()
   local b = Movement.isEnoughSpaceOnTop(from, to)
   local c = Movement.canPlayerBeOnPoint(to, { withMount = true })
   return a and b and c
@@ -418,7 +424,7 @@ function _.canPlayerBeOnPoint2(point, options)
 
     return result
   else
-    local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(Movement.retrieveContinentID(),
+    local closestPointOnMesh = Core.retrieveClosestPositionOnMesh(Core.createWorldPosition(Movement.retrieveContinentID(),
       point.x, point.y, point.z))
     if closestPointOnMesh and Float.seemsCloseBy(closestPointOnMesh.x,
       point.x) and Float.seemsCloseBy(closestPointOnMesh.y, point.y) then
@@ -718,7 +724,7 @@ function Movement.generateMiddlePoint(fromPosition, offsetX, offsetY)
     Movement.createPoint(fromPosition.x + offsetX, fromPosition.y + offsetY, fromPosition.z)
   )
   local isInAir = Movement.isPointInAir(point2)
-  if isInAir and Movement.canCharacterFly() then
+  if isInAir and Movement.canCharacterFlyOrDragonride() then
     local point3 = {
       x = point2.x,
       y = point2.y,
@@ -931,6 +937,10 @@ local JOURNEYMAN_RIDING = 33391
 local EXPERT_RIDING = 34092
 local MASTER_RIDING = 90265
 
+function Movement.canCharacterFlyOrDragonride()
+	return Movement.canCharacterFly() or Movement.canCharacterRideDragon()
+end
+
 function Movement.canCharacterFly()
   return (
     (Movement.canCharacterMount() and (IsSpellKnown(EXPERT_RIDING) or IsSpellKnown(MASTER_RIDING)) and Movement.isFlyingAvailableInZone() and Movement.isAFlyingMountAvailable()) or
@@ -1025,23 +1035,29 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
   local function runForGroundAndFlying(action, actionSequenceDoer, remainingDistance)
     local characterPosition = Movement.retrieveCharacterPosition()
 
-    if (
+    local liftUpWithFlyingMount = (
       Movement.canCharacterFly() and
         Movement.isMountedOnFlyingMount() and
         (remainingDistance > 10 or Movement.isPositionInTheAir(waypoint)) and
         (Movement.isPointCloseToGround(characterPosition) or (Movement.isPointInDeepWater(characterPosition) and not Movement.isPointInDeepWater(waypoint))) and
         (not isLastWaypoint or Movement.isPositionInTheAir(waypoint))
-    ) then
-      Movement.liftUp()
-    elseif (
+    )
+
+    local liftUpWithDragonridingMount = (
       Movement.canCharacterRideDragon() and
         Movement.isMountedOnDragonridingMount() and
         (remainingDistance > 30 or Movement.isPositionInTheAir(waypoint)) and
         Movement.Dragonriding.areConditionsMetForFlyingHigher(waypoint)
-    ) then
+    )
+
+    print('liftUpWithDragonridingMount', liftUpWithDragonridingMount)
+
+    if liftUpWithFlyingMount then
+      Movement.liftUp()
+    elseif liftUpWithDragonridingMount then
       Core.stopMovingForward()
       Movement.liftUp()
-      return
+      return -- transition to dragonriding
     end
 
     if Movement.Flying.areConditionsMetForFlyingHigher(waypoint) then
@@ -1090,6 +1106,9 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
 
   return {
     run = function(action, actionSequenceDoer)
+      action.hasFlown = action.hasFlown or IsFlying()
+      action.hasLanded = action.hasLanded or (action.hasFlown and not IsFlying())
+
       if not actionSequenceDoer.mounter then
         actionSequenceDoer.mounter = _.Mounter:new()
       end
@@ -1122,9 +1141,9 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
           _.isPointCloseToCharacterWithZTolerance(waypoint)
       )
     end,
-    shouldCancel = function()
+    shouldCancel = function(action)
       return (
-        a.shouldStop() or
+        a.shouldStop(action) or
           Core.calculateDistanceFromCharacterToPosition(waypoint) > math.max(initialDistance + 5,
             Movement.retrieveCharacterHeight()) or
           _.isPositionUnreachable(waypoint)
@@ -1141,7 +1160,7 @@ function Movement.calculateRemainingPathDistance(path, nextWaypointIndex)
 end
 
 function _.isPositionUnreachable(position)
-  return Movement.isPositionInTheAirWhereAFlyingMountSeemsRequired(position) and not Movement.canCharacterFly()
+  return Movement.isPositionInTheAirWhereAFlyingMountSeemsRequired(position) and not Movement.canCharacterFlyOrDragonride()
 end
 
 function _.isPointCloseToCharacterWithZTolerance(point)
@@ -1222,12 +1241,12 @@ function _.faceWaypoint(action, waypoint, isLastWaypoint)
   end
   local facingPoint
   if not isLastWaypoint then
-    if Movement.isPointCloseToGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canCharacterFly() then
+    if Movement.isPointCloseToGround(waypoint) and Movement.isMountedOnFlyingMount() and Movement.canCharacterFlyOrDragonride() then
       facingPoint = Movement.createPointWithZOffset(waypoint, TARGET_LIFT_HEIGHT)
     else
       facingPoint = waypoint
     end
-    if Movement.isMountedOnFlyingMount() and Movement.canCharacterFly() then
+    if Movement.isMountedOnFlyingMount() and Movement.canCharacterFlyOrDragonride() then
       local pointInAir = Movement.determinePointHighEnoughToStayInAir(waypoint)
       if pointInAir and Core.calculateDistanceFromCharacterToPosition(waypoint) > 5 then
         facingPoint = pointInAir
@@ -1297,6 +1316,7 @@ function _.Mounter:stopTryingToMount()
 end
 
 function _.isCharacterAlreadyOnBestMount()
+  -- TODO: Dragonriding
   return Movement.isMountedOnFlyingMount() or (not Movement.canCharacterFly() and IsMounted())
 end
 
@@ -1764,47 +1784,12 @@ function Movement.storeConnection(path)
 end
 
 function Movement.findPathInner(from, to, toleranceDistance, a)
-  local path
-  -- aStarPoints = {}
-
-  local receiveNeighborPoints = function(point)
-    return Movement.receiveNeighborPoints(point, DISTANCE)
-  end
-
-  --local points = receiveNeighborPoints(from)
-  --DevTools_Dump(points)
-  --aStarPoints = points
-
-  -- local yielder = Yielder.createYielder()
-  local yielder = Yielder.createYielderWithTimeTracking(1 / 60)
-  Movement.yielder = yielder
-
-  local path = nil
-  local subPathWhichHasBeenGeneratedFromMovementPoints = nil
-
-  path, subPathWhichHasBeenGeneratedFromMovementPoints = AStar.findPath(
-    from,
-    to,
-    receiveNeighborPoints,
-    a,
-    yielder,
-    toleranceDistance
-  )
+  local path = Core.findPath(from, to)
 
   Movement.path = path
   AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 
-  if subPathWhichHasBeenGeneratedFromMovementPoints then
-    Movement.storeConnection(subPathWhichHasBeenGeneratedFromMovementPoints)
-  end
-
   return path
-end
-
-function Movement.resume()
-  if Movement.yielder then
-    Movement.yielder.resume()
-  end
 end
 
 function Movement.receiveNeighborPoints(point, distance)
@@ -1841,9 +1826,7 @@ function Movement.movePath(path, options)
     Movement.stopMoving()
   end
   local a = {
-    shouldStop = options.stop or function()
-      return false
-    end
+    shouldStop = options.stop or Function.alwaysFalse
   }
   local pathLength = #path
   local totalDistance = Core.calculatePathLength(path)
@@ -1913,13 +1896,20 @@ local function isDifferentPathFindingRequestThanRun(to)
 end
 
 function Movement.moveTo(to, options)
+  print('Movement.moveTo')
   options = options or {}
-  local stop = options.stop
+  local stop = options.stop or Function.alwaysFalse
 
-  if not (stop and stop()) then
+  local function hasArrived()
+    local toleranceDistance = options.toleranceDistance or 0
+    return Core.calculateDistanceFromCharacterToPosition(to) <= toleranceDistance
+  end
+
+  while not stop() and not hasArrived() do
     local from = Core.retrieveCharacterPosition()
 
-    if Movement.canCharacterRideDragon() or Movement.canCharacterFly() then
+    if (Movement.canCharacterRideDragon() and (IsFlying() or Movement.Dragonriding.areConditionsMetForFlyingHigher(to))) or Movement.canCharacterFly() then
+      print(1)
       Movement.stopPathFindingAndMoving()
 
       local path = {
@@ -1931,13 +1921,14 @@ function Movement.moveTo(to, options)
 
       local resolvable
       resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
-        stop = function()
-          return (stop and stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance) or Core.isCharacterDead()
+        stop = function(context)
+          return (stop and stop()) or hasArrived() or Core.isCharacterDead() or context.hasLanded
         end,
         continueMoving = options.continueMoving
       })
       await(resolvable)
     else
+      print(2)
       do
         local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(from)
         if closestPositionOnMesh then
@@ -1954,14 +1945,7 @@ function Movement.moveTo(to, options)
 
       if isDifferentPathFindingRequestThanRun(to) then
         Movement.stopPathFindingAndMoving()
-        run = {
-          from = from,
-          to = to
-        }
-        pathFinder = Movement.createPathFinder()
-        local path = pathFinder.start(from, to, options.toleranceDistance)
-        pathFinder = nil
-        Movement.path = path
+        local path = _.findPath(from, to, options)
         AddOn.savedVariables.perCharacter.MovementPath = Movement.path
         if path then
           local resolvable
@@ -1976,7 +1960,22 @@ function Movement.moveTo(to, options)
         end
       end
     end
+
+    Coroutine.yieldAndResume()
   end
+
+  print(3)
+end
+
+function _.findPath(from, to, options)
+  run = {
+    from = from,
+    to = to
+  }
+  pathFinder = Movement.createPathFinder()
+  local path = pathFinder.start(from, to, options.toleranceDistance)
+  pathFinder = nil
+  Movement.path = path
 end
 
 local function moveToFromNonCoroutine(x, y, z)
@@ -2148,8 +2147,10 @@ function Movement.traceLineWithFallback(from, to, traceLineHitFlags)
     local y = from.y
     local includeWater = Core.areFlagsSet(traceLineHitFlags,
       Core.TraceLineHitFlags.WATER) or Core.areFlagsSet(traceLineHitFlags, Core.TraceLineHitFlags.WATER2)
-    local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(Movement.retrieveContinentID(),
-      from), includeWater)
+    local closestPointOnMesh = Core.retrieveClosestPositionOnMesh(
+      Core.createWorldPosition(Movement.retrieveContinentID(), from.x, from.y, from.z),
+      includeWater
+    )
     local minZ = math.min(from.z, to.z)
     local maxZ = math.max(from.z, to.z)
     if (
@@ -2172,19 +2173,6 @@ function Movement.createPositionFromPoint(continentID, point)
     y = point.y,
     z = point.z
   }
-end
-
-function Movement.retrieveClosestPointOnMesh(position, includeWater)
-  if includeWater == nil then
-    includeWater = true
-  end
-  local x, y, z = HWT.GetClosestPositionOnMesh(position.continentID, position.x, position.y, position.z,
-    not includeWater)
-  if x and y and z then
-    return Movement.createPoint(x, y, z)
-  else
-    return nil
-  end
 end
 
 function Movement.retrievePositionBetweenPositions(a, b, distanceFromA)
@@ -2281,31 +2269,8 @@ function findPathE2()
   AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 end
 
-function findPathE3()
-  local playerPosition = Movement.retrieveCharacterPosition()
-  Movement.path = Core.findPath(playerPosition, AddOn.savedVariables.accountWide.savedPosition)
-  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
-  return AStar.canPathBeMoved(Movement.path)
-end
-
 function findPathE4()
   local path = Core.findPathFromCharacterTo(Questing.savedVariables.perCharacter.QuestingPointToMove)
-  Movement.path = path
-  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
-end
-
-function findPathE5()
-  local continentID = Movement.retrieveContinentID()
-  local playerPosition = Movement.retrieveCharacterPosition()
-  local start = Movement.createPoint(HWT.GetClosestPositionOnMesh(continentID, playerPosition.x, playerPosition.y,
-    playerPosition.z))
-  local path = HWT.FindPath(continentID, start.x, start.y, start.z,
-    Questing.savedVariables.perCharacter.QuestingPointToMove.x,
-    Questing.savedVariables.perCharacter.QuestingPointToMove.y,
-    Questing.savedVariables.perCharacter.QuestingPointToMove.z, false, 1024, 0, 1, false)
-  if path then
-    path = Core.convertHWTPathToPath(path)
-  end
   Movement.path = path
   AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 end
@@ -2382,7 +2347,7 @@ HWT.doWhenHWTIsLoaded(function()
       Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
     end)
 
-    Draw.SetColorRaw(0, 1, 0, 1)
+    Draw.SetColorRaw(0, 0, 1, 1)
     Array.forEach(lines, function(line)
       local a = line[1]
       local b = line[2]
@@ -2432,5 +2397,5 @@ HWT.doWhenHWTIsLoaded(function()
 end)
 
 function Movement.canOnlyBeMovedOnGround()
-  return not Movement.canCharacterRideDragon() and not Movement.canCharacterFly()
+  return not Movement.canCharacterFlyOrDragonride()
 end

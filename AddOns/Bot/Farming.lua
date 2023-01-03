@@ -2,9 +2,30 @@ Bot = Bot or {}
 Bot.Farming = Bot.Farming or {}
 local _ = {}
 
+local farmedThing = nil
+local nextNode = nil
+
 function Bot.createTogglableFarming(retrieveNextPosition, findFarmedThings)
 	local togglable = Togglable.Togglable:new(function ()
     return Bot.startFarming(retrieveNextPosition, findFarmedThings)
+  end)
+
+  Draw.Sync(function ()
+    if farmedThing then
+      local characterPosition = Core.retrieveCharacterPosition()
+      local position = Core.retrieveObjectPosition(farmedThing)
+      Draw.SetColorRaw(0, 1, 0, 1)
+      Draw.Circle(position.x, position.y, position.z, 3)
+      Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+    end
+
+    if nextNode then
+      local characterPosition = Core.retrieveCharacterPosition()
+      local position = nextNode
+      Draw.SetColorRaw(0, 0, 1, 1)
+      Draw.Circle(position.x, position.y, position.z, 3)
+      Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+    end
   end)
 
   return togglable
@@ -36,6 +57,8 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
             end)
 
             local function doFarmThing()
+              nextNode = nil
+              farmedThing = closestFarmedThing
               if Core.canCharacterAttackUnit(closestFarmedThing) then
                 return Core.doMob(closestFarmedThing)
               else
@@ -43,11 +66,18 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
               end
             end
 
+            print(1)
             await(visitNodes:pause())
+            print(2)
             local farmThing = doFarmThing()
+            print(3)
             pausable:alsoPause(farmThing)
+            print(4)
             await(farmThing)
+            farmedThing = nil
+            print(5)
             visitNodes:resume()
+            print(6)
           end
 
           Coroutine.waitForDuration(1)
@@ -59,7 +89,7 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
 
     local retrieveNextClosestPosition, markPositionAsVisited = retrieveNextPosition()
 
-    local HOW_TO_CLOSE_TO_FLY_TO_NODE = 40
+    local HOW_TO_CLOSE_TO_FLY_TO_NODE = 166
 
     local function doVisitNodes()
       local pausable, pausableInternal = Pausable.Pausable:new()
@@ -67,9 +97,8 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
       Coroutine.runAsCoroutine(function()
         while true do
           local closestNode = retrieveNextClosestPosition()
-          print('closestNode')
-          DevTools_Dump(closestNode)
           if closestNode then
+            nextNode = closestNode
             moveToNextNode = Core.moveTo(closestNode, {
               distance = HOW_TO_CLOSE_TO_FLY_TO_NODE,
               additionalStopConditions = function()
@@ -77,12 +106,15 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
               end
             })
             await(moveToNextNode)
+            nextNode = nil
             if _.hasVisitedNode(closestNode) then
               markPositionAsVisited(closestNode)
             end
-
-            pausableInternal:pauseIfHasBeenRequestedToPause()
           end
+
+          print('p1')
+          pausableInternal:pauseIfHasBeenRequestedToPause()
+          print('p2')
 
           Coroutine.yieldAndResume()
         end

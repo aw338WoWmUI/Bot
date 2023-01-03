@@ -49,24 +49,24 @@ function Bot.findThingsThatDropDragonShardOfKnowledge()
   Draw.Sync(function()
     local characterPosition = Core.retrieveCharacterPosition()
     if characterPosition then
-      --local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(characterPosition)
+      local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(characterPosition)
       Array.forEach(objectsWhoDrop, function(object)
         local position = Core.retrieveObjectPosition(object)
         if position then
           Draw.SetColorRaw(0, 1, 0, 1)
           Draw.Circle(position.x, position.y, position.z, 1)
-          --local hasDrawnPathToObject = false
-          --if closestPositionOnMesh then
-          --  local path = Core.findPath(closestPositionOnMesh, position)
-          --  if path then
-          --    Core.drawPath(path)
-          --    hasDrawnPathToObject = true
-          --  end
-          --end
-          --if not hasDrawnPathToObject then
-          Draw.SetColorRaw(0, 1, 0, 1)
-          Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
-          --end
+          local hasDrawnPathToObject = false
+          if closestPositionOnMesh then
+            local path = Core.findPath(closestPositionOnMesh, position)
+            if path then
+              Core.drawPath(path)
+              hasDrawnPathToObject = true
+            end
+          end
+          if not hasDrawnPathToObject then
+            Draw.SetColorRaw(0, 1, 0, 1)
+            Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+          end
         end
       end)
     end
@@ -74,6 +74,9 @@ function Bot.findThingsThatDropDragonShardOfKnowledge()
 
   C_Timer.NewTicker(1, function()
     objectsWhoDrop = _.findThings()
+    Array.forEach(objectsWhoDrop, function (object)
+      print('distance', Core.calculateDistanceFromCharacterToObject(object))
+    end)
   end)
 end
 

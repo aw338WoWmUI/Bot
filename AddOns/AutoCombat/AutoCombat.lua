@@ -83,11 +83,19 @@ end
 
 function _.targetMob()
   local mobs = Core.receiveMobsThatAreInCombat()
-  local mob = Array.min(mobs, function(mob)
+  local mobsInCombatRange = Array.filter(mobs, _.isInCombatRange)
+  local mob = Array.min(mobsInCombatRange, function(mob)
     return UnitHealth(mob)
   end)
   if mob then
     Core.targetUnit(mob)
+  else
+    local mob = Array.min(mobs, function(mob)
+      return UnitHealth(mob)
+    end)
+    if mob then
+      Core.targetUnit(mob)
+    end
   end
 end
 
@@ -95,4 +103,8 @@ function _.waitForHasStopped()
   Coroutine.waitFor(function()
     return not isRunning
   end)
+end
+
+function _.isInCombatRange(mob)
+	return Core.calculateDistanceFromCharacterToObject(mob) - HWT.UnitBoundingRadius(mob) <= Core.retrieveCharacterCombatRange()
 end

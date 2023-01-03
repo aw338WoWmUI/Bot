@@ -1601,7 +1601,7 @@ end
 function _.findClosestPointOnMeshWithPathTo(position)
   local continentID = select(8, GetInstanceInfo())
   local previousClosesPointOnMesh = nil
-  local closestPointOnMesh = Movement.retrieveClosestPointOnMesh(position)
+  local closestPointOnMesh = Core.retrieveClosestPositionOnMesh(position)
   while closestPointOnMesh and not (previousClosesPointOnMesh and closestPointOnMesh == previousClosesPointOnMesh) do
     if Core.doesPathExistFromCharacterTo(closestPointOnMesh) then
       return closestPointOnMesh
@@ -1616,8 +1616,9 @@ function _.findClosestPointOnMeshWithPathTo(position)
           Movement.createPointWithZOffset(point, 0.1),
           Movement.createPointWithZOffset(point, -0.1)
         )
-        closestPointOnMesh = Movement.retrieveClosestPointOnMesh(Movement.createPositionFromPoint(continentID,
-          point2))
+        closestPointOnMesh = Core.retrieveClosestPositionOnMesh(
+          Core.createWorldPosition(continentID, point2.x, point2.y, point2.z)
+        )
       else
         closestPointOnMesh = nil
       end
