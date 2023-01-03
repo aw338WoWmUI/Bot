@@ -87,7 +87,8 @@ function _.findThings()
           Set.contains(unitClassesWhichSeemToDropDragonShardOfKnowledge, UnitClassification(object)) or
             Set.contains(AddOn.droppedBy, objectID)
         ) and
-          Core.isAlive(object)
+          Core.isAlive(object) and
+          Core.canCharacterAttackUnit(object)
       ) or
         (Set.contains(AddOn.containedIn1, objectID) or Set.contains(AddOn.containedIn2,
           objectID) or Set.contains(AddOn.containedIn3,
