@@ -90,11 +90,12 @@ function Movement.Dragonriding.surgeForward()
 end
 
 function Movement.Dragonriding.areConditionsMetForWhirlingSurge()
-  return (
-    SpellCasting.canBeCasted(WHIRLING_SURGE) and
-      Movement.Dragonriding.areEnoughPointsAvailableForSpell(WHIRLING_SURGE_COST) and
-      not Movement.isObstacleInFrontOfCharacter(45)
-  )
+  --return (
+  --  SpellCasting.canBeCasted(WHIRLING_SURGE) and
+  --    Movement.Dragonriding.areEnoughPointsAvailableForSpell(WHIRLING_SURGE_COST) and
+  --    not Movement.isObstacleInFrontOfCharacter(45)
+  --)
+  return false
 end
 
 function Movement.Dragonriding.whirlingSurge()

@@ -74,9 +74,9 @@ function Bot.findThingsThatDropDragonShardOfKnowledge()
 
   C_Timer.NewTicker(1, function()
     objectsWhoDrop = _.findThings()
-    Array.forEach(objectsWhoDrop, function (object)
-      print('distance', Core.calculateDistanceFromCharacterToObject(object))
-    end)
+    --Array.forEach(objectsWhoDrop, function (object)
+    --  print('distance', Core.calculateDistanceFromCharacterToObject(object))
+    --end)
   end)
 end
 

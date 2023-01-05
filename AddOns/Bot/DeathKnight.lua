@@ -10,9 +10,21 @@ local LICHBORNE = 49039
 local DEATH_COIL = 47541
 local DEATH_STRIKE = 49998
 
+local IDs = Set.create({
+  194524,
+  197008,
+  189843
+})
+
 function Bot.DeathKnight.castSpell()
   local characterToResurrect = _.findCharacterToResurrect()
-  if _.areConditionsMetForRaiseAlly(characterToResurrect) then
+  if IDs:contains(HWT.ObjectId('target')) and UnitHealth('target') <= 75000 then
+    print('aaa')
+    Core.useItemByID(199414, 'target')
+    if Core.canStaticPopup1Button1BePressed() then
+      StaticPopup1Button1:Click()
+    end
+  elseif _.areConditionsMetForRaiseAlly(characterToResurrect) then
     _.raiseAlly(characterToResurrect)
   elseif _.areConditionsMetForHealing() and (Core.hasCharacterBuff(LICHBORNE) or SpellCasting.canBeCasted(LICHBORNE)) and SpellCasting.canBeCasted(DEATH_COIL) then
     if not Core.hasCharacterBuff(LICHBORNE) then
@@ -38,7 +50,7 @@ end
 local RAISE_ALLY = 61999
 
 function _.areConditionsMetForRaiseAlly(characterToResurrect)
-  return characterToResurrect ~= nil and SpellCasting.canBeCasted(RAISE_ALLY)
+  return characterToResurrect ~= nil and SpellCasting.canBeCasted(RAISE_ALLY, characterToResurrect)
 end
 
 function _.areConditionsMetForHealing()
@@ -61,17 +73,35 @@ function _.findCharacterToResurrect()
   elseif UnitInParty('player') then
     Array.append(unitTokens, partyUnitTokens)
   end
-  local deadTank = Array.find(unitTokens, function(unitToken)
+  local deadTanks = Array.filter(unitTokens, function(unitToken)
     return UnitGroupRolesAssigned(unitToken) == 'TANK' and UnitIsDead(unitToken)
   end)
-  if deadTank then
-    return deadTank
+  if #deadTanks >= 1 then
+    local deadTanksThatResurrectCanBeCastedOn = Array.filter(deadTanks, function (deadTank)
+      return SpellCasting.isSpellInRange(RAISE_ALLY, deadTank)
+    end)
+    if #deadTanksThatResurrectCanBeCastedOn >= 1 then
+      return deadTanksThatResurrectCanBeCastedOn[1]
+    else
+      return nil
+    end
   else
-    local deadHealer = Array.find(unitTokens, function(unitToken)
+    local deadHealers = Array.filter(unitTokens, function(unitToken)
       return UnitGroupRolesAssigned(unitToken) == 'HEALER' and UnitIsDead(unitToken)
     end)
-    return deadHealer
+    if #deadHealers >= 1 then
+      local deadHealersThatResurrectCanBeCastedOn = Array.filter(deadHealers, function (deadHealer)
+        return SpellCasting.isSpellInRange(RAISE_ALLY, deadHealer)
+      end)
+      if #deadHealersThatResurrectCanBeCastedOn >= 1 then
+        return deadHealersThatResurrectCanBeCastedOn[1]
+      else
+        return nil
+      end
+    end
   end
+
+  return nil
 end
 
 function _.raiseAlly(characterToResurrect)
