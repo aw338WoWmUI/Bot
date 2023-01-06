@@ -24,10 +24,12 @@ function Togglable.Togglable:toggle()
       self._stoppable:afterStop(function ()
         self._isRunning = false
       end)
+      print('stop')
       self._stoppable:stop()
       self._stoppable = nil
     end
   else
+    self._isRunning = true
     self._stoppable = self._start()
   end
 end

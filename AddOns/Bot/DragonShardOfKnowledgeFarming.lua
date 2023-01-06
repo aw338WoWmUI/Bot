@@ -10,6 +10,14 @@ function Bot.toggleDragonShardOfKnowledgeFarming()
   initializableTogglable:toggle()
 end
 
+local initializableTogglable2 = InitializableTogglable.InitializableTogglable:new(function()
+  return Bot.createTogglableAssistedFarming(_.retrieveNextPosition, _.findThings)
+end)
+
+function Bot.toggleAssistedDragonShardOfKnowledgeFarming()
+  initializableTogglable2:toggle()
+end
+
 function _.retrieveNextPosition()
   return Bot.Farming.retrieveNextPosition(_.retrieveAllPositions)
 end

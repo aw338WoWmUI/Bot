@@ -1258,7 +1258,7 @@ function Core.moveToUntil(point, options)
       )
     end
 
-    while stoppable:isRunning() and not stopCondition() do
+    while stoppable:hasBeenRequestedToStop() and not stopCondition() do
       local stoppable2 = Core._moveTo(point, {
         toleranceDistance = options.toleranceDistance,
         stop = stopCondition
@@ -1321,7 +1321,7 @@ function Core.moveToObject(pointer, options)
     end
 
     local position = retrievePosition()
-    while stoppable:isRunning() and not isJobDone(position) do
+    while stoppable:hasBeenRequestedToStop() and not isJobDone(position) do
       lastMoveToPosition = position
       await(Core._moveTo(position, {
         toleranceDistance = distance,
@@ -1469,7 +1469,7 @@ function Core.doMob(pointer, options)
       Core.targetUnit(pointer)
       Core.startAttacking()
 
-      while stoppable:isRunning() and not isJobDone() do
+      while stoppable:hasBeenRequestedToStop() and not isJobDone() do
         local position = Core.retrieveObjectPosition(pointer)
         if not Core.isCharacterCloseToPosition(position, distance) then
           await(Core.moveToObject(pointer, {
@@ -1551,14 +1551,15 @@ local function gossipWithObject(pointer, chooseOption)
 
   Coroutine.runAsCoroutine(function()
     local name = Core.retrieveObjectName(pointer)
-    while stoppable:isRunning() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
+    while stoppable:hasBeenRequestedToStop() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
       await(Core.moveToAndInteractWithObject(pointer))
       if not GossipFrame:IsShown() then
         Events.waitForEvent('GOSSIP_SHOW', 2)
       end
       Coroutine.yieldAndResume()
     end
-    if stoppable:isRunning() and GossipFrame:IsShown() then
+
+    if not stoppable:hasBeenRequestedToStop() and GossipFrame:IsShown() then
       local gossipOptionID = chooseOption()
       if gossipOptionID then
         selectOption(gossipOptionID)
@@ -1618,9 +1619,11 @@ function Core.gossipWithAt(point, objectID, optionToSelect)
     await(interactWithStoppable)
     Events.waitForEvent('GOSSIP_SHOW', 2)
     Coroutine.yieldAndResume()
-    if stoppable:isRunning() and optionToSelect then
+    if stoppable:hasBeenRequestedToStop() and optionToSelect then
       selectOption(optionToSelect)
     end
+
+    stoppableInternal:resolve()
   end)
 
   return stoppable
@@ -1640,13 +1643,15 @@ function Core.interactWithAt(point, objectID, distance, delay)
       await(moveToStoppable)
     end
 
-    if stoppable:isRunning() then
+    if stoppable:hasBeenRequestedToStop() then
       local pointer = Core.findClosestObjectToCharacterWithObjectID(objectID)
       if pointer then
         Core.interactWithObject(pointer)
         Coroutine.waitForDuration(2)
       end
     end
+
+    stoppableInternal:resolve()
   end)
 
   return stoppable

@@ -938,7 +938,7 @@ local EXPERT_RIDING = 34092
 local MASTER_RIDING = 90265
 
 function Movement.canCharacterFlyOrDragonride()
-	return Movement.canCharacterFly() or Movement.canCharacterRideDragon()
+  return Movement.canCharacterFly() or Movement.canCharacterRideDragon()
 end
 
 function Movement.canCharacterFly()
@@ -1206,27 +1206,27 @@ function Movement.thereAreZeroCollisionsBetweenTheCharacterAndThePoint(point)
 end
 
 function Movement.isCharacterDragonriding()
-	return IsFlying() and Movement.isCharacterMountedOnDragonridingMount()
+  return IsFlying() and Movement.isCharacterMountedOnDragonridingMount()
 end
 
 function Movement.isCharacterMountedOnDragonridingMount()
-	return Movement.isDragonridingMount(Movement.receiveActiveMountID())
+  return Movement.isDragonridingMount(Movement.receiveActiveMountID())
 end
 
 function Movement.isCharacterMovingOnGroundSwimmingOrFlying()
-	return Movement.isCharacterMovingOnGround() or IsSwimming() or IsFlying()
+  return Movement.isCharacterMovingOnGround() or IsSwimming() or IsFlying()
 end
 
 function Movement.isCharacterMovingOnGround()
-	return not IsFlying() and not IsSwimming()
+  return not IsFlying() and not IsSwimming()
 end
 
 function Movement.isFlying()
-	return IsFlying() and Movement.isCharacterMountedOnFlyingMount()
+  return IsFlying() and Movement.isCharacterMountedOnFlyingMount()
 end
 
 function Movement.isCharacterMountedOnFlyingMount()
-	return Movement.isFlyingMount(Movement.receiveActiveMountID())
+  return Movement.isFlyingMount(Movement.receiveActiveMountID())
 end
 
 function _.faceWaypoint(action, waypoint, isLastWaypoint)
@@ -1261,7 +1261,7 @@ function _.faceWaypoint(action, waypoint, isLastWaypoint)
 end
 
 function Movement.retrieveMaximumDistanceForStoppingWhenFacing()
-	local maximumDistance
+  local maximumDistance
   if Movement.isCharacterDragonriding() then
     maximumDistance = MAXIMUM_DISTANCE_FOR_STOPPING_WHEN_FACING_WHILE_DRAGONRIDING
   elseif Movement.isCharacterMovingOnGroundSwimmingOrFlying() then
@@ -1497,10 +1497,10 @@ function Movement.isMountedOn(mountID)
   return Movement.receiveActiveMountID() == mountID
 end
 
-  function Movement.receiveActiveMountID()
+function Movement.receiveActiveMountID()
   local activeMountID = select(12, Movement.receiveActiveMount())
-  	return activeMountID
-  end
+  return activeMountID
+end
 
 function Movement.waitForDismounted()
   return Coroutine.waitFor(Movement.isDismounted)
@@ -2324,77 +2324,79 @@ function _.doWhenAddOnHasBeenLoaded()
   )
 end
 
-HWT.doWhenHWTIsLoaded(function()
-  AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
-  Movement.savedVariables = AddOn.savedVariables
+function Movement.enableVisualization()
+  HWT.doWhenHWTIsLoaded(function()
+    AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
+    Movement.savedVariables = AddOn.savedVariables
 
-  SavedVariables.registerAccountWideSavedVariables(
-    addOnName,
-    AddOn.savedVariables.accountWide
-  )
+    SavedVariables.registerAccountWideSavedVariables(
+      addOnName,
+      AddOn.savedVariables.accountWide
+    )
 
-  SavedVariables.registerSavedVariablesPerCharacter(
-    addOnName,
-    AddOn.savedVariables.perCharacter
-  )
+    SavedVariables.registerSavedVariablesPerCharacter(
+      addOnName,
+      AddOn.savedVariables.perCharacter
+    )
 
-  Movement.initializeSavedVariables()
-  _.doWhenAddOnHasBeenLoaded()
+    Movement.initializeSavedVariables()
+    _.doWhenAddOnHasBeenLoaded()
 
-  Draw.Sync(function()
-    Draw.SetColorRaw(0, 0, 1, 1)
-    Array.forEach(points, function(point)
-      Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
+    Draw.Sync(function()
+      Draw.SetColorRaw(0, 0, 1, 1)
+      Array.forEach(points, function(point)
+        Draw.Circle(point.x, point.y, point.z, Core.retrieveCharacterBoundingRadius())
+      end)
+
+      Draw.SetColorRaw(0, 0, 1, 1)
+      Array.forEach(lines, function(line)
+        local a = line[1]
+        local b = line[2]
+        Draw.Line(a.x, a.y, a.z, b.x, b.y, b.z)
+      end)
+
+      if DEVELOPMENT then
+        if AddOn.savedVariables.accountWide.savedPosition then
+          Draw.SetColorRaw(1, 1, 0, 1)
+          Draw.Circle(AddOn.savedVariables.accountWide.savedPosition.x,
+            AddOn.savedVariables.accountWide.savedPosition.y,
+            AddOn.savedVariables.accountWide.savedPosition.z, 0.5)
+        end
+      end
+      --      --if walkToPoint then
+      --      --  Draw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
+      --      --end
+      if DEVELOPMENT then
+        if AddOn.savedVariables.perCharacter.position1 and AddOn.savedVariables.perCharacter.position2 then
+          Draw.SetColorRaw(0, 1, 0, 1)
+          Draw.Line(
+            AddOn.savedVariables.perCharacter.position1.x,
+            AddOn.savedVariables.perCharacter.position1.y,
+            AddOn.savedVariables.perCharacter.position1.z,
+            AddOn.savedVariables.perCharacter.position2.x,
+            AddOn.savedVariables.perCharacter.position2.y,
+            AddOn.savedVariables.perCharacter.position2.z
+          )
+        end
+      end
+
+      local path = AddOn.savedVariables.perCharacter.MovementPath
+      if path then
+        Core.drawPath(path)
+      end
+
+      if DEVELOPMENT then
+        if aStarPoints then
+          Draw.SetColorRaw(0, 1, 0, 1)
+          local radius = GRID_LENGTH / 2
+          Array.forEach(aStarPoints, function(point)
+            Draw.Circle(point.x, point.y, point.z, radius)
+          end)
+        end
+      end
     end)
-
-    Draw.SetColorRaw(0, 0, 1, 1)
-    Array.forEach(lines, function(line)
-      local a = line[1]
-      local b = line[2]
-      Draw.Line(a.x, a.y, a.z, b.x, b.y, b.z)
-    end)
-
-    if DEVELOPMENT then
-      if AddOn.savedVariables.accountWide.savedPosition then
-        Draw.SetColorRaw(1, 1, 0, 1)
-        Draw.Circle(AddOn.savedVariables.accountWide.savedPosition.x,
-          AddOn.savedVariables.accountWide.savedPosition.y,
-          AddOn.savedVariables.accountWide.savedPosition.z, 0.5)
-      end
-    end
-    --      --if walkToPoint then
-    --      --  Draw.Circle(walkToPoint.x, walkToPoint.y, walkToPoint.z, 0.5)
-    --      --end
-    if DEVELOPMENT then
-      if AddOn.savedVariables.perCharacter.position1 and AddOn.savedVariables.perCharacter.position2 then
-        Draw.SetColorRaw(0, 1, 0, 1)
-        Draw.Line(
-          AddOn.savedVariables.perCharacter.position1.x,
-          AddOn.savedVariables.perCharacter.position1.y,
-          AddOn.savedVariables.perCharacter.position1.z,
-          AddOn.savedVariables.perCharacter.position2.x,
-          AddOn.savedVariables.perCharacter.position2.y,
-          AddOn.savedVariables.perCharacter.position2.z
-        )
-      end
-    end
-
-    local path = AddOn.savedVariables.perCharacter.MovementPath
-    if path then
-      Core.drawPath(path)
-    end
-
-    if DEVELOPMENT then
-      if aStarPoints then
-        Draw.SetColorRaw(0, 1, 0, 1)
-        local radius = GRID_LENGTH / 2
-        Array.forEach(aStarPoints, function(point)
-          Draw.Circle(point.x, point.y, point.z, radius)
-        end)
-      end
-    end
   end)
-end)
+end
 
 function Movement.canOnlyBeMovedOnGround()
   return not Movement.canCharacterFlyOrDragonride()

@@ -6,11 +6,27 @@ local farmedThing = nil
 local nextNode = nil
 
 function Bot.createTogglableFarming(retrieveNextPosition, findFarmedThings)
-	local togglable = Togglable.Togglable:new(function ()
+  local togglable = Togglable.Togglable:new(function()
     return Bot.startFarming(retrieveNextPosition, findFarmedThings)
   end)
 
-  Draw.Sync(function ()
+  _.visualize()
+
+  return togglable
+end
+
+function Bot.createTogglableAssistedFarming(retrieveNextPosition, findFarmedThings)
+  local togglable = Togglable.Togglable:new(function()
+    return Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
+  end)
+
+  _.visualize()
+
+  return togglable
+end
+
+function _.visualize()
+  Draw.Sync(function()
     if farmedThing then
       local characterPosition = Core.retrieveCharacterPosition()
       local position = Core.retrieveObjectPosition(farmedThing)
@@ -27,8 +43,6 @@ function Bot.createTogglableFarming(retrieveNextPosition, findFarmedThings)
       Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
     end
   end)
-
-  return togglable
 end
 
 function Bot.startFarming(retrieveNextPosition, findFarmedThings)
@@ -127,7 +141,7 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
       local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
       Coroutine.runAsCoroutine(function()
-        while stoppable:isRunning() do
+        while stoppable:hasBeenRequestedToStop() do
           local attackers = Array.filter(Core.retrieveObjectPointers(), Core.isUnitAttackingTheCharacter)
           local isThereAnAttacker = Array.hasElements(attackers)
           if isThereAnAttacker then
@@ -144,6 +158,8 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
 
           Coroutine.yieldAndResume()
         end
+
+        stoppableInternal:resolve()
       end)
 
       return stoppable
@@ -186,6 +202,46 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
     stoppable:alsoStop(visitNodes)
     local doHandleEventOfCharacterBeingAttacked = _.doHandleEventOfCharacterBeingAttacked()
     stoppable:alsoStop(doHandleEventOfCharacterBeingAttacked)
+  end)
+
+  return stoppable
+end
+
+function Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
+  local stoppable, stoppableInternal = Stoppable.Stoppable:new()
+
+  local HOW_TO_CLOSE_TO_FLY_TO_NODE = 166
+  local retrieveNextClosestPosition, markPositionAsVisited = retrieveNextPosition()
+
+  Coroutine.runAsCoroutine(function()
+    while stoppable:hasBeenRequestedToStop() do
+      if nextNode and Core.calculateDistanceFromCharacterToPosition(nextNode) <= HOW_TO_CLOSE_TO_FLY_TO_NODE then
+        markPositionAsVisited(nextNode)
+        nextNode = nil
+      end
+
+      local farmedThings = findFarmedThings()
+      if #farmedThings >= 1 then
+        local characterPosition = Core.retrieveCharacterPosition()
+        local closestFarmedThing = Array.min(farmedThings, function(cache)
+          local position = Core.retrieveObjectPosition(cache)
+          return Core.calculateDistanceBetweenPositions(characterPosition, position)
+        end)
+
+        nextNode = nil
+        farmedThing = closestFarmedThing
+      else
+        nextNode = retrieveNextClosestPosition()
+        farmedThing = nil
+      end
+
+      Coroutine.yieldAndResume()
+    end
+
+    nextNode = nil
+    farmedThing = nil
+
+    stoppableInternal:resolve()
   end)
 
   return stoppable
