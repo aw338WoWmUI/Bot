@@ -256,6 +256,12 @@ end
 
 Core.WorldPosition = {}
 
+function Core.WorldPosition.fromString(positionString)
+  local parts = String.split('_', positionString)
+
+  return Core.createWorldPosition(tonumber(parts[1], 10), tonumber(parts[2], 10), tonumber(parts[3], 10), parts[4] == '' and nil or tonumber(parts[4], 10))
+end
+
 function Core.WorldPosition:isEqual(otherPosition)
   return (
     self.continentID == otherPosition.continentID and
@@ -267,6 +273,10 @@ end
 
 function Core.WorldPosition:isDifferent(otherPosition)
   return not self:isEqual(otherPosition)
+end
+
+function Core.WorldPosition:toString()
+	return self.continentID .. '_' .. self.x .. '_' .. self.y .. '_' .. (self.z or '')
 end
 
 function Core.createWorldPosition(continentID, x, y, z)

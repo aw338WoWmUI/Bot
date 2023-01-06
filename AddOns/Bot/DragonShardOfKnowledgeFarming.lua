@@ -28,18 +28,37 @@ ___ = _
 
 function _.retrieveAllPositions()
   local plugin = HandyNotes.plugins['HandyNotes_Dragonflight']
-  local mapID = Core.receiveMapIDForWhereTheCharacterIsAt()
-  local HBD = LibStub('HereBeDragons-2.0')
+  local mapIDs = {
+    2022,
+    2023,
+    2024,
+    2025
+  }
   local positions = {}
-  for coordinates, mapID2 in plugin:GetNodes2(mapID, false) do
-    local mapX, mapY = floor(coordinates / 10000) / 10000, (coordinates % 10000) / 10000
-    if mapID2 and mapID2 ~= mapID then
-      mapX, mapY = HBD:TranslateZoneCoordinates(mapX, mapY, mapID2, mapID)
+  if _G.positions then
+    for positionString in pairs(_G.positions) do
+      table.insert(positions, Core.WorldPosition.fromString(positionString))
     end
-    local position = Core.retrieveWorldPositionFromMapPosition(Core.createMapPosition(mapID, mapX, mapY),
-      Core.retrieveHighestZCoordinate)
-    table.insert(positions, position)
   end
+  local HBD = LibStub('HereBeDragons-2.0')
+  Array.forEach(mapIDs, function(mapID)
+    for coordinates, mapID2 in plugin:GetNodes2(mapID, false) do
+      local mapX, mapY = floor(coordinates / 10000) / 10000, (coordinates % 10000) / 10000
+      if mapID2 and mapID2 ~= mapID then
+        mapX, mapY = HBD:TranslateZoneCoordinates(mapX, mapY, mapID2, mapID)
+      end
+      local position = Core.retrieveWorldPositionFromMapPosition(Core.createMapPosition(mapID, mapX, mapY),
+        Core.retrieveHighestZCoordinate)
+      table.insert(positions, position)
+    end
+  end)
+
+  if skipSet then
+    positions = Array.filter(positions, function (position)
+      return not skipSet[position:toString()]
+    end)
+  end
+
   return positions
 end
 
@@ -95,15 +114,17 @@ function _.findThings()
     return (
       (
         (
-          Set.contains(unitClassesWhichSeemToDropDragonShardOfKnowledge, UnitClassification(object)) or
-            Set.contains(AddOn.droppedBy, objectID)
-        ) and
-          Core.isAlive(object) and
-          Core.canCharacterAttackUnit(object)
-      ) or
-        (Set.contains(AddOn.containedIn1, objectID) or Set.contains(AddOn.containedIn2,
-          objectID) or Set.contains(AddOn.containedIn3,
-          objectID)) and Core.retrieveObjectDataDynamicFlags(object) == CHEST_CLOSED
+          (
+            Set.contains(unitClassesWhichSeemToDropDragonShardOfKnowledge, UnitClassification(object)) or
+              Set.contains(AddOn.droppedBy, objectID)
+          ) and
+            Core.isAlive(object) and
+            Core.canCharacterAttackUnit(object)
+        ) or
+          (Set.contains(AddOn.containedIn1, objectID) or Set.contains(AddOn.containedIn2,
+            objectID) or Set.contains(AddOn.containedIn3,
+            objectID)) and Core.retrieveObjectDataDynamicFlags(object) == CHEST_CLOSED
+      ) and (not skipSet or not skipSet[Core.retrieveObjectPosition(object):toString()])
     )
   end)
 end

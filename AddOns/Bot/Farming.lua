@@ -45,6 +45,8 @@ function _.visualize()
   end)
 end
 
+local HOW_TO_CLOSE_TO_FLY_TO_NODE = 146
+
 function Bot.startFarming(retrieveNextPosition, findFarmedThings)
   local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
@@ -102,8 +104,6 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
     end
 
     local retrieveNextClosestPosition, markPositionAsVisited = retrieveNextPosition()
-
-    local HOW_TO_CLOSE_TO_FLY_TO_NODE = 166
 
     local function doVisitNodes()
       local pausable, pausableInternal = Pausable.Pausable:new()
@@ -210,7 +210,6 @@ end
 function Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
   local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
-  local HOW_TO_CLOSE_TO_FLY_TO_NODE = 166
   local retrieveNextClosestPosition, markPositionAsVisited = retrieveNextPosition()
 
   Coroutine.runAsCoroutine(function()
@@ -229,7 +228,16 @@ function Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
         end)
 
         nextNode = nil
+        if farmedThing == nil then
+          print('distance', Core.calculateDistanceFromCharacterToObject(closestFarmedThing))
+        end
         farmedThing = closestFarmedThing
+        if not positions then
+          positions = {}
+        end
+        if Core.isGameObject(farmedThing) then
+          positions[Core.retrieveObjectPosition(farmedThing):toString()] = true
+        end
       else
         nextNode = retrieveNextClosestPosition()
         farmedThing = nil
@@ -247,15 +255,41 @@ function Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
   return stoppable
 end
 
+function Bot.addToSkipSet()
+  if farmedThing then
+    if not skipSet then
+      skipSet = {}
+    end
+    skipSet[Core.retrieveObjectPosition(farmedThing):toString()] = true
+  end
+end
+
 function Bot.Farming.retrieveNextPosition(retrieveAllPositions)
   local positions = retrieveAllPositions()
-  local stillToVisit = Set:new(positions)
+  local stillToVisit = {}
+  Array.forEach(positions, function(position)
+    stillToVisit[position:toString()] = true
+  end)
+  if visitedNodes then
+    for positionString, visitedTime in pairs(visitedNodes) do
+      if time() - visitedTime > 30 * 60 then
+        stillToVisit[positionString] = nil
+      end
+    end
+
+    for positionString, visitedTime in pairs(visitedNodes) do
+      if time() - visitedTime > 30 * 60 then
+        visitedNodes[positionString] = nil
+      end
+    end
+  end
 
   local function retrieveNextClosestPosition()
     local closestPosition = nil
     local distanceToClosestPosition = nil
     local characterPosition = Core.retrieveCharacterPosition()
-    for position in stillToVisit:iterator() do
+    for positionString in pairs(stillToVisit) do
+      local position = Core.WorldPosition.fromString(positionString)
       local distance = Core.calculateDistanceBetweenPositions(characterPosition, position)
       if distanceToClosestPosition == nil or distance < distanceToClosestPosition then
         closestPosition = position
@@ -266,11 +300,19 @@ function Bot.Farming.retrieveNextPosition(retrieveAllPositions)
   end
 
   local function markAsVisited(position)
-    stillToVisit:remove(position)
+    stillToVisit[position:toString()] = nil
 
-    if stillToVisit:isEmpty() then
-      stillToVisit = Set:new(positions)
+    if Object.isEmpty(stillToVisit) then
+      stillToVisit = {}
+      Array.forEach(positions, function(position)
+        stillToVisit[position:toString()] = true
+      end)
     end
+
+    if not visitedNodes then
+      visitedNodes = {}
+    end
+    visitedNodes[position:toString()] = time()
   end
 
   return retrieveNextClosestPosition, markAsVisited
