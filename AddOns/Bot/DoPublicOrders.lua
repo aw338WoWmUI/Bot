@@ -62,7 +62,7 @@ function Bot.doPublicOrders()
   end)
 end
 
--- /script Bot.requestPublicOrders(3)
+-- /script Bot.requestPublicOrders(5)
 
 -- For Engineering orders
 function Bot.requestPublicOrders(numberOfTimes)
