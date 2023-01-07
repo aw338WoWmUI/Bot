@@ -1,6 +1,6 @@
 -- # Configuration
 -- For setting the character name from whom to accept the orders:
--- /script Bot.customerName = '<name of character>'
+-- /script BotOptions.customerName = '<name of character>'
 
 Bot = Bot or {}
 
@@ -8,7 +8,7 @@ local isDoingOrder = false
 
 function Bot.doPublicOrders()
   if not Bot.customerName then
-    error('Please set Bot.customerName with `/script Bot.customerName = \'<name of character>\'` to the name of the character who does the orders.')
+    error('Please set Bot.customerName with `/script BotOptions.customerName = \'<name of character>\'` to the name of the character who does the orders.')
     return
   end
 
@@ -17,7 +17,7 @@ function Bot.doPublicOrders()
       print('after OrderRequestCallback')
       local orders = C_CraftingOrders.GetCrafterOrders()
       local order = Array.find(orders, function(order)
-        return order.customerName == Bot.customerName
+        return order.customerName == BotOptions.customerName
       end)
       if order then
         print('accept order')

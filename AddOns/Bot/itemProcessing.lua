@@ -102,3 +102,4 @@ frame:SetScript('OnEvent', function (self, event, ...)
     onAddonLoaded(...)
   end
 end)
+frame:RegisterEvent('ADDON_LOADED')
