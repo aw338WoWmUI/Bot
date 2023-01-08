@@ -48,3 +48,13 @@ AddOn.containedIn3 = Set.create({
   383735,
   191905
 })
+
+-- For mining
+AddOn.miningObjects = Set.create({
+
+})
+
+-- For herbalism
+AddOn.herbalismObjects = Set.create({
+
+})

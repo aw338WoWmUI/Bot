@@ -9,7 +9,7 @@ function Bot.processItems()
 end
 
 function _.sellItemsAtNPCVendor()
-	Questing.sell()
+	Bot.sell()
 end
 
 function Bot.sell()

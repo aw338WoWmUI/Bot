@@ -261,7 +261,7 @@ function _.generateQuestStartPointsFromStarters(quest)
           -- print('Missing NPC for ID "' .. starterID .. '" for quest "' .. quest.id .. '".')
         end
 
-        if yielder.hasRanOutOfTime() then
+        if yielder.hasRunOutOfTime() then
           yielder.yield()
         end
       end

@@ -1030,7 +1030,7 @@ function retrieveNavigationPosition()
         pitch = pitch + oneDegree
       end
 
-      if yielder.hasRanOutOfTime() then
+      if yielder.hasRunOutOfTime() then
         yielder.yield()
       end
 
@@ -1679,12 +1679,12 @@ function retrievePoints()
   local yielder = Yielder.createYielderWithTimeTracking(1 / 60)
 
   local attackerPoints = retrieveAttackerPoints()
-  if yielder.hasRanOutOfTime() then
+  if yielder.hasRunOutOfTime() then
     yielder.yield()
   end
 
   local questStartPoints = Questing._.retrieveQuestStartPoints()
-  if yielder.hasRanOutOfTime() then
+  if yielder.hasRunOutOfTime() then
     yielder.yield()
   end
 
@@ -1693,13 +1693,13 @@ function retrievePoints()
     objectivePoints = {}
   else
     objectivePoints = retrieveObjectivePoints()
-    if yielder.hasRanOutOfTime() then
+    if yielder.hasRunOutOfTime() then
       yielder.yield()
     end
   end
 
   local objectPoints = retrieveObjectPoints()
-  if yielder.hasRanOutOfTime() then
+  if yielder.hasRunOutOfTime() then
     yielder.yield()
   end
 
@@ -1708,7 +1708,7 @@ function retrievePoints()
     lootPoints = {}
   else
     lootPoints = retrieveLootPoints()
-    if yielder.hasRanOutOfTime() then
+    if yielder.hasRunOutOfTime() then
       yielder.yield()
     end
   end

@@ -1,6 +1,7 @@
 ## Title: Mesh Net
 ## Interface: 11403
 ## Dependencies: Core, Function, HWT, Array, Draw, Conditionals, Math, SavedVariables, Boolean, Hook
+## DefaultState: disabled
 
 MeshVisualization.lua
 OffMeshConnectionsDatabase.lua

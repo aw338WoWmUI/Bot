@@ -228,9 +228,6 @@ function Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
         end)
 
         nextNode = nil
-        if farmedThing == nil then
-          print('distance', Core.calculateDistanceFromCharacterToObject(closestFarmedThing))
-        end
         farmedThing = closestFarmedThing
         if not positions then
           positions = {}
@@ -261,6 +258,15 @@ function Bot.addToSkipSet()
       skipSet = {}
     end
     skipSet[Core.retrieveObjectPosition(farmedThing):toString()] = true
+  end
+end
+
+function Bot.addToMiningAndHerbalismSkipSet()
+  if farmedThing then
+    if not miningAndHerbalismSkipSet then
+      miningAndHerbalismSkipSet = {}
+    end
+    miningAndHerbalismSkipSet[Core.retrieveObjectPosition(farmedThing):toString()] = true
   end
 end
 

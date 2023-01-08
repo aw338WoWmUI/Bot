@@ -2324,24 +2324,26 @@ function _.doWhenAddOnHasBeenLoaded()
   )
 end
 
+HWT.doWhenHWTIsLoaded(function()
+  AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
+  Movement.savedVariables = AddOn.savedVariables
+
+  SavedVariables.registerAccountWideSavedVariables(
+    addOnName,
+    AddOn.savedVariables.accountWide
+  )
+
+  SavedVariables.registerSavedVariablesPerCharacter(
+    addOnName,
+    AddOn.savedVariables.perCharacter
+  )
+
+  Movement.initializeSavedVariables()
+  _.doWhenAddOnHasBeenLoaded()
+end)
+
 function Movement.enableVisualization()
   HWT.doWhenHWTIsLoaded(function()
-    AddOn.savedVariables = SavedVariables.loadSavedVariablesOfAddOn(addOnName)
-    Movement.savedVariables = AddOn.savedVariables
-
-    SavedVariables.registerAccountWideSavedVariables(
-      addOnName,
-      AddOn.savedVariables.accountWide
-    )
-
-    SavedVariables.registerSavedVariablesPerCharacter(
-      addOnName,
-      AddOn.savedVariables.perCharacter
-    )
-
-    Movement.initializeSavedVariables()
-    _.doWhenAddOnHasBeenLoaded()
-
     Draw.Sync(function()
       Draw.SetColorRaw(0, 0, 1, 1)
       Array.forEach(points, function(point)

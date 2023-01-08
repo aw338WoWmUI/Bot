@@ -134,7 +134,7 @@ function _.buildNPCsLookupTables()
   --    end
   --  end
   --
-  --  if yielder.hasRanOutOfTime() then
+  --  if yielder.hasRunOutOfTime() then
   --    yielder.yield()
   --  end
   --end

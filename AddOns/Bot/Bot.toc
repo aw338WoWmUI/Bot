@@ -1,8 +1,8 @@
 ## Title: Bot
 ## Interface: 100002
-## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Resolvable, Events, Array, Stoppable, Pausable, Compatibility, Togglable, InitializableTogglable, Object
-## OptionalDeps: RecommendedSpellCaster, Questing, HandyNotes, HandyNotes_Dragonflight
-## SavedVariables: rareObjectIDs, mobsWhoDropKeyFraming, mobsWhoDropKeyFragments, objectsWhoContainKeyFragments, positions, visitedNodes, skipSet
+## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Resolvable, Events, Array, Stoppable, Pausable, Compatibility, Togglable, InitializableTogglable, Object, Yielder
+## OptionalDeps: RecommendedSpellCaster, Questing, HandyNotes, HandyNotes_Dragonflight, TradeSkillMaster
+## SavedVariables: rareObjectIDs, mobsWhoDropKeyFraming, mobsWhoDropKeyFragments, objectsWhoContainKeyFragments, positions, visitedNodes, skipSet, miningAndHerbalismPositions, miningAndHerbalismSkipSet
 ## SavedVariablesPerCharacter: BotOptions
 
 data.lua
@@ -16,3 +16,5 @@ Farming.lua
 DraconicCacheFarming.lua
 DragonShardOfKnowledgeFarming.lua
 DoPublicOrders.lua
+MiningAndHerbalism.lua
+calculateYield.lua
