@@ -5,8 +5,17 @@ local _ = {}
 AA = _
 
 -- /script Bot.toggleAssistedMiningAndHerbalism()
+-- /script Bot.toggleMiningAndHerbalism()
 
 -- /script AA.retrieveAllPositions()
+
+local initializableTogglable = InitializableTogglable.InitializableTogglable:new(function()
+  return Bot.createTogglableFarming(_.retrieveNextPosition, _.findThings)
+end)
+
+function Bot.toggleMiningAndHerbalism()
+  initializableTogglable:toggle()
+end
 
 local initializableTogglable2 = InitializableTogglable.InitializableTogglable:new(function()
   return Bot.createTogglableAssistedFarming(_.retrieveNextPosition, _.findThings)
@@ -29,22 +38,22 @@ function _.retrieveAllPositions()
     end
   end
 
-  --local mapIDs = {
-  --  2022,
-  --  2023,
-  --  2024,
-  --  2025
-  --}
-  --local professions = { 'Mining', 'Herbalism' }
-  --
-  --local yielder = Yielder.createYielderWithTimeTracking()
-  --
-  --Array.forEach(mapIDs, function(mapID)
-  --  Array.forEach(professions, function(profession)
-  --    Array.append(positions, _.retrieveGatherMateData(mapID, profession))
-  --    yielder:yieldAndResumeWhenHasRunOutOfTime()
-  --  end)
-  --end)
+  local mapIDs = {
+    --2022,
+    --2023,
+    --2024,
+    2025
+  }
+  local professions = { 'Mining', 'Herb Gathering' }
+
+  local yielder = Yielder.createYielderWithTimeTracking()
+
+  Array.forEach(mapIDs, function(mapID)
+    Array.forEach(professions, function(profession)
+      Array.append(positions, _.retrieveGatherMateData(mapID, profession))
+      yielder:yieldAndResumeWhenHasRunOutOfTime()
+    end)
+  end)
 
   if miningAndHerbalismSkipSet then
     positions = Array.filter(positions, function(position)
@@ -58,10 +67,14 @@ end
 function _.retrieveGatherMateData(mapID, profession)
   local positions = {}
 
+  local yielder = Yielder.createYielderWithTimeTracking()
   for node in GatherMate2:GetNodesForZone(mapID, profession) do
     local x, y = GatherMate2:DecodeLoc(node)
     local position = Core.retrieveWorldPositionFromMapPosition({ mapID = mapID, x = x, y = y })
-    table.insert(positions, position)
+    if position.z then
+      table.insert(positions, position)
+    end
+    yielder:yieldAndResumeWhenHasRunOutOfTime()
   end
 
   return positions
