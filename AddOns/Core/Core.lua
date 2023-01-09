@@ -680,10 +680,9 @@ function Core.findClosestObject(objects)
 end
 
 function Core.calculateDistanceBetweenPositions(a, b)
-  if a.x == nil or a.y == nil or a.z == nil or b.x == nil or b.y == nil or b.z == nil then
-    Logging.log(debugstack())
-  end
-  if a.z and b.z then
+  if not a or not b then
+    return nil
+  elseif a.z and b.z then
     return HWT.GetDistanceBetweenPositions(a.x, a.y, a.z, b.x, b.y, b.z)
   else
     return Math.euclideanDistance2D(a, b)
@@ -1677,4 +1676,9 @@ function Core.printSpellTooltip(spell)
     TooltipUtil.SurfaceArgs(line)
     DevTools_Dump(line)
   end)
+end
+
+function Core.isCharacterAtMaxAwayFrom(position, maximumDistance)
+  local distance = Core.calculateDistanceFromCharacterToPosition(nextNode)
+	return Boolean.toBoolean(distance) and distance <= maximumDistance
 end

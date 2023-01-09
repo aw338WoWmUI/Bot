@@ -135,7 +135,7 @@ function Bot.farmAlong()
           end
         until not thing
 
-        if Core.isAlive(BotOptions.mainCharacter) then
+        if Core.isAlive('player') and Core.isAlive(BotOptions.mainCharacter) then
           if HWT.UnitIsMounted(BotOptions.mainCharacter) and not Core.isCharacterInCombat() then
             print(1)
             await(Core.moveToAndInteractWithObject(BotOptions.mainCharacter))
@@ -145,8 +145,7 @@ function Bot.farmAlong()
               if Core.calculateDistanceFromCharacterToObject(BotOptions.mainCharacter) <= MAXIMUM_FOLLOW_DISTANCE then
                 FollowUnit(BotOptions.mainCharacter)
               else
-                -- FIXME
-                -- await(Core.moveToObject(Core.retrieveObjectPointer(BotOptions.mainCharacter)))
+                await(Core.moveToObject(Core.retrieveObjectPointer(BotOptions.mainCharacter)))
               end
             end
           end

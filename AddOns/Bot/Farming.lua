@@ -244,7 +244,7 @@ function Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
     local retrieveNextClosestPosition, markPositionAsVisited = retrieveNextPosition()
 
     while not stoppable:hasBeenRequestedToStop() do
-      if nextNode and Core.calculateDistanceFromCharacterToPosition(nextNode) <= HOW_TO_CLOSE_TO_FLY_TO_NODE then
+      if nextNode and  Core.isCharacterAtMaxAwayFrom(nextNode, HOW_TO_CLOSE_TO_FLY_TO_NODE) then
         markPositionAsVisited(nextNode)
         nextNode = nil
       end
@@ -266,7 +266,9 @@ function Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
           positions[Core.retrieveObjectPosition(farmedThing):toString()] = true
         end
       else
-        nextNode = retrieveNextClosestPosition()
+        if not nextNode then
+          nextNode = retrieveNextClosestPosition()
+        end
         farmedThing = nil
       end
 
