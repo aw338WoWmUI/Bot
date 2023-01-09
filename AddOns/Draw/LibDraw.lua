@@ -366,7 +366,20 @@ function Draw.Camera()
 end
 
 function Draw.Sync(callback)
-	tinsert(Draw.callbacks, callback)
+  local entry = {
+    callback = callback
+  }
+
+	tinsert(Draw.callbacks, entry)
+
+  return {
+    cancel = function ()
+      local index = Array.indexOf(Draw.callbacks, entry)
+      if index ~= -1 then
+        table.remove(Draw.callbacks, index)
+      end
+    end
+  }
 end
 
 function Draw.clearCanvas()
@@ -391,7 +404,8 @@ end
 
 local function OnUpdate()
 	Draw.clearCanvas()
-	for _, callback in ipairs(Draw.callbacks) do
+	for _, entry in ipairs(Draw.callbacks) do
+    local callback = entry.callback
 		callback()
 		if Draw.helper then
 			Draw.DrawHelper()

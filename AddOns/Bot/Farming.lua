@@ -6,27 +6,37 @@ local farmedThing = nil
 local nextNode = nil
 
 function Bot.createTogglableFarming(retrieveNextPosition, findFarmedThings)
-  local togglable = Togglable.Togglable:new(function()
+  return _.createTogglableFarming(function ()
     return Bot.startFarming(retrieveNextPosition, findFarmedThings)
   end)
-
-  _.visualize()
-
-  return togglable
 end
 
 function Bot.createTogglableAssistedFarming(retrieveNextPosition, findFarmedThings)
-  local togglable = Togglable.Togglable:new(function()
+  return _.createTogglableFarming(function ()
     return Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
   end)
+end
 
-  _.visualize()
+function _.createTogglableFarming(createFarming)
+	local togglable = Togglable.Togglable:new(function()
+    local stoppable, stoppableInternal = Stoppable.Stoppable:new()
+
+    local assistedFarming = createFarming()
+    stoppable:alsoStop(assistedFarming)
+
+    local visualization = _.visualize()
+    stoppable:alsoStop(visualization)
+
+    return stoppable
+  end)
 
   return togglable
 end
 
 function _.visualize()
-  Draw.Sync(function()
+  local stoppable, stoppableInternal = Stoppable.Stoppable:new()
+
+  local handle = Draw.Sync(function()
     if farmedThing then
       local characterPosition = Core.retrieveCharacterPosition()
       local position = Core.retrieveObjectPosition(farmedThing)
@@ -45,6 +55,12 @@ function _.visualize()
       Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
     end
   end)
+
+  stoppable:onStop(function ()
+    handle:cancel()
+  end)
+
+  return stoppable
 end
 
 local HOW_TO_CLOSE_TO_FLY_TO_NODE = 146

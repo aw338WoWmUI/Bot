@@ -1354,37 +1354,45 @@ end
 function Core.moveToAndInteractWithObject(pointer, distance, delay)
   print('Core.moveToAndInteractWithObject')
   local pausable, pausableInternal = Pausable.Pausable:new()
+
   Coroutine.runAsCoroutine(function()
     distance = distance or Core.INTERACT_DISTANCE
 
     local position = Core.retrieveObjectPosition(pointer)
-    if not Core.isCharacterCloseToPosition(position, distance) then
-      await(Core.moveToObject(pointer, {
-        distance = distance
-      }))
-    end
-
-    if pausable:isRunning() and HWT.ObjectExists(pointer) and Core.isCharacterCloseToPosition(position,
-      distance) then
-      pausableInternal:pauseIfHasBeenRequestedToPause()
-      print('Core.moveToAndInteractWithObject -> Core.interactWithObject')
-      Core.interactWithObject(pointer)
-      pausableInternal:pauseIfHasBeenRequestedToPause()
-      Coroutine.waitForDuration(1)
-      pausableInternal:pauseIfHasBeenRequestedToPause()
-      Coroutine.waitFor(function()
-        return not Core.isCharacterCasting()
-      end)
-      pausableInternal:pauseIfHasBeenRequestedToPause()
-      if GetNumLootItems() >= 1 then
-        Events.waitForEvent('LOOT_CLOSED')
+    if position then
+      if not Core.isCharacterCloseToPosition(position, distance) then
+        local moveTo = Core.moveToObject(pointer, {
+          distance = distance
+        })
+        pausable:alsoStop(moveTo)
+        await(moveTo)
       end
-      Coroutine.waitForDuration(1)
-      pausableInternal:resolve(true)
+
+      if pausable:isRunning() and HWT.ObjectExists(pointer) and Core.isCharacterCloseToPosition(position,
+        distance) then
+        pausableInternal:pauseIfHasBeenRequestedToPause()
+        print('Core.moveToAndInteractWithObject -> Core.interactWithObject')
+        Core.interactWithObject(pointer)
+        pausableInternal:pauseIfHasBeenRequestedToPause()
+        Coroutine.waitForDuration(1)
+        pausableInternal:pauseIfHasBeenRequestedToPause()
+        Coroutine.waitFor(function()
+          return not Core.isCharacterCasting()
+        end)
+        pausableInternal:pauseIfHasBeenRequestedToPause()
+        if GetNumLootItems() >= 1 then
+          Events.waitForEvent('LOOT_CLOSED')
+        end
+        Coroutine.waitForDuration(1)
+        pausableInternal:resolve(true)
+      else
+        pausableInternal:resolve(false)
+      end
     else
       pausableInternal:resolve(false)
     end
   end)
+
   return pausable
 end
 
