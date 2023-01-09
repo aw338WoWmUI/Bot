@@ -240,9 +240,9 @@ end
 function Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
   local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
-  local retrieveNextClosestPosition, markPositionAsVisited = retrieveNextPosition()
-
   Coroutine.runAsCoroutine(function()
+    local retrieveNextClosestPosition, markPositionAsVisited = retrieveNextPosition()
+
     while not stoppable:hasBeenRequestedToStop() do
       if nextNode and Core.calculateDistanceFromCharacterToPosition(nextNode) <= HOW_TO_CLOSE_TO_FLY_TO_NODE then
         markPositionAsVisited(nextNode)

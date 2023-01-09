@@ -2456,4 +2456,4 @@ function Movement.canOnlyBeMovedOnGround()
   return not Movement.canCharacterFlyOrDragonride()
 end
 
-Movement.enableVisualization()
+-- Movement.enableVisualization()
