@@ -19,7 +19,10 @@ function Bot.toggleAssistedDragonShardOfKnowledgeFarming()
 end
 
 function _.retrieveNextPosition()
-  return Bot.Farming.retrieveNextPosition(_.retrieveAllPositions)
+  if not skipSet then
+    skipSet = {}
+  end
+  return Bot.Farming.retrieveNextPosition(_.retrieveAllPositions, skipSet)
 end
 
 ___ = _

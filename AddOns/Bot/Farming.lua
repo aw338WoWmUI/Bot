@@ -6,19 +6,19 @@ local farmedThing = nil
 local nextNode = nil
 
 function Bot.createTogglableFarming(retrieveNextPosition, findFarmedThings)
-  return _.createTogglableFarming(function ()
+  return _.createTogglableFarming(function()
     return Bot.startFarming(retrieveNextPosition, findFarmedThings)
   end)
 end
 
 function Bot.createTogglableAssistedFarming(retrieveNextPosition, findFarmedThings)
-  return _.createTogglableFarming(function ()
+  return _.createTogglableFarming(function()
     return Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
   end)
 end
 
 function _.createTogglableFarming(createFarming)
-	local togglable = Togglable.Togglable:new(function()
+  local togglable = Togglable.Togglable:new(function()
     local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
     local assistedFarming = createFarming()
@@ -56,7 +56,7 @@ function _.visualize()
     end
   end)
 
-  stoppable:onStop(function ()
+  stoppable:onStop(function()
     handle:cancel()
   end)
 
@@ -126,7 +126,7 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
       return pausable
     end
 
-    local retrieveNextClosestPosition, markPositionAsVisited = retrieveNextPosition()
+    local retrieveNextClosestPosition, markPositionAsVisited, skipPosition = retrieveNextPosition()
 
     local function doVisitNodes()
       local pausable, pausableInternal = Pausable.Pausable:new()
@@ -146,6 +146,8 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
             nextNode = nil
             if _.hasVisitedNode(closestNode) then
               markPositionAsVisited(closestNode)
+            else
+              skipPosition(closestNode)
             end
           end
 
@@ -298,12 +300,21 @@ function Bot.addToMiningAndHerbalismSkipSet()
   end
 end
 
-function Bot.Farming.retrieveNextPosition(retrieveAllPositions)
+function Bot.Farming.retrieveNextPosition(retrieveAllPositions, skipSet)
   local positions = retrieveAllPositions()
   local stillToVisit = {}
-  Array.forEach(positions, function(position)
-    stillToVisit[position:toString()] = true
-  end)
+
+  local function fillStillToVisitWithPositionsToVisit()
+    Array.forEach(positions, function(position)
+      local positionString = position:toString()
+      if not skipSet[positionString] then
+        stillToVisit[positionString] = true
+      end
+    end)
+  end
+
+  fillStillToVisitWithPositionsToVisit()
+
   if visitedNodes then
     for positionString, visitedTime in pairs(visitedNodes) do
       if time() - visitedTime > 30 * 60 then
@@ -333,15 +344,17 @@ function Bot.Farming.retrieveNextPosition(retrieveAllPositions)
     return closestPosition
   end
 
-  local function markAsVisited(position)
+  local function removePositionFromStillToVisit(position)
     stillToVisit[position:toString()] = nil
 
     if Object.isEmpty(stillToVisit) then
       stillToVisit = {}
-      Array.forEach(positions, function(position)
-        stillToVisit[position:toString()] = true
-      end)
+      fillStillToVisitWithPositionsToVisit()
     end
+  end
+
+  local function markAsVisited(position)
+    removePositionFromStillToVisit(position)
 
     if not visitedNodes then
       visitedNodes = {}
@@ -349,5 +362,11 @@ function Bot.Farming.retrieveNextPosition(retrieveAllPositions)
     visitedNodes[position:toString()] = time()
   end
 
-  return retrieveNextClosestPosition, markAsVisited
+  local function skipPosition(position)
+    skipSet[position:toString()] = true
+
+    removePositionFromStillToVisit(position)
+  end
+
+  return retrieveNextClosestPosition, markAsVisited, skipPosition
 end

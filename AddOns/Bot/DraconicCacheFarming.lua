@@ -71,7 +71,10 @@ function _.retrieveAllDraconicCachePositions()
 end
 
 function _.retrieveNextDraconicCachePosition()
-  return Bot.Farming.retrieveNextPosition(_.retrieveAllDraconicCachePositions)
+  if not draconicCacheSkipSet then
+    draconicCacheSkipSet = {}
+  end
+  return Bot.Farming.retrieveNextPosition(_.retrieveAllDraconicCachePositions, draconicCacheSkipSet)
 end
 
 function _.findThings()

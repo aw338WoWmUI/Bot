@@ -26,7 +26,10 @@ function Bot.toggleAssistedMiningAndHerbalism()
 end
 
 function _.retrieveNextPosition()
-  return Bot.Farming.retrieveNextPosition(_.retrieveAllPositions)
+  if not miningAndHerbalismSkipSet then
+    miningAndHerbalismSkipSet = {}
+  end
+  return Bot.Farming.retrieveNextPosition(_.retrieveAllPositions, miningAndHerbalismSkipSet)
 end
 
 function _.retrieveAllPositions()

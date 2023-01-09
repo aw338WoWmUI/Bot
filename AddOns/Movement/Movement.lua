@@ -1071,7 +1071,6 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     local liftUpWithDragonridingMount = (
       Movement.canCharacterRideDragon() and
         Movement.isMountedOnDragonridingMount() and
-        (remainingDistance > 30 or Movement.isPositionInTheAir(waypoint)) and
         Movement.Dragonriding.areConditionsMetForFlyingHigher(waypoint)
     )
 
@@ -1930,14 +1929,17 @@ function Movement.moveTo(to, options)
     return Core.calculateDistanceFromCharacterToPosition(to) <= toleranceDistance
   end
 
+  local hasLanded = false
+
   while not stop() and not hasArrived() do
     local from = Core.retrieveCharacterPosition()
 
     if Movement.isThereAPathOnTheGround(from, to, options) then
       Movement.moveToOnTheGround(from, to, options)
-    elseif Movement.canCharacterRideDragon() or Movement.canCharacterFly() then
-      Movement.moveToViaDragonridingOrFlying(from, to, options, hasArrived)
+    elseif not hasLanded and Movement.canCharacterRideDragon() or Movement.canCharacterFly() then
+      hasLanded = Movement.moveToViaDragonridingOrFlying(from, to, options, hasArrived)
     else
+      print('break')
       break
     end
 
@@ -1969,13 +1971,17 @@ function Movement.moveToViaDragonridingOrFlying(from, to, options, hasArrived)
   AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 
   local resolvable
+  local hasLanded = false
   resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
     stop = function(context)
+      hasLanded = context.hasLanded
       return (stop and stop()) or hasArrived() or Core.isCharacterDead() or context.hasLanded
     end,
     continueMoving = options.continueMoving
   })
   await(resolvable)
+  print('has landed', hasLanded)
+  return hasLanded
 end
 
 function Movement.moveToOnTheGround(from, to, options)
@@ -2405,7 +2411,7 @@ function Movement.enableVisualization()
 
       if DEVELOPMENT then
         if AddOn.savedVariables.accountWide.savedPosition then
-          Draw.SetColorRaw(1, 1, 0, 1)
+          Draw.SetColorRaw(0, 0, 1, 1)
           Draw.Circle(AddOn.savedVariables.accountWide.savedPosition.x,
             AddOn.savedVariables.accountWide.savedPosition.y,
             AddOn.savedVariables.accountWide.savedPosition.z, 0.5)
@@ -2416,7 +2422,7 @@ function Movement.enableVisualization()
       --      --end
       if DEVELOPMENT then
         if AddOn.savedVariables.perCharacter.position1 and AddOn.savedVariables.perCharacter.position2 then
-          Draw.SetColorRaw(0, 1, 0, 1)
+          Draw.SetColorRaw(0, 0, 1, 1)
           Draw.Line(
             AddOn.savedVariables.perCharacter.position1.x,
             AddOn.savedVariables.perCharacter.position1.y,
@@ -2435,7 +2441,7 @@ function Movement.enableVisualization()
 
       if DEVELOPMENT then
         if aStarPoints then
-          Draw.SetColorRaw(0, 1, 0, 1)
+          Draw.SetColorRaw(0, 0, 1, 1)
           local radius = GRID_LENGTH / 2
           Array.forEach(aStarPoints, function(point)
             Draw.Circle(point.x, point.y, point.z, radius)

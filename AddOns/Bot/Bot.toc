@@ -2,7 +2,7 @@
 ## Interface: 100002
 ## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Resolvable, Events, Array, Stoppable, Pausable, Compatibility, Togglable, InitializableTogglable, Object, Yielder
 ## OptionalDeps: RecommendedSpellCaster, Questing, HandyNotes, HandyNotes_Dragonflight, TradeSkillMaster
-## SavedVariables: rareObjectIDs, mobsWhoDropKeyFraming, mobsWhoDropKeyFragments, objectsWhoContainKeyFragments, positions, visitedNodes, skipSet, miningAndHerbalismPositions, miningAndHerbalismSkipSet
+## SavedVariables: rareObjectIDs, mobsWhoDropKeyFraming, mobsWhoDropKeyFragments, objectsWhoContainKeyFragments, positions, visitedNodes, skipSet, miningAndHerbalismPositions, miningAndHerbalismSkipSet, draconicCacheSkipSet
 ## SavedVariablesPerCharacter: BotOptions
 
 data.lua
