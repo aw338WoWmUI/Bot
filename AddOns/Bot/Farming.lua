@@ -63,7 +63,7 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
       local pausable, pausableInternal = Pausable.Pausable:new()
 
       Coroutine.runAsCoroutine(function()
-        while pausable:hasBeenRequestedToStop() do
+        while not pausable:hasBeenRequestedToStop() do
           local farmedThings = findFarmedThings()
           if #farmedThings >= 1 then
             print('Found farmed thing(s).')
@@ -89,6 +89,7 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
             print(2)
             local farmThing = doFarmThing()
             print(3)
+            pausable:alsoStop(farmThing)
             pausable:alsoPause(farmThing)
             print(4)
             await(farmThing)
@@ -115,14 +116,14 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
       local pausable, pausableInternal = Pausable.Pausable:new()
 
       Coroutine.runAsCoroutine(function()
-        while pausable:hasBeenRequestedToStop() do
+        while not pausable:hasBeenRequestedToStop() do
           local closestNode = retrieveNextClosestPosition()
           if closestNode then
             nextNode = closestNode
             moveToNextNode = Core.moveTo(closestNode, {
               distance = HOW_TO_CLOSE_TO_FLY_TO_NODE,
               additionalStopConditions = function()
-                return pausable:hasBeenRequestedToPause() or pausable:isPaused() or pausable:hasStopped()
+                return pausable:hasBeenRequestedToPause() or pausable:hasBeenRequestedToStop() or pausable:isPaused() or pausable:hasStopped()
               end
             })
             await(moveToNextNode)
@@ -149,7 +150,7 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
       local stoppable, stoppableInternal = Stoppable.Stoppable:new()
 
       Coroutine.runAsCoroutine(function()
-        while stoppable:hasBeenRequestedToStop() do
+        while not stoppable:hasBeenRequestedToStop() do
           local attackers = Array.filter(Core.retrieveObjectPointers(), Core.isUnitAttackingTheCharacter)
           local isThereAnAttacker = Array.hasElements(attackers)
           if isThereAnAttacker then
@@ -224,7 +225,7 @@ function Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
   local retrieveNextClosestPosition, markPositionAsVisited = retrieveNextPosition()
 
   Coroutine.runAsCoroutine(function()
-    while stoppable:hasBeenRequestedToStop() do
+    while not stoppable:hasBeenRequestedToStop() do
       if nextNode and Core.calculateDistanceFromCharacterToPosition(nextNode) <= HOW_TO_CLOSE_TO_FLY_TO_NODE then
         markPositionAsVisited(nextNode)
         nextNode = nil

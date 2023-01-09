@@ -1268,7 +1268,7 @@ function Core.moveToUntil(point, options)
       )
     end
 
-    while stoppable:hasBeenRequestedToStop() and not stopCondition() do
+    while not stoppable:hasBeenRequestedToStop() and not stopCondition() do
       local stoppable2 = Core._moveTo(point, {
         toleranceDistance = options.toleranceDistance,
         stop = stopCondition
@@ -1331,7 +1331,7 @@ function Core.moveToObject(pointer, options)
     end
 
     local position = retrievePosition()
-    while stoppable:hasBeenRequestedToStop() and not isJobDone(position) do
+    while not stoppable:hasBeenRequestedToStop() and not isJobDone(position) do
       lastMoveToPosition = position
       await(Core._moveTo(position, {
         toleranceDistance = distance,
@@ -1480,7 +1480,7 @@ function Core.doMob(pointer, options)
       Core.targetUnit(pointer)
       Core.startAttacking()
 
-      while stoppable:hasBeenRequestedToStop() and not isJobDone() do
+      while not stoppable:hasBeenRequestedToStop() and not isJobDone() do
         local position = Core.retrieveObjectPosition(pointer)
         if not Core.isCharacterCloseToPosition(position, distance) then
           await(Core.moveToObject(pointer, {
@@ -1562,7 +1562,7 @@ local function gossipWithObject(pointer, chooseOption)
 
   Coroutine.runAsCoroutine(function()
     local name = Core.retrieveObjectName(pointer)
-    while stoppable:hasBeenRequestedToStop() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
+    while not stoppable:hasBeenRequestedToStop() and HWT.ObjectExists(pointer) and Core.retrieveObjectPointer('npc') ~= pointer do
       await(Core.moveToAndInteractWithObject(pointer))
       if not GossipFrame:IsShown() then
         Events.waitForEvent('GOSSIP_SHOW', 2)
