@@ -30,9 +30,11 @@ function _.visualize()
     if farmedThing then
       local characterPosition = Core.retrieveCharacterPosition()
       local position = Core.retrieveObjectPosition(farmedThing)
-      Draw.SetColorRaw(0, 1, 0, 1)
-      Draw.Circle(position.x, position.y, position.z, 3)
-      Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+      if position then
+        Draw.SetColorRaw(0, 1, 0, 1)
+        Draw.Circle(position.x, position.y, position.z, 3)
+        Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+      end
     end
 
     if nextNode then
@@ -61,7 +63,7 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
       local pausable, pausableInternal = Pausable.Pausable:new()
 
       Coroutine.runAsCoroutine(function()
-        while true do
+        while pausable:hasBeenRequestedToStop() do
           local farmedThings = findFarmedThings()
           if #farmedThings >= 1 then
             print('Found farmed thing(s).')
@@ -96,8 +98,12 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
             print(6)
           end
 
-          Coroutine.waitForDuration(1)
+          pausableInternal:pauseIfHasBeenRequestedToPause()
+
+          Coroutine.yieldAndResume()
         end
+
+        pausableInternal:resolve()
       end)
 
       return pausable
@@ -109,7 +115,7 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
       local pausable, pausableInternal = Pausable.Pausable:new()
 
       Coroutine.runAsCoroutine(function()
-        while true do
+        while pausable:hasBeenRequestedToStop() do
           local closestNode = retrieveNextClosestPosition()
           if closestNode then
             nextNode = closestNode
@@ -132,6 +138,8 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
 
           Coroutine.yieldAndResume()
         end
+
+        pausableInternal:resolve()
       end)
 
       return pausable
@@ -145,13 +153,16 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
           local attackers = Array.filter(Core.retrieveObjectPointers(), Core.isUnitAttackingTheCharacter)
           local isThereAnAttacker = Array.hasElements(attackers)
           if isThereAnAttacker then
+            print('combat 1')
             await(Resolvable.all(
               {
                 lookForThings:pause(),
                 visitNodes:pause()
               }
             ))
+            print('combat 2')
             await(_.handleAttackers())
+            print('combat 3')
             lookForThings:resume()
             visitNodes:resume()
           end

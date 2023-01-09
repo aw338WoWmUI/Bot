@@ -42,10 +42,6 @@ function Draw.SetColor(r, g, b, a)
 end
 
 function Draw.SetColorRaw(r, g, b, a)
-  if r == 1 and g == 1 and b == 0 then
-    print('a')
-    DevTools_Dump(debugstack())
-  end
 	Draw.line.r = r
 	Draw.line.g = g
 	Draw.line.b = b

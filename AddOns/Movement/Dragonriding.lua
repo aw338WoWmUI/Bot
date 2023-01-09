@@ -40,7 +40,9 @@ end
 
 function Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint)
   local distance = math.min(LOOK_AHEAD_DISTANCE, Core.calculateDistanceFromCharacterToPosition(targetPoint))
-  return Movement.isObstacleInFrontOfCharacter(distance)
+  local pitch = HWT.UnitPitch('player')
+  local range = 30 -- degree
+  return pitch >= math.rad(-(range / 2)) and pitch <= math.rad(range / 2) and Movement.isObstacleInFlyingDirectionOfCharacter(distance)
 end
 
 function Movement.Dragonriding.flyHigher()

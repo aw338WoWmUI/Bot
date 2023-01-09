@@ -1379,6 +1379,7 @@ function Core.moveToAndInteractWithObject(pointer, distance, delay)
       if GetNumLootItems() >= 1 then
         Events.waitForEvent('LOOT_CLOSED')
       end
+      Coroutine.waitForDuration(1)
       pausableInternal:resolve(true)
     else
       pausableInternal:resolve(false)

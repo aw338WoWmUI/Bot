@@ -125,6 +125,10 @@ function Movement.calculateIsObstacleInFrontToPosition(position, distance)
   return Core.retrievePositionFromPosition(position, distance or 5, HWT.ObjectFacing('player'), 0)
 end
 
+function Movement.calculateIsObstacleInFlyingDirectionToPosition(position, distance)
+  return Core.retrievePositionFromPosition(position, distance or 5, HWT.ObjectFacing('player'), HWT.UnitPitch('player'))
+end
+
 function Movement.isObstacleInFront(position, distance)
   local position1 = Movement.createPoint(
     position.x,
@@ -132,6 +136,22 @@ function Movement.isObstacleInFront(position, distance)
     position.z + zOffset
   )
   local position2 = Movement.calculateIsObstacleInFrontToPosition(position1, distance)
+  lines = {
+    {
+      position1,
+      position2
+    }
+  }
+  return not Movement.thereAreZeroCollisions(position1, position2)
+end
+
+function Movement.isObstacleInFlyingDirection(position, distance)
+  local position1 = Movement.createPoint(
+    position.x,
+    position.y,
+    position.z + zOffset
+  )
+  local position2 = Movement.calculateIsObstacleInFlyingDirectionToPosition(position1, distance)
   lines = {
     {
       position1,
@@ -470,7 +490,7 @@ function Movement.canPlayerStandOnPoint(point, options)
       )
       if standOnPoint then
         local MAXIMUM_STEEPNESS_HEIGHT = 0.55436325073242
-        local points = Movement.generatePointsAround(standOnPoint, Core.retrieveCharacterBoundingRadius(), 8)
+        local points = Movement.generatePointsAround(standOnPoint, 0, 1, 8)
         return not Array.all(points, function(point)
           local point1 = Movement.createPointWithZOffset(point, Movement.MAXIMUM_WALK_UP_TO_HEIGHT)
           return Movement.thereAreCollisions(
@@ -660,6 +680,11 @@ end
 function Movement.isObstacleInFrontOfCharacter(distance)
   local characterPosition = Core.retrieveCharacterPosition()
   return Movement.isObstacleInFront(characterPosition, distance)
+end
+
+function Movement.isObstacleInFlyingDirectionOfCharacter(distance)
+  local characterPosition = Core.retrieveCharacterPosition()
+  return Movement.isObstacleInFlyingDirection(characterPosition, distance)
 end
 
 function Movement.generateWaypoint()
@@ -1908,63 +1933,83 @@ function Movement.moveTo(to, options)
   while not stop() and not hasArrived() do
     local from = Core.retrieveCharacterPosition()
 
-    if (Movement.canCharacterRideDragon() and (IsFlying() or Movement.Dragonriding.areConditionsMetForFlyingHigher(to))) or Movement.canCharacterFly() then
-      print(1)
-      Movement.stopPathFindingAndMoving()
-
-      local path = {
-        from,
-        to
-      }
-      Movement.path = path
-      AddOn.savedVariables.perCharacter.MovementPath = Movement.path
-
-      local resolvable
-      resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
-        stop = function(context)
-          return (stop and stop()) or hasArrived() or Core.isCharacterDead() or context.hasLanded
-        end,
-        continueMoving = options.continueMoving
-      })
-      await(resolvable)
+    if Movement.isThereAPathOnTheGround(from, to, options) then
+      Movement.moveToOnTheGround(from, to, options)
+    elseif Movement.canCharacterRideDragon() or Movement.canCharacterFly() then
+      Movement.moveToViaDragonridingOrFlying(from, to, options, hasArrived)
     else
-      print(2)
-      do
-        local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(from)
-        if closestPositionOnMesh then
-          from = closestPositionOnMesh
-        end
-      end
-
-      do
-        local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(to)
-        if closestPositionOnMesh then
-          to = closestPositionOnMesh
-        end
-      end
-
-      if isDifferentPathFindingRequestThanRun(to) then
-        Movement.stopPathFindingAndMoving()
-        local path = _.findPath(from, to, options)
-        AddOn.savedVariables.perCharacter.MovementPath = Movement.path
-        if path then
-          local resolvable
-          resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
-            stop = function()
-              return (stop and stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
-            end,
-            continueMoving = options.continueMoving
-          })
-          await(resolvable)
-          cleanUpPathFindingAndMoving()
-        end
-      end
+      break
     end
 
     Coroutine.yieldAndResume()
   end
 
   print(3)
+end
+
+function Movement.isThereAPathOnTheGround(from, to, options)
+  local closestPointOnMeshToFrom = Core.retrieveClosestPositionOnMesh(from)
+  if closestPointOnMeshToFrom then
+    local path = Core.findPath(closestPointOnMeshToFrom, to)
+    return Boolean.toBoolean(path)
+  else
+    return false
+  end
+end
+
+function Movement.moveToViaDragonridingOrFlying(from, to, options, hasArrived)
+  print(1)
+  Movement.stopPathFindingAndMoving()
+
+  local path = {
+    from,
+    to
+  }
+  Movement.path = path
+  AddOn.savedVariables.perCharacter.MovementPath = Movement.path
+
+  local resolvable
+  resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
+    stop = function(context)
+      return (stop and stop()) or hasArrived() or Core.isCharacterDead() or context.hasLanded
+    end,
+    continueMoving = options.continueMoving
+  })
+  await(resolvable)
+end
+
+function Movement.moveToOnTheGround(from, to, options)
+  print(2)
+  local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(from)
+  if closestPositionOnMesh then
+    from = closestPositionOnMesh
+  end
+
+  local closestPositionOnMesh = Core.retrieveClosestPositionOnMesh(to)
+  if closestPositionOnMesh then
+    to = closestPositionOnMesh
+  end
+
+  print('isDifferentPathFindingRequestThanRun(to)', isDifferentPathFindingRequestThanRun(to))
+  if isDifferentPathFindingRequestThanRun(to) then
+    Movement.stopPathFindingAndMoving()
+    local path = _.findPath(from, to, options)
+    print('path', path)
+    AddOn.savedVariables.perCharacter.MovementPath = Movement.path
+    if path then
+      local resolvable
+      resolvable, pathMover = Movement.movePath(path, {
+        stop = function()
+          local result = (stop and stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
+          print('stop result', result)
+          return result
+        end,
+        continueMoving = options.continueMoving
+      })
+      await(resolvable)
+      cleanUpPathFindingAndMoving()
+    end
+  end
 end
 
 function _.findPath(from, to, options)
@@ -1976,6 +2021,7 @@ function _.findPath(from, to, options)
   local path = pathFinder.start(from, to, options.toleranceDistance)
   pathFinder = nil
   Movement.path = path
+  return path
 end
 
 local function moveToFromNonCoroutine(x, y, z)
@@ -2403,3 +2449,5 @@ end
 function Movement.canOnlyBeMovedOnGround()
   return not Movement.canCharacterFlyOrDragonride()
 end
+
+Movement.enableVisualization()
