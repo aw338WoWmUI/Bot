@@ -33,6 +33,7 @@ function _.retrieveNextPosition()
 end
 
 function _.retrieveAllPositions()
+  print('Retrieving all positions...')
   local positions = {}
 
   if _G.miningAndHerbalismPositions then
@@ -42,12 +43,15 @@ function _.retrieveAllPositions()
   end
 
   local mapIDs = {
-    --2022,
-    --2023,
-    --2024,
+    2022,
+    2023,
+    2024,
     2025
   }
-  local professions = { 'Mining', 'Herb Gathering' }
+  local professions = {
+    'Mining',
+    'Herb Gathering'
+  }
 
   local yielder = Yielder.createYielderWithTimeTracking()
 
@@ -64,6 +68,8 @@ function _.retrieveAllPositions()
     end)
   end
 
+  print('Have retrieved all positions.')
+
   return positions
 end
 
@@ -73,7 +79,7 @@ function _.retrieveGatherMateData(mapID, profession)
   local yielder = Yielder.createYielderWithTimeTracking()
   for node in GatherMate2:GetNodesForZone(mapID, profession) do
     local x, y = GatherMate2:DecodeLoc(node)
-    local position = Core.retrieveWorldPositionFromMapPosition({ mapID = mapID, x = x, y = y })
+    local position = Core.retrieveWorldPositionFromMapPosition({ mapID = mapID, x = x, y = y }, Core.retrieveHighestZCoordinate)
     if position.z then
       table.insert(positions, position)
     end
