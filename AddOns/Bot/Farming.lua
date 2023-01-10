@@ -38,22 +38,22 @@ function _.visualize()
 
   local handle = Draw.Sync(function()
     if farmedThing then
-      local characterPosition = Core.retrieveCharacterPosition()
       local position = Core.retrieveObjectPosition(farmedThing)
       if position and position.continentID == Core.retrieveCurrentContinentID() then
         Draw.SetColorRaw(0, 1, 0, 1)
         Draw.Circle(position.x, position.y, position.z, 3)
-        Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+        _.drawPathToPosition(position)
       end
     end
 
     if nextNode and nextNode.continentID == Core.retrieveCurrentContinentID() then
-      local characterPosition = Core.retrieveCharacterPosition()
       local position = nextNode
       Draw.SetColorRaw(0, 0, 1, 1)
       Draw.Circle(position.x, position.y, position.z, 3)
-      Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+      _.drawPathToPosition(position)
     end
+
+    _.conditionallyDrawPathToIndoorExit()
   end)
 
   stoppable:onStop(function()
@@ -61,6 +61,45 @@ function _.visualize()
   end)
 
   return stoppable
+end
+
+function _.drawPathToPosition(position)
+  local characterPosition = Core.retrieveCharacterPosition()
+  local hasDrawnPathToPosition = false
+  if not IsFlying() and positionsToIndoorEntries[position:toString()] then
+    local path = Core.findPath(characterPosition, position)
+    if path then
+      Draw.SetColorRaw(0, 1, 0, 1)
+      Core.drawPath(path)
+      hasDrawnPathToPosition = true
+    end
+  end
+
+  if not hasDrawnPathToPosition then
+    Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
+  end
+end
+
+function _.conditionallyDrawPathToIndoorExit()
+  local closestIndoorEntry = _.findClosestIndoorEntry()
+  if closestIndoorEntry then
+    local nextPosition = _.retrieveNextPosition()
+    local drawPathToIndoorExit = IsIndoors() and (not nextPosition or _.isNextPositionOutsideOfCurrentIndoorArea())
+    if drawPathToIndoorExit then
+      local characterPosition = Core.retrieveCharacterPosition()
+      local path = Core.findPath(characterPosition, closestIndoorEntry)
+      if path then
+        Draw.SetColorRaw(0, 0, 1, 1)
+        Core.drawPath(path)
+      end
+    end
+  end
+end
+
+function _.isNextPositionOutsideOfCurrentIndoorArea()
+  local closestIndoorEntry = _.findClosestIndoorEntry()
+  local nextPosition = _.retrieveNextPosition()
+	return Boolean.toBoolean(nextPosition and (not positionsToIndoorEntries or positionsToIndoorEntries[nextPosition:toString()] ~= closestIndoorEntry:toString()))
 end
 
 local HOW_TO_CLOSE_TO_FLY_TO_NODE = 146
@@ -382,7 +421,7 @@ function Bot.defineIndoorEntry()
 end
 
 function Bot.associateNodeWithClosestIndoorEntry()
-  local position = _.retrievePosition()
+  local position = _.retrieveNextPosition()
   if position then
     local closestIndoorEntry = _.findClosestIndoorEntry()
     if closestIndoorEntry then
@@ -394,8 +433,17 @@ function Bot.associateNodeWithClosestIndoorEntry()
   end
 end
 
-function _.retrievePosition()
-	if farmedThing then
+function Bot.removeAssociationOfNodeWithClosestIndoorEntry()
+  if positionsToIndoorEntries then
+    local position = _.retrieveNextPosition()
+    if position then
+      positionsToIndoorEntries[position:toString()] = nil
+    end
+  end
+end
+
+function _.retrieveNextPosition()
+  if farmedThing then
     local position = Core.retrieveObjectPosition(farmedThing)
     return position
   elseif nextNode then
@@ -423,7 +471,7 @@ HWT.doWhenHWTIsLoaded(function()
       Draw.Circle(indoorEntry.x, indoorEntry.y, indoorEntry.z, 0.5)
     end
 
-    local position = _.retrievePosition()
+    local position = _.retrieveNextPosition()
     if position then
       local indoorEntryPositionString = positionsToIndoorEntries[position:toString()]
       if indoorEntryPositionString then

@@ -89,6 +89,7 @@ function Bot.findThingsThatDropDragonShardOfKnowledge()
           if closestPositionOnMesh then
             local path = Core.findPath(closestPositionOnMesh, position)
             if path then
+              Draw.SetColorRaw(0, 0, 1, 1)
               Core.drawPath(path)
               hasDrawnPathToObject = true
             end

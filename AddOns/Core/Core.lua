@@ -1597,7 +1597,6 @@ function Core.gossipWithObject(pointer, gossipOptionID)
 end
 
 function Core.drawPath(path)
-  Draw.SetColorRaw(0, 0, 1, 1)
   for index = 1, #path - 1 do
     local point = path[index]
     local point2 = path[index + 1]

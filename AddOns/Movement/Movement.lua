@@ -2436,6 +2436,7 @@ function Movement.enableVisualization()
 
       local path = AddOn.savedVariables.perCharacter.MovementPath
       if path then
+        Draw.SetColorRaw(0, 0, 1, 1)
         Core.drawPath(path)
       end
 
