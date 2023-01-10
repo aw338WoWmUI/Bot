@@ -382,17 +382,26 @@ function Bot.defineIndoorEntry()
 end
 
 function Bot.associateNodeWithClosestIndoorEntry()
-  if farmedThing then
+  local position = _.retrievePosition()
+  if position then
     local closestIndoorEntry = _.findClosestIndoorEntry()
     if closestIndoorEntry then
-      local position = Core.retrieveObjectPosition(farmedThing)
-      if position then
-        if not positionsToIndoorEntries then
-          positionsToIndoorEntries = {}
-        end
-        positionsToIndoorEntries[position:toString()] = closestIndoorEntry:toString()
+      if not positionsToIndoorEntries then
+        positionsToIndoorEntries = {}
       end
+      positionsToIndoorEntries[position:toString()] = closestIndoorEntry:toString()
     end
+  end
+end
+
+function _.retrievePosition()
+	if farmedThing then
+    local position = Core.retrieveObjectPosition(farmedThing)
+    return position
+  elseif nextNode then
+    return nextNode
+  else
+    return nil
   end
 end
 
@@ -414,16 +423,14 @@ HWT.doWhenHWTIsLoaded(function()
       Draw.Circle(indoorEntry.x, indoorEntry.y, indoorEntry.z, 0.5)
     end
 
-    if farmedThing then
-      local position = Core.retrieveObjectPosition(farmedThing)
-      if position then
-        local indoorEntryPositionString = positionsToIndoorEntries[position:toString()]
-        if indoorEntryPositionString then
-          local indoorEntry = Core.WorldPosition.fromString(indoorEntryPositionString)
-          Draw.SetColorRaw(1, 0.5, 0, 1)
-          Draw.Circle(indoorEntry.x, indoorEntry.y, indoorEntry.z, 0.5)
-          Draw.Line(position.x, position.y, position.z, indoorEntry.x, indoorEntry.y, indoorEntry.z)
-        end
+    local position = _.retrievePosition()
+    if position then
+      local indoorEntryPositionString = positionsToIndoorEntries[position:toString()]
+      if indoorEntryPositionString then
+        local indoorEntry = Core.WorldPosition.fromString(indoorEntryPositionString)
+        Draw.SetColorRaw(1, 0.5, 0, 1)
+        Draw.Circle(indoorEntry.x, indoorEntry.y, indoorEntry.z, 0.5)
+        Draw.Line(position.x, position.y, position.z, indoorEntry.x, indoorEntry.y, indoorEntry.z)
       end
     end
   end)
