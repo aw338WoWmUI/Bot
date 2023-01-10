@@ -1679,6 +1679,6 @@ function Core.printSpellTooltip(spell)
 end
 
 function Core.isCharacterAtMaxAwayFrom(position, maximumDistance)
-  local distance = Core.calculateDistanceFromCharacterToPosition(nextNode)
+  local distance = Core.calculateDistanceFromCharacterToPosition(position)
 	return Boolean.toBoolean(distance) and distance <= maximumDistance
 end
