@@ -40,14 +40,14 @@ function _.visualize()
     if farmedThing then
       local characterPosition = Core.retrieveCharacterPosition()
       local position = Core.retrieveObjectPosition(farmedThing)
-      if position then
+      if position and position.continentID == Core.retrieveCurrentContinentID() then
         Draw.SetColorRaw(0, 1, 0, 1)
         Draw.Circle(position.x, position.y, position.z, 3)
         Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
       end
     end
 
-    if nextNode then
+    if nextNode and nextNode.continentID == Core.retrieveCurrentContinentID() then
       local characterPosition = Core.retrieveCharacterPosition()
       local position = nextNode
       Draw.SetColorRaw(0, 0, 1, 1)
