@@ -682,6 +682,8 @@ end
 function Core.calculateDistanceBetweenPositions(a, b)
   if not a or not b then
     return nil
+  elseif a.continentID ~= b.continentID then
+    return INF
   elseif a.z and b.z then
     return HWT.GetDistanceBetweenPositions(a.x, a.y, a.z, b.x, b.y, b.z)
   else

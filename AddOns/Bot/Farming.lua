@@ -372,3 +372,59 @@ function Bot.Farming.retrieveNextPosition(retrieveAllPositions, skipSet)
 
   return retrieveNextClosestPosition, markAsVisited, skipPosition
 end
+
+function Bot.defineIndoorEntry()
+  local position = Core.retrieveCharacterPosition()
+  if not indoorEntries then
+    indoorEntries = {}
+  end
+  table.insert(indoorEntries, position:toString())
+end
+
+function Bot.associateNodeWithClosestIndoorEntry()
+  if farmedThing then
+    local closestIndoorEntry = _.findClosestIndoorEntry()
+    if closestIndoorEntry then
+      local position = Core.retrieveObjectPosition(farmedThing)
+      if position then
+        if not positionsToIndoorEntries then
+          positionsToIndoorEntries = {}
+        end
+        positionsToIndoorEntries[position:toString()] = closestIndoorEntry:toString()
+      end
+    end
+  end
+end
+
+function _.findClosestIndoorEntry()
+  if indoorEntries then
+    return Core.WorldPosition.fromString(Array.min(indoorEntries, function(indoorEntry)
+      return Core.calculateDistanceFromCharacterToPosition(Core.WorldPosition.fromString(indoorEntry))
+    end))
+  else
+    return nil
+  end
+end
+
+HWT.doWhenHWTIsLoaded(function()
+  Draw.Sync(function()
+    local indoorEntry = _.findClosestIndoorEntry()
+    if indoorEntry and indoorEntry.continentID == Core.retrieveCurrentContinentID() and Core.calculateDistanceFromCharacterToPosition(indoorEntry) <= 100 then
+      Draw.SetColorRaw(1, 0.5, 0, 1)
+      Draw.Circle(indoorEntry.x, indoorEntry.y, indoorEntry.z, 0.5)
+    end
+
+    if farmedThing then
+      local position = Core.retrieveObjectPosition(farmedThing)
+      if position then
+        local indoorEntryPositionString = positionsToIndoorEntries[position:toString()]
+        if indoorEntryPositionString then
+          local indoorEntry = Core.WorldPosition.fromString(indoorEntryPositionString)
+          Draw.SetColorRaw(1, 0.5, 0, 1)
+          Draw.Circle(indoorEntry.x, indoorEntry.y, indoorEntry.z, 0.5)
+          Draw.Line(position.x, position.y, position.z, indoorEntry.x, indoorEntry.y, indoorEntry.z)
+        end
+      end
+    end
+  end)
+end)
