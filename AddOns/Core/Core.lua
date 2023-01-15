@@ -700,6 +700,10 @@ function Core.calculateDistanceFromCharacterToPosition(position)
   return Core.calculateDistanceBetweenPositions(characterPosition, position)
 end
 
+function Core.isCharacterInTheWorld()
+	return Boolean.toBoolean(Core.retrieveCharacterPosition())
+end
+
 function Core.calculate2DDistanceFromCharacterToPosition(position)
   local characterPosition = Core.retrieveCharacterPosition()
   return Core.calculate2DDistanceBetweenPositions(characterPosition, position)

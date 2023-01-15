@@ -100,7 +100,7 @@ end
 function _.isNextPositionOutsideOfCurrentIndoorArea()
   local closestIndoorEntry = _.findClosestIndoorEntry()
   local nextPosition = _.retrieveNextPosition()
-  return Boolean.toBoolean(nextPosition and AddOn.positionsToIndoorEntries[nextPosition:toString()] ~= closestIndoorEntry:toString())
+  return Boolean.toBoolean(closestIndoorEntry and nextPosition and AddOn.positionsToIndoorEntries[nextPosition:toString()] ~= closestIndoorEntry:toString())
 end
 
 local HOW_TO_CLOSE_TO_FLY_TO_NODE = 146
@@ -456,9 +456,13 @@ function _.retrieveNextPosition()
 end
 
 function _.findClosestIndoorEntry()
-  return Core.WorldPosition.fromString(Array.min(AddOn.indoorEntries, function(indoorEntry)
-    return Core.calculateDistanceFromCharacterToPosition(Core.WorldPosition.fromString(indoorEntry))
-  end))
+  if Core.isCharacterInTheWorld() then
+    return Core.WorldPosition.fromString(Array.min(AddOn.indoorEntries, function(indoorEntry)
+      return Core.calculateDistanceFromCharacterToPosition(Core.WorldPosition.fromString(indoorEntry))
+    end))
+  else
+    return nil
+  end
 end
 
 HWT.doWhenHWTIsLoaded(function()
