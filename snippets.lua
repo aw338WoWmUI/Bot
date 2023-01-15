@@ -357,3 +357,5 @@ Coroutine.runAsCoroutine(function () Core.moveToObject('target') end)
 Coroutine.runAsCoroutine(function () Core._moveTo(Core.retrieveObjectPosition('target')) end)
 
 Coroutine.runAsCoroutine(function () lll = Core._moveTo(Core.retrieveObjectPosition('target')) end)
+
+Core.retrieveObjectDataDynamicFlags(Core.findClosestObjectToCharacterWithObjectID(191905))

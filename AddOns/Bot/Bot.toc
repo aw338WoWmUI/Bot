@@ -1,11 +1,12 @@
 ## Title: Bot
 ## Interface: 100002
-## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Resolvable, Events, Array, Stoppable, Pausable, Compatibility, Togglable, InitializableTogglable, Object, Yielder
+## Dependencies: Boolean, HWT, Core, Bags, Coroutine, Set, SpellCasting, Resolvable, Events, Array, Stoppable, Pausable, Compatibility, Togglable, InitializableTogglable, Object, Yielder, Serialization
 ## OptionalDeps: RecommendedSpellCaster, Questing, HandyNotes, HandyNotes_Dragonflight, TradeSkillMaster
-## SavedVariables: rareObjectIDs, mobsWhoDropKeyFraming, mobsWhoDropKeyFragments, objectsWhoContainKeyFragments, positions, visitedNodes, skipSet, miningAndHerbalismPositions, miningAndHerbalismSkipSet, draconicCacheSkipSet, indoorEntries, positionsToIndoorEntries
+## SavedVariables: rareObjectIDs, mobsWhoDropKeyFraming, mobsWhoDropKeyFragments, objectsWhoContainKeyFragments, positions, visitedNodes, skipSet, miningAndHerbalismPositions, miningAndHerbalismSkipSet, draconicCacheSkipSet
 ## SavedVariablesPerCharacter: BotOptions
 
 data.lua
+IndoorDatabase.lua
 Warrior.lua
 DeathKnight.lua
 Bot.lua

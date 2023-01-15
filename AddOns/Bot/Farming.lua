@@ -1,5 +1,6 @@
 Bot = Bot or {}
 Bot.Farming = Bot.Farming or {}
+local __, AddOn = ...
 local _ = {}
 
 local farmedThing = nil
@@ -66,7 +67,7 @@ end
 function _.drawPathToPosition(position)
   local characterPosition = Core.retrieveCharacterPosition()
   local hasDrawnPathToPosition = false
-  if not IsFlying() and positionsToIndoorEntries[position:toString()] then
+  if not IsFlying() and AddOn.positionsToIndoorEntries[position:toString()] then
     local path = Core.findPath(characterPosition, position)
     if path then
       Draw.SetColorRaw(0, 1, 0, 1)
@@ -99,7 +100,7 @@ end
 function _.isNextPositionOutsideOfCurrentIndoorArea()
   local closestIndoorEntry = _.findClosestIndoorEntry()
   local nextPosition = _.retrieveNextPosition()
-	return Boolean.toBoolean(nextPosition and (not positionsToIndoorEntries or positionsToIndoorEntries[nextPosition:toString()] ~= closestIndoorEntry:toString()))
+  return Boolean.toBoolean(nextPosition and AddOn.positionsToIndoorEntries[nextPosition:toString()] ~= closestIndoorEntry:toString())
 end
 
 local HOW_TO_CLOSE_TO_FLY_TO_NODE = 146
@@ -414,10 +415,14 @@ end
 
 function Bot.defineIndoorEntry()
   local position = Core.retrieveCharacterPosition()
-  if not indoorEntries then
-    indoorEntries = {}
-  end
-  table.insert(indoorEntries, position:toString())
+  table.insert(AddOn.indoorEntries, position:toString())
+  _.writeIndoorDatabase()
+end
+
+function _.writeIndoorDatabase()
+  local filePath = HWT.GetWoWDirectory() .. '/Interface/AddOns/Bot/IndoorDatabase.lua'
+  HWT.WriteFile(filePath,
+    'local addOnName, AddOn = ...\n\nAddOn.indoorEntries = ' .. Serialization.valueToString(AddOn.indoorEntries) .. '\n\nAddOn.positionsToIndoorEntries = ' .. Serialization.valueToString(AddOn.positionsToIndoorEntries) .. '\n')
 end
 
 function Bot.associateNodeWithClosestIndoorEntry()
@@ -425,20 +430,17 @@ function Bot.associateNodeWithClosestIndoorEntry()
   if position then
     local closestIndoorEntry = _.findClosestIndoorEntry()
     if closestIndoorEntry then
-      if not positionsToIndoorEntries then
-        positionsToIndoorEntries = {}
-      end
-      positionsToIndoorEntries[position:toString()] = closestIndoorEntry:toString()
+      AddOn.positionsToIndoorEntries[position:toString()] = closestIndoorEntry:toString()
+      _.writeIndoorDatabase()
     end
   end
 end
 
 function Bot.removeAssociationOfNodeWithClosestIndoorEntry()
-  if positionsToIndoorEntries then
-    local position = _.retrieveNextPosition()
-    if position then
-      positionsToIndoorEntries[position:toString()] = nil
-    end
+  local position = _.retrieveNextPosition()
+  if position then
+    AddOn.positionsToIndoorEntries[position:toString()] = nil
+    _.writeIndoorDatabase()
   end
 end
 
@@ -454,13 +456,9 @@ function _.retrieveNextPosition()
 end
 
 function _.findClosestIndoorEntry()
-  if indoorEntries then
-    return Core.WorldPosition.fromString(Array.min(indoorEntries, function(indoorEntry)
-      return Core.calculateDistanceFromCharacterToPosition(Core.WorldPosition.fromString(indoorEntry))
-    end))
-  else
-    return nil
-  end
+  return Core.WorldPosition.fromString(Array.min(AddOn.indoorEntries, function(indoorEntry)
+    return Core.calculateDistanceFromCharacterToPosition(Core.WorldPosition.fromString(indoorEntry))
+  end))
 end
 
 HWT.doWhenHWTIsLoaded(function()
@@ -473,7 +471,7 @@ HWT.doWhenHWTIsLoaded(function()
 
     local position = _.retrieveNextPosition()
     if position then
-      local indoorEntryPositionString = positionsToIndoorEntries[position:toString()]
+      local indoorEntryPositionString = AddOn.positionsToIndoorEntries[position:toString()]
       if indoorEntryPositionString then
         local indoorEntry = Core.WorldPosition.fromString(indoorEntryPositionString)
         Draw.SetColorRaw(1, 0.5, 0, 1)

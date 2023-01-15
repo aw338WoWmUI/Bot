@@ -46,7 +46,10 @@ AddOn.containedIn3 = Set.create({
   383734,
   191861,
   383735,
-  191905
+})
+
+AddOn.containedIn4 = Set.create({
+  191905,
 })
 
 -- For mining

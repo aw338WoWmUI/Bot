@@ -125,9 +125,12 @@ function _.findThings()
             Core.isAlive(object) and
             Core.canCharacterAttackUnit(object)
         ) or
-          (Set.contains(AddOn.containedIn1, objectID) or Set.contains(AddOn.containedIn2,
-            objectID) or Set.contains(AddOn.containedIn3,
-            objectID)) and Core.retrieveObjectDataDynamicFlags(object) == CHEST_CLOSED
+          (
+            Set.contains(AddOn.containedIn1, objectID) or
+              Set.contains(AddOn.containedIn2, objectID) or
+              Set.contains(AddOn.containedIn3, objectID)
+          ) and Core.retrieveObjectDataDynamicFlags(object) == CHEST_CLOSED or
+        Set.contains(AddOn.containedIn4, objectID)
       ) and (not skipSet or not skipSet[Core.retrieveObjectPosition(object):toString()])
     )
   end)
