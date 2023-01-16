@@ -17,33 +17,50 @@ local IDs = Set.create({
 })
 
 function Bot.DeathKnight.castSpell()
-  local characterToResurrect = _.findCharacterToResurrect()
   if IDs:contains(HWT.ObjectId('target')) and UnitHealth('target') <= 75000 then
-    print('aaa')
     Core.useItemByID(199414, 'target')
     if Core.canStaticPopup1Button1BePressed() then
       StaticPopup1Button1:Click()
     end
-  elseif _.areConditionsMetForRaiseAlly(characterToResurrect) then
-    _.raiseAlly(characterToResurrect)
-  elseif _.areConditionsMetForHealing() and (Core.hasCharacterBuff(LICHBORNE) or SpellCasting.canBeCasted(LICHBORNE)) and SpellCasting.canBeCasted(DEATH_COIL) then
-    if not Core.hasCharacterBuff(LICHBORNE) then
-      SpellCasting.castSpell(LICHBORNE)
-    end
-    SpellCasting.castSpell(DEATH_COIL, {
-      target = 'player'
+  else
+    _.doFirstOfWhichConditionsAreMet({
+      _.conditionallyUseDelicateSuspensionOfSpores,
+      function()
+        local characterToResurrect = _.findCharacterToResurrect()
+        if _.areConditionsMetForRaiseAlly(characterToResurrect) then
+          _.raiseAlly(characterToResurrect)
+        elseif _.areConditionsMetForHealing() and (Core.hasCharacterBuff(LICHBORNE) or SpellCasting.canBeCasted(LICHBORNE)) and SpellCasting.canBeCasted(DEATH_COIL) then
+          if not Core.hasCharacterBuff(LICHBORNE) then
+            SpellCasting.castSpell(LICHBORNE)
+          end
+          SpellCasting.castSpell(DEATH_COIL, {
+            target = 'player'
+          })
+        elseif _.areConditionsMetForHealing() and SpellCasting.canBeCasted(DEATH_STRIKE) then
+          SpellCasting.castSpell(DEATH_STRIKE)
+        elseif _.hasCharacterItemWithBreathOfNeltharionEquipped() and _.isBreathOfNeltharionTinkerOffCooldown() and _.areAtLeastTwoMobsInFront() then
+          if _.hasCharacterItemWithGroundedCircuitryEquipped() and _.isGroundedCircuitryTinkerOffCooldown() then
+            _.castGroundedCircuitry()
+          end
+          _.castBreathOfNeltharion()
+        elseif _G.RecommendedSpellCaster then
+          AddOn.castRecommendedSpell()
+        elseif _G.GMR and GMR.ClassRotation then
+          GMR.ClassRotation()
+        end
+
+        return true
+      end
     })
-  elseif _.areConditionsMetForHealing() and SpellCasting.canBeCasted(DEATH_STRIKE) then
-    SpellCasting.castSpell(DEATH_STRIKE)
-  elseif _.hasCharacterItemWithBreathOfNeltharionEquipped() and _.isBreathOfNeltharionTinkerOffCooldown() and _.areAtLeastTwoMobsInFront() then
-    if _.hasCharacterItemWithGroundedCircuitryEquipped() and _.isGroundedCircuitryTinkerOffCooldown() then
-      _.castGroundedCircuitry()
+  end
+end
+
+function _.doFirstOfWhichConditionsAreMet(functions)
+  for __, fn in ipairs(functions) do
+    local wereConditionsMet = fn()
+    if wereConditionsMet then
+      return
     end
-    _.castBreathOfNeltharion()
-  elseif _G.RecommendedSpellCaster then
-    AddOn.castRecommendedSpell()
-  elseif _G.GMR and GMR.ClassRotation then
-    GMR.ClassRotation()
   end
 end
 
@@ -65,19 +82,13 @@ local partyUnitTokens = {
 }
 
 function _.findCharacterToResurrect()
-  local unitTokens = {}
-  if IsInRaid() then
-    for index = 1, 40 do
-      table.insert(unitTokens, 'raid' .. index)
-    end
-  elseif UnitInParty('player') then
-    Array.append(unitTokens, partyUnitTokens)
-  end
+  local unitTokens = _.retrieveUnitTokens()
+
   local deadTanks = Array.filter(unitTokens, function(unitToken)
     return UnitGroupRolesAssigned(unitToken) == 'TANK' and UnitIsDead(unitToken)
   end)
   if #deadTanks >= 1 then
-    local deadTanksThatResurrectCanBeCastedOn = Array.filter(deadTanks, function (deadTank)
+    local deadTanksThatResurrectCanBeCastedOn = Array.filter(deadTanks, function(deadTank)
       return SpellCasting.isSpellInRange(RAISE_ALLY, deadTank)
     end)
     if #deadTanksThatResurrectCanBeCastedOn >= 1 then
@@ -90,7 +101,7 @@ function _.findCharacterToResurrect()
       return UnitGroupRolesAssigned(unitToken) == 'HEALER' and UnitIsDead(unitToken)
     end)
     if #deadHealers >= 1 then
-      local deadHealersThatResurrectCanBeCastedOn = Array.filter(deadHealers, function (deadHealer)
+      local deadHealersThatResurrectCanBeCastedOn = Array.filter(deadHealers, function(deadHealer)
         return SpellCasting.isSpellInRange(RAISE_ALLY, deadHealer)
       end)
       if #deadHealersThatResurrectCanBeCastedOn >= 1 then
@@ -108,6 +119,97 @@ function _.raiseAlly(characterToResurrect)
   SpellCasting.castSpell(RAISE_ALLY, {
     target = characterToResurrect
   })
+end
+
+local DELICATE_SUSPENSION_OF_SPORES = 191377
+local DELICATE_SUSPENSION_OF_SPORES_RANGE = 10
+local DELICATE_SUSPENSION_OF_SPORES_HEALING = 36351
+
+function _.conditionallyUseDelicateSuspensionOfSpores()
+  if C_Container.GetItemCooldown(DELICATE_SUSPENSION_OF_SPORES) == 0 then
+    local containerIndex, slotIndex = Bags.findItem(DELICATE_SUSPENSION_OF_SPORES)
+    if containerIndex and slotIndex then
+      local characterToUseDelicateSuspensionOfSporesOn = _.findCharacterToUseDelicateSuspensionOfSporesOn()
+      if characterToUseDelicateSuspensionOfSporesOn then
+        SpellCasting.useContainerItem(containerIndex, slotIndex, characterToUseDelicateSuspensionOfSporesOn)
+        return true
+      end
+    end
+  end
+
+  return false
+end
+
+function _.areConditionsMetForDelicateSuspensionOfSpores(characterToUseDelicateSuspensionOfSporesOn)
+  return (
+    Bags.hasItem(DELICATE_SUSPENSION_OF_SPORES) and
+      C_Container.GetItemCooldown(DELICATE_SUSPENSION_OF_SPORES) == 0 and
+      Boolean.toBoolean(characterToUseDelicateSuspensionOfSporesOn)
+  )
+end
+
+function _.findCharacterToUseDelicateSuspensionOfSporesOn()
+  local unitTokens = _.retrieveUnitTokensIncludingPlayer()
+
+  local deadCharacters = Array.filter(unitTokens, function(unitToken)
+    return UnitIsDead(unitToken)
+  end)
+
+  local deadCharactersInRange = Array.filter(deadCharacters, function(unitToken)
+    SpellCasting.isSpellInRange(DELICATE_SUSPENSION_OF_SPORES, unitToken)
+  end)
+
+  local estimatedHealing = Array.map(deadCharactersInRange, function(unitToken)
+    return {
+      unitToken = unitToken,
+      estimatedHealing = _.estimateHealing(unitToken)
+    }
+  end)
+
+  local best = Array.max(estimatedHealing, function(object)
+    return object.estimatedHealing
+  end)
+
+  if best and best.estimatedHealing >= 2 * DELICATE_SUSPENSION_OF_SPORES_HEALING then
+    return best.unitToken
+  else
+    return nil
+  end
+end
+
+function _.retrieveUnitTokens()
+  local unitTokens = {}
+  if IsInRaid() then
+    for index = 1, 40 do
+      table.insert(unitTokens, 'raid' .. index)
+    end
+  elseif UnitInParty('player') then
+    Array.append(unitTokens, partyUnitTokens)
+  end
+  return unitTokens
+end
+
+function _.retrieveUnitTokensIncludingPlayer()
+	return Array.concat({'player'}, _.retrieveUnitTokens())
+end
+
+function _.estimateHealing(unitToken)
+  local unitTokens = _.retrieveUnitTokens()
+
+  local unitPosition = Core.retrieveObjectPosition(unitToken)
+  local closeByCharacterThatCanBeHealed = Array.filter(unitTokens, function(unitToken)
+    return (
+      Core.isAlive(unitToken) and
+        Core.calculateDistanceBetweenPositions(unitPosition,
+          Core.retrieveObjectPosition(unitToken) <= DELICATE_SUSPENSION_OF_SPORES_RANGE)
+    )
+  end)
+
+  local estimatedHealing = Math.sum(Array.map(closeByCharacterThatCanBeHealed, function(unitToken)
+    return Math.min(UnitHealthMax(unitToken) - UnitHealth(unitToken), DELICATE_SUSPENSION_OF_SPORES_HEALING)
+  end))
+
+  return estimatedHealing
 end
 
 function _.areAtLeastTwoMobsInFront()
