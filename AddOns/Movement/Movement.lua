@@ -146,19 +146,14 @@ function Movement.isObstacleInFront(position, distance)
 end
 
 function Movement.isObstacleInFlyingDirection(position, distance)
-  local position1 = Movement.createPoint(
-    position.x,
-    position.y,
-    position.z + zOffset
-  )
-  local position2 = Movement.calculateIsObstacleInFlyingDirectionToPosition(position1, distance)
+  local position2 = Movement.calculateIsObstacleInFlyingDirectionToPosition(position, distance)
   lines = {
     {
-      position1,
+      position,
       position2
     }
   }
-  return not Movement.thereAreZeroCollisions(position1, position2)
+  return not Movement.thereAreZeroCollisions(position, position2)
 end
 
 function Movement.canWalkTo(position)
@@ -1049,6 +1044,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
   local lastJumpTime = nil
 
   local function runForGroundAndFlying(action, actionSequenceDoer, remainingDistance)
+    print('ground movement and flying')
     local characterPosition = Core.retrieveCharacterPosition()
 
     local liftUpWithFlyingMount = (
@@ -1103,6 +1099,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
   end
 
   local function runForDragonriding(action, actionSequenceDoer, remainingDistance)
+    print('dragonriding')
     Movement.Dragonriding.updateFacing(waypoint, action)
 
     if Movement.Dragonriding.areConditionsMetForFlyingHigher(waypoint) then

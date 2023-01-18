@@ -139,19 +139,15 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
               end
             end
 
-            print(1)
             await(visitNodes:pause())
-            print(2)
             local farmThing = doFarmThing()
-            print(3)
             pausable:alsoStop(farmThing)
-            pausable:alsoPause(farmThing)
-            print(4)
+            if farmThing.pause then
+              pausable:alsoPause(farmThing)
+            end
             await(farmThing)
             farmedThing = nil
-            print(5)
             visitNodes:resume()
-            print(6)
           end
 
           pausableInternal:pauseIfHasBeenRequestedToPause()
