@@ -20,15 +20,13 @@ end
 
 function _.createTogglableFarming(createFarming)
   local togglable = Togglable.Togglable:new(function()
-    local stoppable, stoppableInternal = Stoppable.Stoppable:new()
-
     local assistedFarming = createFarming()
-    stoppable:alsoStop(assistedFarming)
-
     local visualization = _.visualize()
-    stoppable:alsoStop(visualization)
 
-    return stoppable
+    return Stoppable.all({
+      assistedFarming,
+      visualization
+    }, '_.createTogglableFarming')
   end)
 
   return togglable
@@ -59,6 +57,7 @@ function _.visualize()
 
   stoppable:onStop(function()
     handle:cancel()
+    stoppableInternal:resolve()
   end)
 
   return stoppable
@@ -322,6 +321,8 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
     stoppable:alsoStop(visitNodes)
     local doHandleEventOfCharacterBeingAttacked = _.doHandleEventOfCharacterBeingAttacked()
     stoppable:alsoStop(doHandleEventOfCharacterBeingAttacked)
+
+    stoppableInternal:resolve()
   end)
 
   return stoppable
