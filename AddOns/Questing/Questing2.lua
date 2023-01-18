@@ -1757,22 +1757,22 @@ function moveToClosestPoint()
       local continentID = select(8, GetInstanceInfo())
       local playerPosition = Core.retrieveCharacterPosition()
       local to = Core.retrieveClosestPositionOnMesh(playerPosition)
-      pathFinder = Movement.createPathFinder()
-      local path = pathFinder.start(playerPosition, to)
-      if path then
-        AddOn.savedVariables.perCharacter.QuestingPointToMove = path[#path]
-        print('m1')
-        if activity then
-          activity:Cancel()
-        end
-        local __, pathMover = Movement.movePath(path)
-        activity = {
-          Cancel = function()
-            pathMover.stop()
-          end
-        }
-        print('m2')
+      local stop = false
+      if activity then
+        activity:Cancel()
       end
+      activity = {
+        Cancel = function()
+          stop = true
+        end
+      }
+      Coroutine.runAsCoroutine(function()
+        Movement.moveTo(to, {
+          stop = function()
+            return stop
+          end
+        })
+      end)
     end
   end
 end

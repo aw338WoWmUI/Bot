@@ -39,10 +39,17 @@ function _.areEnoughPointsAvailableToReachTargetHeight(targetHeight)
 end
 
 function Movement.Dragonriding.isObstacleInFrontOfCharacter(targetPoint)
-  local distance = math.min(LOOK_AHEAD_DISTANCE, Core.calculateDistanceFromCharacterToPosition(targetPoint))
-  local pitch = HWT.UnitPitch('player')
-  local range = 30 -- degree
-  return pitch >= math.rad(-(range / 2)) and pitch <= math.rad(range / 2) and Movement.isObstacleInFlyingDirectionOfCharacter(distance)
+  local characterPosition = Core.retrieveCharacterPosition()
+  local position1 = characterPosition
+  local distance = math.min(LOOK_AHEAD_DISTANCE, Core.calculate2DDistanceFromCharacterToPosition(targetPoint))
+  local position2 = Movement.calculateIsObstacleInFrontToPosition(position1, distance)
+  lines = {
+    {
+      position1,
+      position2
+    }
+  }
+  return Movement.thereAreCollisions(position1, position2)
 end
 
 function Movement.Dragonriding.flyHigher()
@@ -84,7 +91,7 @@ function Movement.Dragonriding.areConditionsMetForSurgeForward()
   return (
     SpellCasting.canBeCasted(SURGE_FORWARD) and
       Movement.Dragonriding.areEnoughPointsAvailableForSpell(SURGE_FORWARD_COST) and
-      not Movement.isObstacleInFrontOfCharacter(30)
+      not Movement.isObstacleInFlyingDirection(Core.retrieveCharacterPosition(), 78.56)
   )
 end
 
@@ -93,12 +100,11 @@ function Movement.Dragonriding.surgeForward()
 end
 
 function Movement.Dragonriding.areConditionsMetForWhirlingSurge()
-  --return (
-  --  SpellCasting.canBeCasted(WHIRLING_SURGE) and
-  --    Movement.Dragonriding.areEnoughPointsAvailableForSpell(WHIRLING_SURGE_COST) and
-  --    not Movement.isObstacleInFrontOfCharacter(45)
-  --)
-  return false
+  return (
+    SpellCasting.canBeCasted(WHIRLING_SURGE) and
+      Movement.Dragonriding.areEnoughPointsAvailableForSpell(WHIRLING_SURGE_COST) and
+      not Movement.isObstacleInFlyingDirection(Core.retrieveCharacterPosition(), 109.62)
+  )
 end
 
 function Movement.Dragonriding.whirlingSurge()
@@ -121,6 +127,35 @@ function Movement.Dragonriding.measureSkywardAscentHeight()
     -- results:
     -- 52.485343933105
     -- 52.485332489014
+  end)
+end
+
+local start
+local stop
+
+function Movement.Dragonriding.measureSurgeForwardDistance()
+  Coroutine.runAsCoroutine(function()
+    if not start then
+      start = Core.retrieveCharacterPosition()
+      Movement.Dragonriding.surgeForward()
+    else
+      stop = Core.retrieveCharacterPosition()
+      local distance = Core.calculateDistanceBetweenPositions(start, stop)
+      print('distance', distance)
+    end
+  end)
+end
+
+function Movement.Dragonriding.measureWhirlingSurgeDistance()
+  Coroutine.runAsCoroutine(function()
+    if not start then
+      start = Core.retrieveCharacterPosition()
+      Movement.Dragonriding.whirlingSurge()
+    else
+      stop = Core.retrieveCharacterPosition()
+      local distance = Core.calculateDistanceBetweenPositions(start, stop)
+      print('distance', distance)
+    end
   end)
 end
 

@@ -1,6 +1,5 @@
 local playerPosition = Core.retrieveCharacterPosition(); print(Core.calculateDistanceBetweenPositions(playerPosition, Movement.path[5]))
 Movement.isPositionInTheAir(Movement.path[2])
-Movement.moveToSavedPath()
 
 Core.retrieveDistanceBetweenObjects('player', 'target')
 

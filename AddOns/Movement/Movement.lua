@@ -1038,7 +1038,7 @@ function Movement.isCharacterInTheAir()
   return Movement.isPositionInTheAir(playerPosition)
 end
 
-function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint, waypointIndex, path)
+function Movement.createGroundAndFlyingMoveToAction(waypoint, a, totalDistance, isLastWaypoint, waypointIndex, path)
   local firstRun = true
   local initialDistance = nil
   local lastJumpTime = nil
@@ -1098,6 +1098,50 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     end
   end
 
+  return {
+    run = function(action, actionSequenceDoer)
+      if not actionSequenceDoer.mounter then
+        actionSequenceDoer.mounter = _.Mounter:new()
+      end
+
+      if firstRun then
+        -- log('waypoint', waypoint.x, waypoint.y, waypoint.z)
+        initialDistance = Core.calculateDistanceFromCharacterToPosition(waypoint)
+      end
+
+      local remainingDistance = Movement.calculateRemainingPathDistance(path, waypointIndex)
+
+      if remainingDistance > 10 and (not actionSequenceDoer.lastTimeDismounted or GetTime() - actionSequenceDoer.lastTimeDismounted >= 3) then
+        actionSequenceDoer.mounter:mount()
+      end
+
+      runForGroundAndFlying(action, actionSequenceDoer, remainingDistance)
+
+      firstRun = false
+    end,
+    isDone = function()
+      return (
+        Core.isCharacterCloseToPosition(waypoint, TOLERANCE_RANGE) or
+          _.isPointCloseToCharacterWithZTolerance(waypoint)
+      )
+    end,
+    shouldCancel = function(action)
+      return (
+        IsFlying() or
+          a.shouldStop(action) or
+          Core.calculateDistanceFromCharacterToPosition(waypoint) > math.max(initialDistance + 5,
+            Movement.retrieveCharacterHeight()) or
+          _.isPositionUnreachable(waypoint)
+      )
+    end
+  }
+end
+
+function Movement.createDragonridingMoveToAction(waypoint, a, totalDistance, isLastWaypoint, waypointIndex, path)
+  local firstRun = true
+  local initialDistance = nil
+  local lastJumpTime = nil
+
   local function runForDragonriding(action, actionSequenceDoer, remainingDistance)
     print('dragonriding')
     Movement.Dragonriding.updateFacing(waypoint, action)
@@ -1136,14 +1180,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
         actionSequenceDoer.mounter:mount()
       end
 
-      if (
-        IsFlying() and
-          Movement.isMountedOnDragonridingMount()
-      ) then
-        runForDragonriding(action, actionSequenceDoer, remainingDistance)
-      else
-        runForGroundAndFlying(action, actionSequenceDoer, remainingDistance)
-      end
+      runForDragonriding(action, actionSequenceDoer, remainingDistance)
 
       firstRun = false
     end,
@@ -1155,7 +1192,8 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
     end,
     shouldCancel = function(action)
       return (
-        a.shouldStop(action) or
+        action.hasLanded or
+          a.shouldStop(action) or
           Core.calculateDistanceFromCharacterToPosition(waypoint) > math.max(initialDistance + 5,
             Movement.retrieveCharacterHeight()) or
           _.isPositionUnreachable(waypoint)
@@ -1437,17 +1475,6 @@ function _.findPathToSavedPosition3()
   Movement.path = path
   AddOn.savedVariables.perCharacter.MovementPath = Movement.path
   return path
-end
-
-function Movement.moveToSavedPosition()
-  Coroutine.runAsCoroutine(function()
-    local path = findPathToSavedPosition2()
-    Movement.path = path
-    AddOn.savedVariables.perCharacter.MovementPath = Movement.path
-    if path then
-      Movement.movePath(path)
-    end
-  end)
 end
 
 function Movement.moveCloserTo(x, y, z)
@@ -1831,8 +1858,9 @@ function Movement.receiveNeighborPoints(point, distance)
   return neighborPoints
 end
 
-function Movement.movePath(path, options)
+function _.movePath(path, options)
   options = options or {}
+  local createMoveToAction = options.createMoveToAction
 
   if not options.continueMoving then
     Movement.stopMoving()
@@ -1844,8 +1872,7 @@ function Movement.movePath(path, options)
   local totalDistance = Core.calculatePathLength(path)
   pathMover = ActionSequenceDoer.createActionSequenceDoer2(
     Array.map(path, function(waypoint, index)
-      return Movement.createMoveToAction3(waypoint, a, totalDistance, index == pathLength, index,
-        path)
+      return createMoveToAction(waypoint, index, a, totalDistance, pathLength)
     end),
     {
       onStop = function()
@@ -1960,7 +1987,11 @@ function Movement.moveToViaDragonridingOrFlying(from, to, options, hasArrived)
 
   local resolvable
   local hasLanded = false
-  resolvable, pathMover = Movement.movePath(Array.slice(path, 2), {
+  resolvable, pathMover = _.movePath(Array.slice(path, 2), {
+    createMoveToAction = function(waypoint, index, a, totalDistance, pathLength)
+      return Movement.createDragonridingMoveToAction(waypoint, a, totalDistance, index == pathLength, index,
+        path)
+    end,
     stop = function(context)
       hasLanded = context.hasLanded
       return (stop and stop()) or hasArrived() or Core.isCharacterDead() or context.hasLanded
@@ -1992,7 +2023,11 @@ function Movement.moveToOnTheGround(from, to, options)
     AddOn.savedVariables.perCharacter.MovementPath = Movement.path
     if path then
       local resolvable
-      resolvable, pathMover = Movement.movePath(path, {
+      resolvable, pathMover = _.movePath(path, {
+        createMoveToAction = function(waypoint, index, a, totalDistance, pathLength)
+          return Movement.createGroundAndFlyingMoveToAction(waypoint, a, totalDistance, index == pathLength, index,
+            path)
+        end,
         stop = function()
           local result = (stop and stop()) or (options.toleranceDistance and Core.calculateDistanceFromCharacterToPosition(to) <= options.toleranceDistance)
           print('stop result', result)
@@ -2167,12 +2202,6 @@ end
 
 function Movement.convertPathToGMRPath(path)
   return Array.map(path, Movement.convertPointToArray)
-end
-
-function Movement.moveToSavedPath()
-  return Coroutine.runAsCoroutine(function()
-    Movement.movePath(path)
-  end)
 end
 
 function Movement.traceLineCollisionWithFallback(from, to)

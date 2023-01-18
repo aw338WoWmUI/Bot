@@ -258,6 +258,12 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
           local isThereAnAttacker = Array.hasElements(attackers)
           if isThereAnAttacker then
             print('combat 1')
+            lookForThings:afterNextRegisterAsPaused(function ()
+              print('lookForThings has been paused.')
+            end)
+            visitNodes:afterNextRegisterAsPaused(function ()
+              print('visitNodes has been paused.')
+            end)
             await(Resolvable.all(
               {
                 lookForThings:pause(),
