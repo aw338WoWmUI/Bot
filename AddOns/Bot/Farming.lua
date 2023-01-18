@@ -176,6 +176,7 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
           local closestNode = retrieveNextClosestPosition()
           if closestNode then
             nextNode = closestNode
+
             moveToNextNode = Core.moveTo(closestNode, {
               distance = HOW_TO_CLOSE_TO_FLY_TO_NODE,
               additionalStopConditions = function()

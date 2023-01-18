@@ -1,6 +1,6 @@
 ## Title: API Dumper
 ## Interface: 30400
-## Dependencies: Serialization, Object, HWTRetriever
+## Dependencies: Serialization, Object, HWTRetriever, Lua
 
 APIDocumentation.lua
 APIDumper.lua

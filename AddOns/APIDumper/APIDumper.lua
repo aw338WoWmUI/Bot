@@ -50,7 +50,7 @@ function _.dump(variable, variableName)
   for index, name in ipairs(keys) do
     local value = variable[name]
     local b = variableName
-    if _.isValidName(name) then
+    if Lua.isValidName(name) then
       b = b .. '.' .. name
     else
       b = b .. '[' .. Serialization.makeString(name) .. ']'
@@ -106,46 +106,3 @@ function _.dump(variable, variableName)
   end
   return output
 end
-
-function _.isValidName(name)
-  return string.match(name, '^[%a_][%d%a_]*$') and not _.isReservedKeyword(name)
-end
-
-function _.isReservedKeyword(name)
-  return _.reservedKeywords[name] == true
-end
-
-_.escapedCharacters = {
-  ['\\'] = '\\\\',
-  ['\a'] = '\\a',
-  ['\b'] = '\\b',
-  ['\f'] = '\\f',
-  ['\n'] = '\\n',
-  ['\r'] = '\\r',
-  ['\t'] = '\\t',
-  ['\v'] = '\\v'
-}
-
-_.reservedKeywords = {
-  ['and'] = true,
-  ['break'] = true,
-  ['do'] = true,
-  ['else'] = true,
-  ['elseif'] = true,
-  ['end'] = true,
-  ['false'] = true,
-  ['for'] = true,
-  ['function'] = true,
-  ['if'] = true,
-  ['in'] = true,
-  ['local'] = true,
-  ['nil'] = true,
-  ['not'] = true,
-  ['or'] = true,
-  ['repeat'] = true,
-  ['return'] = true,
-  ['then'] = true,
-  ['true'] = true,
-  ['until'] = true,
-  ['while'] = true
-}
