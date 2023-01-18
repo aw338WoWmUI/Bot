@@ -19,3 +19,4 @@ DragonShardOfKnowledgeFarming.lua
 DoPublicOrders.lua
 MiningAndHerbalism.lua
 calculateYield.lua
+MythicPlus.lua

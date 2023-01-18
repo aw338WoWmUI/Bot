@@ -216,7 +216,11 @@ function _.iconPredicate(iconToFind, _, _, _, icon)
 end
 
 function Core.hasCharacterBuff(ID)
-	return Boolean.toBoolean(Core.findAuraByID(ID, 'player', 'HELPFUL'))
+  return Core.hasUnitBuff('player', ID)
+end
+
+function Core.hasUnitBuff(unitToken, ID)
+	return Boolean.toBoolean(Core.findAuraByID(ID, unitToken, 'HELPFUL'))
 end
 
 local FOOD_ICON_ID = 134062

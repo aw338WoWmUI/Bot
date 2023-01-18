@@ -82,7 +82,7 @@ local partyUnitTokens = {
 }
 
 function _.findCharacterToResurrect()
-  local unitTokens = _.retrieveUnitTokens()
+  local unitTokens = AddOn.retrieveUnitTokens()
 
   local deadTanks = Array.filter(unitTokens, function(unitToken)
     return UnitGroupRolesAssigned(unitToken) == 'TANK' and UnitIsDead(unitToken)
@@ -177,7 +177,7 @@ function _.findCharacterToUseDelicateSuspensionOfSporesOn()
   end
 end
 
-function _.retrieveUnitTokens()
+function AddOn.retrieveUnitTokens()
   local unitTokens = {}
   if IsInRaid() then
     for index = 1, 40 do
@@ -190,11 +190,11 @@ function _.retrieveUnitTokens()
 end
 
 function _.retrieveUnitTokensIncludingPlayer()
-	return Array.concat({'player'}, _.retrieveUnitTokens())
+	return Array.concat({'player'}, AddOn.retrieveUnitTokens())
 end
 
 function _.estimateHealing(unitToken)
-  local unitTokens = _.retrieveUnitTokens()
+  local unitTokens = AddOn.retrieveUnitTokens()
 
   local unitPosition = Core.retrieveObjectPosition(unitToken)
   local closeByCharacterThatCanBeHealed = Array.filter(unitTokens, function(unitToken)
