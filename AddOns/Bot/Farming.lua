@@ -175,14 +175,26 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
         while not pausable:hasBeenRequestedToStop() do
           local closestNode = retrieveNextClosestPosition()
           if closestNode then
+            local previousNode = nextNode
             nextNode = closestNode
-
-            moveToNextNode = Core.moveTo(closestNode, {
-              distance = HOW_TO_CLOSE_TO_FLY_TO_NODE,
-              additionalStopConditions = function()
-                return pausable:hasBeenRequestedToPause() or pausable:hasBeenRequestedToStop() or pausable:isPaused() or pausable:hasStopped()
+            local indoorEntry = AddOn.positionsToIndoorEntries[closestNode:toString()]
+            if indoorEntry then
+              local indoorEntryOfPreviousNode
+              if previousNode then
+                indoorEntryOfPreviousNode = AddOn.positionsToIndoorEntries[previousNode:toString()]
               end
-            })
+              if indoorEntryOfPreviousNode and indoorEntryOfPreviousNode ~= indoorEntry then
+                await(_.moveOutOfIndoorSpace(pausable, Core.WorldPosition.fromString(indoorEntryOfPreviousNode)))
+              end
+              moveToNextNode = _.moveToNodeWhichIsIndoors(pausable, indoorEntry, closestNode)
+            else
+              moveToNextNode = Core.moveTo(closestNode, {
+                distance = HOW_TO_CLOSE_TO_FLY_TO_NODE,
+                additionalStopConditions = function()
+                  return pausable:hasBeenRequestedToPause() or pausable:hasBeenRequestedToStop() or pausable:isPaused() or pausable:hasStopped()
+                end
+              })
+            end
             await(moveToNextNode)
             nextNode = nil
             if _.hasVisitedNode(closestNode) then
@@ -192,9 +204,7 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
             end
           end
 
-          print('p1')
           pausableInternal:pauseIfHasBeenRequestedToPause()
-          print('p2')
 
           Coroutine.yieldAndResume()
         end
@@ -203,6 +213,45 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
       end)
 
       return pausable
+    end
+
+    function _.moveToNodeWhichIsIndoors(pausable, indoorEntry, closestNode)
+      local stoppable, stoppableInternal = Stoppable.Stoppable:new()
+
+      Coroutine.runAsCoroutine(function()
+        local indoorEntryPosition = Core.WorldPosition.fromString(indoorEntry)
+        local moveTo1 = Core.moveTo(indoorEntryPosition, {
+          distance = HOW_TO_CLOSE_TO_FLY_TO_NODE,
+          additionalStopConditions = function()
+            return pausable:hasBeenRequestedToPause() or pausable:hasBeenRequestedToStop() or pausable:isPaused() or pausable:hasStopped()
+          end
+        })
+        stoppable:alsoStop(moveTo1)
+        await(moveTo1)
+        if stoppable:isRunning() and pausable:isRunning() and Core.calculateDistanceFromCharacterToPosition(indoorEntryPosition) <= HOW_TO_CLOSE_TO_FLY_TO_NODE then
+          local moveTo2 = Core.moveTo(closestNode, {
+            distance = HOW_TO_CLOSE_TO_FLY_TO_NODE,
+            additionalStopConditions = function()
+              return pausable:hasBeenRequestedToPause() or pausable:hasBeenRequestedToStop() or pausable:isPaused() or pausable:hasStopped()
+            end
+          })
+          stoppable:alsoStop(moveTo2)
+          await(moveTo2)
+        end
+
+        stoppableInternal:resolve()
+      end)
+
+      return stoppable
+    end
+
+    function _.moveOutOfIndoorSpace(pausable, outsidePosition)
+      return Core.moveTo(outsidePosition, {
+        distance = HOW_TO_CLOSE_TO_FLY_TO_NODE,
+        additionalStopConditions = function()
+          return pausable:hasBeenRequestedToPause() or pausable:hasBeenRequestedToStop() or pausable:isPaused() or pausable:hasStopped()
+        end
+      })
     end
 
     function _.doHandleEventOfCharacterBeingAttacked()

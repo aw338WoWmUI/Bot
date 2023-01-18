@@ -1191,8 +1191,8 @@ function _.isPointCloseToCharacterWithZTolerance(point)
   local playerPosition = Movement.retrieveCharacterPosition()
   return (
     Math.euclideanDistance2D(playerPosition, point) <= TOLERANCE_RANGE and
-      point.z >= playerPosition.z and
-      point.z <= playerPosition.z + Movement.retrieveCharacterHeight()
+      playerPosition.z >= point.z - 0.5 and
+      playerPosition.z <= point.z + Movement.retrieveCharacterHeight()
   )
 end
 
