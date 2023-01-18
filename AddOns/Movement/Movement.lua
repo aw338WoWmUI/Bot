@@ -102,7 +102,7 @@ function Movement.savePosition()
 end
 
 function Movement.positionInFrontOfPlayer(distance, deltaZ)
-  local playerPosition = Movement.retrieveCharacterPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   return Core.retrievePositionFromPosition(
     Movement.createPointWithZOffset(playerPosition, deltaZ or 0),
     distance,
@@ -112,7 +112,7 @@ function Movement.positionInFrontOfPlayer(distance, deltaZ)
 end
 
 function Movement.positionInFrontOfPlayer2(distance, deltaZ)
-  local playerPosition = Movement.retrieveCharacterPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   return Core.retrievePositionFromPosition(
     Movement.createPointWithZOffset(playerPosition, deltaZ or 0),
     distance,
@@ -353,17 +353,8 @@ function Movement.canBeJumpedFromPointToPoint(from, to)
   )
 end
 
-function Movement.retrieveCharacterPosition()
-  local characterPosition = Core.retrieveCharacterPosition()
-  if characterPosition then
-    return Movement.createPoint(characterPosition.x, characterPosition.y, characterPosition.z)
-  else
-    return nil
-  end
-end
-
 function Movement.canBeFlownFromPointToPoint(from, to)
-  local playerPosition = Movement.retrieveCharacterPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   if playerPosition == from then
     if IsIndoors() then
       return false
@@ -952,8 +943,8 @@ function Movement.canCharacterRideDragon()
 end
 
 function Movement.canCharacterMount()
-  -- TODO: Maybe improve Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(), { withMount = true }) to consider different mounts.
-  return Core.isCharacterAlive() and not Core.isCharacterInCombat() and IsOutdoors() and not UnitInVehicle('player') and Movement.canPlayerStandOnPoint(Movement.retrieveCharacterPosition(),
+  -- TODO: Maybe improve Movement.canPlayerStandOnPoint(Core.retrieveCharacterPosition(), { withMount = true }) to consider different mounts.
+  return Core.isCharacterAlive() and not Core.isCharacterInCombat() and IsOutdoors() and not UnitInVehicle('player') and Movement.canPlayerStandOnPoint(Core.retrieveCharacterPosition(),
     { withMount = true })
 end
 
@@ -1021,7 +1012,7 @@ function Movement.calculate2DDistanceOfPointToLine(point, line)
 end
 
 function Movement.isMissingWaypointWithCurrentMovementDirection(waypoint)
-  local playerPosition = Movement.retrieveCharacterPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   local yaw = HWT.ObjectFacing('player')
   local pitch = HWT.UnitPitch('player')
   local movementVector = {
@@ -1048,7 +1039,7 @@ function Movement.isCharacterFlying()
 end
 
 function Movement.isCharacterInTheAir()
-  local playerPosition = Movement.retrieveCharacterPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   return Movement.isPositionInTheAir(playerPosition)
 end
 
@@ -1058,7 +1049,7 @@ function Movement.createMoveToAction3(waypoint, a, totalDistance, isLastWaypoint
   local lastJumpTime = nil
 
   local function runForGroundAndFlying(action, actionSequenceDoer, remainingDistance)
-    local characterPosition = Movement.retrieveCharacterPosition()
+    local characterPosition = Core.retrieveCharacterPosition()
 
     local liftUpWithFlyingMount = (
       Movement.canCharacterFly() and
@@ -1188,7 +1179,7 @@ function _.isPositionUnreachable(position)
 end
 
 function _.isPointCloseToCharacterWithZTolerance(point)
-  local playerPosition = Movement.retrieveCharacterPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   return (
     Math.euclideanDistance2D(playerPosition, point) <= TOLERANCE_RANGE and
       playerPosition.z >= point.z - 0.5 and
@@ -1328,7 +1319,7 @@ function _.Mounter:mount()
       if wasAbleToMount then
         self.positionWhereFailedToMountLastTime = nil
       else
-        self.positionWhereFailedToMountLastTime = Movement.retrieveCharacterPosition()
+        self.positionWhereFailedToMountLastTime = Core.retrieveCharacterPosition()
       end
     end
   end
@@ -1349,7 +1340,7 @@ function _.canCharacterMountOnBetterMount()
 end
 
 function Movement.determinePointHighEnoughToStayInAir(waypoint)
-  local playerPosition = Movement.retrieveCharacterPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   local length = Math.euclideanDistance(playerPosition, waypoint)
   local traceLineTargetPoint = Movement.positionInFrontOfPlayer(length, 0)
   local point = Core.traceLineCollision(playerPosition, traceLineTargetPoint)
@@ -1405,7 +1396,7 @@ function Movement.isJumpSituation(to)
     return false
   end
 
-  local playerPosition = Movement.retrieveCharacterPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   local positionA = Movement.createPointWithZOffset(playerPosition, Movement.JUMP_DETECTION_HEIGHT)
   local positionB = Movement.positionInFrontOfPlayer2(0.5, Movement.JUMP_DETECTION_HEIGHT)
   lines = {
@@ -1416,7 +1407,7 @@ function Movement.isJumpSituation(to)
 end
 
 local function findPathToSavedPosition2()
-  local from = Movement.retrieveCharacterPosition()
+  local from = Core.retrieveCharacterPosition()
   local to = AddOn.savedVariables.accountWide.savedPosition
   pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
@@ -1442,7 +1433,7 @@ function Movement.findPathToQuestingPointToMove()
 end
 
 function _.findPathToSavedPosition3()
-  local from = Movement.retrieveCharacterPosition()
+  local from = Core.retrieveCharacterPosition()
   local to = Questing.savedVariables.perCharacter.Questing.savedVariables.perCharacter.QuestingPointToMove
   pathFinder = Movement.createPathFinder()
   local path = pathFinder.start(from, to)
@@ -1934,10 +1925,10 @@ function Movement.moveTo(to, options)
   while not stop() and not hasArrived() do
     local from = Core.retrieveCharacterPosition()
 
-    if Movement.isThereAPathOnTheGround(from, to, options) then
-      Movement.moveToOnTheGround(from, to, options)
-    elseif not hasLanded and Movement.canCharacterRideDragon() or Movement.canCharacterFly() then
+    if not hasLanded and (Movement.canCharacterRideDragon() or Movement.canCharacterFly()) then
       hasLanded = Movement.moveToViaDragonridingOrFlying(from, to, options, hasArrived)
+    elseif Movement.isThereAPathOnTheGround(from, to, options) then
+      Movement.moveToOnTheGround(from, to, options)
     else
       print('break')
       break
@@ -2316,7 +2307,7 @@ function findPathE()
 end
 
 function findPathE2()
-  local playerPosition = Movement.retrieveCharacterPosition()
+  local playerPosition = Core.retrieveCharacterPosition()
   Movement.path = Core.findPath(playerPosition, AddOn.savedVariables.accountWide.savedPosition)
   AddOn.savedVariables.perCharacter.MovementPath = Movement.path
 end
@@ -2457,4 +2448,4 @@ function Movement.canOnlyBeMovedOnGround()
   return not Movement.canCharacterFlyOrDragonride()
 end
 
--- Movement.enableVisualization()
+Movement.enableVisualization()

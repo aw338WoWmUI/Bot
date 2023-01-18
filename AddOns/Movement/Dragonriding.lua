@@ -70,7 +70,8 @@ function Movement.Dragonriding.updateFacing(waypoint, action)
 
   local yaw, pitchFromCharacterToWaypoint = Movement.calculateAnglesFromCharacterToPoint(waypoint)
   local characterPosition = Core.retrieveCharacterPosition()
-  if Movement.thereAreZeroCollisions(characterPosition, Movement.createPointWithZOffset(waypoint, 0.1)) then
+  if Movement.thereAreZeroCollisions(characterPosition, Movement.createPointWithZOffset(waypoint, 0.1)) or
+    Core.calculate2DDistanceFromCharacterToPosition(waypoint) <= 5 then
     pitch = pitchFromCharacterToWaypoint
   else
     pitch = math.rad(-5)

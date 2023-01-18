@@ -185,7 +185,7 @@ Movement.canPlayerStandOnPoint(MovementPath[4])
 
 Compatibility.QuestLog.isComplete(C_SuperTrack.GetSuperTrackedQuestID())
 
-position1 = Movement.retrieveCharacterPosition()
+position1 = Core.retrieveCharacterPosition()
 position2 = Movement.createPointWithZOffset(position1, 3.5)
 
 C_QuestLog.GetQuestsOnMap(Core.receiveMapIDForWhereTheCharacterIsAt())
@@ -359,3 +359,5 @@ Coroutine.runAsCoroutine(function () Core._moveTo(Core.retrieveObjectPosition('t
 Coroutine.runAsCoroutine(function () lll = Core._moveTo(Core.retrieveObjectPosition('target')) end)
 
 Core.retrieveObjectDataDynamicFlags(Core.findClosestObjectToCharacterWithObjectID(191905))
+
+Core.isPositionInRangeForTraceLineChecks(Core.retrieveCharacterPosition())

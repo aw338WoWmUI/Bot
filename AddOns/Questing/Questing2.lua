@@ -977,7 +977,7 @@ function retrieveNavigationPosition()
     local yaw = HWT.ObjectFacing('player')
 
     while true do
-      local playerPosition = Movement.retrieveCharacterPosition()
+      local playerPosition = Core.retrieveCharacterPosition()
       local navigationPointDistance = C_Navigation.GetDistance()
       local navigationX, navigationY = frame:GetCenter()
       local scale = UIParent:GetEffectiveScale()
@@ -1658,7 +1658,7 @@ HWT.doWhenHWTIsLoaded(function()
 
     if point then
       Draw.SetColorRaw(0, 1, 0, 1)
-      local playerPosition = Movement.retrieveCharacterPosition()
+      local playerPosition = Core.retrieveCharacterPosition()
       Draw.Line(playerPosition.x, playerPosition.y, playerPosition.z, point.x, point.y, point.z)
       Draw.Circle(point.x, point.y, point.z, 0.75)
     end
