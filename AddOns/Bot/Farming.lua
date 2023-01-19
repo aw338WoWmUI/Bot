@@ -51,8 +51,6 @@ function _.visualize()
       Draw.Circle(position.x, position.y, position.z, 3)
       _.drawPathToPosition(position)
     end
-
-    _.conditionallyDrawPathToIndoorExit()
   end)
 
   stoppable:onStop(function()
@@ -65,35 +63,7 @@ end
 
 function _.drawPathToPosition(position)
   local characterPosition = Core.retrieveCharacterPosition()
-  local hasDrawnPathToPosition = false
-  if not IsFlying() and AddOn.positionsToIndoorEntries[position:toString()] then
-    local path = Core.findPath(characterPosition, position)
-    if path then
-      Draw.SetColorRaw(0, 1, 0, 1)
-      Core.drawPath(path)
-      hasDrawnPathToPosition = true
-    end
-  end
-
-  if not hasDrawnPathToPosition then
-    Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
-  end
-end
-
-function _.conditionallyDrawPathToIndoorExit()
-  local closestIndoorEntry = _.findClosestIndoorEntry()
-  if closestIndoorEntry then
-    local nextPosition = _.retrieveNextPosition()
-    local drawPathToIndoorExit = IsIndoors() and (not nextPosition or _.isNextPositionOutsideOfCurrentIndoorArea())
-    if drawPathToIndoorExit then
-      local characterPosition = Core.retrieveCharacterPosition()
-      local path = Core.findPath(characterPosition, closestIndoorEntry)
-      if path then
-        Draw.SetColorRaw(0, 0, 1, 1)
-        Core.drawPath(path)
-      end
-    end
-  end
+  Draw.Line(characterPosition.x, characterPosition.y, characterPosition.z, position.x, position.y, position.z)
 end
 
 function _.isNextPositionOutsideOfCurrentIndoorArea()
@@ -360,7 +330,14 @@ function Bot.startAssistedFarming(retrieveNextPosition, findFarmedThings)
         end
       else
         if not nextNode then
-          nextNode = retrieveNextClosestPosition()
+          local hasReturnedNextNode
+          repeat
+            nextNode = retrieveNextClosestPosition()
+            if nextNode and Core.isCharacterAtMaxAwayFrom(nextNode, HOW_TO_CLOSE_TO_FLY_TO_NODE) then
+              markPositionAsVisited(nextNode)
+              nextNode = nil
+            end
+          until nextNode or not hasReturnedNextNode
         end
         farmedThing = nil
       end
