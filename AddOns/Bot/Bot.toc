@@ -20,3 +20,4 @@ DoPublicOrders.lua
 MiningAndHerbalism.lua
 calculateYield.lua
 MythicPlus.lua
+CobaltAssembly.lua

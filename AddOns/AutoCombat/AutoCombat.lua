@@ -5,6 +5,10 @@ local _ = {}
 local isEnabled = false
 local isRunning = false
 
+function AutoCombat.isEnabled()
+	return isEnabled
+end
+
 function AutoCombat.toggle()
   if isEnabled then
     AutoCombat.disable()
