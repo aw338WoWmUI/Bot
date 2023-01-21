@@ -228,10 +228,10 @@ function Bot.startFarming(retrieveNextPosition, findFarmedThings)
           local isThereAnAttacker = Array.hasElements(attackers)
           if isThereAnAttacker then
             print('combat 1')
-            lookForThings:afterNextRegisterAsPaused(function ()
+            lookForThings:afterNextRegisterAsPaused(function()
               print('lookForThings has been paused.')
             end)
-            visitNodes:afterNextRegisterAsPaused(function ()
+            visitNodes:afterNextRegisterAsPaused(function()
               print('visitNodes has been paused.')
             end)
             await(Resolvable.all(
@@ -360,6 +360,13 @@ function Bot.addToSkipSet()
       skipSet = {}
     end
     skipSet[Core.retrieveObjectPosition(farmedThing):toString()] = true
+    farmedThing = nil
+  elseif nextNode then
+    if not skipSet then
+      skipSet = {}
+    end
+    skipSet[nextNode:toString()] = true
+    nextNode = nil
   end
 end
 
@@ -369,6 +376,13 @@ function Bot.addToMiningAndHerbalismSkipSet()
       miningAndHerbalismSkipSet = {}
     end
     miningAndHerbalismSkipSet[Core.retrieveObjectPosition(farmedThing):toString()] = true
+    farmedThing = nil
+  elseif nextNode then
+    if not miningAndHerbalismSkipSet then
+      miningAndHerbalismSkipSet = {}
+    end
+    miningAndHerbalismSkipSet[nextNode:toString()] = true
+    nextNode = nil
   end
 end
 
