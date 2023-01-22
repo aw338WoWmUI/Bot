@@ -159,22 +159,7 @@ function _.chooseOption(option)
 end
 
 function Bot.doCombatAssemblyFarming()
-  HWT.doWhenHWTIsLoaded(function()
-    Coroutine.runAsCoroutineImmediately(function()
-      while true do
-        if C_PlayerChoice.IsWaitingForPlayerChoiceResponse() then
-          _.chooseAnOption()
-        else
-          local wildArcana = Array.find(Core.retrieveObjectPointers(), function (object)
-            return HWT.ObjectId(object) == WILD_ARCANA and HWT.GameObjectIsUsable(object, true) and HWT.GameObjectIsUsable(object, false) and Core.isInInteractionRange(object)
-          end)
-          if wildArcana then
-            Core.interactWithObject(wildArcana)
-          end
-        end
-
-        Coroutine.yieldAndResume()
-      end
-    end)
+  Events.listenForEvent('PLAYER_CHOICE_UPDATE', function()
+    _.chooseAnOption()
   end)
 end
