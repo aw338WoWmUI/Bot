@@ -7,10 +7,12 @@ Bot = Bot or {}
 local isDoingOrder = false
 
 function Bot.doPublicOrders()
-  if not Bot.customerName then
+  if not BotOptions.customerName then
     error('Please set Bot.customerName with `/script BotOptions.customerName = \'<name of character>\'` to the name of the character who does the orders.')
     return
   end
+
+  AutoRefreshAndAcceptCraftingOrders.autoAccept = false
 
   hooksecurefunc(ProfessionsFrame.OrdersPage, 'OrderRequestCallback', function()
     if not isDoingOrder then
@@ -23,6 +25,7 @@ function Bot.doPublicOrders()
         print('accept order')
         isDoingOrder = true
 
+        -- FIXME: It seems that sometimes it failes here.
         C_CraftingOrders.ClaimOrder(order.orderID, C_TradeSkillUI.GetChildProfessionInfo().profession)
         Coroutine.runAsCoroutineImmediately(function()
           Events.waitForEventCondition('CRAFTINGORDERS_CLAIMED_ORDER_UPDATED', function(self, event, orderID)
@@ -81,7 +84,7 @@ function Bot.requestPublicOrder()
     craftingReagentItems = {
       {
         quantity = 4,
-        itemID = 190396,
+        itemID = 190396, -- Serevite Ore (quality 2)
         dataSlotIndex = 1
       }
     },
@@ -95,7 +98,7 @@ function Bot.requestPublicOrder()
   C_CraftingOrders.PlaceNewOrder(orderInfo)
 end
 
--- /script Bot.requestPublicOrders2(14)
+-- /script Bot.requestPublicOrders2(5)
 
 -- For Blacksmithing orders
 function Bot.requestPublicOrders2(numberOfTimes)
@@ -114,7 +117,7 @@ function Bot.requestPublicOrder2()
     craftingReagentItems = {
       {
         quantity = 10,
-        itemID = 190396,
+        itemID = 190396, -- Serevite Ore (quality 2)
         dataSlotIndex = 1
       }
     },
@@ -122,7 +125,7 @@ function Bot.requestPublicOrder2()
     reagentItems = {
       {
         quantity = 2,
-        itemID = 190452,
+        itemID = 190452, -- Primal Flux
         dataSlotIndex = 1
       }
     },
