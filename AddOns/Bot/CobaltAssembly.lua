@@ -39,9 +39,9 @@ local healingBuffs = {
 local priorityList = Array.concat(
   {
     FUN_DETECTED,
+    KILLING_SPREE,
     ARCANE_MASTERY,
     ARCANE_COMPACTION,
-    KILLING_SPREE,
     ARCANE_LUCK,
     ARCANE_EQUALIZER,
     QUICKENED,
@@ -76,11 +76,14 @@ local refreshable = Set.create({
 
 })
 
-local stackable = Set.create({
-  ARCANE_MASTERY,
-  ARCANE_COMPACTION,
-  ARCANE_LUCK,
-})
+local maximumNumberOfStacks = {
+  [KILLING_SPREE] = 10,
+  [ARCANE_MASTERY] = 100,
+  [ARCANE_COMPACTION] = 100,
+  [ARCANE_LUCK] = 100,
+}
+
+local stackable = Set.create(Object.keys(maximumNumberOfStacks))
 
 local buffsToKeepUp = stackable
 
@@ -107,8 +110,8 @@ function _.chooseAnOption()
           local hasChosenAnOption = false
           for __, spell in ipairs(priorityList) do
             option = _.findOption(options, spell)
-            local duration = select(5, Core.findAuraByID(spell, 'player', 'HELPFUL'))
-            if option and (not duration or duration < 60 or stackable:contains(spell)) then
+            local numberOfStacks, __, duration = select(3, Core.findAuraByID(spell, 'player', 'HELPFUL'))
+            if option and (not duration or duration < 60 or (stackable:contains(spell) and numberOfStacks < maximumNumberOfStacks[spell])) then
               _.chooseOption(option)
               hasChosenAnOption = true
               break
@@ -157,6 +160,7 @@ function _.chooseOption(option)
   C_PlayerChoice.SendPlayerChoiceResponse(buttonID)
   PlayerChoiceFrame:Hide()
   PlayerChoiceTimeRemaining:HideTimer()
+  GenericPlayerChoiceToggleButton:Hide()
 end
 
 local lastInteractedWith = {}
