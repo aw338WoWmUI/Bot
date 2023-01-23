@@ -39,10 +39,10 @@ local healingBuffs = {
 local priorityList = Array.concat(
   {
     FUN_DETECTED,
+    ARCANE_MASTERY,
     ARCANE_COMPACTION,
     KILLING_SPREE,
     ARCANE_LUCK,
-    ARCANE_MASTERY,
     ARCANE_EQUALIZER,
     QUICKENED,
     ARCANE_LEAP,
@@ -108,7 +108,7 @@ function _.chooseAnOption()
           for __, spell in ipairs(priorityList) do
             option = _.findOption(options, spell)
             local duration = select(5, Core.findAuraByID(spell, 'player', 'HELPFUL'))
-            if option and (not duration or stackable:contains(spell)) then
+            if option and (not duration or duration < 60 or stackable:contains(spell)) then
               _.chooseOption(option)
               hasChosenAnOption = true
               break
@@ -154,36 +154,55 @@ end
 
 function _.chooseOption(option)
   local buttonID = option.buttons[1].id
-  Coroutine.runAsCoroutineImmediately(function()
-    print(1)
-    Coroutine.waitUntil(function()
-      return not UnitCastingInfo('player') and not UnitChannelInfo('player')
-    end)
-    print(2)
-    print('option', option.header, buttonID)
-    C_PlayerChoice.SendPlayerChoiceResponse(buttonID)
-    print(3)
-    PlayerChoiceFrame:Hide()
-    print(4)
-    PlayerChoiceTimeRemaining:Hide()
-    print(5)
-  end)
+  C_PlayerChoice.SendPlayerChoiceResponse(buttonID)
+  PlayerChoiceFrame:Hide()
+  PlayerChoiceTimeRemaining:HideTimer()
 end
+
+local lastInteractedWith = {}
 
 function Bot.doCombatAssemblyFarming()
-  Events.listenForEvent('PLAYER_CHOICE_UPDATE', function()
-    if not IsShiftKeyDown() then
-      _.chooseAnOption()
-    end
+  HWT.doWhenHWTIsLoaded(function()
+    Coroutine.runAsCoroutineImmediately(function()
+      while true do
+        if not C_PlayerChoice.IsWaitingForPlayerChoiceResponse() then
+          local newLastInteractedWith = {}
+          for guid, lastInteractedWithTime in pairs(lastInteractedWith) do
+            if GetTime() - lastInteractedWithTime < 0.5 then
+              newLastInteractedWith[guid] = lastInteractedWithTime
+            end
+          end
+          lastInteractedWith = newLastInteractedWith
+
+          local wildArcana = Array.find(Core.retrieveObjectPointers(), function(object)
+            return (
+              HWT.ObjectId(object) == WILD_ARCANA and
+                not lastInteractedWith[UnitGUID(object)] and
+                HWT.GameObjectIsUsable(object, true) and
+                HWT.GameObjectIsUsable(object, false) and
+                Core.isInInteractionRange(object)
+            )
+          end)
+          if wildArcana then
+            if Core.interactWithObject(wildArcana) then
+              local wasSuccessful = Coroutine.waitUntil(function ()
+                return C_PlayerChoice.IsWaitingForPlayerChoiceResponse()
+              end, 0.5)
+              if wasSuccessful then
+                lastInteractedWith[UnitGUID(wildArcana)] = GetTime()
+                _.chooseAnOption()
+                Coroutine.waitUntil(function ()
+                  return not C_PlayerChoice.IsWaitingForPlayerChoiceResponse()
+                end)
+              end
+            end
+          end
+        end
+
+        Coroutine.yieldAndResume()
+      end
+    end)
   end)
 end
 
-Bot.doCombatAssemblyFarming()
-
-hooksecurefunc(C_PlayerChoice, 'SendPlayerChoiceResponse', function (...)
-  print('C_PlayerChoice.SendPlayerChoiceResponse', ...)
-end)
-
-hooksecurefunc(C_PlayerChoice, 'OnUIClosed', function (...)
-  print('C_PlayerChoice.OnUIClosed', ...)
-end)
+-- Bot.doCombatAssemblyFarming()
