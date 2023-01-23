@@ -154,12 +154,36 @@ end
 
 function _.chooseOption(option)
   local buttonID = option.buttons[1].id
-  C_PlayerChoice.SendPlayerChoiceResponse(buttonID)
-  HideUIPanel(PlayerChoiceFrame)
+  Coroutine.runAsCoroutineImmediately(function()
+    print(1)
+    Coroutine.waitUntil(function()
+      return not UnitCastingInfo('player') and not UnitChannelInfo('player')
+    end)
+    print(2)
+    print('option', option.header, buttonID)
+    C_PlayerChoice.SendPlayerChoiceResponse(buttonID)
+    print(3)
+    PlayerChoiceFrame:Hide()
+    print(4)
+    PlayerChoiceTimeRemaining:Hide()
+    print(5)
+  end)
 end
 
 function Bot.doCombatAssemblyFarming()
   Events.listenForEvent('PLAYER_CHOICE_UPDATE', function()
-    _.chooseAnOption()
+    if not IsShiftKeyDown() then
+      _.chooseAnOption()
+    end
   end)
 end
+
+Bot.doCombatAssemblyFarming()
+
+hooksecurefunc(C_PlayerChoice, 'SendPlayerChoiceResponse', function (...)
+  print('C_PlayerChoice.SendPlayerChoiceResponse', ...)
+end)
+
+hooksecurefunc(C_PlayerChoice, 'OnUIClosed', function (...)
+  print('C_PlayerChoice.OnUIClosed', ...)
+end)
