@@ -110,8 +110,8 @@ function _.chooseAnOption()
           local hasChosenAnOption = false
           for __, spell in ipairs(priorityList) do
             option = _.findOption(options, spell)
-            local numberOfStacks, __, duration = select(3, Core.findAuraByID(spell, 'player', 'HELPFUL'))
-            if option and (not duration or duration < 60 or (stackable:contains(spell) and numberOfStacks < maximumNumberOfStacks[spell])) then
+            local duration = select(5, Core.findAuraByID(spell, 'player', 'HELPFUL'))
+            if option and (not duration or duration < 60 or stackable:contains(spell)) then
               _.chooseOption(option)
               hasChosenAnOption = true
               break
@@ -190,7 +190,7 @@ function Bot.doCombatAssemblyFarming()
           if wildArcana then
             if Core.interactWithObject(wildArcana) then
               local wasSuccessful = Coroutine.waitUntil(function ()
-                return C_PlayerChoice.IsWaitingForPlayerChoiceResponse()
+                return C_PlayerChoice.IsWaitingForPlayerChoiceResponse() and C_PlayerChoice.GetCurrentPlayerChoiceInfo()
               end, 0.5)
               if wasSuccessful then
                 lastInteractedWith[UnitGUID(wildArcana)] = GetTime()
@@ -209,4 +209,4 @@ function Bot.doCombatAssemblyFarming()
   end)
 end
 
--- Bot.doCombatAssemblyFarming()
+Bot.doCombatAssemblyFarming()
